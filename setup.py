@@ -8,8 +8,8 @@ setup (# Distribution meta-data
        name = "kconfiglib",
        version = "0.0.1",
        description = "A flexible Python Kconfig parser",
-       author = "Ulfalizer Magnusson",
-       author_email = "kconfiglib@gmail.com",
+       author = "Ulf Magnusson",
+       author_email = "ulfalizer@gmail.com",
        url = "https://github.com/ulfalizer/Kconfiglib",
 
        # Description of the modules and packages in the distribution
