@@ -2250,6 +2250,7 @@ keywords = {
         "menuconfig"     : T_MENUCONFIG,
         "help"           : T_HELP,
         "---help---"     : T_HELP,
+        "----help---"    : T_HELP,  # Hack to handle CONFIG_SFC_MCDI_MON
         "---"            : T_HELP,  # Hack to handle CONFIG_W1_CON
         "if"             : T_IF,
         "depends"        : T_DEPENDS,
