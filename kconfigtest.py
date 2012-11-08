@@ -296,33 +296,35 @@ def test_config_absent(conf):
     """Test if kconfiglib generates the same configuration as 'conf' without a .config, for each architecture"""
     conf.write_config("._config")
 
-    # Use an empty .config
-    shell("> .config")
-    shell("make kconfiglibtestconfig")
+    shell("make alldefconfig")
 
 def test_defconfig(conf):
     """Test if kconfiglib generates the same .config as conf for each architecture/defconfig pair (this takes two hours on a Core i7@2.67 GHz system)"""
-    # Collect defconfigs. This could be done once instead, but it's a speedy
-    # operation comparatively.
+    # Collect defconfigs of the current ARCH. 
 
     global nconfigs
 
     defconfigs = []
 
-    for arch in os.listdir("arch"):
-        arch_dir = os.path.join("arch", arch)
+    arch = os.path.join("arch", os.environ["ARCH"])
+    for arch_dir_t in os.listdir(arch):
+        arch_dir = os.path.join(arch, arch_dir_t)
 
         # Some arches have a "defconfig" in their
         # arch directory.
         defconfig = os.path.join(arch_dir, "defconfig")
         if os.path.exists(defconfig):
-            defconfigs.append(defconfig)
+            defconfigs.append("defconfig")
 
         defconfigs_dir = os.path.join(arch_dir, "configs")
         if os.path.isdir(defconfigs_dir):
-            for c in os.listdir(defconfigs_dir):
-                defconfig = os.path.join(defconfigs_dir, c)
-                if os.path.isfile(defconfig):
+            for root,dirs,files in os.walk(defconfigs_dir):
+                for c in files:
+                    if not c.endswith("_defconfig"):
+                        print "Fail: unexpected defconfig filename (should be end with \"_default\"): " + c
+                        fail()
+
+                    defconfig = os.path.join(os.path.relpath(root, defconfigs_dir), c)
                     defconfigs.append(defconfig)
 
     # Test architecture for each defconfig
@@ -334,8 +336,9 @@ def test_defconfig(conf):
 
         conf.load_config(defconfig)
         conf.write_config("._config")
-        shell("cp {0} .config".format(defconfig))
-        shell("make kconfiglibtestconfig")
+
+	# make defconfig or make xxx_defconfig
+        shell("make " + defconfig)
 
         sys.stdout.write("  {0:<14}with {1:<60} ".format(conf.get_arch(), defconfig))
 
