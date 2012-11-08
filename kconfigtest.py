@@ -338,7 +338,7 @@ def test_defconfig(conf):
         conf.load_config(defconfig)
         conf.write_config("._config")
 
-	# make defconfig or make xxx_defconfig
+        # make defconfig or make xxx_defconfig
         shell("make " + makedefconfig)
 
         sys.stdout.write("  {0:<14}with {1:<60} ".format(conf.get_arch(), defconfig))
