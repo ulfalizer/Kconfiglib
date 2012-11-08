@@ -319,7 +319,7 @@ def test_defconfig(conf):
     if os.path.isdir(defconfigs_dir):
         for root,dirs,files in os.walk(defconfigs_dir):
             for c in files:
-		defconfig = os.path.join(root, c)
+                defconfig = os.path.join(root, c)
                 makedefconfig = os.path.join(os.path.relpath(root, defconfigs_dir), c)
 
                 if not c.endswith("_defconfig"):
