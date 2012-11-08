@@ -499,6 +499,9 @@ class Config():
         # See Symbol.get_arch()
         self.arch = os.environ.get("ARCH")
 
+        # See Symbol.get_srcarch()
+        self.srcarch = os.environ.get("SRCARCH")
+
         # See Config.__init__(). We need this for get_defconfig_filename().
         self.srctree = os.environ.get("srctree")
         if self.srctree is None:
@@ -706,6 +709,13 @@ class Config():
         was not defined. This corresponds to the architecture, with values such
         as "i386" or "mips"."""
         return self.arch
+
+    def get_srcarch(self):
+        """Mostly Linux specific. Returns the value the environment variable
+        SRCARCH had at the time the Config instance was created, or None if
+        SRCARCH was not defined. SRCARCH depends on ARCH, like
+        ARCH=i386 or x86_64 -> SRCARCH=x86"""
+        return self.srcarch
 
     def get_mainmenu_text(self):
         """Returns the text of the 'mainmenu' statement (with $-references to
