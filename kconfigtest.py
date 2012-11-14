@@ -209,7 +209,7 @@ def test_call_all(conf):
     # Syntax error
     caught_exception = False
     try:
-        conf.eval("y & y")
+        conf.eval("y && && y")
     except kconfiglib.Kconfig_Syntax_Error:
         caught_exception = True
 

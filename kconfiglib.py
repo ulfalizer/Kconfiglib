@@ -822,7 +822,7 @@ class Config():
           implementation and by kconfiglib, so that MODULES needs to be enabled
           for the expression to be true. Pass True here if you want that to
           happen; otherwise, pass False."""
-        return self._eval_expr(self._parse_expr(self._tokenize(s, False),
+        return self._eval_expr(self._parse_expr(self._tokenize(s, True),
                                                 None,
                                                 s,
                                                 transform_m = transform_m))
@@ -909,7 +909,7 @@ class Config():
 
     def _tokenize(self,
                   s,
-                  add_sym_if_not_exists = True,
+                  for_eval = False,
                   filename = None,
                   linenr = None):
         """Returns a _Feed instance containing tokens derived from the string
@@ -918,9 +918,9 @@ class Config():
         (I experimented with a regular expression implementation, but it came
         out 5% _slower_ and wouldn't have been as flexible.)
 
-        add_sym_if_not_exists -- False when we do not want to register new
-                                 symbols, such as when called from
-                                 Config.eval()."""
+        for_eval -- True when parsing an expression for a call to
+                    Config.eval(), in which case we should not treat the first
+                    token specially nor register new symbols."""
         tokens = []
         previous = None
 
@@ -930,6 +930,36 @@ class Config():
         # The current index in the string being tokenized
         i = 0
 
+        if not for_eval:
+            # The initial word on a line is parsed specially. Let
+            # command_chars = [A-Za-z0-9_]. Then
+            #  - leading non-command_chars characters on the line are ignored, and
+            #  - the first token consists the following one or more command_chars
+            #    characters.
+            # This is why things like "----help--" are accepted.
+
+            # Ignore leading non-command_chars characters
+            while i < strlen and s[i] not in command_chars:
+                # We need to look out for comments
+                if s[i] == "#":
+                    return _Feed([])
+                i += 1
+            keyword_start = i
+            # Locate the end of the keyword
+            while i < strlen and s[i] in command_chars:
+                i += 1
+            keyword_lexeme = s[keyword_start:i]
+            # Blank line?
+            if keyword_lexeme == "":
+                return _Feed([])
+            keyword = keywords.get(keyword_lexeme)
+            if keyword is None:
+                # We expect a keyword as the first token
+                _tokenization_error(s, strlen, filename, linenr)
+            append(keyword)
+            previous = keyword
+
+        # Main tokenization loop (handles tokens past the first one)
         while i < strlen:
             c = s[i]
 
@@ -961,17 +991,23 @@ class Config():
 
             elif c == "&":
                 if i + 1 >= strlen:
-                    _tokenization_error(s, strlen, filename, linenr)
+                    # Invalid characters are ignored
+                    continue
                 if s[i + 1] != "&":
-                    _tokenization_error(s, i + 1, filename, linenr)
+                    # Invalid characters are ignored
+                    i += 1
+                    continue
                 append(T_AND)
                 i += 2
 
             elif c == "|":
                 if i + 1 >= strlen:
-                    _tokenization_error(s, strlen, filename, linenr)
+                    # Invalid characters are ignored
+                    continue
                 if s[i + 1] != "|":
-                    _tokenization_error(s, i + 1, filename, linenr)
+                    # Invalid characters are ignored
+                    i += 1
+                    continue
                 append(T_OR)
                 i += 2
 
@@ -999,6 +1035,11 @@ class Config():
             elif c == "#":
                 break
 
+            elif c not in sym_chars:
+                # Invalid characters are ignored
+                i += 1
+                continue
+
             else: # Symbol or keyword
                 name_start = i
 
@@ -1021,7 +1062,7 @@ class Config():
                     # We're dealing with a symbol. _sym_lookup() will take care
                     # of allocating a new Symbol instance if it's the first
                     # time we see it.
-                    sym = self._sym_lookup(name, add_sym_if_not_exists)
+                    sym = self._sym_lookup(name, not for_eval)
 
                     if previous == T_CONFIG:
                         # If the previous token is T_CONFIG ("config"), we're
@@ -1204,7 +1245,7 @@ class Config():
 
                 linenr = line_feeder.get_linenr()
 
-                tokens = self._tokenize(line, True, filename, linenr)
+                tokens = self._tokenize(line, False, filename, linenr)
 
             if tokens.is_empty():
                 continue
@@ -1396,7 +1437,7 @@ class Config():
             filename = line_feeder.get_filename()
             linenr = line_feeder.get_linenr()
 
-            tokens = self._tokenize(line, True, filename, linenr)
+            tokens = self._tokenize(line, False, filename, linenr)
 
             if tokens.is_empty():
                 continue
@@ -2259,9 +2300,6 @@ keywords = {
         "comment"        : T_COMMENT,
         "menuconfig"     : T_MENUCONFIG,
         "help"           : T_HELP,
-        "---help---"     : T_HELP,
-        "----help---"    : T_HELP,  # Hack to handle CONFIG_SFC_MCDI_MON
-        "---"            : T_HELP,  # Hack to handle CONFIG_W1_CON
         "if"             : T_IF,
         "depends"        : T_DEPENDS,
         "on"             : T_ON,
@@ -2299,6 +2337,10 @@ string_lex = (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING,
 
 # Characters that may appear in symbol names
 sym_chars = frozenset(string.ascii_letters + string.digits + "._/-")
+
+# Characters that might be the first significant character on a line. Other
+# characters are ignored at the beginning of a line.
+command_chars = frozenset(string.ascii_letters + string.digits + "_");
 
 # Regular expressions for parsing .config files
 set_re   = re.compile(r"CONFIG_(\w+)=(.*)")
