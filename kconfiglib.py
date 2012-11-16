@@ -2854,6 +2854,16 @@ class Symbol(Item, _HasVisibility):
         to not being visible in the 'make *config' interfaces."""
         return self._calc_visibility()
 
+    def get_prompt(self):
+        prompt_str = None
+        for (prompt, cond_expr) in self.orig_prompts:
+            if cond_expr is None:
+                prompt_str = prompt
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    prompt_str = prompt
+        return prompt_str
+
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
         None if the symbol is at the top level. Note that if statements are
@@ -3297,6 +3307,9 @@ class Menu(Item):
         condition. "y" is the menu has no 'visible if' condition."""
         return self.config._eval_expr(self.visible_if_expr)
 
+    def get_visibility(self):
+	return self.config._eval_expr(self.dep_expr) != "n" and self.config._eval_expr(self.visible_if_expr) != "n"
+
     def get_items(self, recursive = False):
         """Returns a list containing the items (symbols, menus, choice
         statements and comments) in in the menu, in the same order that the
@@ -3532,6 +3545,16 @@ class Choice(Item, _HasVisibility):
         explanation of modes."""
         return self._calc_visibility()
 
+    def get_prompt(self):
+        prompt_str = None
+        for (prompt, cond_expr) in self.orig_prompts:
+            if cond_expr is None:
+                prompt_str = prompt
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    prompt_str = prompt
+        return prompt_str
+
     def calc_mode(self):
         """Returns the mode of the choice. See the class documentation for
         an explanation of modes."""
@@ -3685,6 +3708,9 @@ class Comment(Item):
     def get_text(self):
         """Returns the text of the comment."""
         return self.text
+
+    def get_visibility(self):
+	return self.config._eval_expr(self.orig_deps)
 
     def get_parent(self):
         """Returns the menu or choice statement that contains the comment, or

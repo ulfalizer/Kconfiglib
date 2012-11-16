@@ -234,6 +234,7 @@ def test_call_all(conf):
         s.get_assignable_values()
         s.get_type()
         s.get_visibility()
+        s.get_prompt()
         s.get_parent()
         s.get_sibling_symbols()
         s.get_sibling_items()
@@ -268,6 +269,7 @@ def test_call_all(conf):
         c.get_referenced_symbols(True)
         c.get_def_locations()
         c.get_visibility()
+        c.get_prompt()
         c.calc_mode()
         c.is_optional()
         c.__str__()
@@ -279,6 +281,7 @@ def test_call_all(conf):
         m.get_depends_on_visibility()
         m.get_visible_if_visibility()
         m.get_title()
+        m.get_visibility()
         m.get_parent()
         m.get_referenced_symbols()
         m.get_referenced_symbols(True)
@@ -287,6 +290,7 @@ def test_call_all(conf):
 
     for c in conf.get_comments():
         c.get_text()
+        c.get_visibility()
         c.get_parent()
         c.get_referenced_symbols()
         c.get_referenced_symbols(True)
