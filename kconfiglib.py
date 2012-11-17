@@ -2855,6 +2855,7 @@ class Symbol(Item, _HasVisibility):
         return self._calc_visibility()
 
     def get_prompt(self):
+        """Returs the current prompt"""
         prompt_str = None
         for (prompt, cond_expr) in self.orig_prompts:
             if cond_expr is None:
@@ -2863,6 +2864,17 @@ class Symbol(Item, _HasVisibility):
                 if self.config._eval_expr(cond_expr) != "n":
                     prompt_str = prompt
         return prompt_str
+
+    def get_selects(self):
+        """Returs the list of current selects"""
+        selects_list = []
+        for (target, cond_expr) in self.orig_selects:
+            if cond_expr is None:
+                selects_list.append(target.name)
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    selects_list.append(target.name)
+        return selects_list
 
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
