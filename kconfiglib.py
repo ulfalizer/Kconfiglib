@@ -1327,6 +1327,7 @@ class Config():
                         self.named_choices[name] = choice
 
                 choice.config = self
+                choice.parent = parent
 
                 choice.def_locations.append((filename, linenr))
 
