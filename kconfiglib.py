@@ -3321,7 +3321,7 @@ class Menu(Item):
         return self.config._eval_expr(self.visible_if_expr)
 
     def get_visibility(self):
-	return self.config._eval_expr(self.dep_expr) != "n" and self.config._eval_expr(self.visible_if_expr) != "n"
+	return tri_min(self.config._eval_expr(self.dep_expr), self.config._eval_expr(self.visible_if_expr))
 
     def get_items(self, recursive = False):
         """Returns a list containing the items (symbols, menus, choice
@@ -3891,6 +3891,12 @@ def tri_greater_eq(v1, v2):
     v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
     returns False."""
     return values[v1] >= values[v2]
+
+def tri_max(v1, v2):
+    return v1 if tri_greater(v1, v2) else v2
+
+def tri_min(v1, v2):
+    return v1 if tri_less(v1, v2) else v2
 
 #
 # Helper functions, mostly related to text processing
