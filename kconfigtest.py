@@ -197,7 +197,7 @@ def test_all_yes(conf):
     shell("make allyesconfig")
 
 def test_call_all(conf):
-    """Call all public methods on all symbols, menus, choices and comments (nearly all public methods: some are hard to test like this, but are exercised by other tests) for all architectures to make sure we never crash or hang"""
+    """Call all public methods on all symbols, menus, choices and comments (nearly all public methods: some are hard to test like this, but are exercised by other tests) for all architectures to make sure we never crash or hang. Also do misc. sanity checks."""
     print "  For {0}...".format(conf.get_arch())
 
     conf.get_arch()
@@ -241,11 +241,48 @@ def test_call_all(conf):
         s.get_selected_symbols()
         s.get_help()
         s.get_config()
-        s.get_def_locations()
+
+        # Check get_ref/def_location() sanity
+
+        if s.is_special():
+            if s.is_from_environment():
+                # Special symbols from the environment should have define
+                # locations
+                if s.get_def_locations() == []:
+                    print "Fail: the symbol '{0}' is from the environment "\
+                          "but lacks define locations".format(s.get_name())
+                    fail()
+            else:
+                # Special symbols that are not from the environment should be
+                # defined and have no define locations
+                if not s.is_defined():
+                    print "Fail: the special symbol '{0}' is not defined".\
+                          format(s.get_name())
+                    fail()
+                if not s.get_def_locations() == []:
+                    print "Fail: the special symbol '{0}' has recorded def. "\
+                          "locations".format(s.get_name())
+                    fail()
+        else:
+            # Non-special symbols should have define locations iff they are
+            # defined
+            if s.is_defined():
+                if s.get_def_locations() == []:
+                    print "Fail: '{0}' defined but lacks recorded locations".\
+                          format(s.get_name())
+                    fail()
+            else:
+                if s.get_def_locations() != []:
+                    print "Fail: '{0}' undefined but has recorded locations".\
+                          format(s.get_name())
+                    fail()
+                if s.get_ref_locations() == []:
+                    print "Fail: '{0}' both undefined and unreferenced".\
+                          format(s.get_name())
+
         s.get_ref_locations()
         s.is_modifiable()
         s.is_defined()
-        s.is_special()
         s.is_from_environment()
         s.has_ranges()
         s.is_choice_item()

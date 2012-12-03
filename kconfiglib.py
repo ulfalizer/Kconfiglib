@@ -1054,7 +1054,7 @@ class Config():
                     # time we see it.
                     sym = self._sym_lookup(name, not for_eval)
 
-                    if previous == T_CONFIG:
+                    if previous in (T_CONFIG, T_MENUCONFIG):
                         # If the previous token is T_CONFIG ("config"), we're
                         # tokenizing the first line of a symbol definition, and
                         # should remember this as a location where the symbol
