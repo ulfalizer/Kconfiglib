@@ -290,8 +290,7 @@ def test_call_all(conf):
         s.__str__()
 
     for c in conf.get_choices():
-        if c.get_name() is not None:
-            print "LOOOOOOOOL", c.get_name()
+        c.get_name()
         c.get_selection()
         c.get_selection_from_defaults()
         c.get_user_selection()
