@@ -21,6 +21,10 @@ import sys
 # instead.
 os.environ["KERNELVERSION"] = "2"
 
+# Prevent accidental loading of configuration files by removing
+# KCONFIG_ALLCONFIG from the environment
+os.environ.pop("KCONFIG_ALLCONFIG", None)
+
 # Number of arch/defconfig pairs tested so far
 nconfigs = 0
 
@@ -331,10 +335,7 @@ def test_call_all(conf):
 def test_config_absent(conf):
     """Test if kconfiglib generates the same configuration as 'conf' without a .config, for each architecture"""
     conf.write_config("._config")
-
-    # Use an empty .config
-    shell("> .config")
-    shell("make kconfiglibtestconfig")
+    shell("make alldefconfig")
 
 def test_defconfig(conf):
     """Test if kconfiglib generates the same .config as conf for each architecture/defconfig pair (this takes two hours on a Core i7@2.67 GHz system)"""
