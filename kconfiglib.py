@@ -496,8 +496,9 @@ class Config():
         # default .config files
         self.defconfig_sym = None
 
-        # See Symbol.get_arch()
-        self.arch = os.environ.get("ARCH")
+        # See Symbol.get_(src)arch()
+        self.arch    = os.environ.get("ARCH")
+        self.srcarch = os.environ.get("SRCARCH")
 
         # See Config.__init__(). We need this for get_defconfig_filename().
         self.srctree = os.environ.get("srctree")
@@ -701,11 +702,30 @@ class Config():
         return self.filename
 
     def get_arch(self):
-        """Mostly Linux specific. Returns the value the environment variable
-        ARCH had at the time the Config instance was created, or None if ARCH
-        was not defined. This corresponds to the architecture, with values such
-        as "i386" or "mips"."""
+        """Returns the value the environment variable ARCH had at the time the
+        Config instance was created, or None if ARCH was not set. For the
+        kernel, this corresponds to the architecture being built for, with
+        values such as "i386" or "mips"."""
         return self.arch
+
+    def get_srcarch(self):
+        """Returns the value the environment variable SRCARCH had at the time
+        the Config instance was created, or None if SRCARCH was not set. For
+        the kernel, this corresponds to the arch/ subdirectory containing
+        architecture-specific source code."""
+        return self.srcarch
+
+    def get_srctree(self):
+        """Returns the value the environment variable srctree had at the time
+        the Config instance was created, or None if srctree was not defined.
+        This variable points to the source directory and is used when building
+        in a separate directory."""
+        return self.srctree
+
+    def get_config_filename(self):
+        """Returns the name of the most recently loaded configuration file, or
+        None if no configuration has been loaded."""
+        return self.config_filename
 
     def get_mainmenu_text(self):
         """Returns the text of the 'mainmenu' statement (with $-references to
@@ -877,15 +897,17 @@ class Config():
     def __str__(self):
         """Returns a string containing various information about the Config."""
         return _sep_lines("Configuration",
-                          "File                                     : " + self.filename,
-                          "Base directory                           : " + self.base_dir,
-                          "Arch (value of ARCH at time of creation) : " + self.arch,
-                          "Most recently loaded .config             : " +
+                          "File                                   : " + self.filename,
+                          "Base directory                         : " + self.base_dir,
+                          "Value of $ARCH at creation time        : " + self.arch,
+                          "Value of $SRCARCH at creation time     : " + self.srcarch,
+                          "Value of $srctree at creation time     : " + self.srctree,
+                          "Most recently loaded .config           : " +
                             ("(no .config loaded)" if self.config_filename is None else
                              self.config_filename),
-                          "Print warnings                           : " +
+                          "Print warnings                         : " +
                             bool_str[self.print_warnings],
-                          "Print assignments to undefined symbols   : " +
+                          "Print assignments to undefined symbols : " +
                             bool_str[self.print_undef_assign])
 
 

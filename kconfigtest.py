@@ -212,6 +212,9 @@ def test_call_all(conf):
     print "  For {0}...".format(conf.get_arch())
 
     conf.get_arch()
+    conf.get_srcarch()
+    conf.get_srctree()
+    conf.get_config_filename()
     conf.get_defconfig_filename()
     conf.get_top_level_items()
     conf.eval("y && ARCH")
