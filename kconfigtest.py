@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import textwrap
+import time
 
 # Assume that the value of KERNELVERSION does not affect the configuration
 # (true as of Linux 2.6.38-rc3). Here we could fetch the correct version
@@ -57,7 +58,8 @@ def run_tests():
             rm_configs()
 
             # This should be set correctly for any 'make *config' commands the
-            # test might run
+            # test might run. SRCARCH is selected automatically from ARCH, so
+            # we don't need to set that.
             os.environ["ARCH"] = conf.get_arch()
 
             test_fn(conf)
@@ -366,61 +368,74 @@ def test_defconfig(conf):
     each architecture/defconfig pair. This test includes nonsensical groupings
     of arches with defconfigs from other arches (every arch/defconfig
     combination in fact) as this has proven effective in finding obscure bugs.
-    For that reason this test takes many hours to run even on fast systems."""
+    For that reason this test takes many hours to run even on fast systems.
+
+    This test appends any failures to a file test_defconfig_fails in the
+    root."""
     # TODO: Make it possible to run this test only for valid arch/defconfig
     # combinations for a speedier test run?
 
-    # Collect defconfigs. This could be done once instead, but it's a speedy
-    # operation comparatively.
+    # TODO: Make log file generation optional via argument to kconfigtest.py
 
-    global nconfigs
+    with open("test_defconfig_fails", "a") as fail_log:
+        # Collect defconfigs. This could be done once instead, but it's a speedy
+        # operation comparatively.
 
-    defconfigs = []
+        global nconfigs
 
-    for arch in os.listdir("arch"):
-        arch_dir = os.path.join("arch", arch)
-        # Some arches have a "defconfig" in the root of their arch/<arch>/
-        # directory
-        root_defconfig = os.path.join(arch_dir, "defconfig")
-        if os.path.exists(root_defconfig):
-            defconfigs.append(root_defconfig)
-        # Assume all files in the arch/<arch>/configs directory (if it exists)
-        # are configurations
-        defconfigs_dir = os.path.join(arch_dir, "configs")
-        if not os.path.exists(defconfigs_dir):
-            continue
-        if not os.path.isdir(defconfigs_dir):
-            print "Warning: '{0}' is not a directory - skipping"\
-                  .format(defconfigs_dir)
-            continue
-        for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
-            for filename in filenames:
-                defconfigs.append(os.path.join(dirpath, filename))
+        defconfigs = []
 
-    # Test architecture for each defconfig
+        for arch in os.listdir("arch"):
+            arch_dir = os.path.join("arch", arch)
+            # Some arches have a "defconfig" in the root of their arch/<arch>/
+            # directory
+            root_defconfig = os.path.join(arch_dir, "defconfig")
+            if os.path.exists(root_defconfig):
+                defconfigs.append(root_defconfig)
+            # Assume all files in the arch/<arch>/configs directory (if it
+            # exists) are configurations
+            defconfigs_dir = os.path.join(arch_dir, "configs")
+            if not os.path.exists(defconfigs_dir):
+                continue
+            if not os.path.isdir(defconfigs_dir):
+                print "Warning: '{0}' is not a directory - skipping"\
+                      .format(defconfigs_dir)
+                continue
+            for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
+                for filename in filenames:
+                    defconfigs.append(os.path.join(dirpath, filename))
 
-    for defconfig in defconfigs:
-        rm_configs()
+        # Test architecture for each defconfig
 
-        nconfigs += 1
+        for defconfig in defconfigs:
+            rm_configs()
 
-        conf.load_config(defconfig)
-        conf.write_config("._config")
-        shell("cp {0} .config".format(defconfig))
-        # It would be a bit neater if we could use 'make *_defconfig' here (for
-        # example, 'make i386_defconfig' loads arch/x86/configs/i386_defconfig'
-        # if ARCH = x86/i386/x86_64), but that wouldn't let us test nonsensical
-        # combinations of arches and defconfigs, which is a nice way to find
-        # obscure bugs.
-        shell("make kconfiglibtestconfig")
+            nconfigs += 1
 
-        sys.stdout.write("  {0:<14}with {1:<60} ".format(conf.get_arch(), defconfig))
+            conf.load_config(defconfig)
+            conf.write_config("._config")
+            shell("cp {0} .config".format(defconfig))
+            # It would be a bit neater if we could use 'make *_defconfig' here
+            # (for example, 'make i386_defconfig' loads
+            # arch/x86/configs/i386_defconfig' if ARCH = x86/i386/x86_64), but
+            # that wouldn't let us test nonsensical combinations of arches and
+            # defconfigs, which is a nice way to find obscure bugs.
+            shell("make kconfiglibtestconfig")
 
-        if equal_confs():
-            print "OK"
-        else:
-            print "FAIL"
-            fail()
+            sys.stdout.write("  {0:<14}with {1:<60} ".
+                             format(conf.get_arch(), defconfig))
+
+            if equal_confs():
+                print "OK"
+            else:
+                print "FAIL"
+                fail_log.write("{0}  {1} with {2} did not match\n"
+                        .format(time.strftime("%d %b %Y %H:%M:%S",
+                                              time.localtime()),
+                                conf.get_arch(),
+                                defconfig))
+                fail_log.flush()
+                fail()
 
 #
 # Helper functions
