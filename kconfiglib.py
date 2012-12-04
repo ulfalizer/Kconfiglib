@@ -53,7 +53,7 @@ directory.)
 
 To get an interactive Python prompt with Kconfiglib preloaded, use
 
-$ make iscriptconfig ARCH=<architecture>
+$ make iscriptconfig [ARCH=<architecture>]
 
 Kconfiglib requires Python 2. For (i)scriptconfig the command to run the Python
 interpreter can be passed in the environment variable PYTHONCMD (defaults to
@@ -3307,7 +3307,7 @@ class Menu(Item):
 
     def get_visible_if_visibility(self):
         """Returns the visibility the menu gets from its 'visible if'
-        condition. "y" is the menu has no 'visible if' condition."""
+        condition. "y" if the menu has no 'visible if' condition."""
         return self.config._eval_expr(self.visible_if_expr)
 
     def get_items(self, recursive = False):
