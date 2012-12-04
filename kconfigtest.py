@@ -345,7 +345,10 @@ def test_config_absent(conf):
     shell("make alldefconfig")
 
 def test_defconfig(conf):
-    """Test if kconfiglib generates the same .config as conf for each architecture/defconfig pair (this takes two hours on a Core i7@2.67 GHz system)"""
+    """Test if kconfiglib generates the same .config as scripts/kconfig/conf for each architecture/defconfig pair. This test includes nonsensical groupings of arches with defconfigs from other arches (every arch/defconfig combination in fact) as this has proven effective in finding obscure bugs. For that reason this test takes many hours to run even on fast systems."""
+    # TODO: Make it possible to run this test only for valid arch/defconfig
+    # combinations for a speedier test run?
+
     # Collect defconfigs. This could be done once instead, but it's a speedy
     # operation comparatively.
 
@@ -355,19 +358,23 @@ def test_defconfig(conf):
 
     for arch in os.listdir("arch"):
         arch_dir = os.path.join("arch", arch)
-
-        # Some arches have a "defconfig" in their
-        # arch directory.
-        defconfig = os.path.join(arch_dir, "defconfig")
-        if os.path.exists(defconfig):
-            defconfigs.append(defconfig)
-
+        # Some arches have a "defconfig" in the root of their arch/<arch>/
+        # directory
+        root_defconfig = os.path.join(arch_dir, "defconfig")
+        if os.path.exists(root_defconfig):
+            defconfigs.append(root_defconfig)
+        # Assume all files in the arch/<arch>/configs directory (if it exists)
+        # are configurations
         defconfigs_dir = os.path.join(arch_dir, "configs")
-        if os.path.isdir(defconfigs_dir):
-            for c in os.listdir(defconfigs_dir):
-                defconfig = os.path.join(defconfigs_dir, c)
-                if os.path.isfile(defconfig):
-                    defconfigs.append(defconfig)
+        if not os.path.exists(defconfigs_dir):
+            continue
+        if not os.path.isdir(defconfigs_dir):
+            print "Warning: '{0}' is not a directory - skipping"\
+                  .format(defconfigs_dir)
+            continue
+        for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
+            for filename in filenames:
+                defconfigs.append(os.path.join(dirpath, filename))
 
     # Test architecture for each defconfig
 
@@ -379,6 +386,11 @@ def test_defconfig(conf):
         conf.load_config(defconfig)
         conf.write_config("._config")
         shell("cp {0} .config".format(defconfig))
+        # It would be a bit neater if we could use 'make *_defconfig' here (for
+        # example, 'make i386_defconfig' loads arch/x86/configs/i386_defconfig'
+        # if ARCH = x86/i386/x86_64), but that wouldn't let us test nonsensical
+        # combinations of arches and defconfigs, which is a nice way to find
+        # obscure bugs.
         shell("make kconfiglibtestconfig")
 
         sys.stdout.write("  {0:<14}with {1:<60} ".format(conf.get_arch(), defconfig))
