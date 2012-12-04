@@ -82,6 +82,9 @@ def run_tests():
 def get_arch_configs():
     """Returns a list with Config instances corresponding to all arch Kconfigs."""
 
+    # TODO: Could this be made more robust across kernel versions by checking
+    # for the existence of particular arches?
+
     def add_arch(ARCH, res):
         os.environ["SRCARCH"] = archdir
         os.environ["ARCH"] = ARCH
@@ -98,6 +101,10 @@ def get_arch_configs():
             continue
 
         if os.path.exists(os.path.join("arch", archdir, "Kconfig")):
+            add_arch(archdir, res)
+            # Some arches define additional ARCH settings with ARCH != SRCARCH.
+            # (Search for "Additional ARCH settings for" in the Makefile.) We
+            # test those as well.
             if archdir == "x86":
                 add_arch("i386", res)
                 add_arch("x86_64", res)
@@ -106,9 +113,9 @@ def get_arch_configs():
                 add_arch("sparc64", res)
             elif archdir == "sh":
                 add_arch("sh64", res)
-            else:
-                # For most architectures, ARCH = SRCARCH
-                add_arch(archdir, res)
+            elif archdir == "tile":
+                add_arch("tilepro", res)
+                add_arch("tilegx", res)
 
     # Don't want subsequent 'make *config' commands in tests to see this
     del os.environ["ARCH"]
