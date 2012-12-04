@@ -4,9 +4,8 @@
 #
 # $ PYTHONPATH=scripts/kconfig python scripts/kconfig/kconfigtest.py
 #
-# Note that running these could take a long time: running all tests on a Core
-# i7@2.67 GHz takes ~2 hours. The tests have been arranged in order of time
-# needed.
+# Note that running all of these could take a long time (think many hours on
+# fast systems). The tests have been arranged in order of time needed.
 #
 # All tests should pass. Report regressions to kconfiglib@gmail.com
 
@@ -15,6 +14,7 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 
 # Assume that the value of KERNELVERSION does not affect the configuration
 # (true as of Linux 2.6.38-rc3). Here we could fetch the correct version
@@ -51,7 +51,7 @@ def run_tests():
 
         # The test description is taken from the docstring of the corresponding
         # function
-        print test_fn.__doc__
+        print textwrap.dedent(test_fn.__doc__)
 
         for conf in arch_configs:
             rm_configs()
@@ -80,7 +80,8 @@ def run_tests():
         print "Some tests failed"
 
 def get_arch_configs():
-    """Returns a list with Config instances corresponding to all arch Kconfigs."""
+    """Returns a list with Config instances corresponding to all arch
+    Kconfigs."""
 
     # TODO: Could this be made more robust across kernel versions by checking
     # for the existence of particular arches?
@@ -123,8 +124,12 @@ def get_arch_configs():
 
     return res
 
+# The weird docstring formatting is to get the format right when we print the
+# docstring ourselves
 def test_all_no(conf):
-    """Test if our allnoconfig implementation generates the same .config as 'make allnoconfig', for all architectures"""
+    """
+    Test if our allnoconfig implementation generates the same .config as
+    'make allnoconfig', for all architectures"""
 
     while True:
         done = True
@@ -157,7 +162,9 @@ def test_all_no(conf):
     shell("make allnoconfig")
 
 def test_all_yes(conf):
-    """Test if our allyesconfig implementation generates the same .config as 'make allyesconfig', for all architectures"""
+    """
+    Test if our allyesconfig implementation generates the same .config as 'make
+    allyesconfig', for all architectures"""
 
     # Get a list of all symbols that are not choice items
     non_choice_syms = [sym for sym in conf.get_symbols() if
@@ -208,7 +215,11 @@ def test_all_yes(conf):
     shell("make allyesconfig")
 
 def test_call_all(conf):
-    """Call all public methods on all symbols, menus, choices and comments (nearly all public methods: some are hard to test like this, but are exercised by other tests) for all architectures to make sure we never crash or hang. Also do misc. sanity checks."""
+    """
+    Call all public methods on all symbols, menus, choices and comments (nearly
+    all public methods: some are hard to test like this, but are exercised by
+    other tests) for all architectures to make sure we never crash or hang.
+    Also do misc. sanity checks."""
     print "  For {0}...".format(conf.get_arch())
 
     conf.get_arch()
@@ -343,12 +354,19 @@ def test_call_all(conf):
         c.__str__()
 
 def test_config_absent(conf):
-    """Test if kconfiglib generates the same configuration as 'conf' without a .config, for each architecture"""
+    """
+    Test if kconfiglib generates the same configuration as 'conf' without a
+    .config, for each architecture"""
     conf.write_config("._config")
     shell("make alldefconfig")
 
 def test_defconfig(conf):
-    """Test if kconfiglib generates the same .config as scripts/kconfig/conf for each architecture/defconfig pair. This test includes nonsensical groupings of arches with defconfigs from other arches (every arch/defconfig combination in fact) as this has proven effective in finding obscure bugs. For that reason this test takes many hours to run even on fast systems."""
+    """
+    Test if kconfiglib generates the same .config as scripts/kconfig/conf for
+    each architecture/defconfig pair. This test includes nonsensical groupings
+    of arches with defconfigs from other arches (every arch/defconfig
+    combination in fact) as this has proven effective in finding obscure bugs.
+    For that reason this test takes many hours to run even on fast systems."""
     # TODO: Make it possible to run this test only for valid arch/defconfig
     # combinations for a speedier test run?
 
