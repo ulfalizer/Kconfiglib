@@ -4,6 +4,9 @@
 #
 # $ PYTHONPATH=scripts/kconfig python scripts/kconfig/kconfigtest.py
 #
+# (PyPy also works, and runs the defconfig tests roughly 20% faster on my
+# machine. Some of the other tests get an even greater speed-up.)
+#
 # Note that running all of these could take a long time (think many hours on
 # fast systems). The tests have been arranged in order of time needed.
 #
