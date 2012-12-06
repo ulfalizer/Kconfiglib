@@ -3102,13 +3102,21 @@ class Menu(Item):
 class Choice(Item, _HasVisibility):
 
     """Represents a choice statement. A choice can be in one of three modes:
-    "n", "m" and "y". "n" mode is for non-visible choices and optional choices
-    with no symbol selected; "m" means any number of symbols can be set to "m"
-    while the rest will be "n" (only tristate choices can be in this mode); and
-    "y" means one symbol will be "y" while the rest will be "n" (the most
-    common case). The visibility is an upper bound on the mode, and the mode
-    changes automatically as values are assigned to symbols within the
-    choice."""
+
+    "n" - The choice is not visible and no symbols can be selected.
+
+    "m" - Any number of symbols can be set to "m". The rest will be "n". This
+          is safe since potentially conflicting options don't actually get
+          compiled into the kernel simultaneously with "m".
+
+    "y" - One symbol will be "y" while the rest are "n".
+
+    Only tristate choices can be in "m" mode, and the visibility of the choice
+    is an upper bound on the mode, so that e.g. a choice that depends on a
+    symbol with value "m" will be in "m" mode.
+
+    The mode changes automatically when a value is assigned to a symbol within
+    the choice."""
 
     #
     # Public interface
