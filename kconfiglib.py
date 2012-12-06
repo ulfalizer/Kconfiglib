@@ -1854,8 +1854,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         if isinstance(e1, tuple) and e1[0] == OR:
             if isinstance(e2, tuple) and e2[0] == OR:
                 return (OR, e1[1] + e2[1])
-            else:
-                return (OR, e1[1] + [e2])
+            return (OR, e1[1] + [e2])
 
         if isinstance(e2, tuple) and e2[0] == OR:
             return (OR, e2[1] + [e1])
@@ -1880,8 +1879,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         if isinstance(e1, tuple) and e1[0] == AND:
             if isinstance(e2, tuple) and e2[0] == AND:
                 return (AND, e1[1] + e2[1])
-            else:
-                return (AND, e1[1] + [e2])
+            return (AND, e1[1] + [e2])
 
         if isinstance(e2, tuple) and e2[0] == AND:
             return (AND, e2[1] + [e1])
@@ -3415,11 +3413,10 @@ class Menu(Item):
     def _make_conf(self):
         item_conf = self.block._make_conf()
 
-        if self.config._eval_expr(self.dep_expr)     != "n" and \
+        if self.config._eval_expr(self.dep_expr) != "n" and \
            self.config._eval_expr(self.visible_if_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.title)] + item_conf
-        else:
-            return item_conf
+        return item_conf
 
 class Choice(Item, _HasVisibility):
 
@@ -3475,12 +3472,10 @@ class Choice(Item, _HasVisibility):
         # Is the chosen symbol visible?
         if chosen_symbol._calc_visibility() != "n":
             return chosen_symbol
-        else:
-            # Otherwise, pick the first visible symbol
-            for sym in self.actual_items:
-                if sym._calc_visibility() != "n":
-                    return sym
-
+        # Otherwise, pick the first visible symbol
+        for sym in self.actual_items:
+            if sym._calc_visibility() != "n":
+                return sym
         return None
 
     def get_user_selection(self):
@@ -3761,8 +3756,7 @@ class Comment(Item):
     def _make_conf(self):
         if self.config._eval_expr(self.dep_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.text)]
-        else:
-            return []
+        return []
 
 class _Feed:
 
@@ -3878,8 +3872,7 @@ def _strip_quotes(s, line, filename, linenr):
                          filename,
                          linenr)
         return s[1:-1]
-    else:
-        return s
+    return s
 
 def _indentation(line):
     """Returns the indentation of the line, treating tab stops as being spaced
