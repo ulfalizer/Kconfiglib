@@ -2650,16 +2650,24 @@ class Symbol(Item, _HasVisibility):
         return self.ref_locations
 
     def is_modifiable(self):
-        """Returns True or False depending on if the value of symbol could be
-        modified by setting a user value with Symbol.set_value(). This
-        corresponds to symbols that would appear in the 'make menuconfig'
-        interface and not already be pinned to a specific value by being
-        selected. Returns False for special symbols (e.g. n, m and y)."""
+        """Returns True if the value of the symbol could be modified by calling
+        Symbol.set_value() and False otherwise.
+
+        For bools and tristates, this corresponds to the symbol being visible
+        in the 'make menuconfig' interface and not already being pinned to a
+        specific value (e.g. because it is selected by another symbol).
+
+        For strings and numbers, this corresponds to just being visible."""
         if self.is_special_:
             return False
-
-        return (self.config._eval_to_int(self._calc_visibility()) -
-                self.config._eval_to_int(self.config._eval_expr(self.rev_dep))) > 0
+        if self.type in (BOOL, TRISTATE):
+            rev_dep = self.config._eval_expr(self.rev_dep)
+            # A bool selected to "m" gets promoted to "y"
+            if self.type == BOOL and rev_dep == "m":
+                rev_dep = "y"
+            return (self.config._eval_to_int(self._calc_visibility()) -
+                    self.config._eval_to_int(rev_dep)) > 0
+        return self._calc_visibility() != "n"
 
     def is_defined(self):
         """Returns False if the symbol is referred to in the Kconfig but never
