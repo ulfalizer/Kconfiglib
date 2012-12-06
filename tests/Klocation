@@ -1,0 +1,20 @@
+# Defined and referenced in multiple locations
+config A
+    bool
+menu "foo"
+    depends on A
+    visible if A && NOT_DEFINED
+choice B
+    bool "b"
+config C
+    bool "c"
+config D
+    bool "d"
+endchoice
+config A
+    def_bool NOT_DEFINED
+comment "foo"
+config E
+    bool "E" if A
+    depends on A
+endmenu
