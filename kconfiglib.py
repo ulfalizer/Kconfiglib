@@ -1,4 +1,4 @@
-# This is Kconfiglib, a Python library for scripting, debugging, and extracing
+# This is Kconfiglib, a Python library for scripting, debugging, and extracting
 # information from Kconfig-based configuration systems. To view the
 # documentation, run
 #
