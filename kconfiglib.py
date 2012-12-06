@@ -486,28 +486,25 @@ class Config():
         order they appear in the Kconfig files."""
         return self.comments
 
-    def eval(self, s, transform_m = False):
+    def eval(self, s):
         """Returns the value of the expression 's' -- where 's' is represented
         as a string -- in the context of the configuration. Raises
         Kconfig_Syntax_Error if syntax errors are detected in 's'.
 
-        For example, if FOO and BAR are tristate symbols at least
-        one of which has the value "y", then
-        config.eval("y && (FOO || BAR)") => "y"
+        For example, if FOO and BAR are tristate symbols at least one of which
+        has the value "y", then config.eval("y && (FOO || BAR)") => "y"
 
-        Note that this functions always yields a tristate value. To get the
-        value of non-bool, non-tristate symbols, use calc_value().
+        This functions always yields a tristate value. To get the value of
+        non-bool, non-tristate symbols, use calc_value().
 
-        transform_m (default: False) --
-          Within conditional expressions (those following e.g. 'if' and
-          'depends on') "m" is rewritten as "m" && MODULES internally by the C
-          implementation and by kconfiglib, so that MODULES needs to be enabled
-          for the expression to be true. Pass True here if you want that to
-          happen; otherwise, pass False."""
-        return self._eval_expr(self._parse_expr(self._tokenize(s, True),
-                                                None,
-                                                s,
-                                                transform_m = transform_m))
+        The result of this function is consistent with how evaluation works for
+        conditional expressions in the configuration as well as in the C
+        implementation. "m" and m are rewritten as '"m" && MODULES' and 'm &&
+        MODULES', respectively, and a result of "m" will get promoted to "y" if
+        we're running without modules."""
+        return self._eval_expr(self._parse_expr(self._tokenize(s, True), # Feed
+                                                None, # Current symbol or choice
+                                                s))   # line
 
     def get_config_header(self):
         """Returns the (uncommented) textual header of the .config file most
