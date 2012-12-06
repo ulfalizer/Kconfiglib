@@ -140,13 +140,32 @@ def run_selftests():
 
     # TODO: Get rid of extra \n's at end of texts?
 
-    print "Testing various text queries..."
+    print "Testing text queries..."
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
     assert_equals(c["NO_HELP"].get_help(), None)
     assert_equals(c["S"].get_help(), "help for\nS\n")
     assert_equals(c.get_choices()[0].get_help(), "help for\nC\n")
     assert_equals(c.get_comments()[0].get_text(), "a comment")
     assert_equals(c.get_menus()[0].get_title(), "a menu")
+
+    #
+    # Location queries
+    #
+
+    print "Testing location queries..."
+    kl = "Kconfiglib/tests/Klocation"
+    c = kconfiglib.Config(kl)
+    def assert_file_and_locations(filename, linenrs, tuples):
+        for f, l in tuples:
+            assert_true(f == filename, f)
+            assert_true(l == linenrs.pop(0), "!!!")
+    assert_file_and_locations(kl, [2, 14], c["A"].get_def_locations())
+    assert_file_and_locations(kl, [5, 6, 18, 19], c["A"].get_ref_locations())
+    assert_file_and_locations(kl, [7], c.get_choices()[0].get_def_locations())
+    assert_file_and_locations(kl, [4], [c.get_menus()[0].get_location()])
+    assert_file_and_locations(kl, [16], [c.get_comments()[0].get_location()])
+    assert_equals(c["NOT_DEFINED"].get_def_locations(), [])
+    assert_file_and_locations(kl, [6, 15], c["NOT_DEFINED"].get_ref_locations())
 
     print
 
