@@ -2658,10 +2658,8 @@ class Symbol(Item, _HasVisibility):
         if self.is_special_:
             return False
 
-        allowed = range(self.config._eval_to_int(self.config._eval_expr(self.rev_dep)),
-                        self.config._eval_to_int(self._calc_visibility()) + 1)
-
-        return len(allowed) > 1
+        return (self.config._eval_to_int(self._calc_visibility()) -
+                self.config._eval_to_int(self.config._eval_expr(self.rev_dep))) > 0
 
     def is_defined(self):
         """Returns False if the symbol is referred to in the Kconfig but never
