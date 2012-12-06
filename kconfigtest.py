@@ -134,6 +134,20 @@ def run_selftests():
     assert_val("M", "m")
     assert_val("(Y || N) && (m && y)", "m")
 
+    #
+    # Text queries
+    #
+
+    # TODO: Get rid of extra \n's at end of texts?
+
+    print "Testing various text queries..."
+    c = kconfiglib.Config("Kconfiglib/tests/Ktext")
+    assert_equals(c["NO_HELP"].get_help(), None)
+    assert_equals(c["S"].get_help(), "help for\nS\n")
+    assert_equals(c.get_choices()[0].get_help(), "help for\nC\n")
+    assert_equals(c.get_comments()[0].get_text(), "a comment")
+    assert_equals(c.get_menus()[0].get_title(), "a menu")
+
     print
 
 def run_compatibility_tests():
@@ -589,6 +603,11 @@ def assert_false(cond, msg):
     """Fails and prints 'msg' if 'conf' is True."""
     if cond:
         fail(msg)
+
+def assert_equals(x, y):
+    """Fails if 'x' does not equal 'y'."""
+    if x != y:
+        fail("'{0}' does not equal '{1}'".format(x, y))
 
 def fail(msg = None):
     global _all_ok
