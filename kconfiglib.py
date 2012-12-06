@@ -1478,9 +1478,6 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         _internal_error("Internal error while evaluating expression: "
                         "unknown operation {0}.".format(first_expr))
 
-    def _eval_to_int(self, expr):
-        return values[self._eval_expr(expr)]
-
     def _get_str_value(self, obj):
         if isinstance(obj, str):
             return obj
@@ -2063,7 +2060,7 @@ NO_SELECTION = 0
 OR, AND, NOT, EQUAL, UNEQUAL = range(0, 5)
 
 # Map from tristate values to integers
-values = { "n" : 0, "m" : 1, "y" : 2 }
+tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
 
 # Printing-related stuff
 
@@ -2483,8 +2480,7 @@ class Symbol(Item, _HasVisibility):
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
         vis = self._calc_visibility()
-        if (self.config._eval_to_int(vis) -
-            self.config._eval_to_int(rev_dep)) > 0:
+        if (tri_to_int[vis] - tri_to_int[rev_dep]) > 0:
             return vis
         return None
 
@@ -2505,8 +2501,7 @@ class Symbol(Item, _HasVisibility):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        if (self.config._eval_to_int(self._calc_visibility()) -
-            self.config._eval_to_int(rev_dep)) > 0:
+        if (tri_to_int[self._calc_visibility()] - tri_to_int[rev_dep]) > 0:
             return rev_dep
         return None
 
@@ -2529,8 +2524,8 @@ class Symbol(Item, _HasVisibility):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        res = ["n", "m", "y"][self.config._eval_to_int(rev_dep) :
-                              self.config._eval_to_int(self._calc_visibility()) + 1]
+        res = ["n", "m", "y"][tri_to_int[rev_dep] :
+                              tri_to_int[self._calc_visibility()] + 1]
         return res if len(res) > 1 else []
 
     def get_type(self):
@@ -2681,8 +2676,8 @@ class Symbol(Item, _HasVisibility):
             # A bool selected to "m" gets promoted to "y"
             if self.type == BOOL and rev_dep == "m":
                 rev_dep = "y"
-            return (self.config._eval_to_int(self._calc_visibility()) -
-                    self.config._eval_to_int(rev_dep)) > 0
+            return (tri_to_int[self._calc_visibility()] -
+                    tri_to_int[rev_dep]) > 0
         return self._calc_visibility() != "n"
 
     def is_defined(self):
@@ -3523,25 +3518,25 @@ def tri_less(v1, v2):
     """Returns True if the tristate v1 is less than the tristate v2, where "n",
     "m" and "y" are ordered from lowest to highest. Otherwise, returns
     False."""
-    return values[v1] < values[v2]
+    return tri_to_int[v1] < tri_to_int[v2]
 
 def tri_less_eq(v1, v2):
     """Returns True if the tristate v1 is less than or equal to the tristate
     v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
     returns False."""
-    return values[v1] <= values[v2]
+    return tri_to_int[v1] <= tri_to_int[v2]
 
 def tri_greater(v1, v2):
     """Returns True if the tristate v1 is greater than the tristate v2, where
     "n", "m" and "y" are ordered from lowest to highest. Otherwise, returns
     False."""
-    return values[v1] > values[v2]
+    return tri_to_int[v1] > tri_to_int[v2]
 
 def tri_greater_eq(v1, v2):
     """Returns True if the tristate v1 is greater than or equal to the tristate
     v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
     returns False."""
-    return values[v1] >= values[v2]
+    return tri_to_int[v1] >= tri_to_int[v2]
 
 #
 # Helper functions, mostly related to text processing
