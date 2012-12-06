@@ -1,0 +1,25 @@
+config NO_HELP
+    bool
+
+config S
+    bool
+    help
+      help for
+      S
+choice C
+    bool
+    help
+  help for
+  C
+config A
+    bool "A"
+
+config B
+    bool "B"
+
+endchoice
+
+comment "a comment"
+
+menu "a menu"
+endmenu
