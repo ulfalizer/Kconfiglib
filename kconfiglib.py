@@ -1804,9 +1804,8 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
             return "y" if (self._get_str_value(expr[1]) !=
                            self._get_str_value(expr[2])) else "n"
 
-        _internal_error("Internal error while evaluating expression with token stream {0}: "
-                        "unknown type {0}."
-                        .format(expr))
+        _internal_error("Internal error while evaluating expression: "
+                        "unknown operation {0}.".format(first_expr))
 
     def _eval_to_int(self, expr):
         return values[self._eval_expr(expr)]
