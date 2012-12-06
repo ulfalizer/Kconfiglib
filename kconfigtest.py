@@ -59,6 +59,29 @@ def run_selftests():
         assert_false(s.is_modifiable(),
                      "{0} should not be modifiable".format(s.get_name()))
 
+    print "Testing get_lower/upper_bound()..."
+    c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
+    def assert_bounds(sym, lower, upper):
+        sym = c[sym]
+        low = sym.get_lower_bound()
+        high = sym.get_upper_bound()
+        assert_true(low == lower and high == upper,
+                    "Incorrectly calculated bounds for {0}: {1}-{2}. "
+                    "Expected {3}-{4}.".format(sym.get_name(),
+                                              low, high, lower, upper))
+    assert_bounds("Y_VISIBLE_BOOL", "n", "y")
+    assert_bounds("Y_VISIBLE_TRISTATE", "n", "y")
+    assert_bounds("M_VISIBLE_BOOL", "n", "y")
+    assert_bounds("M_VISIBLE_TRISTATE", "n", "m")
+    assert_bounds("Y_SELECTED_BOOL", None, None)
+    assert_bounds("M_SELECTED_BOOL", None, None)
+    assert_bounds("Y_SELECTED_TRISTATE", None, None)
+    assert_bounds("M_SELECTED_TRISTATE", "m", "y")
+    assert_bounds("M_SELECTED_M_VISIBLE_TRISTATE", None, None)
+    assert_bounds("STRING", None, None)
+    assert_bounds("INT", None, None)
+    assert_bounds("HEX", None, None)
+
     print
 
 def run_compatibility_tests():
