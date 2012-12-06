@@ -2393,7 +2393,7 @@ NO_SELECTION = 0
 OR, AND, NOT, EQUAL, UNEQUAL = range(0, 5)
 
 # Map from tristate values to integers
-values = {"n" : 0, "m" : 1, "y" : 2}
+values = { "n" : 0, "m" : 1, "y" : 2 }
 
 # Printing-related stuff
 
@@ -2402,7 +2402,7 @@ op_to_str = { AND     : " && ",
               EQUAL   : " = ",
               UNEQUAL : " != " }
 
-precedence = {OR : 0, AND : 1, NOT : 2}
+precedence = { OR : 0, AND : 1, NOT : 2 }
 
 # Types of informational messages
 WARNING = 0
