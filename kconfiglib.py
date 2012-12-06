@@ -2511,20 +2511,27 @@ class Symbol(Item, _HasVisibility):
         return None
 
     def get_assignable_values(self):
-        """For bool and tristate symbols, returns a list containing the values
-        the symbol can be given via Symbol.set_value() (see get_lower_bound()/
-        get_upper_bound()). Returns the empty list for symbol that cannot be
-        given a new value (that cannot be assigned a value that won't be
-        truncated/ignored that is), as well as for non-bool, non-tristate and
-        special symbols. Usage example:
+        """For string/hex/int symbols and for bool and tristate symbols that
+        cannot be modified (see is_modifiable()), returns the empty list.
+
+        Otherwise, returns a list containing the tristate values that can be
+        assigned to the symbol (that won't be truncated). Usage example:
 
         if "m" in sym.get_assignable_values():
-            sym.set_value("m")"""
-        if not self._is_assignable_bool_or_tristate():
-            return []
+            sym.set_value("m")
 
-        return ["n", "m", "y"][values[self.config._eval_expr(self.rev_dep)] :
-                               values[self._calc_visibility()] + 1]
+        This is basically a more convenient interface to
+        get_lower/upper_bound() when wanting to test if a particular tristate
+        value can be assigned."""
+        if self.type not in (BOOL, TRISTATE):
+            return []
+        rev_dep = self.config._eval_expr(self.rev_dep)
+        # A bool selected to "m" gets promoted to "y"
+        if self.type == BOOL and rev_dep == "m":
+            rev_dep = "y"
+        res = ["n", "m", "y"][self.config._eval_to_int(rev_dep) :
+                              self.config._eval_to_int(self._calc_visibility()) + 1]
+        return res if len(res) > 1 else []
 
     def get_type(self):
         """Returns the type of the symbol: one of UNKNOWN, BOOL, TRISTATE,
@@ -2965,14 +2972,6 @@ class Symbol(Item, _HasVisibility):
                 return True
 
         return False
-
-    def _is_assignable_bool_or_tristate(self):
-        """Returns True if the symbol is a bool or tristate whose value can be
-        changed by the user."""
-        return self.type in (BOOL, TRISTATE) and \
-               not self.is_special_          and \
-               (self.config._eval_to_int(self._calc_visibility()) -
-                self.config._eval_to_int(self.config._eval_expr(self.rev_dep))) >= 1
 
 class Menu(Item):
 
