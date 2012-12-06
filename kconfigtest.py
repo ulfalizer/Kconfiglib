@@ -98,9 +98,6 @@ def get_arch_configs():
 
     res = []
 
-    # Nothing looks at this as of Linux 2.6.38-rc3
-    os.environ["KERNELVERSION"] = "2"
-
     for archdir in os.listdir("arch"):
         if archdir == "h8300":
             # Broken Kconfig as of Linux 2.6.38-rc3
