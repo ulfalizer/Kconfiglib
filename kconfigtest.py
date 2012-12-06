@@ -240,8 +240,7 @@ def test_call_all(conf):
         caught_exception = True
 
     if not caught_exception:
-        print "Fail: no exception generated for expression with syntax error"
-        fail()
+        fail("No exception generated for expression with syntax error")
 
     conf.get_config_header()
     conf.get_base_dir()
@@ -276,36 +275,31 @@ def test_call_all(conf):
                 # Special symbols from the environment should have define
                 # locations
                 if s.get_def_locations() == []:
-                    print "Fail: the symbol '{0}' is from the environment "\
-                          "but lacks define locations".format(s.get_name())
-                    fail()
+                    fail("The symbol '{0}' is from the environment but "
+                         "lacks define locations".format(s.get_name()))
             else:
                 # Special symbols that are not from the environment should be
                 # defined and have no define locations
                 if not s.is_defined():
-                    print "Fail: the special symbol '{0}' is not defined".\
-                          format(s.get_name())
-                    fail()
+                    fail("The special symbol '{0}' is not defined".
+                         format(s.get_name()))
                 if not s.get_def_locations() == []:
-                    print "Fail: the special symbol '{0}' has recorded def. "\
-                          "locations".format(s.get_name())
-                    fail()
+                    fail("The special symbol '{0}' has recorded def. "\
+                         "locations".format(s.get_name()))
         else:
             # Non-special symbols should have define locations iff they are
             # defined
             if s.is_defined():
                 if s.get_def_locations() == []:
-                    print "Fail: '{0}' defined but lacks recorded locations".\
-                          format(s.get_name())
-                    fail()
+                    fail("'{0}' defined but lacks recorded locations".\
+                         format(s.get_name()))
             else:
                 if s.get_def_locations() != []:
-                    print "Fail: '{0}' undefined but has recorded locations".\
-                          format(s.get_name())
-                    fail()
+                    fail("'{0}' undefined but has recorded locations".\
+                         format(s.get_name()))
                 if s.get_ref_locations() == []:
-                    print "Fail: '{0}' both undefined and unreferenced".\
-                          format(s.get_name())
+                    fail("'{0}' both undefined and unreferenced".\
+                          format(s.get_name()))
 
         s.get_ref_locations()
         s.is_modifiable()
@@ -429,13 +423,13 @@ def test_defconfig(conf):
                 print "OK"
             else:
                 print "FAIL"
+                fail()
                 fail_log.write("{0}  {1} with {2} did not match\n"
                         .format(time.strftime("%d %b %Y %H:%M:%S",
                                               time.localtime()),
                                 conf.get_arch(),
                                 defconfig))
                 fail_log.flush()
-                fail()
 
 #
 # Helper functions
@@ -477,8 +471,10 @@ def equal_confs():
 
 _all_ok = True
 
-def fail():
+def fail(msg = None):
     global _all_ok
+    if msg is not None:
+        print "Fail: " + msg
     _all_ok = False
 
 def all_ok():
