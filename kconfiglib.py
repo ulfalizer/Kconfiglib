@@ -1796,18 +1796,13 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
 
             return "y" if (ev == "n") else "m"
 
-        if first_expr in (EQUAL, UNEQUAL):
-            _, sym_or_str_1, sym_or_str_2 = expr
+        if first_expr == EQUAL:
+            return "y" if (self._get_str_value(expr[1]) ==
+                           self._get_str_value(expr[2])) else "n"
 
-            val_1 = self._get_str_value(sym_or_str_1)
-            val_2 = self._get_str_value(sym_or_str_2)
-
-            if (first_expr == EQUAL   and val_1 == val_2) or \
-               (first_expr == UNEQUAL and val_1 != val_2):
-
-               return "y"
-
-            return "n"
+        if first_expr == UNEQUAL:
+            return "y" if (self._get_str_value(expr[1]) !=
+                           self._get_str_value(expr[2])) else "n"
 
         _internal_error("Internal error while evaluating expression with token stream {0}: "
                         "unknown type {0}."
