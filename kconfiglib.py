@@ -731,7 +731,8 @@ class Config():
         """Returns the text of the 'mainmenu' statement (with $-references to
         symbols replaced by symbol values), or None if the configuration has no
         'mainmenu' statement."""
-        return self._expand_sym_refs(self.mainmenu_text)
+        return None if self.mainmenu_text is None else \
+          self._expand_sym_refs(self.mainmenu_text)
 
     def get_defconfig_filename(self):
         """Returns the name of the defconfig file, which is the first existing
