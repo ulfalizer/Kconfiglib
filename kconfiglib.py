@@ -899,9 +899,12 @@ class Config():
         return _sep_lines("Configuration",
                           "File                                   : " + self.filename,
                           "Base directory                         : " + self.base_dir,
-                          "Value of $ARCH at creation time        : " + self.arch,
-                          "Value of $SRCARCH at creation time     : " + self.srcarch,
-                          "Value of $srctree at creation time     : " + self.srctree,
+                          "Value of $ARCH at creation time        : " +
+                            ("(not set)" if self.arch is None else self.arch),
+                          "Value of $SRCARCH at creation time     : " +
+                            ("(not set)" if self.srcarch is None else self.srcarch),
+                          "Source tree (derived from $srctree;",
+                          "defaults to '.' if $srctree isn't set) : " + self.srctree,
                           "Most recently loaded .config           : " +
                             ("(no .config loaded)" if self.config_filename is None else
                              self.config_filename),
