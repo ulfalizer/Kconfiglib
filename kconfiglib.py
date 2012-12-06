@@ -3175,6 +3175,11 @@ class Choice(Item, _HasVisibility):
         files as of Linux 2.6.38-rc3."""
         return self.name
 
+    def get_help(self):
+        """Returns the help text of the choice, or None if the choice has no
+        help text."""
+        return self.help
+
     def get_type(self):
         """Returns the type of the choice. See Symbol.get_type()."""
         return self.type
