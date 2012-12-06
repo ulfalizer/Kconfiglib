@@ -2466,40 +2466,49 @@ class Symbol(Item, _HasVisibility):
         return self.name
 
     def get_upper_bound(self):
-        """Returns the highest value the symbol can be given via
+        """For string/hex/int symbols and for bool and tristate symbols that
+        cannot be modified (see is_modifiable()), returns None.
+
+        Otherwise, returns the highest value the symbol can be set to with
         Symbol.set_value() (that will not be truncated): one of "m" or "y",
         arranged from lowest to highest. This corresponds to the highest value
-        the symbol could be given in the 'make menuconfig' interface. Returns
-        None if the symbol is not visible (would not appear in the 'make
-        menuconfig' interface), or if the symbol's value cannot be changed (if
-        it is selected to "y", or to "m" if its visibility also happens to be
-        "m"). Also returns None for non-bool, non-tristate symbols and special
-        symbols.
+        the symbol could be given in e.g. the 'make menuconfig' interface.
 
-        See also the tri_less*() and tri_greater*() functions, which could
-        come in handy here."""
-        if not self._is_assignable_bool_or_tristate():
+        See also the tri_less*() and tri_greater*() functions, which could come
+        in handy."""
+        if self.type not in (BOOL, TRISTATE):
             return None
-
-        return self._calc_visibility()
+        rev_dep = self.config._eval_expr(self.rev_dep)
+        # A bool selected to "m" gets promoted to "y"
+        if self.type == BOOL and rev_dep == "m":
+            rev_dep = "y"
+        vis = self._calc_visibility()
+        if (self.config._eval_to_int(vis) -
+            self.config._eval_to_int(rev_dep)) > 0:
+            return vis
+        return None
 
     def get_lower_bound(self):
-        """Returns the lowest value the symbol can be given via
+        """For string/hex/int symbols and for bool and tristate symbols that
+        cannot be modified (see is_modifiable()), returns None.
+
+        Otherwise, returns the lowest value the symbol can be set to with
         Symbol.set_value() (that will not be truncated): one of "n" or "m",
         arranged from lowest to highest. This corresponds to the lowest value
-        the symbol could be given in the 'make menuconfig' interface. Returns
-        None if the symbol is not visible (would not appear in the 'make
-        menuconfig' interface), or if the symbol's value cannot be changed (if
-        it is selected to "y", or to "m" if its visibility also happens to be
-        "m"). Also returns None for non-bool, non-tristate symbols and special
-        symbols.
+        the symbol could be given in e.g. the 'make menuconfig' interface.
 
-        See also the tri_less*() and tri_greater*() functions, which could
-        come in handy here."""
-        if not self._is_assignable_bool_or_tristate():
+        See also the tri_less*() and tri_greater*() functions, which could come
+        in handy."""
+        if self.type not in (BOOL, TRISTATE):
             return None
-
-        return self.config._eval_expr(self.rev_dep)
+        rev_dep = self.config._eval_expr(self.rev_dep)
+        # A bool selected to "m" gets promoted to "y"
+        if self.type == BOOL and rev_dep == "m":
+            rev_dep = "y"
+        if (self.config._eval_to_int(self._calc_visibility()) -
+            self.config._eval_to_int(rev_dep)) > 0:
+            return rev_dep
+        return None
 
     def get_assignable_values(self):
         """For bool and tristate symbols, returns a list containing the values
