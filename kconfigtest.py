@@ -48,16 +48,16 @@ def run_selftests():
               c["VISIBLE_STRING"],
               c["VISIBLE_INT"],
               c["VISIBLE_HEX"]):
-        if not s.is_modifiable():
-            fail("{0} should be modifiable".format(s.get_name()))
+        assert_true(s.is_modifiable(),
+                    "{0} should be modifiable".format(s.get_name()))
     for s in (c["NOT_VISIBLE"],
               c["SELECTED_TO_Y"],
               c["BOOL_SELECTED_TO_M"],
               c["NOT_VISIBLE_STRING"],
               c["NOT_VISIBLE_INT"],
               c["NOT_VISIBLE_HEX"]):
-        if s.is_modifiable():
-            fail("{0} should not be modifiable".format(s.get_name()))
+        assert_false(s.is_modifiable(),
+                     "{0} should not be modifiable".format(s.get_name()))
 
     print
 
@@ -504,6 +504,16 @@ def equal_confs():
     return (l1[i:] == l2)
 
 _all_ok = True
+
+def assert_true(cond, msg):
+    """Fails and prints 'msg' if 'conf' is False."""
+    if not cond:
+        fail(msg)
+
+def assert_false(cond, msg):
+    """Fails and prints 'msg' if 'conf' is True."""
+    if cond:
+        fail(msg)
 
 def fail(msg = None):
     global _all_ok
