@@ -41,6 +41,10 @@ def run_selftests():
 
     print "Running selftests...\n"
 
+    #
+    # is_modifiable()
+    #
+
     print "Testing is_modifiable()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
     for s in (c["VISIBLE"],
@@ -58,6 +62,10 @@ def run_selftests():
               c["NOT_VISIBLE_HEX"]):
         assert_false(s.is_modifiable(),
                      "{0} should not be modifiable".format(s.get_name()))
+
+    #
+    # get_lower/upper_bound() and get_assignable_values()
+    #
 
     print "Testing get_lower/upper_bound() and get_assignable_values()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
@@ -99,6 +107,32 @@ def run_selftests():
     assert_bounds("STRING", None, None)
     assert_bounds("INT", None, None)
     assert_bounds("HEX", None, None)
+
+    #
+    # eval() (Already well exercised. Just test some basics.)
+    #
+
+    # TODO: Stricter syntax checking?
+
+    print "Testing eval()..."
+    c = kconfiglib.Config("Kconfiglib/tests/Keval")
+    def assert_val(expr, val):
+        res = c.eval(expr)
+        assert_true(res == val,
+                    "'{0}' evaluated to {1}, expected {2}".\
+                    format(expr, res, val))
+    # No modules
+    assert_val("n", "n")
+    assert_val("m", "n")
+    assert_val("y", "y")
+    assert_val("M", "y")
+    # Modules
+    c["MODULES"].set_value("y")
+    assert_val("n", "n")
+    assert_val("m", "m")
+    assert_val("y", "y")
+    assert_val("M", "m")
+    assert_val("(Y || N) && (m && y)", "m")
 
     print
 
