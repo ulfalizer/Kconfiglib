@@ -750,8 +750,7 @@ class Config():
             return None
 
         for (filename, cond_expr) in self.defconfig_sym.def_exprs:
-            cond_val = self._eval_expr(cond_expr)
-            if cond_val == "y":
+            if self._eval_expr(cond_expr) == "y":
                 filename = self._expand_sym_refs(filename)
 
                 # We first look in $srctree. os.path.join() won't work here as
