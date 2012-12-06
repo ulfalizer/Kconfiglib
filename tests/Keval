@@ -1,0 +1,12 @@
+# Enabled/disabled in the test
+config MODULES
+    bool "modules"
+
+config N
+    def_tristate n
+
+config M
+    def_tristate m
+
+config Y
+    def_tristate y
