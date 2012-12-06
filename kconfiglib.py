@@ -475,17 +475,16 @@ class Config():
             sym.type = type
             sym.cached_value = value
             self.syms[name] = sym
+            return sym
 
         # The special symbols n, m and y, used as shorthand for "n", "m" and
         # "y"
-        register_special_symbol(TRISTATE, "n", "n")
-        register_special_symbol(TRISTATE, "m", "m")
-        register_special_symbol(TRISTATE, "y", "y")
+        self.n = register_special_symbol(TRISTATE, "n", "n")
+        self.m = register_special_symbol(TRISTATE, "m", "m")
+        self.y = register_special_symbol(TRISTATE, "y", "y")
 
         # DEFCONFIG_LIST uses this
         register_special_symbol(STRING, "UNAME_RELEASE", os.uname()[2])
-
-        self.m = self.syms["m"]
 
         # Maps a symbol to its directly dependent symbols (any symbol whose
         # prompt, default value or reverse dependency expressions directly
@@ -2244,11 +2243,11 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
     def _transform_n_m_y(self, item):
         """_eq_to_sym() helper. Translates the symbols n, m, and y to their
         string equivalents."""
-        if item is self.syms["n"]:
+        if item is self.n:
             return "n"
-        if item is self.syms["m"]:
+        if item is self.m:
             return "m"
-        if item is self.syms["y"]:
+        if item is self.y:
             return "y"
         return item
 
