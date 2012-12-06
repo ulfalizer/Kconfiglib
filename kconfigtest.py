@@ -59,7 +59,7 @@ def run_selftests():
         assert_false(s.is_modifiable(),
                      "{0} should not be modifiable".format(s.get_name()))
 
-    print "Testing get_lower/upper_bound()..."
+    print "Testing get_lower/upper_bound() and get_assignable_values()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
     def assert_bounds(sym, lower, upper):
         sym = c[sym]
@@ -69,6 +69,24 @@ def run_selftests():
                     "Incorrectly calculated bounds for {0}: {1}-{2}. "
                     "Expected {3}-{4}.".format(sym.get_name(),
                                               low, high, lower, upper))
+        # See that we get back the corresponding range from
+        # get_assignable_values()
+        if low is None:
+            vals = sym.get_assignable_values()
+            assert_true(vals == [],
+                        "get_assignable_values() thinks there should be "
+                        "assignable values for {0} ({1}) but not "
+                        "get_lower/upper_bound()".format(sym.get_name(), vals))
+        else:
+            tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
+            bound_range = ["n", "m", "y"][tri_to_int[low] :
+                                          tri_to_int[high] + 1]
+            assignable_range = sym.get_assignable_values()
+            assert_true(bound_range == assignable_range,
+                        "get_lower/upper_bound() thinks the range for {0} "
+                        "should be {1} while get_assignable_values() thinks "
+                        "it should be {2}".format(sym.get_name(), bound_range,
+                                                  assignable_range))
     assert_bounds("Y_VISIBLE_BOOL", "n", "y")
     assert_bounds("Y_VISIBLE_TRISTATE", "n", "y")
     assert_bounds("M_VISIBLE_BOOL", "n", "y")
