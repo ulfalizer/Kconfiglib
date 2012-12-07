@@ -3232,13 +3232,12 @@ class Choice(Item, _HasVisibility):
         """Returns the mode of the choice. See the class documentation for
         an explanation of modes."""
         minimum_mode = "n" if self.optional else "m"
-
         mode = self.user_mode if self.user_mode is not None else minimum_mode
         mode = self.config._eval_min(mode, self._calc_visibility())
 
         # Promote "m" to "y" for boolean choices
         if mode == "m" and self.type == BOOL:
-            mode = "y"
+            return "y"
 
         return mode
 
