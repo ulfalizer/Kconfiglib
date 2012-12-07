@@ -306,9 +306,10 @@ def get_arch_configs():
     res = []
 
     for archdir in os.listdir("arch"):
-        if archdir == "h8300":
+        # No longer broken as of 3.7.0-rc8
+        #if archdir == "h8300":
             # Broken Kconfig as of Linux 2.6.38-rc3
-            continue
+            #continue
 
         if os.path.exists(os.path.join("arch", archdir, "Kconfig")):
             add_arch(archdir, res)
