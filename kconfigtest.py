@@ -2,7 +2,7 @@
 # C kconfig implementation by comparing outputs. It should be run from the
 # top-level kernel directory with
 #
-# $ PYTHONPATH=scripts/kconfig python scripts/kconfig/kconfigtest.py
+# $ python Kconfiglib/kconfigtest.py
 #
 # (PyPy also works, and runs the defconfig tests roughly 20% faster on my
 # machine. Some of the other tests get an even greater speed-up.)
