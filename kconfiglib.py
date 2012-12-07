@@ -2001,13 +2001,8 @@ bool_str = { False : "false", True : "true" }
 
 # Tokens after which identifier-like lexemes are treated as strings. T_CHOICE
 # is included to avoid symbols being registered for named choices.
-string_lex = (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING,
-              T_CHOICE,
-              T_PROMPT,
-              T_MENU,
-              T_COMMENT,
-              T_SOURCE,
-              T_MAINMENU)
+string_lex = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
+                        T_PROMPT, T_MENU, T_COMMENT, T_SOURCE, T_MAINMENU))
 
 # Characters that may appear in symbol names
 sym_chars = frozenset(string.ascii_letters + string.digits + "._/-")
