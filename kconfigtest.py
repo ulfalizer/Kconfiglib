@@ -338,7 +338,7 @@ def get_arch_configs():
 def test_all_no(conf):
     """
     Test if our allnoconfig implementation generates the same .config as
-    'make allnoconfig', for all architectures"""
+    'make allnoconfig' for each architecture."""
 
     while True:
         done = True
@@ -372,8 +372,8 @@ def test_all_no(conf):
 
 def test_all_yes(conf):
     """
-    Test if our allyesconfig implementation generates the same .config as 'make
-    allyesconfig', for all architectures"""
+    Test if our allyesconfig implementation generates the same .config as
+    'make allyesconfig' for each architecture."""
 
     # Get a list of all symbols that are not choice items
     non_choice_syms = [sym for sym in conf.get_symbols() if
@@ -558,8 +558,8 @@ def test_call_all(conf):
 
 def test_config_absent(conf):
     """
-    Test if kconfiglib generates the same configuration as 'conf' without a
-    .config, for each architecture"""
+    Test if kconfiglib generates the same configuration as 'make alldefconfig'
+    for each architecture."""
     conf.write_config("._config")
     shell("make alldefconfig")
 
