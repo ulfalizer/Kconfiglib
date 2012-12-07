@@ -961,6 +961,7 @@ class Config():
 
             elif t0 == T_MENU:
                 menu = Menu()
+                self.menus.append(menu)
                 menu.config = self
                 menu.parent = parent
                 menu.title = tokens.get_next()
@@ -978,7 +979,6 @@ class Config():
                                                               menu.visible_if_expr))
 
                 block.add_item(menu)
-                self.menus.append(menu)
 
             elif t0 == T_IF:
                 # If statements are treated as syntactic sugar for adding
@@ -1006,6 +1006,7 @@ class Config():
                     choice = self.named_choices[name]
                 else:
                     choice = Choice()
+                    self.choices.append(choice)
                     if name is not None:
                         choice.name = name
                         self.named_choices[name] = choice
@@ -1042,7 +1043,6 @@ class Config():
                 # at the first definition
                 if not already_defined:
                     block.add_item(choice)
-                    self.choices.append(choice)
 
             elif t0 == T_COMMENT:
                 comment = Comment()
