@@ -1,0 +1,34 @@
+config A
+    bool
+
+choice
+    bool "C"
+config B
+    bool "B"
+config C
+    bool "C" if B
+config D
+    bool "D"
+endchoice
+
+menu "m1"
+config E
+    bool
+menu "m2"
+config F
+    bool
+choice
+config G
+    bool "g"
+config H
+    bool "h"
+endchoice
+endmenu
+config I
+    bool
+endmenu
+
+menu "m3"
+endmenu
+menu "m4"
+endmenu

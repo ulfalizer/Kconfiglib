@@ -167,6 +167,71 @@ def run_selftests():
     assert_equals(c["NOT_DEFINED"].get_def_locations(), [])
     assert_file_and_locations(kl, [6, 15], c["NOT_DEFINED"].get_ref_locations())
 
+    #
+    # Object relations
+    #
+
+    c = kconfiglib.Config("Kconfiglib/tests/Krelation")
+
+    A, B, C, D, E, F, G, H, I = c["A"], c["B"], c["C"], c["D"], c["E"], c["F"],\
+                                c["G"], c["H"], c["I"]
+    choice_1, choice_2 = c.get_choices()
+    assert_true([menu.get_title() for menu in c.get_menus()] ==
+                ["m1", "m2", "m3", "m4"],
+                "menu ordering is broken")
+    menu_1, menu_2, menu_3, menu_4 = c.get_menus()
+
+    print "Testing object relations..."
+    assert_true(A.get_parent() is None, "A should not have a parent")
+    assert_true(B.get_parent() is choice_1,
+                "B's parent should be the first choice")
+    assert_true(E.get_parent() is menu_1,
+                "E's parent should be the first menu")
+    assert_true(c["E"].get_parent().get_parent() is None,
+                "E's grandparent should be None")
+    assert_true(c["G"].get_parent() is choice_2,
+                "G's parent should be the second choice")
+    assert_true(c["G"].get_parent().get_parent() is menu_2,
+                "G's grandparent should be the second menu")
+
+    #
+    # Object fetching (same test file)
+    #
+
+    print "Testing object fetching..."
+
+    assert_equals(c.get_symbol("NON_EXISTENT"), None)
+    assert_true(c.get_symbol("A") is A, "get_symbol() is broken")
+
+    assert_true(c.get_top_level_items() ==
+                [A, choice_1, menu_1, menu_3, menu_4],
+                "Wrong items at top level")
+    assert_true(c.get_symbols(False) == [A, B, C, D, E, F, G, H, I],
+                "get_symbols() is broken")
+
+    assert_true(choice_1.get_items() == [B, C, D],
+                "Wrong get_items() items in 'choice'")
+    # Test Kconfig quirk
+    assert_true(choice_1.get_actual_items() == [B, D],
+                "Wrong get_actual_items() items in 'choice'")
+
+    assert_true(menu_1.get_items() == [E, menu_2, I],
+                "Wrong items in first menu")
+    assert_true(menu_1.get_symbols() == [E, I],
+                "Wrong symbols in first menu")
+    assert_true(menu_1.get_items(True) == [E, menu_2, F, choice_2, G, H, I],
+                "Wrong recursive items in first menu")
+    assert_true(menu_1.get_symbols(True) == [E, F, G, H, I],
+                "Wrong recursive symbols in first menu")
+    assert_true(menu_2.get_items() == [F, choice_2],
+                "Wrong items in second menu")
+    assert_true(menu_2.get_symbols() == [F],
+                "Wrong symbols in second menu")
+    assert_true(menu_2.get_items(True) == [F, choice_2, G, H],
+                "Wrong recursive items in second menu")
+    assert_true(menu_2.get_symbols(True) == [F, G, H],
+                "Wrong recursive symbols in second menu")
+
     print
 
 def run_compatibility_tests():
