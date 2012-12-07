@@ -3192,14 +3192,14 @@ class Choice(Item, _HasVisibility):
         return self.block.get_items()
 
     def get_actual_items(self):
-        """A quirk (perhaps better described as a bug -- at least for symbols)
-        of kconfig is that you can put items within a choice that will not be
-        considered members of the choice insofar as selection is concerned.
-        This happens for example if one symbol within a choice 'depends on' the
-        symbol preceding it, or if you put non-symbol items within choices.
+        """A quirk (perhaps better described as a bug) of kconfig is that you
+        can put items within a choice that will not be considered members of
+        the choice insofar as selection is concerned. This happens for example
+        if one symbol within a choice 'depends on' the symbol preceding it, or
+        if you put non-symbol items within choices.
 
-        This function gets a list of the "proper" elements of the choice,
-        excluding such items."""
+        This function gets a list of the "proper" elements of the choice in the
+        order they appears in the choice, excluding such items."""
         return self.actual_items
 
     def get_parent(self):
