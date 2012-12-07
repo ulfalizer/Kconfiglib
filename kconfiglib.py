@@ -1620,7 +1620,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         elif expr[0] in (EQUAL, UNEQUAL):
             res = set()
 
-            (_, v1, v2) = expr
+            _, v1, v2 = expr
 
             if isinstance(v1, Symbol):
                 res.add(v1)
@@ -1886,7 +1886,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
     def _eq_to_sym(self, eq):
         """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
         or sym != n, returns sym. For other (in)equalities, returns None."""
-        (relation, left, right) = eq
+        relation, left, right = eq
 
         left  = self._transform_n_m_y(left)
         right = self._transform_n_m_y(right)
