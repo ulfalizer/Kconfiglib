@@ -10,12 +10,12 @@ and 'defconfig').
 See kconfiglib.py for a longer introduction. The (extensive) documentation is
 generated with
 
- $ pydoc [-w] kconfiglib
+> $ pydoc [-w] kconfiglib
 
 Installation instructions for the Linux kernel (in the kernel root):
 
- $ git clone git://github.com/ulfalizer/Kconfiglib.git  
- $ git am Kconfiglib/makefile.patch
+> $ git clone git://github.com/ulfalizer/Kconfiglib.git  
+> $ git am Kconfiglib/makefile.patch
 
 (Note: The directory name Kconfiglib/ is significant.)
 
@@ -24,7 +24,7 @@ manually.
 
 The test suite is run with
 
- $ python Kconfiglib/kconfigtest.py
+> $ python Kconfiglib/kconfigtest.py
 
 You might want to use the "speedy" option. See kconfigtest.py.
 
