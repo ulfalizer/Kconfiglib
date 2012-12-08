@@ -2780,8 +2780,12 @@ class Symbol(Item, _HasVisibility):
         # Should the symbol get an entry in .config?
         self.write_to_conf = False
 
-        # Stores the calculated value to avoid unnecessary recalculation
+        # Caches the calculated value
         self.cached_value = None
+
+        # Caches the list of dependent symbols. Calculated the first time a
+        # user value is set on the symbol.
+        self.cached_deps = None
 
         # Does the symbol have an entry in the Kconfig file? The Trailing
         # underscore avoids a collision with is_defined().
@@ -2928,6 +2932,10 @@ class Symbol(Item, _HasVisibility):
     def _get_dependent(self):
         """Returns the list of symbols that should be invalidated if the value
         of the symbol changes."""
+        if self.cached_deps is not None:
+            return self.cached_deps
+
+        # Calculate using a set to avoid duplicates in the result
         res = set()
 
         def rec(sym, ignore_choice = False):
@@ -2948,7 +2956,8 @@ class Symbol(Item, _HasVisibility):
                         rec(s, True)
 
         rec(self)
-        return res
+        self.cached_deps = list(res)
+        return self.cached_deps
 
     def _has_auto_menu_dep_on(self, on):
         """See Choice._determine_actual_items()."""
