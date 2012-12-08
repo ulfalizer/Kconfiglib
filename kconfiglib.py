@@ -1582,8 +1582,8 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
                 self.dep[s].add(sym)
 
         # The directly dependent symbols of a symbol are:
-        #  - Any symbols whose prompt or default value depends on the symbol
-        #  - Any symbols whose rev_dep (select condition) depends on the symbol
+        #  - Any symbols whose prompts, default values, rev_dep (select
+        #    condition), or ranges depend on the symbol
         #  - Any symbols that belong to the same choice statement as the symbol
         #    (these won't be included in 'dep' as that makes the dependency
         #    graph unwieldy, but Symbol._get_dependent() will include them)
@@ -1597,6 +1597,11 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
                 add_expr_deps(e, sym)
 
             add_expr_deps(sym.rev_dep, sym)
+
+            for (l, u, e) in sym.ranges:
+                add_expr_deps(l, sym)
+                add_expr_deps(u, sym)
+                add_expr_deps(e, sym)
 
             if sym.is_choice_item():
                 choice = sym.parent
