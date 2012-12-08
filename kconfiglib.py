@@ -2861,11 +2861,13 @@ class Symbol(Item, _HasVisibility):
                               .format(v, self.name, typename[self.type]))
             return
 
-        if self.prompts == [] and not suppress_load_warnings:
-            self.config._warn('assigning "{0}" to the symbol {1} which lacks '
-                              'prompts and thus has visibility "n". The assignment '
-                              'will have no effect.'
-                              .format(v, self.name))
+        # This warning is annoying when running allnoconfig_simpler.py. Make it
+        # optional?
+        #if self.prompts == [] and not suppress_load_warnings:
+            #self.config._warn('assigning "{0}" to the symbol {1} which lacks '
+                              #'prompts and thus has visibility "n". The assignment '
+                              #'will have no effect.'
+                              #.format(v, self.name))
 
         self.user_val = v
 
