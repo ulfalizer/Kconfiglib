@@ -1575,6 +1575,8 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         for sym in self.syms.itervalues():
             self.dep[sym] = set()
 
+        # Adds 'sym' as a directly dependent symbol to all symbols that appear
+        # in the expression 'e'
         def add_expr_deps(e, sym):
             for s in self._get_expr_syms(e):
                 self.dep[s].add(sym)
@@ -2939,6 +2941,12 @@ class Symbol(Item, _HasVisibility):
         res = set()
 
         def rec(sym, ignore_choice = False):
+            # If the dependencies of the symbol have already been calculated,
+            # then reuse that
+            if sym.cached_deps is not None:
+                res.update(sym.cached_deps)
+                return
+
             for s in self.config.dep[sym]:
                 if s not in res:
                     res.add(s)
