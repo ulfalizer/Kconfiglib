@@ -274,6 +274,37 @@ def run_selftests():
     assert_true(menu_2.get_symbols(True) == [F, G, H],
                 "Wrong recursive symbols in second menu")
 
+    #
+    # Object dependencies
+    #
+
+    print "Testing object dependencies..."
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kdep")
+    def assert_dependent(sym_name, deps_names):
+        sym = c[sym_name]
+        deps = [c[dep] for dep in deps_names]
+        sym_deps = sym._get_dependent()
+        assert_true(len(sym_deps) == len(deps),
+                    "Wrong number of dependent symbols for {0}".\
+                    format(sym.get_name()))
+        assert_true(len(sym_deps) == len(set(sym_deps)),
+                    "{0}'s dependencies contains duplicates".\
+                    format(sym.get_name()))
+        for dep in deps:
+            assert_true(dep in sym_deps,
+                        "{0} should depend on {1}".\
+                        format(dep.get_name(), sym.get_name()))
+    # Test twice to cover dependency caching
+    for i in range(0, 2):
+        n_deps = 14
+        assert_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
+        # Choices
+        assert_dependent("A", ["B", "C"])
+        assert_dependent("B", ["A", "C"])
+        assert_dependent("C", ["A", "B"])
+        assert_dependent("S", ["A", "B", "C"])
+
     print
 
 def run_compatibility_tests():
