@@ -4,6 +4,16 @@
 #
 # $ python Kconfiglib/kconfigtest.py
 #
+# Some additional options can be turned on by passing arguments. With no argument,
+# they default to off.
+#
+#  - speedy:
+#    Run scripts/kconfig/conf directly when comparing outputs instead of using
+#    'make' targets. Makes things a lot faster, but could break if Kconfig
+#    files start depending on additional environment variables besides ARCH and
+#    SRCARCH. (These would be set in the Makefiles in that case.) Safe as of
+#    Linux 3.7.0-rc8.
+#
 # (PyPy also works, and runs the defconfig tests roughly 20% faster on my
 # machine. Some of the other tests get an even greater speed-up.)
 #
@@ -20,6 +30,8 @@ import sys
 import textwrap
 import time
 
+speedy_mode = False
+
 # Assume that the value of KERNELVERSION does not affect the configuration
 # (true as of Linux 2.6.38-rc3). Here we could fetch the correct version
 # instead.
@@ -33,6 +45,15 @@ os.environ.pop("KCONFIG_ALLCONFIG", None)
 nconfigs = 0
 
 def run_tests():
+    global speedy_mode
+    for s in sys.argv[1:]:
+        if s == "speedy":
+            speedy_mode = True
+            print "Speedy mode enabled"
+        else:
+            print "Unrecognized option '{0}'".format(s)
+            return
+
     run_selftests()
     run_compatibility_tests()
 
@@ -271,6 +292,9 @@ def run_compatibility_tests():
             # test might run. SRCARCH is selected automatically from ARCH, so
             # we don't need to set that.
             os.environ["ARCH"] = conf.get_arch()
+            # This won't get set for us in speedy mode
+            if speedy_mode:
+                os.environ["SRCARCH"] = conf.get_srcarch()
 
             test_fn(conf)
 
@@ -369,7 +393,10 @@ def test_all_no(conf):
 
     conf.write_config("._config")
 
-    shell("make allnoconfig")
+    if speedy_mode:
+        shell("scripts/kconfig/conf --allnoconfig Kconfig")
+    else:
+        shell("make allnoconfig")
 
 def test_all_yes(conf):
     """
@@ -422,7 +449,10 @@ def test_all_yes(conf):
 
     conf.write_config("._config")
 
-    shell("make allyesconfig")
+    if speedy_mode:
+        shell("scripts/kconfig/conf --allyesconfig Kconfig")
+    else:
+        shell("make allyesconfig")
 
 def test_call_all(conf):
     """
@@ -562,7 +592,10 @@ def test_config_absent(conf):
     Test if kconfiglib generates the same configuration as 'make alldefconfig'
     for each architecture."""
     conf.write_config("._config")
-    shell("make alldefconfig")
+    if speedy_mode:
+        shell("scripts/kconfig/conf --alldefconfig Kconfig")
+    else:
+        shell("make alldefconfig")
 
 def test_defconfig(conf):
     """
@@ -616,13 +649,18 @@ def test_defconfig(conf):
 
             conf.load_config(defconfig)
             conf.write_config("._config")
-            shell("cp {0} .config".format(defconfig))
-            # It would be a bit neater if we could use 'make *_defconfig' here
-            # (for example, 'make i386_defconfig' loads
-            # arch/x86/configs/i386_defconfig' if ARCH = x86/i386/x86_64), but
-            # that wouldn't let us test nonsensical combinations of arches and
-            # defconfigs, which is a nice way to find obscure bugs.
-            shell("make kconfiglibtestconfig")
+            if speedy_mode:
+                shell("scripts/kconfig/conf --defconfig='{0}' Kconfig".\
+                      format(defconfig))
+            else:
+                shell("cp {0} .config".format(defconfig))
+                # It would be a bit neater if we could use 'make *_defconfig'
+                # here (for example, 'make i386_defconfig' loads
+                # arch/x86/configs/i386_defconfig' if ARCH = x86/i386/x86_64),
+                # but that wouldn't let us test nonsensical combinations of
+                # arches and defconfigs, which is a nice way to find obscure
+                # bugs.
+                shell("make kconfiglibtestconfig")
 
             sys.stdout.write("  {0:<14}with {1:<60} ".
                              format(conf.get_arch(), defconfig))
