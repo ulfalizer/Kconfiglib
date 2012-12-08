@@ -2968,6 +2968,9 @@ class Symbol(Item, _HasVisibility):
                         rec(s, True)
 
         rec(self)
+        # Using cached deps from other symbols in the same choice might mean we
+        # get ourself in the result (harmless but unnecessary)
+        res.discard(self)
         self.cached_deps = list(res)
         return self.cached_deps
 
