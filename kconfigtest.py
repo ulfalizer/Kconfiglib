@@ -2,7 +2,7 @@
 # C kconfig implementation by comparing outputs. It should be run from the
 # top-level kernel directory with
 #
-# $ python Kconfiglib/kconfigtest.py
+#  $ python Kconfiglib/kconfigtest.py
 #
 # Some additional options can be turned on by passing arguments. With no argument,
 # they default to off.
@@ -19,6 +19,14 @@
 #    enabled, every arch will be tested with every defconfig, which increases
 #    the test time from minutes to hours. Occassionally finds (usually very
 #    obscure) bugs, and I make sure everything passes with it.
+#
+#  - log:
+#    Log timestamped failures of the defconfig test to test_defconfig_fails in
+#    the root. Especially handy in obsessive mode.
+#
+# For example, to run in speedy mode with logging, run
+#
+#  $ python Kconfiglib/kconfigtest.py speedy log
 #
 # (PyPy also works, and runs the defconfig tests roughly 20% faster on my
 # machine. Some of the other tests get an even greater speed-up.)
@@ -37,6 +45,7 @@ import time
 
 speedy_mode = False
 obsessive_mode = False
+log_mode = False
 
 # Assume that the value of KERNELVERSION does not affect the configuration
 # (true as of Linux 2.6.38-rc3). Here we could fetch the correct version
@@ -51,7 +60,7 @@ os.environ.pop("KCONFIG_ALLCONFIG", None)
 nconfigs = 0
 
 def run_tests():
-    global speedy_mode, obsessive_mode
+    global speedy_mode, obsessive_mode, log_mode
     for s in sys.argv[1:]:
         if s == "speedy":
             speedy_mode = True
@@ -59,6 +68,9 @@ def run_tests():
         elif s == "obsessive":
             obsessive_mode = True
             print "Obsessive mode enabled"
+        elif s == "log":
+            log_mode = True
+            print "Log mode enabled"
         else:
             print "Unrecognized option '{0}'".format(s)
             return
@@ -615,79 +627,75 @@ def test_defconfig(conf):
 
     This test appends any failures to a file test_defconfig_fails in the
     root."""
-    # TODO: Make it possible to run this test only for valid arch/defconfig
-    # combinations for a speedier test run?
 
-    # TODO: Make log file generation optional via argument to kconfigtest.py
+    global nconfigs
+    defconfigs = []
 
-    with open("test_defconfig_fails", "a") as fail_log:
-        global nconfigs
-        defconfigs = []
+    def add_configs_for_arch(arch):
+        arch_dir = os.path.join("arch", arch)
+        # Some arches have a "defconfig" in the root of their arch/<arch>/
+        # directory
+        root_defconfig = os.path.join(arch_dir, "defconfig")
+        if os.path.exists(root_defconfig):
+            defconfigs.append(root_defconfig)
+        # Assume all files in the arch/<arch>/configs directory (if it
+        # exists) are configurations
+        defconfigs_dir = os.path.join(arch_dir, "configs")
+        if not os.path.exists(defconfigs_dir):
+            return
+        if not os.path.isdir(defconfigs_dir):
+            print "Warning: '{0}' is not a directory - skipping"\
+                  .format(defconfigs_dir)
+            return
+        for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
+            for filename in filenames:
+                defconfigs.append(os.path.join(dirpath, filename))
 
-        def add_configs_for_arch(arch):
-            arch_dir = os.path.join("arch", arch)
-            # Some arches have a "defconfig" in the root of their arch/<arch>/
-            # directory
-            root_defconfig = os.path.join(arch_dir, "defconfig")
-            if os.path.exists(root_defconfig):
-                defconfigs.append(root_defconfig)
-            # Assume all files in the arch/<arch>/configs directory (if it
-            # exists) are configurations
-            defconfigs_dir = os.path.join(arch_dir, "configs")
-            if not os.path.exists(defconfigs_dir):
-                return
-            if not os.path.isdir(defconfigs_dir):
-                print "Warning: '{0}' is not a directory - skipping"\
-                      .format(defconfigs_dir)
-                return
-            for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
-                for filename in filenames:
-                    defconfigs.append(os.path.join(dirpath, filename))
+    if obsessive_mode:
+        # Collect all defconfigs. This could be done once instead, but it's
+        # a speedy operation comparatively.
+        for arch in os.listdir("arch"):
+            add_configs_for_arch(arch)
+    else:
+        add_configs_for_arch(conf.get_arch())
 
-        if obsessive_mode:
-            # Collect all defconfigs. This could be done once instead, but it's
-            # a speedy operation comparatively.
-            for arch in os.listdir("arch"):
-                add_configs_for_arch(arch)
+    # Test architecture for each defconfig
+
+    for defconfig in defconfigs:
+        rm_configs()
+
+        nconfigs += 1
+
+        conf.load_config(defconfig)
+        conf.write_config("._config")
+        if speedy_mode:
+            shell("scripts/kconfig/conf --defconfig='{0}' Kconfig".\
+                  format(defconfig))
         else:
-            add_configs_for_arch(conf.get_arch())
+            shell("cp {0} .config".format(defconfig))
+            # It would be a bit neater if we could use 'make *_defconfig'
+            # here (for example, 'make i386_defconfig' loads
+            # arch/x86/configs/i386_defconfig' if ARCH = x86/i386/x86_64),
+            # but that wouldn't let us test nonsensical combinations of
+            # arches and defconfigs, which is a nice way to find obscure
+            # bugs.
+            shell("make kconfiglibtestconfig")
 
-        # Test architecture for each defconfig
+        sys.stdout.write("  {0:<14}with {1:<60} ".
+                         format(conf.get_arch(), defconfig))
 
-        for defconfig in defconfigs:
-            rm_configs()
-
-            nconfigs += 1
-
-            conf.load_config(defconfig)
-            conf.write_config("._config")
-            if speedy_mode:
-                shell("scripts/kconfig/conf --defconfig='{0}' Kconfig".\
-                      format(defconfig))
-            else:
-                shell("cp {0} .config".format(defconfig))
-                # It would be a bit neater if we could use 'make *_defconfig'
-                # here (for example, 'make i386_defconfig' loads
-                # arch/x86/configs/i386_defconfig' if ARCH = x86/i386/x86_64),
-                # but that wouldn't let us test nonsensical combinations of
-                # arches and defconfigs, which is a nice way to find obscure
-                # bugs.
-                shell("make kconfiglibtestconfig")
-
-            sys.stdout.write("  {0:<14}with {1:<60} ".
-                             format(conf.get_arch(), defconfig))
-
-            if equal_confs():
-                print "OK"
-            else:
-                print "FAIL"
-                fail()
-                fail_log.write("{0}  {1} with {2} did not match\n"
-                        .format(time.strftime("%d %b %Y %H:%M:%S",
-                                              time.localtime()),
-                                conf.get_arch(),
-                                defconfig))
-                fail_log.flush()
+        if equal_confs():
+            print "OK"
+        else:
+            print "FAIL"
+            fail()
+            if log_mode:
+                with open("test_defconfig_fails", "a") as fail_log:
+                    fail_log.write("{0}  {1} with {2} did not match\n"
+                            .format(time.strftime("%d %b %Y %H:%M:%S",
+                                                  time.localtime()),
+                                    conf.get_arch(),
+                                    defconfig))
 
 #
 # Helper functions
