@@ -14,11 +14,16 @@
 #    SRCARCH. (These would be set in the Makefiles in that case.) Safe as of
 #    Linux 3.7.0-rc8.
 #
+#  - obsessive:
+#    By default, only valid arch/defconfig pairs will be tested. With this
+#    enabled, every arch will be tested with every defconfig, which increases
+#    the test time from minutes to hours. Occassionally finds (usually very
+#    obscure) bugs, and I make sure everything passes with it.
+#
 # (PyPy also works, and runs the defconfig tests roughly 20% faster on my
 # machine. Some of the other tests get an even greater speed-up.)
 #
-# Note that running all of these could take a long time (think many hours on
-# fast systems). The tests have been arranged in order of time needed.
+# The tests have been roughly arranged in order of time needed.
 #
 # All tests should pass. Report regressions to kconfiglib@gmail.com
 
@@ -31,6 +36,7 @@ import textwrap
 import time
 
 speedy_mode = False
+obsessive_mode = False
 
 # Assume that the value of KERNELVERSION does not affect the configuration
 # (true as of Linux 2.6.38-rc3). Here we could fetch the correct version
@@ -45,11 +51,14 @@ os.environ.pop("KCONFIG_ALLCONFIG", None)
 nconfigs = 0
 
 def run_tests():
-    global speedy_mode
+    global speedy_mode, obsessive_mode
     for s in sys.argv[1:]:
         if s == "speedy":
             speedy_mode = True
             print "Speedy mode enabled"
+        elif s == "obsessive":
+            obsessive_mode = True
+            print "Obsessive mode enabled"
         else:
             print "Unrecognized option '{0}'".format(s)
             return
@@ -600,10 +609,9 @@ def test_config_absent(conf):
 def test_defconfig(conf):
     """
     Test if kconfiglib generates the same .config as scripts/kconfig/conf for
-    each architecture/defconfig pair. This test includes nonsensical groupings
-    of arches with defconfigs from other arches (every arch/defconfig
-    combination in fact) as this has proven effective in finding obscure bugs.
-    For that reason this test takes many hours to run even on fast systems.
+    each architecture/defconfig pair. In obsessive mode, this test includes
+    nonsensical groupings of arches with defconfigs from other arches (every
+    arch/defconfig combination) and takes hours to run.
 
     This test appends any failures to a file test_defconfig_fails in the
     root."""
@@ -613,14 +621,10 @@ def test_defconfig(conf):
     # TODO: Make log file generation optional via argument to kconfigtest.py
 
     with open("test_defconfig_fails", "a") as fail_log:
-        # Collect defconfigs. This could be done once instead, but it's a speedy
-        # operation comparatively.
-
         global nconfigs
-
         defconfigs = []
 
-        for arch in os.listdir("arch"):
+        def add_configs_for_arch(arch):
             arch_dir = os.path.join("arch", arch)
             # Some arches have a "defconfig" in the root of their arch/<arch>/
             # directory
@@ -631,14 +635,22 @@ def test_defconfig(conf):
             # exists) are configurations
             defconfigs_dir = os.path.join(arch_dir, "configs")
             if not os.path.exists(defconfigs_dir):
-                continue
+                return
             if not os.path.isdir(defconfigs_dir):
                 print "Warning: '{0}' is not a directory - skipping"\
                       .format(defconfigs_dir)
-                continue
+                return
             for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
                 for filename in filenames:
                     defconfigs.append(os.path.join(dirpath, filename))
+
+        if obsessive_mode:
+            # Collect all defconfigs. This could be done once instead, but it's
+            # a speedy operation comparatively.
+            for arch in os.listdir("arch"):
+                add_configs_for_arch(arch)
+        else:
+            add_configs_for_arch(conf.get_arch())
 
         # Test architecture for each defconfig
 
