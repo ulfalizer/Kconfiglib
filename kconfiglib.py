@@ -25,7 +25,7 @@ Kconfig-based configuration systems. Features include the following:
  - Relations between symbols can be quickly determined, such as finding all
    symbols that reference a particular symbol.
  - Highly compatible with the scripts/kconfig/*conf utilities. The test suite
-   automatically compares outputs betweens Kconfiglib and the C implementation
+   automatically compares outputs between Kconfiglib and the C implementation
    for a large number of cases.
 
 For the Linux kernel, scripts are run using
