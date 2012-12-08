@@ -609,6 +609,7 @@ class Config():
         previous = None
 
         strlen = len(s)
+        # This is a hotspot during parsing, and this speeds things up a bit
         append = tokens.append
 
         # The current index in the string being tokenized
@@ -647,84 +648,14 @@ class Config():
         while i < strlen:
             c = s[i]
 
+            # Arranged by the frequency the cases are encountered, which gives
+            # a small speed-up
+
             if c.isspace():
                 i += 1
                 continue
 
-            elif c == "=":
-                append(T_EQUAL)
-                i += 1
-
-            elif c == "!":
-                if i + 1 >= strlen:
-                    _tokenization_error(s, strlen, filename, linenr)
-                if s[i + 1] == "=":
-                    append(T_UNEQUAL)
-                    i += 2
-                else:
-                    append(T_NOT)
-                    i += 1
-
-            elif c == "(":
-                append(T_OPEN_PAREN)
-                i += 1
-
-            elif c == ")":
-                append(T_CLOSE_PAREN)
-                i += 1
-
-            elif c == "&":
-                if i + 1 >= strlen:
-                    # Invalid characters are ignored
-                    continue
-                if s[i + 1] != "&":
-                    # Invalid characters are ignored
-                    i += 1
-                    continue
-                append(T_AND)
-                i += 2
-
-            elif c == "|":
-                if i + 1 >= strlen:
-                    # Invalid characters are ignored
-                    continue
-                if s[i + 1] != "|":
-                    # Invalid characters are ignored
-                    i += 1
-                    continue
-                append(T_OR)
-                i += 2
-
-            elif c == '"' or c == "'":
-                quote = c
-                value = ""
-                i += 1
-                while True:
-                    if i >= strlen:
-                        _tokenization_error(s, strlen, filename, linenr)
-                    c = s[i]
-                    if c == quote:
-                        break
-                    elif c == "\\":
-                        if i + 1 >= strlen:
-                            _tokenization_error(s, strlen, filename, linenr)
-                        value += s[i + 1]
-                        i += 2
-                    else:
-                        value += c
-                        i += 1
-                i += 1
-                append(value)
-
-            elif c == "#":
-                break
-
-            elif c not in sym_chars:
-                # Invalid characters are ignored
-                i += 1
-                continue
-
-            else: # Symbol or keyword
+            if c in sym_chars:
                 name_start = i
 
                 # Locate the end of the symbol/keyword
@@ -748,17 +679,90 @@ class Config():
                     # time we see it.
                     sym = self._sym_lookup(name, not for_eval)
 
-                    if previous in (T_CONFIG, T_MENUCONFIG):
-                        # If the previous token is T_CONFIG ("config"), we're
-                        # tokenizing the first line of a symbol definition, and
-                        # should remember this as a location where the symbol
-                        # is defined.
+                    if previous == T_CONFIG or previous == T_MENUCONFIG:
+                        # If the previous token is T_(MENU)CONFIG
+                        # ("(menu)config"), we're tokenizing the first line of
+                        # a symbol definition, and should remember this as a
+                        # location where the symbol is defined.
                         sym.def_locations.append((filename, linenr))
                     else:
                         # Otherwise, it's a reference to the symbol
                         sym.ref_locations.append((filename, linenr))
 
                     append(sym)
+
+            elif c == '"' or c == "'":
+                quote = c
+                value = ""
+                i += 1
+                while True:
+                    if i >= strlen:
+                        _tokenization_error(s, strlen, filename, linenr)
+                    c = s[i]
+                    if c == quote:
+                        break
+                    elif c == "\\":
+                        if i + 1 >= strlen:
+                            _tokenization_error(s, strlen, filename, linenr)
+                        value += s[i + 1]
+                        i += 2
+                    else:
+                        value += c
+                        i += 1
+                i += 1
+                append(value)
+
+            elif c == "&":
+                if i + 1 >= strlen:
+                    # Invalid characters are ignored
+                    continue
+                if s[i + 1] != "&":
+                    # Invalid characters are ignored
+                    i += 1
+                    continue
+                append(T_AND)
+                i += 2
+
+            elif c == "|":
+                if i + 1 >= strlen:
+                    # Invalid characters are ignored
+                    continue
+                if s[i + 1] != "|":
+                    # Invalid characters are ignored
+                    i += 1
+                    continue
+                append(T_OR)
+                i += 2
+
+            elif c == "!":
+                if i + 1 >= strlen:
+                    _tokenization_error(s, strlen, filename, linenr)
+                if s[i + 1] == "=":
+                    append(T_UNEQUAL)
+                    i += 2
+                else:
+                    append(T_NOT)
+                    i += 1
+
+            elif c == "=":
+                append(T_EQUAL)
+                i += 1
+
+            elif c == "(":
+                append(T_OPEN_PAREN)
+                i += 1
+
+            elif c == ")":
+                append(T_CLOSE_PAREN)
+                i += 1
+
+            elif c == "#":
+                break
+
+            else:
+                # Invalid characters are ignored
+                i += 1
+                continue
 
             previous = tokens[-1]
 
@@ -860,7 +864,8 @@ class Config():
            isinstance(sym_or_string, Symbol):
             self.parse_expr_cur_sym_or_choice.referenced_syms.add(sym_or_string)
 
-        if feed.peek_next() not in (T_EQUAL, T_UNEQUAL):
+        next_token = feed.peek_next()
+        if next_token != T_EQUAL and next_token != T_UNEQUAL:
             if self.parse_expr_transform_m and (sym_or_string is self.m or
                                                 sym_or_string == "m"):
                 return (AND, ["m", self._sym_lookup("MODULES")])
