@@ -23,7 +23,8 @@ conf = kconfiglib.Config(sys.argv[1])
 non_choice_syms = [sym for sym in conf.get_symbols() if
                    not sym.is_choice_item()]
 
-while True:
+done = False
+while not done:
     done = True
 
     # Handle symbols outside of choices
@@ -50,17 +51,15 @@ while True:
                 selection.set_value("y")
                 done = False
 
-        # Handle choices whose visibility only allow them to be in "m" mode
+        # Handle choices whose visibility only allow them to be in "m" mode.
+        # This might happen if a choice depends on a symbol that can only be
+        # "m" for example.
 
         elif choice.get_visibility() == "m":
-            for sym in choice.get_items():
+            for sym in choice.get_actual_items():
                 if sym.calc_value() != "m" and \
                    sym.get_upper_bound() != "n":
                     sym.set_value("m")
                     done = False
-
-
-    if done:
-        break
 
 conf.write_config(".config")
