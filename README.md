@@ -14,7 +14,7 @@ generated with
 
 Installation instructions for the Linux kernel (in the kernel root):
 
- $ git clone git://github.com/ulfalizer/Kconfiglib.git
+ $ git clone git://github.com/ulfalizer/Kconfiglib.git  
  $ git am Kconfiglib/makefile.patch
 
 (Note: The directory name Kconfiglib/ is significant.)
@@ -32,8 +32,8 @@ The test suite failures for the following Blackfin defconfigs on e.g.
 Linux 3.7.0-rc8 are due to a bug in the C implementation (see
 https://lkml.org/lkml/2012/12/5/458):
 
-arch/blackfin/configs/CM-BF537U\_defconfig
-arch/blackfin/configs/BF548-EZKIT\_defconfig
-arch/blackfin/configs/BF527-EZKIT\_defconfig
-arch/blackfin/configs/BF527-EZKIT-V2\_defconfig
+arch/blackfin/configs/CM-BF537U\_defconfig  
+arch/blackfin/configs/BF548-EZKIT\_defconfig  
+arch/blackfin/configs/BF527-EZKIT\_defconfig  
+arch/blackfin/configs/BF527-EZKIT-V2\_defconfig  
 arch/blackfin/configs/TCM-BF537\_defconfig
