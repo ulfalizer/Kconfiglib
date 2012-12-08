@@ -2937,6 +2937,10 @@ class Symbol(Item, _HasVisibility):
         if self.cached_deps is not None:
             return self.cached_deps
 
+        # TODO: This still recalculates a lot. Should use a recursive
+        # _get_dependent() call to make best use of caching. Make sure to get
+        # it right w.r.t. choices.
+
         # Calculate using a set to avoid duplicates in the result
         res = set()
 
