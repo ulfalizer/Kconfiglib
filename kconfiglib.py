@@ -633,6 +633,10 @@ class Config():
             if keyword is None:
                 # We expect a keyword as the first token
                 _tokenization_error(s, strlen, filename, linenr)
+            if keyword == T_HELP:
+                # Avoid junk after "help", e.g. "---", being registered as a
+                # symbol
+                return _Feed([T_HELP])
             append(keyword)
             previous = keyword
 
