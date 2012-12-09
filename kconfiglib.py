@@ -1569,7 +1569,11 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
 
     def _build_dep(self):
         """Populates the dep dictionary, linking a symbol to the symbols that
-        immediately depend on it."""
+        immediately depend on it in the sense that changing the value of the
+        symbol might affect the values of those other symbols. This is used for
+        caching/invalidation purposes. The returned set might be larger than
+        necessary as we don't do any complicated analysis of the
+        expressions."""
         for sym in self.syms.itervalues():
             self.dep[sym] = set()
 
