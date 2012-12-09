@@ -276,6 +276,37 @@ def run_selftests():
                 "Wrong recursive symbols in second menu")
 
     #
+    # get_referenced_symbols()
+    #
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kref")
+    def assert_refs(sym, refs_no_enclosing, refs_enclosing):
+        sym = c[sym]
+        sym_refs = sym.get_referenced_symbols()
+        sym_refs_enclosing = sym.get_referenced_symbols(True)
+        assert_true(len(sym_refs) == len(refs_no_enclosing),
+                    "Wrong number of refs excluding enclosing for {0}".\
+                    format(sym.get_name()))
+        assert_true(len(sym_refs_enclosing) == len(refs_enclosing),
+                    "Wrong number of refs including enclosing for {0}".\
+                    format(sym.get_name()))
+        for r in [c[ref] for ref in refs_no_enclosing]:
+            assert_true(r in sym_refs,
+                        "{0} should reference {1} when excluding enclosing".\
+                        format(sym.get_name(), r.get_name()))
+        for r in [c[ref] for ref in refs_enclosing]:
+            assert_true(r in sym_refs_enclosing,
+                        "{0} should reference {1} when including enclosing".\
+                        format(sym.get_name(), r.get_name()))
+    assert_refs("NO_REF", [], [])
+    assert_refs("ONE_REF", ["A"], ["A"])
+    own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]
+    assert_refs("MANY_REF",
+                own_refs,
+                own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
+                            "MENU_REF_2"])
+
+    #
     # Object dependencies
     #
 
@@ -306,6 +337,11 @@ def run_selftests():
         assert_dependent("C", ["A", "B"])
         assert_dependent("S", ["A", "B", "C"])
 
+    print
+    if _all_ok:
+        print "All selftests passed"
+    else:
+        print "Some selftests failed"
     print
 
 def run_compatibility_tests():
