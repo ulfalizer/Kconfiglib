@@ -232,7 +232,7 @@ def run_selftests():
     verify(c["G"].get_parent() is choice_2,
            "G's parent should be the second choice")
     verify(c["G"].get_parent().get_parent() is menu_2,
-                "G's grandparent should be the second menu")
+           "G's grandparent should be the second menu")
 
     #
     # Object fetching (same test file)
@@ -244,7 +244,7 @@ def run_selftests():
     verify(c.get_symbol("A") is A, "get_symbol() is broken")
 
     verify(c.get_top_level_items() == [A, choice_1, menu_1, menu_3, menu_4],
-                "Wrong items at top level")
+           "Wrong items at top level")
     verify(c.get_symbols(False) == [A, B, C, D, E, F, G, H, I],
            "get_symbols() is broken")
 
