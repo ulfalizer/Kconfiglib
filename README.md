@@ -28,6 +28,10 @@ The test suite is run with
 
 You might want to use the "speedy" option. See kconfigtest.py.
 
+Please tell me if you miss some API instead of digging into internals. The
+internal data structures and APIs, and dependency stuff in particular, are
+unlikely to be exactly what you want as a user (hence why they're internal :).
+
 The test suite failures for the following Blackfin defconfigs on e.g.
 Linux 3.7.0-rc8 are due to
 [a bug in the C implementation](https://lkml.org/lkml/2012/12/5/458):
