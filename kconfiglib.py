@@ -58,8 +58,9 @@ Look in kconfigtest.py for the test suite.
 
 Credits: Written by Ulf "Ulfalizer" Magnusson
 
-Send bug reports, suggestions (any missing APIs that would make your life
-easier?) and other feedback to kconfiglib@gmail.com ."""
+Send bug reports, suggestions and other feedback to kconfiglib@gmail.com .
+Don't wrestle with internal APIs. Tell me what you need and I might add it in a
+safe way as a client API instead."""
 
 # If you have Psyco installed (32-bit installations, Python <= 2.6 only),
 # setting this to True (right here, not at runtime) might give a nice speedup.
