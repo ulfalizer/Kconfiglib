@@ -1217,6 +1217,8 @@ class Config():
             elif t0 == T_RANGE:
                 lower = tokens.get_next()
                 upper = tokens.get_next()
+                stmt.referenced_syms.add(lower)
+                stmt.referenced_syms.add(upper)
 
                 if tokens.check(T_IF):
                     stmt.ranges.append((lower, upper,
