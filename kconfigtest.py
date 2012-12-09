@@ -531,8 +531,6 @@ def test_call_all(conf):
         s.get_type()
         s.get_visibility()
         s.get_parent()
-        s.get_sibling_symbols()
-        s.get_sibling_items()
         s.get_referenced_symbols()
         s.get_referenced_symbols(True)
         s.get_selected_symbols()
