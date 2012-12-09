@@ -95,16 +95,16 @@ def run_selftests():
               c["VISIBLE_STRING"],
               c["VISIBLE_INT"],
               c["VISIBLE_HEX"]):
-        assert_true(s.is_modifiable(),
-                    "{0} should be modifiable".format(s.get_name()))
+        verify(s.is_modifiable(),
+               "{0} should be modifiable".format(s.get_name()))
     for s in (c["NOT_VISIBLE"],
               c["SELECTED_TO_Y"],
               c["BOOL_SELECTED_TO_M"],
               c["NOT_VISIBLE_STRING"],
               c["NOT_VISIBLE_INT"],
               c["NOT_VISIBLE_HEX"]):
-        assert_false(s.is_modifiable(),
-                     "{0} should not be modifiable".format(s.get_name()))
+        verify(not s.is_modifiable(),
+               "{0} should not be modifiable".format(s.get_name()))
 
     #
     # get_lower/upper_bound() and get_assignable_values()
@@ -116,28 +116,28 @@ def run_selftests():
         sym = c[sym]
         low = sym.get_lower_bound()
         high = sym.get_upper_bound()
-        assert_true(low == lower and high == upper,
-                    "Incorrectly calculated bounds for {0}: {1}-{2}. "
-                    "Expected {3}-{4}.".format(sym.get_name(),
-                                              low, high, lower, upper))
+        verify(low == lower and high == upper,
+               "Incorrectly calculated bounds for {0}: {1}-{2}. "
+               "Expected {3}-{4}.".format(sym.get_name(),
+                                          low, high, lower, upper))
         # See that we get back the corresponding range from
         # get_assignable_values()
         if low is None:
             vals = sym.get_assignable_values()
-            assert_true(vals == [],
-                        "get_assignable_values() thinks there should be "
-                        "assignable values for {0} ({1}) but not "
-                        "get_lower/upper_bound()".format(sym.get_name(), vals))
+            verify(vals == [],
+                   "get_assignable_values() thinks there should be assignable "
+                   "values for {0} ({1}) but not get_lower/upper_bound()".\
+                   format(sym.get_name(), vals))
         else:
             tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
             bound_range = ["n", "m", "y"][tri_to_int[low] :
                                           tri_to_int[high] + 1]
             assignable_range = sym.get_assignable_values()
-            assert_true(bound_range == assignable_range,
-                        "get_lower/upper_bound() thinks the range for {0} "
-                        "should be {1} while get_assignable_values() thinks "
-                        "it should be {2}".format(sym.get_name(), bound_range,
-                                                  assignable_range))
+            verify(bound_range == assignable_range,
+                   "get_lower/upper_bound() thinks the range for {0} should "
+                   "be {1} while get_assignable_values() thinks it should be "
+                   "{2}".format(sym.get_name(), bound_range, assignable_range))
+
     assert_bounds("Y_VISIBLE_BOOL", "n", "y")
     assert_bounds("Y_VISIBLE_TRISTATE", "n", "y")
     assert_bounds("M_VISIBLE_BOOL", "n", "y")
@@ -161,9 +161,8 @@ def run_selftests():
     c = kconfiglib.Config("Kconfiglib/tests/Keval")
     def assert_val(expr, val):
         res = c.eval(expr)
-        assert_true(res == val,
-                    "'{0}' evaluated to {1}, expected {2}".\
-                    format(expr, res, val))
+        verify(res == val,
+               "'{0}' evaluated to {1}, expected {2}".format(expr, res, val))
     # No modules
     assert_val("n", "n")
     assert_val("m", "n")
@@ -185,11 +184,11 @@ def run_selftests():
 
     print "Testing text queries..."
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
-    assert_equals(c["NO_HELP"].get_help(), None)
-    assert_equals(c["S"].get_help(), "help for\nS\n")
-    assert_equals(c.get_choices()[0].get_help(), "help for\nC\n")
-    assert_equals(c.get_comments()[0].get_text(), "a comment")
-    assert_equals(c.get_menus()[0].get_title(), "a menu")
+    verify_equals(c["NO_HELP"].get_help(), None)
+    verify_equals(c["S"].get_help(), "help for\nS\n")
+    verify_equals(c.get_choices()[0].get_help(), "help for\nC\n")
+    verify_equals(c.get_comments()[0].get_text(), "a comment")
+    verify_equals(c.get_menus()[0].get_title(), "a menu")
 
     #
     # Location queries
@@ -200,14 +199,14 @@ def run_selftests():
     c = kconfiglib.Config(kl)
     def assert_file_and_locations(filename, linenrs, tuples):
         for f, l in tuples:
-            assert_true(f == filename, f)
-            assert_true(l == linenrs.pop(0), "!!!")
+            verify(f == filename, f)
+            verify(l == linenrs.pop(0), "!!!")
     assert_file_and_locations(kl, [2, 14], c["A"].get_def_locations())
     assert_file_and_locations(kl, [5, 6, 18, 19], c["A"].get_ref_locations())
     assert_file_and_locations(kl, [7], c.get_choices()[0].get_def_locations())
     assert_file_and_locations(kl, [4], [c.get_menus()[0].get_location()])
     assert_file_and_locations(kl, [16], [c.get_comments()[0].get_location()])
-    assert_equals(c["NOT_DEFINED"].get_def_locations(), [])
+    verify_equals(c["NOT_DEFINED"].get_def_locations(), [])
     assert_file_and_locations(kl, [6, 15], c["NOT_DEFINED"].get_ref_locations())
 
     #
@@ -219,22 +218,20 @@ def run_selftests():
     A, B, C, D, E, F, G, H, I = c["A"], c["B"], c["C"], c["D"], c["E"], c["F"],\
                                 c["G"], c["H"], c["I"]
     choice_1, choice_2 = c.get_choices()
-    assert_true([menu.get_title() for menu in c.get_menus()] ==
-                ["m1", "m2", "m3", "m4"],
-                "menu ordering is broken")
+    verify([menu.get_title() for menu in c.get_menus()] ==
+           ["m1", "m2", "m3", "m4"],
+           "menu ordering is broken")
     menu_1, menu_2, menu_3, menu_4 = c.get_menus()
 
     print "Testing object relations..."
-    assert_true(A.get_parent() is None, "A should not have a parent")
-    assert_true(B.get_parent() is choice_1,
-                "B's parent should be the first choice")
-    assert_true(E.get_parent() is menu_1,
-                "E's parent should be the first menu")
-    assert_true(c["E"].get_parent().get_parent() is None,
-                "E's grandparent should be None")
-    assert_true(c["G"].get_parent() is choice_2,
-                "G's parent should be the second choice")
-    assert_true(c["G"].get_parent().get_parent() is menu_2,
+    verify(A.get_parent() is None, "A should not have a parent")
+    verify(B.get_parent() is choice_1, "B's parent should be the first choice")
+    verify(E.get_parent() is menu_1, "E's parent should be the first menu")
+    verify(c["E"].get_parent().get_parent() is None,
+           "E's grandparent should be None")
+    verify(c["G"].get_parent() is choice_2,
+           "G's parent should be the second choice")
+    verify(c["G"].get_parent().get_parent() is menu_2,
                 "G's grandparent should be the second menu")
 
     #
@@ -243,37 +240,34 @@ def run_selftests():
 
     print "Testing object fetching..."
 
-    assert_equals(c.get_symbol("NON_EXISTENT"), None)
-    assert_true(c.get_symbol("A") is A, "get_symbol() is broken")
+    verify_equals(c.get_symbol("NON_EXISTENT"), None)
+    verify(c.get_symbol("A") is A, "get_symbol() is broken")
 
-    assert_true(c.get_top_level_items() ==
-                [A, choice_1, menu_1, menu_3, menu_4],
+    verify(c.get_top_level_items() == [A, choice_1, menu_1, menu_3, menu_4],
                 "Wrong items at top level")
-    assert_true(c.get_symbols(False) == [A, B, C, D, E, F, G, H, I],
-                "get_symbols() is broken")
+    verify(c.get_symbols(False) == [A, B, C, D, E, F, G, H, I],
+           "get_symbols() is broken")
 
-    assert_true(choice_1.get_items() == [B, C, D],
-                "Wrong get_items() items in 'choice'")
+    verify(choice_1.get_items() == [B, C, D],
+           "Wrong get_items() items in 'choice'")
     # Test Kconfig quirk
-    assert_true(choice_1.get_actual_items() == [B, D],
-                "Wrong get_actual_items() items in 'choice'")
+    verify(choice_1.get_actual_items() == [B, D],
+           "Wrong get_actual_items() items in 'choice'")
 
-    assert_true(menu_1.get_items() == [E, menu_2, I],
-                "Wrong items in first menu")
-    assert_true(menu_1.get_symbols() == [E, I],
-                "Wrong symbols in first menu")
-    assert_true(menu_1.get_items(True) == [E, menu_2, F, choice_2, G, H, I],
-                "Wrong recursive items in first menu")
-    assert_true(menu_1.get_symbols(True) == [E, F, G, H, I],
-                "Wrong recursive symbols in first menu")
-    assert_true(menu_2.get_items() == [F, choice_2],
-                "Wrong items in second menu")
-    assert_true(menu_2.get_symbols() == [F],
-                "Wrong symbols in second menu")
-    assert_true(menu_2.get_items(True) == [F, choice_2, G, H],
-                "Wrong recursive items in second menu")
-    assert_true(menu_2.get_symbols(True) == [F, G, H],
-                "Wrong recursive symbols in second menu")
+    verify(menu_1.get_items() == [E, menu_2, I], "Wrong items in first menu")
+    verify(menu_1.get_symbols() == [E, I], "Wrong symbols in first menu")
+    verify(menu_1.get_items(True) == [E, menu_2, F, choice_2, G, H, I],
+           "Wrong recursive items in first menu")
+    verify(menu_1.get_symbols(True) == [E, F, G, H, I],
+           "Wrong recursive symbols in first menu")
+    verify(menu_2.get_items() == [F, choice_2],
+           "Wrong items in second menu")
+    verify(menu_2.get_symbols() == [F],
+           "Wrong symbols in second menu")
+    verify(menu_2.get_items(True) == [F, choice_2, G, H],
+           "Wrong recursive items in second menu")
+    verify(menu_2.get_symbols(True) == [F, G, H],
+           "Wrong recursive symbols in second menu")
 
     #
     # get_referenced_symbols()
@@ -284,20 +278,20 @@ def run_selftests():
         sym = c[sym]
         sym_refs = sym.get_referenced_symbols()
         sym_refs_enclosing = sym.get_referenced_symbols(True)
-        assert_true(len(sym_refs) == len(refs_no_enclosing),
-                    "Wrong number of refs excluding enclosing for {0}".\
-                    format(sym.get_name()))
-        assert_true(len(sym_refs_enclosing) == len(refs_enclosing),
-                    "Wrong number of refs including enclosing for {0}".\
-                    format(sym.get_name()))
+        verify(len(sym_refs) == len(refs_no_enclosing),
+               "Wrong number of refs excluding enclosing for {0}".\
+               format(sym.get_name()))
+        verify(len(sym_refs_enclosing) == len(refs_enclosing),
+               "Wrong number of refs including enclosing for {0}".\
+               format(sym.get_name()))
         for r in [c[ref] for ref in refs_no_enclosing]:
-            assert_true(r in sym_refs,
-                        "{0} should reference {1} when excluding enclosing".\
-                        format(sym.get_name(), r.get_name()))
+            verify(r in sym_refs,
+                   "{0} should reference {1} when excluding enclosing".\
+                   format(sym.get_name(), r.get_name()))
         for r in [c[ref] for ref in refs_enclosing]:
-            assert_true(r in sym_refs_enclosing,
-                        "{0} should reference {1} when including enclosing".\
-                        format(sym.get_name(), r.get_name()))
+            verify(r in sym_refs_enclosing,
+                   "{0} should reference {1} when including enclosing".\
+                   format(sym.get_name(), r.get_name()))
     assert_refs("NO_REF", [], [])
     assert_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]
@@ -313,12 +307,11 @@ def run_selftests():
     def assert_selects(sym, selections):
         sym = c[sym]
         sym_selections = sym.get_selected_symbols()
-        assert_true(len(sym_selections) == len(selections),
-                    "Wrong number of selects for {0}".format(sym.get_name()))
+        verify(len(sym_selections) == len(selections),
+               "Wrong number of selects for {0}".format(sym.get_name()))
         for s in [c[ref] for ref in selections]:
-            assert_true(s in sym_selections,
-                        "{0} should be selected by {1}".\
-                        format(s.get_name(), sym.get_name()))
+            verify(s in sym_selections, "{0} should be selected by {1}".\
+                                        format(s.get_name(), sym.get_name()))
     assert_selects("NO_REF", [])
     assert_selects("MANY_REF", ["I", "K"])
 
@@ -333,16 +326,15 @@ def run_selftests():
         sym = c[sym_name]
         deps = [c[dep] for dep in deps_names]
         sym_deps = sym._get_dependent()
-        assert_true(len(sym_deps) == len(deps),
-                    "Wrong number of dependent symbols for {0}".\
-                    format(sym.get_name()))
-        assert_true(len(sym_deps) == len(set(sym_deps)),
-                    "{0}'s dependencies contains duplicates".\
-                    format(sym.get_name()))
+        verify(len(sym_deps) == len(deps),
+               "Wrong number of dependent symbols for {0}".\
+               format(sym.get_name()))
+        verify(len(sym_deps) == len(set(sym_deps)),
+               "{0}'s dependencies contains duplicates".\
+               format(sym.get_name()))
         for dep in deps:
-            assert_true(dep in sym_deps,
-                        "{0} should depend on {1}".\
-                        format(dep.get_name(), sym.get_name()))
+            verify(dep in sym_deps, "{0} should depend on {1}".\
+                                    format(dep.get_name(), sym.get_name()))
     # Test twice to cover dependency caching
     for i in range(0, 2):
         n_deps = 14
@@ -756,17 +748,12 @@ def equal_confs():
 
 _all_ok = True
 
-def assert_true(cond, msg):
+def verify(cond, msg):
     """Fails and prints 'msg' if 'conf' is False."""
     if not cond:
         fail(msg)
 
-def assert_false(cond, msg):
-    """Fails and prints 'msg' if 'conf' is True."""
-    if cond:
-        fail(msg)
-
-def assert_equals(x, y):
+def verify_equals(x, y):
     """Fails if 'x' does not equal 'y'."""
     if x != y:
         fail("'{0}' does not equal '{1}'".format(x, y))
