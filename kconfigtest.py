@@ -47,10 +47,11 @@ speedy_mode = False
 obsessive_mode = False
 log_mode = False
 
-# Assume that the value of KERNELVERSION does not affect the configuration
-# (true as of Linux 2.6.38-rc3). Here we could fetch the correct version
-# instead.
-os.environ["KERNELVERSION"] = "2"
+# Assign this to avoid warnings from Kconfiglib. Nothing in the kernel's
+# Kconfig files seems to actually look at the value as of 3.7.0-rc8. This is
+# only relevant for the test suite, as this will get set by the kernel Makefile
+# when using (i)scriptconfig.
+os.environ["KERNELVERSION"] = "3.7.0"
 
 # Prevent accidental loading of configuration files by removing
 # KCONFIG_ALLCONFIG from the environment
