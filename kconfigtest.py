@@ -112,7 +112,7 @@ def run_selftests():
 
     print "Testing get_lower/upper_bound() and get_assignable_values()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
-    def assert_bounds(sym, lower, upper):
+    def verify_bounds(sym, lower, upper):
         sym = c[sym]
         low = sym.get_lower_bound()
         high = sym.get_upper_bound()
@@ -138,18 +138,18 @@ def run_selftests():
                    "be {1} while get_assignable_values() thinks it should be "
                    "{2}".format(sym.get_name(), bound_range, assignable_range))
 
-    assert_bounds("Y_VISIBLE_BOOL", "n", "y")
-    assert_bounds("Y_VISIBLE_TRISTATE", "n", "y")
-    assert_bounds("M_VISIBLE_BOOL", "n", "y")
-    assert_bounds("M_VISIBLE_TRISTATE", "n", "m")
-    assert_bounds("Y_SELECTED_BOOL", None, None)
-    assert_bounds("M_SELECTED_BOOL", None, None)
-    assert_bounds("Y_SELECTED_TRISTATE", None, None)
-    assert_bounds("M_SELECTED_TRISTATE", "m", "y")
-    assert_bounds("M_SELECTED_M_VISIBLE_TRISTATE", None, None)
-    assert_bounds("STRING", None, None)
-    assert_bounds("INT", None, None)
-    assert_bounds("HEX", None, None)
+    verify_bounds("Y_VISIBLE_BOOL", "n", "y")
+    verify_bounds("Y_VISIBLE_TRISTATE", "n", "y")
+    verify_bounds("M_VISIBLE_BOOL", "n", "y")
+    verify_bounds("M_VISIBLE_TRISTATE", "n", "m")
+    verify_bounds("Y_SELECTED_BOOL", None, None)
+    verify_bounds("M_SELECTED_BOOL", None, None)
+    verify_bounds("Y_SELECTED_TRISTATE", None, None)
+    verify_bounds("M_SELECTED_TRISTATE", "m", "y")
+    verify_bounds("M_SELECTED_M_VISIBLE_TRISTATE", None, None)
+    verify_bounds("STRING", None, None)
+    verify_bounds("INT", None, None)
+    verify_bounds("HEX", None, None)
 
     #
     # eval() (Already well exercised. Just test some basics.)
@@ -159,22 +159,22 @@ def run_selftests():
 
     print "Testing eval()..."
     c = kconfiglib.Config("Kconfiglib/tests/Keval")
-    def assert_val(expr, val):
+    def verify_val(expr, val):
         res = c.eval(expr)
         verify(res == val,
                "'{0}' evaluated to {1}, expected {2}".format(expr, res, val))
     # No modules
-    assert_val("n", "n")
-    assert_val("m", "n")
-    assert_val("y", "y")
-    assert_val("M", "y")
+    verify_val("n", "n")
+    verify_val("m", "n")
+    verify_val("y", "y")
+    verify_val("M", "y")
     # Modules
     c["MODULES"].set_value("y")
-    assert_val("n", "n")
-    assert_val("m", "m")
-    assert_val("y", "y")
-    assert_val("M", "m")
-    assert_val("(Y || N) && (m && y)", "m")
+    verify_val("n", "n")
+    verify_val("m", "m")
+    verify_val("y", "y")
+    verify_val("M", "m")
+    verify_val("(Y || N) && (m && y)", "m")
 
     #
     # Text queries
@@ -197,17 +197,17 @@ def run_selftests():
     print "Testing location queries..."
     kl = "Kconfiglib/tests/Klocation"
     c = kconfiglib.Config(kl)
-    def assert_file_and_locations(filename, linenrs, tuples):
+    def verify_file_and_locations(filename, linenrs, tuples):
         for f, l in tuples:
             verify(f == filename, f)
             verify(l == linenrs.pop(0), "!!!")
-    assert_file_and_locations(kl, [2, 14], c["A"].get_def_locations())
-    assert_file_and_locations(kl, [5, 6, 18, 19], c["A"].get_ref_locations())
-    assert_file_and_locations(kl, [7], c.get_choices()[0].get_def_locations())
-    assert_file_and_locations(kl, [4], [c.get_menus()[0].get_location()])
-    assert_file_and_locations(kl, [16], [c.get_comments()[0].get_location()])
+    verify_file_and_locations(kl, [2, 14], c["A"].get_def_locations())
+    verify_file_and_locations(kl, [5, 6, 18, 19], c["A"].get_ref_locations())
+    verify_file_and_locations(kl, [7], c.get_choices()[0].get_def_locations())
+    verify_file_and_locations(kl, [4], [c.get_menus()[0].get_location()])
+    verify_file_and_locations(kl, [16], [c.get_comments()[0].get_location()])
     verify_equals(c["NOT_DEFINED"].get_def_locations(), [])
-    assert_file_and_locations(kl, [6, 15], c["NOT_DEFINED"].get_ref_locations())
+    verify_file_and_locations(kl, [6, 15], c["NOT_DEFINED"].get_ref_locations())
 
     #
     # Object relations
@@ -274,7 +274,7 @@ def run_selftests():
     #
 
     c = kconfiglib.Config("Kconfiglib/tests/Kref")
-    def assert_refs(sym, refs_no_enclosing, refs_enclosing):
+    def verify_refs(sym, refs_no_enclosing, refs_enclosing):
         sym = c[sym]
         sym_refs = sym.get_referenced_symbols()
         sym_refs_enclosing = sym.get_referenced_symbols(True)
@@ -292,10 +292,10 @@ def run_selftests():
             verify(r in sym_refs_enclosing,
                    "{0} should reference {1} when including enclosing".\
                    format(sym.get_name(), r.get_name()))
-    assert_refs("NO_REF", [], [])
-    assert_refs("ONE_REF", ["A"], ["A"])
+    verify_refs("NO_REF", [], [])
+    verify_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]
-    assert_refs("MANY_REF",
+    verify_refs("MANY_REF",
                 own_refs,
                 own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
                             "MENU_REF_2"])
@@ -304,7 +304,7 @@ def run_selftests():
     # get_selected_symbols() (same test file)
     #
 
-    def assert_selects(sym, selections):
+    def verify_selects(sym, selections):
         sym = c[sym]
         sym_selections = sym.get_selected_symbols()
         verify(len(sym_selections) == len(selections),
@@ -312,8 +312,8 @@ def run_selftests():
         for s in [c[ref] for ref in selections]:
             verify(s in sym_selections, "{0} should be selected by {1}".\
                                         format(s.get_name(), sym.get_name()))
-    assert_selects("NO_REF", [])
-    assert_selects("MANY_REF", ["I", "K"])
+    verify_selects("NO_REF", [])
+    verify_selects("MANY_REF", ["I", "K"])
 
     #
     # Object dependencies
@@ -322,7 +322,7 @@ def run_selftests():
     print "Testing object dependencies..."
 
     c = kconfiglib.Config("Kconfiglib/tests/Kdep")
-    def assert_dependent(sym_name, deps_names):
+    def verify_dependent(sym_name, deps_names):
         sym = c[sym_name]
         deps = [c[dep] for dep in deps_names]
         sym_deps = sym._get_dependent()
@@ -338,12 +338,12 @@ def run_selftests():
     # Test twice to cover dependency caching
     for i in range(0, 2):
         n_deps = 14
-        assert_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
+        verify_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
         # Choices
-        assert_dependent("A", ["B", "C"])
-        assert_dependent("B", ["A", "C"])
-        assert_dependent("C", ["A", "B"])
-        assert_dependent("S", ["A", "B", "C"])
+        verify_dependent("A", ["B", "C"])
+        verify_dependent("B", ["A", "C"])
+        verify_dependent("C", ["A", "B"])
+        verify_dependent("S", ["A", "B", "C"])
 
     print
     if _all_ok:
