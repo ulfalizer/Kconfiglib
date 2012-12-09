@@ -2550,39 +2550,6 @@ class Symbol(Item, _HasVisibility):
         representation."""
         return self.parent
 
-    def get_sibling_symbols(self, include_self = False):
-        """Returns a list containing all symbols that are in the same menu or
-        choice statement as the symbol, or that are also at the top level in
-        case the symbol is at the top level.
-
-        include_self (default: False) -- True if the symbol itself should be
-                                         included in the result, otherwise
-                                         False."""
-
-        return [item for item in self.get_sibling_items(include_self)
-                if isinstance(item, Symbol)]
-
-    def get_sibling_items(self, include_self = False):
-        """Returns a list containing all items (symbols, menus, choice
-        statements and comments) that are in the same menu or choice statement
-        as the symbol, or that are also at the top level in case the symbol is
-        at the top level. The items appear in the same order as within the
-        configuration.
-
-        include_self (default: False) -- True if the symbol itself should be
-                                         included in the result, otherwise
-                                         False."""
-
-        if self.parent is None:
-            items = self.config.get_top_level_items()
-        else:
-            items = self.parent.get_items()
-
-        if include_self:
-            return items
-
-        return [item for item in items if item is not self]
-
     def get_referenced_symbols(self, refs_from_enclosing = False):
         """Returns the set() of all symbols referenced by this symbol. For
         example, the symbol defined by
