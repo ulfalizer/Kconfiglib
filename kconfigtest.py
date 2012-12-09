@@ -307,6 +307,22 @@ def run_selftests():
                             "MENU_REF_2"])
 
     #
+    # get_selected_symbols() (same test file)
+    #
+
+    def assert_selects(sym, selections):
+        sym = c[sym]
+        sym_selections = sym.get_selected_symbols()
+        assert_true(len(sym_selections) == len(selections),
+                    "Wrong number of selects for {0}".format(sym.get_name()))
+        for s in [c[ref] for ref in selections]:
+            assert_true(s in sym_selections,
+                        "{0} should be selected by {1}".\
+                        format(s.get_name(), sym.get_name()))
+    assert_selects("NO_REF", [])
+    assert_selects("MANY_REF", ["I", "K"])
+
+    #
     # Object dependencies
     #
 

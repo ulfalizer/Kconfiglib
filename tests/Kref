@@ -1,0 +1,24 @@
+# For testing get_referenced_symbols(), get_selected_symbols(), etc.
+
+config NO_REF
+    bool
+
+config ONE_REF
+    def_bool A
+
+menu "m"
+    depends on MENU_REF_1 && MENU_REF_2
+
+if IF_REF_1 && IF_REF_2
+
+config MANY_REF
+    int "BAR" if A && B
+    default C if D
+    range E F if G
+    depends on H
+    select I if J
+    select K
+
+endif
+
+endmenu
