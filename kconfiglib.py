@@ -151,11 +151,6 @@ class Config():
         # DEFCONFIG_LIST uses this
         register_special_symbol(STRING, "UNAME_RELEASE", os.uname()[2])
 
-        # Maps a symbol to its directly dependent symbols (any symbol whose
-        # prompt, default value or reverse dependency expressions directly
-        # depend on the symbol)
-        self.dep = {}
-
         # The symbol with "option defconfig_list" set, containing a list of
         # default .config files
         self.defconfig_sym = None
@@ -1568,20 +1563,20 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
     #
 
     def _build_dep(self):
-        """Populates the dep dictionary, linking a symbol to the symbols that
-        immediately depend on it in the sense that changing the value of the
-        symbol might affect the values of those other symbols. This is used for
-        caching/invalidation purposes. The returned set might be larger than
-        necessary as we don't do any complicated analysis of the
-        expressions."""
+        """Populates the Symbol.dep dictionaries, linking the symbol to the
+        symbols that immediately depend on it in the sense that changing the
+        value of the symbol might affect the values of those other symbols.
+        This is used for caching/invalidation purposes. The calculated sets
+        might be larger than necessary as we don't do any complicated analysis
+        of the expressions."""
         for sym in self.syms.itervalues():
-            self.dep[sym] = set()
+            sym.dep = set()
 
         # Adds 'sym' as a directly dependent symbol to all symbols that appear
         # in the expression 'e'
         def add_expr_deps(e, sym):
             for s in self._get_expr_syms(e):
-                self.dep[s].add(sym)
+                s.dep.add(sym)
 
         # The directly dependent symbols of a symbol are:
         #  - Any symbols whose prompts, default values, rev_dep (select
@@ -2759,8 +2754,14 @@ class Symbol(Item, _HasVisibility):
         # Caches the calculated value
         self.cached_value = None
 
-        # Caches the list of dependent symbols. Calculated the first time a
-        # user value is set on the symbol.
+        # Note: An instance variable 'self.dep' gets set on the Symbol in
+        # Config._build_dep(), linking the symbol to the symbols that
+        # immediately depend on it (in a caching/invalidation sense). The total
+        # set of dependent symbols for the symbol (the transitive closure) is
+        # calculated on an as-needed basis in _get_dependent().
+
+        # Caches the total list of dependent symbols. Calculated in
+        # _get_dependent().
         self.cached_deps = None
 
         # Does the symbol have an entry in the Kconfig file? The Trailing
@@ -2906,49 +2907,35 @@ class Symbol(Item, _HasVisibility):
                             .format(self.type))
 
     def _get_dependent(self):
-        """Returns the list of symbols that should be invalidated if the user
-        value of the symbol changes, because they might be affected by the
-        change. Note that this is an internal API -- it's probably of limited
+        """Returns the list of symbols that should be invalidated if the value
+        of the symbol changes, because they might be affected by the change.
+        Note that this is an internal API -- it's probably of limited
         usefulness to clients."""
         if self.cached_deps is not None:
             return self.cached_deps
 
-        # TODO: This still recalculates a lot. Should use a recursive
-        # _get_dependent() call to make best use of caching. Make sure to get
-        # it right w.r.t. choices.
-
-        # Calculate using a set to avoid duplicates in the result
         res = set()
 
-        def rec(sym, ignore_choice = False):
-            # If the dependencies of the symbol have already been calculated,
-            # then reuse that
-            if sym.cached_deps is not None:
-                res.update(sym.cached_deps)
-                return
-
-            for s in self.config.dep[sym]:
-                if s not in res:
+        if self.is_choice_item_:
+            for s in self.get_parent().get_actual_items():
+                if s is not self:
                     res.add(s)
-                    rec(s)
+                s._add_dependent_ignore_siblings(res)
+        else:
+            self._add_dependent_ignore_siblings(res)
 
-            # Handle choices specially to avoid lots of hopping around between
-            # choice items (which all depend on each other) while calculating
-            # dependencies
-            if sym.is_choice_item() and not ignore_choice:
-                choice = sym.get_parent()
-
-                for s in choice.get_actual_items():
-                    if s not in res and s is not self:
-                        res.add(s)
-                        rec(s, True)
-
-        rec(self)
-        # Using cached deps from other symbols in the same choice might mean we
-        # get ourself in the result (harmless but unnecessary)
-        res.discard(self)
-        self.cached_deps = list(res)
+        self.cached_deps = res
         return self.cached_deps
+
+    def _add_dependent_ignore_siblings(self, to):
+        """Calculating dependencies gets a bit tricky for choice items as they
+        all depend on each other, potentially leading to infinite recursion.
+        This helper function calculates dependencies ignoring the other symbols
+        in the choice. It also works fine for symbols that are not choice
+        items."""
+        for s in self.dep:
+            to.add(s)
+            to.update(s._get_dependent())
 
     def _has_auto_menu_dep_on(self, on):
         """See Choice._determine_actual_items()."""
