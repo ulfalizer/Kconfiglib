@@ -105,17 +105,17 @@ def run_selftests():
 
     print "Testing get_lower/upper_bound() and get_assignable_values()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
-    def verify_bounds(sym, lower, upper):
-        sym = c[sym]
-        low = sym.get_lower_bound()
-        high = sym.get_upper_bound()
-        verify(low == lower and high == upper,
+    def verify_bounds(sym_name, low, high):
+        sym = c[sym_name]
+        sym_low = sym.get_lower_bound()
+        sym_high = sym.get_upper_bound()
+        verify(sym_low == low and sym_high == high,
                "Incorrectly calculated bounds for {0}: {1}-{2}. "
                "Expected {3}-{4}.".format(sym.get_name(),
-                                          low, high, lower, upper))
+                                          sym_low, sym_high, low, high))
         # See that we get back the corresponding range from
         # get_assignable_values()
-        if low is None:
+        if sym_low is None:
             vals = sym.get_assignable_values()
             verify(vals == [],
                    "get_assignable_values() thinks there should be assignable "
@@ -123,8 +123,8 @@ def run_selftests():
                    format(sym.get_name(), vals))
         else:
             tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
-            bound_range = ["n", "m", "y"][tri_to_int[low] :
-                                          tri_to_int[high] + 1]
+            bound_range = ["n", "m", "y"][tri_to_int[sym_low] :
+                                          tri_to_int[sym_high] + 1]
             assignable_range = sym.get_assignable_values()
             verify(bound_range == assignable_range,
                    "get_lower/upper_bound() thinks the range for {0} should "
