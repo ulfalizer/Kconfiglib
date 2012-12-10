@@ -1866,37 +1866,43 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
 
 def _get_expr_syms(expr):
     """Returns the set() of symbols appearing in expr."""
-    if expr is None or isinstance(expr, str):
-        return set()
-
-    if isinstance(expr, Symbol):
-        return set((expr,))
-
-    elif expr[0] in (OR, AND):
-        res = set()
-        for subres in [_get_expr_syms(e) for e in expr[1]]:
-            res.update(subres)
+    res = set()
+    if expr is None:
         return res
 
-    elif expr[0] == NOT:
-        return _get_expr_syms(expr[1])
+    def rec(expr):
+        if isinstance(expr, Symbol):
+            res.add(expr)
+            return
 
-    elif expr[0] in (EQUAL, UNEQUAL):
-        res = set()
+        if isinstance(expr, str):
+            return
 
-        _, v1, v2 = expr
+        e0 = expr[0]
 
-        if isinstance(v1, Symbol):
-            res.add(v1)
+        if e0 == OR or e0 == AND:
+            for term in expr[1]:
+                rec(term)
 
-        if isinstance(v2, Symbol):
-            res.add(v2)
+        elif e0 == NOT:
+            rec(expr[1])
 
-        return res
+        elif e0 == EQUAL or e0 == UNEQUAL:
+            _, v1, v2 = expr
 
-    else:
-        _internal_error("Internal error while fetching symbols from an expression with "
-                        "token stream {0}.".format(expr))
+            if isinstance(v1, Symbol):
+                res.add(v1)
+
+            if isinstance(v2, Symbol):
+                res.add(v2)
+
+        else:
+            _internal_error("Internal error while fetching symbols from an "
+                            "expression with token stream {0}.".format(expr))
+
+    rec(expr)
+    return res
+
 
 #
 # Construction of expressions
