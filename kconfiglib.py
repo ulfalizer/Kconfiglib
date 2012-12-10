@@ -873,15 +873,18 @@ class Config():
 
         return (relation, sym_or_string, sym_or_string_2)
 
-    def _parse_file(self, filename, parent, deps, visible_if_deps):
-        """Parse the Kconfig file 'filename'. The result is
-        a _Block with all items from the file."""
+    def _parse_file(self, filename, parent, deps, visible_if_deps, res = None):
+        """Parse the Kconfig file 'filename'. The result is a _Block with all
+        items from the file. See _parse_block() for the meaning of the
+        parameters."""
         line_feeder = _FileFeed(_get_lines(filename), filename)
-        return self._parse_block(line_feeder, None, parent, deps, visible_if_deps)
+        return self._parse_block(line_feeder, None, parent, deps, visible_if_deps, res)
 
-    def _parse_block(self, line_feeder, end_marker, parent, deps, visible_if_deps = None):
+    def _parse_block(self, line_feeder, end_marker, parent, deps,
+                     visible_if_deps = None, res = None):
         """Parses a block, which is the contents of either a file or an if,
-        menu, or choice statement.
+        menu, or choice statement. The result is a _Block with the items from
+        the block.
 
         end_marker -- The token that ends the block, e.g. T_ENDIF ("endif") for
                       if's. None for files.
@@ -892,9 +895,12 @@ class Config():
         deps -- Dependencies from enclosing menus, choices and if's.
 
         visible_if_deps (default: None) -- 'visible if' dependencies from
-                        enclosing menus."""
+                        enclosing menus.
 
-        block = _Block()
+        res (default: None) -- The _Block to add items to. If None, a new
+                               _Block is created to hold the items."""
+
+        block = _Block() if res is None else res;
 
         filename = line_feeder.get_filename()
 
@@ -982,13 +988,12 @@ class Config():
                 # object representation.
 
                 dep_expr = self._parse_expr(tokens, None, line, filename, linenr)
-                if_block = self._parse_block(line_feeder,
-                                             T_ENDIF,
-                                             parent,
-                                             _make_and(dep_expr, deps),
-                                             visible_if_deps)
-
-                block.add_items_from_block(if_block)
+                self._parse_block(line_feeder,
+                                  T_ENDIF,
+                                  parent,
+                                  _make_and(dep_expr, deps),
+                                  visible_if_deps,
+                                  block) # Add items to the same block
 
             elif t0 == T_CHOICE:
                 # We support named choices
@@ -1067,8 +1072,8 @@ class Config():
                                             kconfig_file,
                                             self.base_dir))
 
-                file_block = self._parse_file(f, parent, deps, visible_if_deps)
-                block.add_items_from_block(file_block)
+                # Add items to the same block
+                self._parse_file(f, parent, deps, visible_if_deps, block)
 
             elif t0 == T_MAINMENU:
                 text = tokens.get_next()
@@ -2152,9 +2157,6 @@ class _Block:
 
     def add_item(self, item):
         self.items.append(item)
-
-    def add_items_from_block(self, block):
-        self.items.extend(block.items)
 
     def _make_conf(self):
         # Collect the substrings in a list and later use join() instead of +=
