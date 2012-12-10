@@ -95,7 +95,8 @@ def run_selftests():
         verify(c[s].is_modifiable(),
                "{0} should be modifiable".format(c[s].get_name()))
     for s in ("NOT_VISIBLE", "SELECTED_TO_Y", "BOOL_SELECTED_TO_M",
-              "NOT_VISIBLE_STRING", "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
+              "M_VISIBLE_TRISTATE_SELECTED_TO_M", "NOT_VISIBLE_STRING",
+              "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
         verify(not c[s].is_modifiable(),
                "{0} should not be modifiable".format(c[s].get_name()))
 

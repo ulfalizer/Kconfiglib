@@ -17,10 +17,15 @@ config SELECTED_TO_Y
 config M_SELECTOR
     def_tristate m
     select TRISTATE_SELECTED_TO_M
+    select M_VISIBLE_TRISTATE_SELECTED_TO_M
     select BOOL_SELECTED_TO_M
 
 config TRISTATE_SELECTED_TO_M
     tristate "tristate selected to m"
+
+config M_VISIBLE_TRISTATE_SELECTED_TO_M
+    tristate "m-visible tristate selected to m"
+    depends on m
 
 # The "m" will get promoted to a "y", so this should still not be modifiable
 config BOOL_SELECTED_TO_M
