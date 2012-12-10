@@ -1,5 +1,7 @@
-# This is a test suite for kconfiglib, primarily testing compatibility with the
-# C kconfig implementation by comparing outputs. It should be run from the
+# This is a test suite for kconfiglib. It runs selftests on Kconfigs provided
+# by us and tests compatibility with the C Kconfig implementation by comparing
+# the output of Kconfiglib with the output of the scripts/kconfig/*conf
+# utilities for different targets and defconfigs. It should be run from the
 # top-level kernel directory with
 #
 #  $ python Kconfiglib/kconfigtest.py
