@@ -971,8 +971,8 @@ class Config():
                                                T_ENDMENU,
                                                menu,
                                                menu.dep_expr,
-                                               self._make_and(visible_if_deps,
-                                                              menu.visible_if_expr))
+                                               _make_and(visible_if_deps,
+                                                         menu.visible_if_expr))
 
                 block.add_item(menu)
 
@@ -985,7 +985,7 @@ class Config():
                 if_block = self._parse_block(line_feeder,
                                              T_ENDIF,
                                              parent,
-                                             self._make_and(dep_expr, deps),
+                                             _make_and(dep_expr, deps),
                                              visible_if_deps)
 
                 block.add_items_from_block(if_block)
@@ -1179,9 +1179,9 @@ class Config():
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
 
                 if isinstance(stmt, (Menu, Comment)):
-                    stmt.dep_expr = self._make_and(stmt.dep_expr, parsed_deps)
+                    stmt.dep_expr = _make_and(stmt.dep_expr, parsed_deps)
                 else:
-                    depends_on_expr = self._make_and(depends_on_expr, parsed_deps)
+                    depends_on_expr = _make_and(depends_on_expr, parsed_deps)
 
             elif t0 == T_VISIBLE:
                 if not tokens.check(T_IF):
@@ -1193,7 +1193,7 @@ class Config():
                                  linenr)
 
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
-                stmt.visible_if_expr = self._make_and(stmt.visible_if_expr, parsed_deps)
+                stmt.visible_if_expr = _make_and(stmt.visible_if_expr, parsed_deps)
 
             elif t0 == T_SELECT:
                 target = tokens.get_next()
@@ -1302,7 +1302,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         if isinstance(stmt, (Menu, Comment)):
             stmt.orig_deps = stmt.dep_expr
             stmt.deps_from_containing = deps
-            stmt.dep_expr = self._make_and(stmt.dep_expr, deps)
+            stmt.dep_expr = _make_and(stmt.dep_expr, deps)
 
             stmt.all_referenced_syms = \
               stmt.referenced_syms.union(_get_expr_syms(deps))
@@ -1318,10 +1318,10 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
             # symbol might be defined in multiple places and the dependencies
             # should only apply to the local definition.)
 
-            new_def_exprs = [(val_expr, self._make_and(cond_expr, depends_on_expr))
+            new_def_exprs = [(val_expr, _make_and(cond_expr, depends_on_expr))
                              for (val_expr, cond_expr) in new_def_exprs]
 
-            new_selects = [(target, self._make_and(cond_expr, depends_on_expr))
+            new_selects = [(target, _make_and(cond_expr, depends_on_expr))
                            for (target, cond_expr) in new_selects]
 
             if new_prompt is not None:
@@ -1330,9 +1330,9 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
                 # 'visible if' dependencies from enclosing menus get propagated
                 # to prompts
                 if visible_if_deps is not None:
-                    cond_expr = self._make_and(cond_expr, visible_if_deps)
+                    cond_expr = _make_and(cond_expr, visible_if_deps)
 
-                new_prompt = (prompt, self._make_and(cond_expr, depends_on_expr))
+                new_prompt = (prompt, _make_and(cond_expr, depends_on_expr))
 
             # We save the original expressions -- before any menu and if
             # conditions have been propagated -- so these can be retrieved
@@ -1356,17 +1356,17 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
 
             # Propagate dependencies from enclosing menus and if's
 
-            stmt.def_exprs.extend([(val_expr, self._make_and(cond_expr, deps))
+            stmt.def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
                                    for (val_expr, cond_expr) in new_def_exprs])
 
             for (target, cond) in new_selects:
-                target.rev_dep = self._make_or(target.rev_dep,
-                                               self._make_and(stmt,
-                                                              self._make_and(cond, deps)))
+                target.rev_dep = _make_or(target.rev_dep,
+                                          _make_and(stmt,
+                                                    _make_and(cond, deps)))
 
             if new_prompt is not None:
                 prompt, cond_expr = new_prompt
-                stmt.prompts.append((prompt, self._make_and(cond_expr, deps)))
+                stmt.prompts.append((prompt, _make_and(cond_expr, deps)))
 
     #
     # Symbol table manipulation
@@ -1491,64 +1491,6 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         e2_eval = self._eval_expr(e2)
 
         return e1_eval if tri_greater(e1_eval, e2_eval) else e2_eval
-
-    #
-    # Construction of expressions
-    #
-
-    # These functions as well as the _eval_min/max() functions above equate
-    # None with "y", which is usually what we want, but needs to be kept in
-    # mind.
-
-    def _make_or(self, e1, e2):
-        # Perform trivial simplification and avoid None's (which
-        # correspond to y's)
-        if "y" in (e1, e2) or None in (e1, e2):
-            return "y"
-
-        if e1 == "n":
-            return e2
-
-        if e2 == "n":
-            return e1
-
-        # Prefer to merge/update argument list if possible instead of creating
-        # a new OR node
-
-        if isinstance(e1, tuple) and e1[0] == OR:
-            if isinstance(e2, tuple) and e2[0] == OR:
-                return (OR, e1[1] + e2[1])
-            return (OR, e1[1] + [e2])
-
-        if isinstance(e2, tuple) and e2[0] == OR:
-            return (OR, e2[1] + [e1])
-
-        return (OR, [e1, e2])
-
-    # Note: returns None if e1 == e2 == None
-
-    def _make_and(self, e1, e2):
-        if "n" in (e1, e2):
-            return "n"
-
-        if e1 in (None, "y"):
-            return e2
-
-        if e2 in (None, "y"):
-            return e1
-
-        # Prefer to merge/update argument list if possible instead of creating
-        # a new AND node
-
-        if isinstance(e1, tuple) and e1[0] == AND:
-            if isinstance(e2, tuple) and e2[0] == AND:
-                return (AND, e1[1] + e2[1])
-            return (AND, e1[1] + [e2])
-
-        if isinstance(e2, tuple) and e2[0] == AND:
-            return (AND, e2[1] + [e1])
-
-        return (AND, [e1, e2])
 
     #
     # Methods related to the MODULES symbol
@@ -1951,6 +1893,63 @@ def _get_expr_syms(expr):
         _internal_error("Internal error while fetching symbols from an expression with "
                         "token stream {0}.".format(expr))
 
+#
+# Construction of expressions
+#
+
+# These functions as well as the _eval_min/max() functions above equate
+# None with "y", which is usually what we want, but needs to be kept in
+# mind.
+
+def _make_or(e1, e2):
+    # Perform trivial simplification and avoid None's (which
+    # correspond to y's)
+    if "y" in (e1, e2) or None in (e1, e2):
+        return "y"
+
+    if e1 == "n":
+        return e2
+
+    if e2 == "n":
+        return e1
+
+    # Prefer to merge/update argument list if possible instead of creating
+    # a new OR node
+
+    if isinstance(e1, tuple) and e1[0] == OR:
+        if isinstance(e2, tuple) and e2[0] == OR:
+            return (OR, e1[1] + e2[1])
+        return (OR, e1[1] + [e2])
+
+    if isinstance(e2, tuple) and e2[0] == OR:
+        return (OR, e2[1] + [e1])
+
+    return (OR, [e1, e2])
+
+# Note: returns None if e1 == e2 == None
+
+def _make_and(e1, e2):
+    if "n" in (e1, e2):
+        return "n"
+
+    if e1 in (None, "y"):
+        return e2
+
+    if e2 in (None, "y"):
+        return e1
+
+    # Prefer to merge/update argument list if possible instead of creating
+    # a new AND node
+
+    if isinstance(e1, tuple) and e1[0] == AND:
+        if isinstance(e2, tuple) and e2[0] == AND:
+            return (AND, e1[1] + e2[1])
+        return (AND, e1[1] + [e2])
+
+    if isinstance(e2, tuple) and e2[0] == AND:
+        return (AND, e2[1] + [e1])
+
+    return (AND, [e1, e2])
 
 #
 # Constants and functions related to types, parsing, evaluation and printing,
