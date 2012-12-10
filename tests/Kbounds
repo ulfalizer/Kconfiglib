@@ -10,7 +10,7 @@ config Y_VISIBLE_TRISTATE
 config M_VISIBLE_BOOL
     bool "m-visible bool" if m
 
-config M_VISIBLE_TRISTATE
+menuconfig M_VISIBLE_TRISTATE
     tristate "m-visible tristate" if m
 
 config Y_SELECTOR

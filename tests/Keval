@@ -8,5 +8,5 @@ config N
 config M
     def_tristate m
 
-config Y
+menuconfig Y
     def_tristate y
