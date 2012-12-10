@@ -203,7 +203,7 @@ class Config():
         # Parse the Kconfig files
         self.top_block = self._parse_file(filename, None, None, None)
 
-        # Build self.dep
+        # Build Symbol.dep for all symbols
         self._build_dep()
 
     def load_config(self, filename, reset = True):
@@ -1505,12 +1505,12 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
     #
 
     def _build_dep(self):
-        """Populates the Symbol.dep dictionaries, linking the symbol to the
-        symbols that immediately depend on it in the sense that changing the
-        value of the symbol might affect the values of those other symbols.
-        This is used for caching/invalidation purposes. The calculated sets
-        might be larger than necessary as we don't do any complicated analysis
-        of the expressions."""
+        """Populates the Symbol.dep sets, linking the symbol to the symbols
+        that immediately depend on it in the sense that changing the value of
+        the symbol might affect the values of those other symbols. This is used
+        for caching/invalidation purposes. The calculated sets might be larger
+        than necessary as we don't do any complicated analysis of the
+        expressions."""
         for sym in self.syms.itervalues():
             sym.dep = set()
 
