@@ -865,6 +865,10 @@ class Config():
         relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
         sym_or_string_2 = feed.get_next()
 
+        if self.parse_expr_cur_sym_or_choice is not None and \
+           isinstance(sym_or_string_2, Symbol):
+            self.parse_expr_cur_sym_or_choice.referenced_syms.add(sym_or_string_2)
+
         if sym_or_string is self.m:
             sym_or_string = "m"
 
