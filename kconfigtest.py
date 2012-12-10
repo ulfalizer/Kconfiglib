@@ -338,7 +338,7 @@ def run_selftests():
                                     format(dep.get_name(), sym.get_name()))
     # Test twice to cover dependency caching
     for i in range(0, 2):
-        n_deps = 14
+        n_deps = 28
         verify_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
         # Choices
         verify_dependent("A", ["B", "C"])
