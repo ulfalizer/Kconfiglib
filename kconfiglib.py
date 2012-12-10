@@ -904,7 +904,7 @@ class Config():
         res (default: None) -- The _Block to add items to. If None, a new
                                _Block is created to hold the items."""
 
-        block = _Block() if res is None else res;
+        block = _Block() if res is None else res
 
         filename = line_feeder.get_filename()
 
@@ -2033,7 +2033,7 @@ sym_chars = frozenset(string.ascii_letters + string.digits + "._/-")
 
 # Characters that might be the first significant character on a line. Other
 # characters are ignored at the beginning of a line.
-command_chars = frozenset(string.ascii_letters + string.digits + "_");
+command_chars = frozenset(string.ascii_letters + string.digits + "_")
 
 # Regular expressions for parsing .config files
 set_re   = re.compile(r"CONFIG_(\w+)=(.*)")
