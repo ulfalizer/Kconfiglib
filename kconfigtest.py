@@ -88,7 +88,8 @@ def run_selftests():
     # is_modifiable()
     #
 
-    print "Testing is_modifiable()..."
+    print "Testing is_modifiable() and range queries..."
+
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
     for s in ("VISIBLE", "TRISTATE_SELECTED_TO_M", "VISIBLE_STRING",
               "VISIBLE_INT", "VISIBLE_HEX"):
@@ -104,7 +105,6 @@ def run_selftests():
     # get_lower/upper_bound() and get_assignable_values()
     #
 
-    print "Testing get_lower/upper_bound() and get_assignable_values()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
     def verify_bounds(sym_name, low, high):
         sym = c[sym_name]
@@ -122,6 +122,12 @@ def run_selftests():
                    "get_assignable_values() thinks there should be assignable "
                    "values for {0} ({1}) but not get_lower/upper_bound()".\
                    format(sym.get_name(), vals))
+            if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
+                verify(not sym.is_modifiable(),
+                       "get_lower_bound() thinks there should be no "
+                       "assignable values for the bool/tristate {0} but "
+                       "is_modifiable() thinks it should be modifiable".\
+                       format(sym.get_name(), vals))
         else:
             tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
             bound_range = ["n", "m", "y"][tri_to_int[sym_low] :
@@ -131,6 +137,12 @@ def run_selftests():
                    "get_lower/upper_bound() thinks the range for {0} should "
                    "be {1} while get_assignable_values() thinks it should be "
                    "{2}".format(sym.get_name(), bound_range, assignable_range))
+            if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
+                verify(sym.is_modifiable(),
+                       "get_lower/upper_bound() thinks the range for the "
+                       "bool/tristate{0} should be {1} while is_modifiable() "
+                       "thinks the symbol should not be modifiable".\
+                       format(sym.get_name(), bound_range))
 
     verify_bounds("Y_VISIBLE_BOOL", "n", "y")
     verify_bounds("Y_VISIBLE_TRISTATE", "n", "y")
