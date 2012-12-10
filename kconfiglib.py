@@ -3481,9 +3481,6 @@ class _Feed:
     def is_empty(self):
         return self.items == []
 
-    def is_at_end(self):
-        return self.i >= self.length
-
     def check(self, token):
         """Check if the next token is 'token'. If so, remove it from the token
         feed and return True. Otherwise, leave it in and return False."""
