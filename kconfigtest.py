@@ -319,7 +319,7 @@ def run_selftests():
     c = kconfiglib.Config("Kconfiglib/tests/Kdep")
     def verify_dependent(sym_name, deps_names):
         sym = c[sym_name]
-        deps = [c[dep] for dep in deps_names]
+        deps = [c[name] for name in deps_names]
         sym_deps = sym._get_dependent()
         verify(len(sym_deps) == len(deps),
                "Wrong number of dependent symbols for {0}".\
