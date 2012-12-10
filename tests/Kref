@@ -16,8 +16,8 @@ config MANY_REF
     default C if D
     range E F if G
     depends on H
-    select I if J
-    select K
+    select I if J = K || L != M
+    select N
 
 endif
 

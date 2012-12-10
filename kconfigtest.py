@@ -294,7 +294,8 @@ def run_selftests():
                    format(sym.get_name(), r.get_name()))
     verify_refs("NO_REF", [], [])
     verify_refs("ONE_REF", ["A"], ["A"])
-    own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]
+    own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
+                "M", "N"]
     verify_refs("MANY_REF",
                 own_refs,
                 own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
@@ -313,7 +314,7 @@ def run_selftests():
             verify(s in sym_selections, "{0} should be selected by {1}".\
                                         format(s.get_name(), sym.get_name()))
     verify_selects("NO_REF", [])
-    verify_selects("MANY_REF", ["I", "K"])
+    verify_selects("MANY_REF", ["I", "N"])
 
     #
     # Object dependencies
