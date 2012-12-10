@@ -268,8 +268,8 @@ def run_selftests():
     #
 
     c = kconfiglib.Config("Kconfiglib/tests/Kref")
-    def verify_refs(sym, refs_no_enclosing, refs_enclosing):
-        sym = c[sym]
+    def verify_refs(sym_name, refs_no_enclosing, refs_enclosing):
+        sym = c[sym_name]
         sym_refs = sym.get_referenced_symbols()
         sym_refs_enclosing = sym.get_referenced_symbols(True)
         verify(len(sym_refs) == len(refs_no_enclosing),
@@ -278,11 +278,11 @@ def run_selftests():
         verify(len(sym_refs_enclosing) == len(refs_enclosing),
                "Wrong number of refs including enclosing for {0}".\
                format(sym.get_name()))
-        for r in [c[ref] for ref in refs_no_enclosing]:
+        for r in [c[name] for name in refs_no_enclosing]:
             verify(r in sym_refs,
                    "{0} should reference {1} when excluding enclosing".\
                    format(sym.get_name(), r.get_name()))
-        for r in [c[ref] for ref in refs_enclosing]:
+        for r in [c[name] for name in refs_enclosing]:
             verify(r in sym_refs_enclosing,
                    "{0} should reference {1} when including enclosing".\
                    format(sym.get_name(), r.get_name()))
@@ -299,12 +299,12 @@ def run_selftests():
     # get_selected_symbols() (same test file)
     #
 
-    def verify_selects(sym, selections):
-        sym = c[sym]
+    def verify_selects(sym_name, selection_names):
+        sym = c[sym_name]
         sym_selections = sym.get_selected_symbols()
-        verify(len(sym_selections) == len(selections),
+        verify(len(sym_selections) == len(selection_names),
                "Wrong number of selects for {0}".format(sym.get_name()))
-        for s in [c[ref] for ref in selections]:
+        for s in [c[name] for name in selection_names]:
             verify(s in sym_selections, "{0} should be selected by {1}".\
                                         format(s.get_name(), sym.get_name()))
     verify_selects("NO_REF", [])
@@ -333,6 +333,7 @@ def run_selftests():
     # Test twice to cover dependency caching
     for i in range(0, 2):
         n_deps = 28
+        # Verify that D1, D2, .., D<n_deps> are dependent on D
         verify_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
         # Choices
         verify_dependent("A", ["B", "C"])
