@@ -1,4 +1,4 @@
-# This is a test suite for kconfiglib. It runs selftests on Kconfigs provided
+# This is a test suite for Kconfiglib. It runs selftests on Kconfigs provided
 # by us and tests compatibility with the C Kconfig implementation by comparing
 # the output of Kconfiglib with the output of the scripts/kconfig/*conf
 # utilities for different targets and defconfigs. It should be run from the
