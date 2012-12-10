@@ -1305,7 +1305,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
             stmt.dep_expr = self._make_and(stmt.dep_expr, deps)
 
             stmt.all_referenced_syms = \
-              stmt.referenced_syms.union(self._get_expr_syms(deps))
+              stmt.referenced_syms.union(_get_expr_syms(deps))
 
         # For symbols and choices..
         else:
@@ -1352,7 +1352,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
             # The set of symbols referenced directly by the symbol/choice plus
             # all symbols referenced by enclosing menus and if's.
             stmt.all_referenced_syms \
-              = stmt.referenced_syms.union(self._get_expr_syms(deps))
+              = stmt.referenced_syms.union(_get_expr_syms(deps))
 
             # Propagate dependencies from enclosing menus and if's
 
@@ -1575,7 +1575,7 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
         # Adds 'sym' as a directly dependent symbol to all symbols that appear
         # in the expression 'e'
         def add_expr_deps(e, sym):
-            for s in self._get_expr_syms(e):
+            for s in _get_expr_syms(e):
                 s.dep.add(sym)
 
         # The directly dependent symbols of a symbol are:
@@ -1608,40 +1608,6 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
 
                 for (_, e) in choice.def_exprs:
                     add_expr_deps(e, sym)
-
-    def _get_expr_syms(self, expr):
-        """Returns the set() of symbols appearing in expr."""
-        if expr is None or isinstance(expr, str):
-            return set()
-
-        if isinstance(expr, Symbol):
-            return set((expr,))
-
-        elif expr[0] in (OR, AND):
-            res = set()
-            for subres in [self._get_expr_syms(e) for e in expr[1]]:
-                res.update(subres)
-            return res
-
-        elif expr[0] == NOT:
-            return self._get_expr_syms(expr[1])
-
-        elif expr[0] in (EQUAL, UNEQUAL):
-            res = set()
-
-            _, v1, v2 = expr
-
-            if isinstance(v1, Symbol):
-                res.add(v1)
-
-            if isinstance(v2, Symbol):
-                res.add(v2)
-
-            return res
-
-        else:
-            _internal_error("Internal error while fetching symbols from an expression with "
-                            "token stream {0}.".format(expr))
 
     def _expr_val_str(self, expr, no_value_str = "(none)", get_val_instead_of_eval = False):
         # Since values are valid expressions, _expr_to_str() will get a nice
@@ -1950,6 +1916,41 @@ might be an error, and you should e-mail kconfiglib@gmail.com.
                             .format(msg_type))
 
         sys.stderr.write(msg + "\n")
+
+def _get_expr_syms(expr):
+    """Returns the set() of symbols appearing in expr."""
+    if expr is None or isinstance(expr, str):
+        return set()
+
+    if isinstance(expr, Symbol):
+        return set((expr,))
+
+    elif expr[0] in (OR, AND):
+        res = set()
+        for subres in [_get_expr_syms(e) for e in expr[1]]:
+            res.update(subres)
+        return res
+
+    elif expr[0] == NOT:
+        return _get_expr_syms(expr[1])
+
+    elif expr[0] in (EQUAL, UNEQUAL):
+        res = set()
+
+        _, v1, v2 = expr
+
+        if isinstance(v1, Symbol):
+            res.add(v1)
+
+        if isinstance(v2, Symbol):
+            res.add(v2)
+
+        return res
+
+    else:
+        _internal_error("Internal error while fetching symbols from an expression with "
+                        "token stream {0}.".format(expr))
+
 
 #
 # Constants and functions related to types, parsing, evaluation and printing,
