@@ -220,11 +220,11 @@ def run_selftests():
     verify(A.get_parent() is None, "A should not have a parent")
     verify(B.get_parent() is choice_1, "B's parent should be the first choice")
     verify(E.get_parent() is menu_1, "E's parent should be the first menu")
-    verify(c["E"].get_parent().get_parent() is None,
+    verify(E.get_parent().get_parent() is None,
            "E's grandparent should be None")
-    verify(c["G"].get_parent() is choice_2,
+    verify(G.get_parent() is choice_2,
            "G's parent should be the second choice")
-    verify(c["G"].get_parent().get_parent() is menu_2,
+    verify(G.get_parent().get_parent() is menu_2,
            "G's grandparent should be the second menu")
 
     #
