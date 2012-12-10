@@ -14,10 +14,10 @@ if IF_REF_1 && IF_REF_2
 config MANY_REF
     int "BAR" if A && B
     default C if D
-    range E F if G
+    range E F if !G
     depends on H
     select I if J = K || L != M
-    select N
+    select N if (A || !(B && (C = O)))
 
 endif
 

@@ -295,7 +295,7 @@ def run_selftests():
     verify_refs("NO_REF", [], [])
     verify_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
-                "M", "N"]
+                "M", "N", "O"]
     verify_refs("MANY_REF",
                 own_refs,
                 own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
