@@ -3161,7 +3161,7 @@ class Choice(Item, _HasVisibility):
     def get_name(self):
         """For named choices, returns the name. Returns None for unnamed
         choices. No named choices appear anywhere in the kernel Kconfig
-        files as of Linux 2.6.38-rc3."""
+        files as of Linux 3.7.0-rc8."""
         return self.name
 
     def get_help(self):
@@ -3177,7 +3177,7 @@ class Choice(Item, _HasVisibility):
         """Gets all items contained in the choice in the same order as within
         the configuration ("items" instead of "symbols" since choices and
         comments might appear within choices. This only happens in one place as
-        of Linux 2.6.38-rc3, in drivers/usb/gadget/Kconfig)."""
+        of Linux 3.7.0-rc8, in drivers/usb/gadget/Kconfig)."""
         return self.block.get_items()
 
     def get_actual_items(self):
