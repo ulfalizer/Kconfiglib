@@ -90,21 +90,14 @@ def run_selftests():
 
     print "Testing is_modifiable()..."
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
-    for s in (c["VISIBLE"],
-              c["TRISTATE_SELECTED_TO_M"],
-              c["VISIBLE_STRING"],
-              c["VISIBLE_INT"],
-              c["VISIBLE_HEX"]):
-        verify(s.is_modifiable(),
-               "{0} should be modifiable".format(s.get_name()))
-    for s in (c["NOT_VISIBLE"],
-              c["SELECTED_TO_Y"],
-              c["BOOL_SELECTED_TO_M"],
-              c["NOT_VISIBLE_STRING"],
-              c["NOT_VISIBLE_INT"],
-              c["NOT_VISIBLE_HEX"]):
-        verify(not s.is_modifiable(),
-               "{0} should not be modifiable".format(s.get_name()))
+    for s in ("VISIBLE", "TRISTATE_SELECTED_TO_M", "VISIBLE_STRING",
+              "VISIBLE_INT", "VISIBLE_HEX"):
+        verify(c[s].is_modifiable(),
+               "{0} should be modifiable".format(c[s].get_name()))
+    for s in ("NOT_VISIBLE", "SELECTED_TO_Y", "BOOL_SELECTED_TO_M",
+              "NOT_VISIBLE_STRING", "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
+        verify(not c[s].is_modifiable(),
+               "{0} should not be modifiable".format(c[s].get_name()))
 
     #
     # get_lower/upper_bound() and get_assignable_values()
