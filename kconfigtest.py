@@ -504,6 +504,19 @@ def run_selftests():
            "Kconfiglib/tests/defconfig_2")
 
     #
+    # Misc. minor APIs
+    #
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+
+    print "Testing is_optional()..."
+
+    verify(not c.get_choices()[0].is_optional(),
+           "First choice should not be optional")
+    verify(c.get_choices()[1].is_optional(),
+           "Second choice should be optional")
+
+    #
     # Object dependencies
     #
 

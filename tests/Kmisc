@@ -1,0 +1,20 @@
+# For testing various minor APIs
+
+# is_optional()
+
+choice NOT_OPTIONAL
+    bool "not optional"
+config A
+    bool "A"
+config B
+    bool "B"
+endchoice
+
+choice OPTIONAL
+    tristate "optional"
+    optional
+config C
+    tristate "C"
+config D
+    tristate "D"
+endchoice
