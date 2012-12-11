@@ -495,7 +495,7 @@ def run_compatibility_tests():
     arch_configs = get_arch_configs()
 
     for (test_fn, compare_configs) in all_arch_tests:
-        print "Resetting all architecture Config instances prior to next test..."
+        print "\nResetting all architecture Config instances prior to next test..."
         for arch in arch_configs:
             arch.reset()
 
@@ -524,8 +524,6 @@ def run_compatibility_tests():
                 else:
                     print "FAIL"
                     fail()
-
-        print ""
 
     if all_ok():
         print "All selftests and compatibility tests passed"
