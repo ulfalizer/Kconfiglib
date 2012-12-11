@@ -511,7 +511,7 @@ def run_compatibility_tests():
         print ""
 
     if all_ok():
-        print "All OK"
+        print "All selftests and compatibility tests passed"
         print nconfigs, "arch/defconfig pairs tested"
     else:
         print "Some tests failed"
@@ -614,8 +614,8 @@ def test_call_all(conf):
     except kconfiglib.Kconfig_Syntax_Error:
         caught_exception = True
 
-    if not caught_exception:
-        fail("No exception generated for expression with syntax error")
+    verify(caught_exception,
+           "No exception generated for expression with syntax error")
 
     conf.get_config_header()
     conf.get_base_dir()
@@ -647,32 +647,32 @@ def test_call_all(conf):
             if s.is_from_environment():
                 # Special symbols from the environment should have define
                 # locations
-                if s.get_def_locations() == []:
-                    fail("The symbol '{0}' is from the environment but "
-                         "lacks define locations".format(s.get_name()))
+                verify(s.get_def_locations() != [],
+                       "The symbol '{0}' is from the environment but lacks "
+                       "define locations".format(s.get_name()))
             else:
                 # Special symbols that are not from the environment should be
                 # defined and have no define locations
-                if not s.is_defined():
-                    fail("The special symbol '{0}' is not defined".
-                         format(s.get_name()))
-                if not s.get_def_locations() == []:
-                    fail("The special symbol '{0}' has recorded def. "
-                         "locations".format(s.get_name()))
+                verify(s.is_defined(),
+                       "The special symbol '{0}' is not defined".
+                       format(s.get_name()))
+                verify(s.get_def_locations() == [],
+                       "The special symbol '{0}' has recorded def. locations".
+                       format(s.get_name()))
         else:
             # Non-special symbols should have define locations iff they are
             # defined
             if s.is_defined():
-                if s.get_def_locations() == []:
-                    fail("'{0}' defined but lacks recorded locations".
-                         format(s.get_name()))
+                verify(s.get_def_locations() != [],
+                       "'{0}' defined but lacks recorded locations".
+                       format(s.get_name()))
             else:
-                if s.get_def_locations() != []:
-                    fail("'{0}' undefined but has recorded locations".
-                         format(s.get_name()))
-                if s.get_ref_locations() == []:
-                    fail("'{0}' both undefined and unreferenced".
-                          format(s.get_name()))
+                verify(s.get_def_locations() == [],
+                       "'{0}' undefined but has recorded locations".
+                       format(s.get_name()))
+                verify(s.get_ref_locations() != [],
+                       "'{0}' both undefined and unreferenced".
+                       format(s.get_name()))
 
         s.get_ref_locations()
         s.is_modifiable()
