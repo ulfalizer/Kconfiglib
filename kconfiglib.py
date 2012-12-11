@@ -304,7 +304,7 @@ class Config():
                     if old_user_val is not None:
                         warn_override(filename, linenr, name, old_user_val, val)
 
-                    if sym.is_choice_item():
+                    if sym.is_choice_item_:
                         user_mode = sym.get_parent()._get_user_mode()
                         if user_mode is not None and user_mode != val:
                             self._warn("assignment to {0} changes mode of containing "
@@ -1550,7 +1550,7 @@ error, and you should e-mail kconfiglib@gmail.com.
                 add_expr_deps(u, sym)
                 add_expr_deps(e, sym)
 
-            if sym.is_choice_item():
+            if sym.is_choice_item_:
                 choice = sym.parent
 
                 for (_, e) in choice.prompts:
@@ -1698,7 +1698,7 @@ error, and you should e-mail kconfiglib@gmail.com.
                              "Value          : " + value_str,
                              "User value     : " + user_value_str,
                              "Visibility     : " + visibility_str,
-                             "Is choice item : " + bool_str[sc.is_choice_item()],
+                             "Is choice item : " + bool_str[sc.is_choice_item_],
                              "Is defined     : " + bool_str[sc.is_defined_],
                              "Is from env.   : " + bool_str[sc.is_from_environment()],
                              "Is special     : " + bool_str[sc.is_special_] + "\n")
@@ -2225,7 +2225,7 @@ class _HasVisibility():
             for (prompt, cond_expr) in self.prompts:
                 vis = self.config._eval_max(vis, cond_expr)
 
-            if isinstance(self, Symbol) and self.is_choice_item():
+            if isinstance(self, Symbol) and self.is_choice_item_:
                 vis = self.config._eval_min(vis, self.parent._get_visibility())
 
             # Promote "m" to "y" if we're dealing with a non-tristate
@@ -2268,7 +2268,7 @@ class Symbol(Item, _HasVisibility):
             # The visibility and mode (modules-only or single-selection) of
             # choice items will be taken into account in self._get_visibility()
 
-            if self.is_choice_item():
+            if self.is_choice_item_:
                 if vis != "n":
                     choice = self.parent
                     mode = choice.get_mode()
@@ -2837,7 +2837,7 @@ class Symbol(Item, _HasVisibility):
         if self.is_special_:
             return
 
-        if self.is_choice_item():
+        if self.is_choice_item_:
             self.parent._invalidate()
 
         _HasVisibility._invalidate(self)
@@ -2904,7 +2904,7 @@ class Symbol(Item, _HasVisibility):
 
         self.user_val = v
 
-        if self.is_choice_item() and self.type in (BOOL, TRISTATE):
+        if self.is_choice_item_ and self.type in (BOOL, TRISTATE):
             choice = self.parent
             if v == "y":
                 choice.user_val = self
@@ -2917,7 +2917,7 @@ class Symbol(Item, _HasVisibility):
         self._invalidate()
         self.user_val = None
 
-        if self.is_choice_item():
+        if self.is_choice_item_:
             self.parent._unset_user_value()
 
     def _should_write(self):
