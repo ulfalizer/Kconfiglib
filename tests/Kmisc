@@ -18,3 +18,20 @@ config C
 config D
     tristate "D"
 endchoice
+
+# get_user_value()
+
+config BOOL
+    bool "bool"
+
+config TRISTATE
+    tristate # Visibility should not affect user value
+
+config STRING
+    string "string"
+
+config INT
+    int # Visibility should not affect user value
+
+config HEX
+    hex "hex"

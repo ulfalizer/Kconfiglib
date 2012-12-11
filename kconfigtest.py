@@ -516,6 +516,54 @@ def run_selftests():
     verify(c.get_choices()[1].is_optional(),
            "Second choice should be optional")
 
+    print "Testing get_user_value()..."
+
+    syms = [c[name] for name in \
+      ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
+    b, t, s, i, h = syms
+
+    for sym in syms:
+        verify(sym.get_user_value() is None,
+               "{0} should not have a user value to begin with")
+
+    def assign_and_verify_new_user_value(sym, val, new_val):
+        old_val = sym.get_user_value()
+        sym.set_value(val)
+        verify(sym.get_user_value() == new_val,
+               "{0} should have the value {1} after being assigned {2}. "
+               "The old value was {3}.".
+               format(sym.get_name(), new_val, val, old_val))
+
+    # Assign valid values for the types
+
+    assign_and_verify_new_user_value(b, "n", "n")
+    assign_and_verify_new_user_value(b, "y", "y")
+    assign_and_verify_new_user_value(t, "n", "n")
+    assign_and_verify_new_user_value(t, "m", "m")
+    assign_and_verify_new_user_value(t, "y", "y")
+    assign_and_verify_new_user_value(s, "foo bar", "foo bar")
+    assign_and_verify_new_user_value(i, "123", "123")
+    assign_and_verify_new_user_value(h, "0x123", "0x123")
+
+    # Assign invalid values for the types. They should retain their old user
+    # value.
+
+    c.set_print_warnings(False)
+
+    assign_and_verify_new_user_value(b, "m", "y")
+    assign_and_verify_new_user_value(b, "foo", "y")
+    assign_and_verify_new_user_value(b, "1", "y")
+    assign_and_verify_new_user_value(t, "foo", "y")
+    assign_and_verify_new_user_value(t, "1", "y")
+    assign_and_verify_new_user_value(i, "foo", "123")
+    assign_and_verify_new_user_value(h, "foo", "0x123")
+
+    for s in syms:
+        s.reset()
+        verify(s.get_user_value() is None,
+               "{0} should not have a user value after being reset".
+               format(s.get_name()))
+
     #
     # Object dependencies
     #
