@@ -2455,16 +2455,20 @@ class Symbol(Item, _HasVisibility):
         things will just work with regards to dependencies.
 
         v -- The value to give to the symbol."""
+        old_user_val = self.user_val
+
         self._set_value_no_invalidate(v, False)
 
-        # There might be something more efficient you could do here, but play
-        # it safe.
-        if self.name == "MODULES":
-            self.config._invalidate_all()
-            return
+        # If the user value changed, invalidate all dependent symbols
+        if self.user_val != old_user_val:
+            # There might be something more efficient you could do here, but play
+            # it safe.
+            if self.name == "MODULES":
+                self.config._invalidate_all()
+                return
 
-        self._invalidate()
-        self._invalidate_dependent()
+            self._invalidate()
+            self._invalidate_dependent()
 
     def reset(self):
         """Resets the value of the symbol, as if the symbol had never gotten a
