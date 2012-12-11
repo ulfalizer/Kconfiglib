@@ -2427,19 +2427,6 @@ class Symbol(Item, _HasVisibility):
         self.cached_value = new_val
         return new_val
 
-    def calc_default_value(self):
-        """Calculates the value the symbol would get purely from defaults,
-        ignoring visibility (assumed to be "y"), reverse dependencies
-        (selects), user values and dependencies from enclosing menus and if's.
-        Returns None if no default would kick in."""
-        for (val_expr, cond_expr) in self.orig_def_exprs:
-            cond_eval = self.config._eval_expr(cond_expr)
-
-            if cond_eval != "n":
-                return self.config._eval_expr(val_expr)
-
-        return None
-
     def set_value(self, v):
         """Sets the (user) value of the symbol. Equal in effect to assigning
         the value to the symbol within a .config file. Use

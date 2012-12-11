@@ -792,7 +792,6 @@ def test_call_all(conf):
     for s in conf.get_symbols():
         s.reset()
         s.calc_value()
-        s.calc_default_value()
         s.get_user_value()
         s.get_name()
         s.get_upper_bound()
