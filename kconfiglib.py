@@ -96,7 +96,7 @@ class Config():
                  configuration. For the Linux kernel, this should usually be be
                  "Kconfig" from the top-level directory, as environment
                  variables will make sure the right Kconfig is included from
-                 there (usually arch/<architecture/Kconfig). If you are using
+                 there (usually arch/<architecture>/Kconfig). If you are using
                  kconfiglib via 'make scriptconfig' the filename of the
                  correct Kconfig will be in sys.argv[1].
 
@@ -211,6 +211,7 @@ class Config():
 
     def load_config(self, filename, reset = True):
         """Loads symbol values from a file in the familiar .config format.
+           Equivalent to calling Symbol.set_value() to set each of the values.
 
            filename -- The .config file to load. $-references to environment
                        variables will be expanded. For scripts to work even
@@ -406,7 +407,7 @@ class Config():
 
         If the environment variable 'srctree' was set when the Config was
         created, get_defconfig_filename() will first look relative to that
-        directory before looking in the current directory. See
+        directory before looking in the current directory; see
         Config.__init__()."""
 
         if self.defconfig_sym is None:
@@ -509,14 +510,14 @@ class Config():
         return self.config_header
 
     def get_base_dir(self):
-        """Returns the base directory for 'source' statements, passed as an
-        argument to Config.__init__()."""
+        """Returns the base directory relative to which 'source' statements
+        will work, passed as an argument to Config.__init__()."""
         return self.base_dir
 
     def set_print_warnings(self, print_warnings):
         """Determines whether warnings related to this configuration (for
-        things like attempting to assign illegal values to symbols) should be
-        printed to stderr.
+        things like attempting to assign illegal values to symbols with
+        Symbol.set_value()) should be printed to stderr.
 
         print_warnings -- True if warnings should be
                           printed, otherwise False."""
@@ -1270,21 +1271,12 @@ class Config():
                     if env_var not in os.environ:
                         self._warn("""
 The symbol {0} references the non-existent environment variable {1} and will
-get the empty string as its value. You could set it in os.environ before
-calling Config() or make sure it is exported before invoking the script by
-running e.g.
+get the empty string as its value.
 
-$ export {1}=<value>
-$ python foo.py
-
-or
-
-$ {1}=<value> python foo.py
-
-If you're using kconfiglib via 'make scriptconfig' it should have set up
-the environment correctly for you. If you still got this message, that
-might be an error, and you should e-mail kconfiglib@gmail.com.
-."""    .format(stmt.get_name(), env_var),
+If you're using kconfiglib via 'make (i)scriptconfig' it should have set up the
+environment correctly for you. If you still got this message, that might be an
+error, and you should e-mail kconfiglib@gmail.com.
+."""                               .format(stmt.get_name(), env_var),
                                    filename,
                                    linenr)
 
@@ -2161,9 +2153,9 @@ def _expr_to_str_rec(expr):
 
 class _Block:
 
-    """Represents a list of items (symbols, menus, choice
-    statements and comments) appearing at the top-level of a
-    file or witin a menu, choice or if statement."""
+    """Represents a list of items (symbols, menus, choice statements and
+    comments) appearing at the top-level of a file or witin a menu, choice or
+    if statement."""
 
     def __init__(self):
         self.items = []
@@ -2552,7 +2544,11 @@ class Symbol(Item, _HasVisibility):
         so you'd do something like
 
         if sym.get_type() == kconfiglib.STRING:
-            ..."""
+            ...
+
+        This is basically just a different interface to
+        is_symbol/menu/choice/comment().
+        """
         return self.type
 
     def get_visibility(self):
@@ -2560,7 +2556,45 @@ class Symbol(Item, _HasVisibility):
         bool and tristate symbols, this is an upper bound on the value users
         can set for the symbol. For other types of symbols, a visibility of "n"
         means the user value will be ignored. A visibility of "n" corresponds
-        to not being visible in the 'make *config' interfaces."""
+        to not being visible in the 'make *config' interfaces.
+
+        Example (assuming we're running with modules enabled -- i.e., MODULES
+        set to 'y'):
+
+        # Assume this has been assigned 'n'
+        config N_SYM
+            tristate "N_SYM"
+
+        # Assume this has been assigned 'm'
+        config M_SYM
+            tristate "M_SYM"
+
+        # Has visibility 'n'
+        config A
+            tristate "A"
+            depends on N_SYM
+
+        # Has visibility 'm'
+        config B
+            tristate "B"
+            depends on M_SYM
+
+        # Has visibility 'y'
+        config C
+            tristate "C"
+
+        # Has no prompt, and hence visibility 'n'
+        config D
+            tristate
+
+        Having visibility be tri-valued ensures that e.g. a symbol cannot be
+        set to "y" by the user if it depends on a symbol with value "m", which
+        wouldn't be safe.
+
+        You should probably look at get_lower/upper_bound(),
+        get_assignable_values() and is_modifiable() before using this. Not sure
+        if it should even be public.
+        """
         return self._calc_visibility()
 
     def get_parent(self):
@@ -2653,7 +2687,8 @@ class Symbol(Item, _HasVisibility):
         in the 'make menuconfig' interface and not already being pinned to a
         specific value (e.g. because it is selected by another symbol).
 
-        For strings and numbers, this corresponds to just being visible."""
+        For strings and numbers, this corresponds to just being visible. (See
+        Symbol.get_visibility().)"""
         if self.is_special_:
             return False
         if self.type in (BOOL, TRISTATE):
@@ -3119,7 +3154,9 @@ class Choice(Item, _HasVisibility):
     symbol with value "m" will be in "m" mode.
 
     The mode changes automatically when a value is assigned to a symbol within
-    the choice."""
+    the choice.
+
+    See Symbol.get_visibility() too."""
 
     #
     # Public interface
@@ -3222,9 +3259,9 @@ class Choice(Item, _HasVisibility):
     def get_def_locations(self):
         """Returns a list of (filename, linenr) tuples, where filename (string)
         and linenr (int) represent a location where the choice is defined. For
-        the vast majority of choices this list will only contain one element,
-        but its possible for named choices to be defined in multiple
-        locations."""
+        the vast majority of choices (all of them as of Linux 3.7.0-rc8) this
+        list will only contain one element, but its possible for named choices
+        to be defined in multiple locations."""
         return self.def_locations
 
     def get_visibility(self):
