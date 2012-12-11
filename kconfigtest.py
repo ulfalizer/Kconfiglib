@@ -122,13 +122,13 @@ def run_selftests():
             vals = sym.get_assignable_values()
             verify(vals == [],
                    "get_assignable_values() thinks there should be assignable "
-                   "values for {0} ({1}) but not get_lower/upper_bound()".\
+                   "values for {0} ({1}) but not get_lower/upper_bound()".
                    format(sym.get_name(), vals))
             if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
                 verify(not sym.is_modifiable(),
                        "get_lower_bound() thinks there should be no "
                        "assignable values for the bool/tristate {0} but "
-                       "is_modifiable() thinks it should be modifiable".\
+                       "is_modifiable() thinks it should be modifiable".
                        format(sym.get_name(), vals))
         else:
             tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
@@ -143,7 +143,7 @@ def run_selftests():
                 verify(sym.is_modifiable(),
                        "get_lower/upper_bound() thinks the range for the "
                        "bool/tristate{0} should be {1} while is_modifiable() "
-                       "thinks the symbol should not be modifiable".\
+                       "thinks the symbol should not be modifiable".
                        format(sym.get_name(), bound_range))
 
     verify_bounds("Y_VISIBLE_BOOL", "n", "y")
@@ -210,7 +210,7 @@ def run_selftests():
                "Wrong number of def. locations for " + sym_name)
         for i in range(0, len(sym_locs)):
             verify(sym_locs[i] == locs[i],
-                   "Wrong def. location for {0}: Was {1}, should be {2}".\
+                   "Wrong def. location for {0}: Was {1}, should be {2}".
                    format(sym_name, sym_locs[i], locs[i]))
 
     # Expanded in the 'source' statement in Klocation
@@ -238,7 +238,7 @@ def run_selftests():
                "Wrong number of ref. locations for " + sym_name)
         for i in range(0, len(sym_locs)):
             verify(sym_locs[i] == locs[i],
-                   "Wrong ref. location for {0}: Was {1}, should be {2}".\
+                   "Wrong ref. location for {0}: Was {1}, should be {2}".
                    format(sym_name, sym_locs[i], locs[i]))
 
     # Reload without the slash at the end of 'base_dir' to get coverage for
@@ -275,7 +275,7 @@ def run_selftests():
                "Wrong number of def. locations for choice")
         for i in range(0, len(choice_locs)):
             verify(choice_locs[i] == locs[i],
-                   "Wrong def. location for choice: Was {0}, should be {1}".\
+                   "Wrong def. location for choice: Was {0}, should be {1}".
                    format(choice_locs[i], locs[i]))
 
     choice_1, choice_2 = c.get_choices()
@@ -381,18 +381,18 @@ def run_selftests():
         sym_refs = sym.get_referenced_symbols()
         sym_refs_enclosing = sym.get_referenced_symbols(True)
         verify(len(sym_refs) == len(refs_no_enclosing),
-               "Wrong number of refs excluding enclosing for {0}".\
+               "Wrong number of refs excluding enclosing for {0}".
                format(sym.get_name()))
         verify(len(sym_refs_enclosing) == len(refs_enclosing),
-               "Wrong number of refs including enclosing for {0}".\
+               "Wrong number of refs including enclosing for {0}".
                format(sym.get_name()))
         for r in [c[name] for name in refs_no_enclosing]:
             verify(r in sym_refs,
-                   "{0} should reference {1} when excluding enclosing".\
+                   "{0} should reference {1} when excluding enclosing".
                    format(sym.get_name(), r.get_name()))
         for r in [c[name] for name in refs_enclosing]:
             verify(r in sym_refs_enclosing,
-                   "{0} should reference {1} when including enclosing".\
+                   "{0} should reference {1} when including enclosing".
                    format(sym.get_name(), r.get_name()))
     verify_refs("NO_REF", [], [])
     verify_refs("ONE_REF", ["A"], ["A"])
@@ -413,7 +413,7 @@ def run_selftests():
         verify(len(sym_selections) == len(selection_names),
                "Wrong number of selects for {0}".format(sym.get_name()))
         for s in [c[name] for name in selection_names]:
-            verify(s in sym_selections, "{0} should be selected by {1}".\
+            verify(s in sym_selections, "{0} should be selected by {1}".
                                         format(s.get_name(), sym.get_name()))
     verify_selects("NO_REF", [])
     verify_selects("MANY_REF", ["I", "N"])
@@ -430,13 +430,13 @@ def run_selftests():
         deps = [c[name] for name in deps_names]
         sym_deps = sym._get_dependent()
         verify(len(sym_deps) == len(deps),
-               "Wrong number of dependent symbols for {0}".\
+               "Wrong number of dependent symbols for {0}".
                format(sym.get_name()))
         verify(len(sym_deps) == len(set(sym_deps)),
-               "{0}'s dependencies contains duplicates".\
+               "{0}'s dependencies contains duplicates".
                format(sym.get_name()))
         for dep in deps:
-            verify(dep in sym_deps, "{0} should depend on {1}".\
+            verify(dep in sym_deps, "{0} should depend on {1}".
                                     format(dep.get_name(), sym.get_name()))
     # Test twice to cover dependency caching
     for i in range(0, 2):
@@ -657,21 +657,21 @@ def test_call_all(conf):
                     fail("The special symbol '{0}' is not defined".
                          format(s.get_name()))
                 if not s.get_def_locations() == []:
-                    fail("The special symbol '{0}' has recorded def. "\
+                    fail("The special symbol '{0}' has recorded def. "
                          "locations".format(s.get_name()))
         else:
             # Non-special symbols should have define locations iff they are
             # defined
             if s.is_defined():
                 if s.get_def_locations() == []:
-                    fail("'{0}' defined but lacks recorded locations".\
+                    fail("'{0}' defined but lacks recorded locations".
                          format(s.get_name()))
             else:
                 if s.get_def_locations() != []:
-                    fail("'{0}' undefined but has recorded locations".\
+                    fail("'{0}' undefined but has recorded locations".
                          format(s.get_name()))
                 if s.get_ref_locations() == []:
-                    fail("'{0}' both undefined and unreferenced".\
+                    fail("'{0}' both undefined and unreferenced".
                           format(s.get_name()))
 
         s.get_ref_locations()
@@ -783,7 +783,7 @@ def test_defconfig(conf):
         conf.load_config(defconfig)
         conf.write_config("._config")
         if speedy_mode:
-            shell("scripts/kconfig/conf --defconfig='{0}' Kconfig".\
+            shell("scripts/kconfig/conf --defconfig='{0}' Kconfig".
                   format(defconfig))
         else:
             shell("cp {0} .config".format(defconfig))
