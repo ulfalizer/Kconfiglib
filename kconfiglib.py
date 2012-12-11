@@ -2428,18 +2428,22 @@ class Symbol(Item, _HasVisibility):
         return new_val
 
     def set_value(self, v):
-        """Sets the (user) value of the symbol. Equal in effect to assigning
-        the value to the symbol within a .config file. Use
-        get_lower/upper_bound() or get_assignable_values() to find the range of
-        valid values for bool and tristate symbols; setting values outside this
-        range will cause the user value to differ from the result of
-        Symbol.calc_value() (be truncated).
+        """Sets the (user) value of the symbol.
+
+        Equal in effect to assigning the value to the symbol within a .config
+        file. Use get_lower/upper_bound() or get_assignable_values() to find
+        the range of currently assignable values for bool and tristate symbols;
+        setting values outside this range will cause the user value to differ
+        from the result of Symbol.calc_value() (be truncated). Values that are
+        invalid for the type (such as a_bool.set_value("foo")) are ignored, and
+        a warning is emitted if an attempt is made to assign such a value.
 
         For any type of symbol, is_modifiable() can be used to check if a user
-        value will have any effect on the symbol, as determined by its
-        visibility and range of assignable values. Any value that is valid for
-        the type (bool, tristate, etc.) will end up being reflected in
-        Symbol.get_user_value() though.
+        value will currently have any effect on the symbol, as determined by
+        its visibility and range of assignable values. Any value that is valid
+        for the type (bool, tristate, etc.) will end up being reflected in
+        Symbol.get_user_value() though, and might have an effect later if
+        conditions change. To get rid of the user value, use reset().
 
         Any symbols dependent on the symbol are (recursively) invalidated, so
         things will just work with regards to dependencies.
@@ -2462,8 +2466,7 @@ class Symbol(Item, _HasVisibility):
 
     def reset(self):
         """Resets the value of the symbol, as if the symbol had never gotten a
-        (user) value via Config.load_config() or Symbol.set_value(). Dependent
-        symbols are recursively invalidated."""
+        (user) value via Config.load_config() or Symbol.set_value()."""
         self._reset_no_recursive_invalidate()
         self._invalidate_dependent()
 
