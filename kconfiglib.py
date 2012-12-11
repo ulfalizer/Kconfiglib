@@ -2448,7 +2448,7 @@ class Symbol(Item, _HasVisibility):
         Any symbols dependent on the symbol are (recursively) invalidated, so
         things will just work with regards to dependencies.
 
-        v -- The value to give to the symbol."""
+        v -- The user value to give to the symbol."""
         old_user_val = self.user_val
 
         self._set_value_no_invalidate(v, False)
