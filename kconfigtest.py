@@ -93,6 +93,7 @@ def run_selftests():
     #
 
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
+
     for s in ("VISIBLE", "TRISTATE_SELECTED_TO_M", "VISIBLE_STRING",
               "VISIBLE_INT", "VISIBLE_HEX"):
         verify(c[s].is_modifiable(),
@@ -108,6 +109,7 @@ def run_selftests():
     #
 
     c = kconfiglib.Config("Kconfiglib/tests/Kbounds")
+
     def verify_bounds(sym_name, low, high):
         sym = c[sym_name]
         sym_low = sym.get_lower_bound()
@@ -166,11 +168,14 @@ def run_selftests():
     # TODO: Stricter syntax checking?
 
     print "Testing eval()..."
+
     c = kconfiglib.Config("Kconfiglib/tests/Keval")
+
     def verify_val(expr, val):
         res = c.eval(expr)
         verify(res == val,
                "'{0}' evaluated to {1}, expected {2}".format(expr, res, val))
+
     # No modules
     verify_val("n", "n")
     verify_val("m", "n")
@@ -191,7 +196,9 @@ def run_selftests():
     # TODO: Get rid of extra \n's at end of texts?
 
     print "Testing text queries..."
+
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
+
     verify_equals(c["NO_HELP"].get_help(), None)
     verify_equals(c["S"].get_help(), "help for\nS\n")
     verify_equals(c.get_choices()[0].get_help(), "help for\nC\n")
@@ -217,6 +224,7 @@ def run_selftests():
     os.environ["FOO"] = "tests"
 
     c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib/")
+
     verify_def_locations("A",
       ("Kconfiglib/tests/Klocation", 2),
       ("Kconfiglib/tests/Klocation", 21),
@@ -304,8 +312,10 @@ def run_selftests():
                               menu_or_comment.get_text(),
                             menu_or_comment_loc,
                             loc))
+
     menu_1, menu_2 = c.get_menus()
     comment_1, comment_2 = c.get_comments()
+
     verify_location(menu_1, ("Kconfiglib/tests/Klocation", 5))
     verify_location(menu_2, ("Kconfiglib/tests/Klocation_included", 5))
     verify_location(comment_1, ("Kconfiglib/tests/Klocation", 24))
@@ -326,6 +336,7 @@ def run_selftests():
     menu_1, menu_2, menu_3, menu_4 = c.get_menus()
 
     print "Testing object relations..."
+
     verify(A.get_parent() is None, "A should not have a parent")
     verify(B.get_parent() is choice_1, "B's parent should be the first choice")
     verify(E.get_parent() is menu_1, "E's parent should be the first menu")
@@ -376,6 +387,7 @@ def run_selftests():
     #
 
     c = kconfiglib.Config("Kconfiglib/tests/Kref")
+
     def verify_refs(sym_name, refs_no_enclosing, refs_enclosing):
         sym = c[sym_name]
         sym_refs = sym.get_referenced_symbols()
@@ -394,6 +406,7 @@ def run_selftests():
             verify(r in sym_refs_enclosing,
                    "{0} should reference {1} when including enclosing".
                    format(sym.get_name(), r.get_name()))
+
     verify_refs("NO_REF", [], [])
     verify_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
@@ -415,6 +428,7 @@ def run_selftests():
         for s in [c[name] for name in selection_names]:
             verify(s in sym_selections, "{0} should be selected by {1}".
                                         format(s.get_name(), sym.get_name()))
+
     verify_selects("NO_REF", [])
     verify_selects("MANY_REF", ["I", "N"])
 
@@ -425,6 +439,7 @@ def run_selftests():
     print "Testing object dependencies..."
 
     c = kconfiglib.Config("Kconfiglib/tests/Kdep")
+
     def verify_dependent(sym_name, deps_names):
         sym = c[sym_name]
         deps = [c[name] for name in deps_names]
@@ -438,6 +453,7 @@ def run_selftests():
         for dep in deps:
             verify(dep in sym_deps, "{0} should depend on {1}".
                                     format(dep.get_name(), sym.get_name()))
+
     # Test twice to cover dependency caching
     for i in range(0, 2):
         n_deps = 28
