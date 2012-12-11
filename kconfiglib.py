@@ -2919,7 +2919,7 @@ class Symbol(Item, _HasVisibility):
                             .format(self.type))
 
     def _get_dependent(self):
-        """Returns the list of symbols that should be invalidated if the value
+        """Returns the set of symbols that should be invalidated if the value
         of the symbol changes, because they might be affected by the change.
         Note that this is an internal API -- it's probably of limited
         usefulness to clients."""
