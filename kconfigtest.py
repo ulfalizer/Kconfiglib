@@ -475,6 +475,29 @@ def run_selftests():
     verify_selects("MANY_REF", ["I", "N"])
 
     #
+    # get_defconfig_filename()
+    #
+
+    print "Testing get_defconfig_filename()..."
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_none")
+    verify(c.get_defconfig_filename() is None,
+           "get_defconfig_filename() should be None with no defconfig_list "
+           "symbol")
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_nonexistent")
+    verify(c.get_defconfig_filename() is None,
+           "get_defconfig_filename() should be None when none of the files "
+           "in the defconfig_list symbol exist")
+
+    # Referenced in Kdefconfig_existent
+    os.environ["BAR"] = "defconfig_2"
+    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_existent")
+    verify(c.get_defconfig_filename() == "Kconfiglib/tests/defconfig_2",
+           "get_defconfig_filename() should return the existent file "
+           "Kconfiglib/tests/defconfig_2")
+
+    #
     # Object dependencies
     #
 
