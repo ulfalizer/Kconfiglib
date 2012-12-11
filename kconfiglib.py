@@ -2440,14 +2440,19 @@ class Symbol(Item, _HasVisibility):
     def set_value(self, v):
         """Sets the (user) value of the symbol. Equal in effect to assigning
         the value to the symbol within a .config file. Use
-        get_lower/upper_bound() to find the range of valid values for bool and
-        tristate symbols; setting values outside this range will cause the user
-        value to differ from the result of Symbol.calc_value(). Any value that
-        is valid for the type (bool, tristate, etc.) will end up being
-        reflected in Symbol.get_user_value() though.
+        get_lower/upper_bound() or get_assignable_values() to find the range of
+        valid values for bool and tristate symbols; setting values outside this
+        range will cause the user value to differ from the result of
+        Symbol.calc_value() (be truncated).
+
+        For any type of symbol, is_modifiable() can be used to check if a user
+        value will have any effect on the symbol, as determined by its
+        visibility and range of assignable values. Any value that is valid for
+        the type (bool, tristate, etc.) will end up being reflected in
+        Symbol.get_user_value() though.
 
         Any symbols dependent on the symbol are (recursively) invalidated, so
-        things should just work with regards to dependencies.
+        things will just work with regards to dependencies.
 
         v -- The value to give to the symbol."""
         self._set_value_no_invalidate(v, False)
