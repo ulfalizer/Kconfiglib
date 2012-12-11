@@ -86,11 +86,11 @@ def run_selftests():
 
     print "Running selftests...\n"
 
+    print "Testing is_modifiable() and range queries..."
+
     #
     # is_modifiable()
     #
-
-    print "Testing is_modifiable() and range queries..."
 
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
     for s in ("VISIBLE", "TRISTATE_SELECTED_TO_M", "VISIBLE_STRING",
@@ -203,19 +203,113 @@ def run_selftests():
     #
 
     print "Testing location queries..."
-    kl = "Kconfiglib/tests/Klocation"
-    c = kconfiglib.Config(kl)
-    def verify_file_and_locations(filename, linenrs, tuples):
-        for f, l in tuples:
-            verify(f == filename, f)
-            verify(l == linenrs.pop(0), "!!!")
-    verify_file_and_locations(kl, [2, 14], c["A"].get_def_locations())
-    verify_file_and_locations(kl, [5, 6, 18, 19], c["A"].get_ref_locations())
-    verify_file_and_locations(kl, [7], c.get_choices()[0].get_def_locations())
-    verify_file_and_locations(kl, [4], [c.get_menus()[0].get_location()])
-    verify_file_and_locations(kl, [16], [c.get_comments()[0].get_location()])
-    verify_equals(c["NOT_DEFINED"].get_def_locations(), [])
-    verify_file_and_locations(kl, [6, 15], c["NOT_DEFINED"].get_ref_locations())
+
+    def verify_def_locations(sym_name, *locs):
+        sym_locs = c[sym_name].get_def_locations()
+        verify(len(sym_locs) == len(locs),
+               "Wrong number of def. locations for " + sym_name)
+        for i in range(0, len(sym_locs)):
+            verify(sym_locs[i] == locs[i],
+                   "Wrong def. location for {0}: Was {1}, should be {2}".\
+                   format(sym_name, sym_locs[i], locs[i]))
+
+    # Expanded in the 'source' statement in Klocation
+    os.environ["FOO"] = "tests"
+
+    c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib/")
+    verify_def_locations("A",
+      ("Kconfiglib/tests/Klocation", 2),
+      ("Kconfiglib/tests/Klocation", 21),
+      ("Kconfiglib/tests/Klocation_included", 1),
+      ("Kconfiglib/tests/Klocation_included", 3))
+    verify_def_locations("C",
+      ("Kconfiglib/tests/Klocation", 13))
+    verify_def_locations("M",
+      ("Kconfiglib/tests/Klocation_included", 6))
+    verify_def_locations("N",
+      ("Kconfiglib/tests/Klocation_included", 17))
+    verify_def_locations("O",
+      ("Kconfiglib/tests/Klocation_included", 19))
+    verify_def_locations("NOT_DEFINED") # No locations
+
+    def verify_ref_locations(sym_name, *locs):
+        sym_locs = c[sym_name].get_ref_locations()
+        verify(len(sym_locs) == len(locs),
+               "Wrong number of ref. locations for " + sym_name)
+        for i in range(0, len(sym_locs)):
+            verify(sym_locs[i] == locs[i],
+                   "Wrong ref. location for {0}: Was {1}, should be {2}".\
+                   format(sym_name, sym_locs[i], locs[i]))
+
+    # Reload without the slash at the end of 'base_dir' to get coverage for
+    # that as well
+    c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib")
+
+    verify_ref_locations("A",
+      ("Kconfiglib/tests/Klocation", 6),
+      ("Kconfiglib/tests/Klocation", 7),
+      ("Kconfiglib/tests/Klocation", 11),
+      ("Kconfiglib/tests/Klocation", 27),
+      ("Kconfiglib/tests/Klocation", 28),
+      ("Kconfiglib/tests/Klocation_included", 7),
+      ("Kconfiglib/tests/Klocation_included", 8),
+      ("Kconfiglib/tests/Klocation_included", 9),
+      ("Kconfiglib/tests/Klocation_included", 12),
+      ("Kconfiglib/tests/Klocation_included", 13),
+      ("Kconfiglib/tests/Klocation_included", 33),
+      ("Kconfiglib/tests/Klocation", 45),
+      ("Kconfiglib/tests/Klocation", 46),
+      ("Kconfiglib/tests/Klocation", 47))
+    verify_ref_locations("C")
+    verify_ref_locations("NOT_DEFINED",
+      ("Kconfiglib/tests/Klocation", 7),
+      ("Kconfiglib/tests/Klocation", 22),
+      ("Kconfiglib/tests/Klocation_included", 12),
+      ("Kconfiglib/tests/Klocation_included", 33))
+
+    # Location queries for choices
+
+    def verify_choice_locations(choice, *locs):
+        choice_locs = choice.get_def_locations()
+        verify(len(choice_locs) == len(locs),
+               "Wrong number of def. locations for choice")
+        for i in range(0, len(choice_locs)):
+            verify(choice_locs[i] == locs[i],
+                   "Wrong def. location for choice: Was {0}, should be {1}".\
+                   format(choice_locs[i], locs[i]))
+
+    choice_1, choice_2 = c.get_choices()
+
+    # Throw in named choice test
+    verify(choice_1.get_name() == "B",
+           "The first choice should be called B")
+    verify(choice_2.get_name() is None,
+           "The second choice should have no name")
+
+    verify_choice_locations(choice_1,
+      ("Kconfiglib/tests/Klocation", 10),
+      ("Kconfiglib/tests/Klocation_included", 22))
+    verify_choice_locations(choice_2,
+      ("Kconfiglib/tests/Klocation_included", 15))
+
+    # Location queries for menus and comments
+
+    def verify_location(menu_or_comment, loc):
+        menu_or_comment_loc = menu_or_comment.get_location()
+        verify(menu_or_comment_loc == loc,
+               "Wrong location for {0} with text '{1}': Was {2}, should be "
+               "{3}".format("menu" if menu_or_comment.is_menu() else "comment",
+                            menu_or_comment.get_title() if
+                              menu_or_comment.is_menu() else
+                              menu_or_comment.get_text(),
+                            menu_or_comment_loc,
+                            loc))
+    menu_1, menu_2 = c.get_menus()
+    comment_1, comment_2 = c.get_comments()
+    verify_location(menu_1, ("Kconfiglib/tests/Klocation", 5))
+    verify_location(menu_2, ("Kconfiglib/tests/Klocation_included", 5))
+    verify_location(comment_1, ("Kconfiglib/tests/Klocation", 24))
+    verify_location(comment_2, ("Kconfiglib/tests/Klocation_included", 34))
 
     #
     # Object relations
