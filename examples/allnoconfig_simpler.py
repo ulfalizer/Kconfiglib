@@ -5,11 +5,11 @@
 # get truncated downwards or upwards as determined by the visibility and
 # selects.
 
-# Note: This version will be very slow since Kconfiglib invalidates all
-# dependent symbols for each set_value() call. This does not happen for
-# load_config(), which instead invalidates all symbols once after the
-# configuration has been loaded. This is OK for load_config() since nearly all
-# symbols will tend to be affected anyway.
+# This version is a bit slower compared allnoconfig.py since Kconfiglib
+# invalidates all dependent symbols for each set_value() call. This does not
+# happen for load_config(), which instead invalidates all symbols once after
+# the configuration has been loaded. This is OK for load_config() since nearly
+# all symbols will tend to be affected anyway.
 
 import kconfiglib
 import sys
