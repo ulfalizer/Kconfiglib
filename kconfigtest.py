@@ -490,8 +490,14 @@ def run_selftests():
            "get_defconfig_filename() should be None when none of the files "
            "in the defconfig_list symbol exist")
 
-    # Referenced in Kdefconfig_existent
+    # Referenced in Kdefconfig_existent(_but_n)
     os.environ["BAR"] = "defconfig_2"
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_existent_but_n")
+    verify(c.get_defconfig_filename() is None,
+           "get_defconfig_filename() should be None when the condition is "
+           "n for all the defaults")
+
     c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_existent")
     verify(c.get_defconfig_filename() == "Kconfiglib/tests/defconfig_2",
            "get_defconfig_filename() should return the existent file "
