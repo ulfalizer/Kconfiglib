@@ -34,8 +34,8 @@ while not done:
 
         # See corresponding comment for allnoconfig implementation
         if upper_bound is not None and \
-           kconfiglib.tri_less(sym.calc_value(), upper_bound):
-            sym.set_value(upper_bound)
+           kconfiglib.tri_less(sym.get_value(), upper_bound):
+            sym.set_user_value(upper_bound)
             done = False
 
     # Handle symbols within choices
@@ -48,7 +48,7 @@ while not done:
             selection = choice.get_selection_from_defaults()
             if selection is not None and \
                selection is not choice.get_user_selection():
-                selection.set_value("y")
+                selection.set_user_value("y")
                 done = False
 
         # Handle choices whose visibility only allow them to be in "m" mode.
@@ -57,9 +57,9 @@ while not done:
 
         elif choice.get_visibility() == "m":
             for sym in choice.get_actual_items():
-                if sym.calc_value() != "m" and \
+                if sym.get_value() != "m" and \
                    sym.get_upper_bound() != "n":
-                    sym.set_value("m")
+                    sym.set_user_value("m")
                     done = False
 
 conf.write_config(".config")

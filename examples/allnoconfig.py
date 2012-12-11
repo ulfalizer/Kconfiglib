@@ -22,9 +22,9 @@ while not done:
             # (currently) be changed, as well as for non-bool/tristate symbols.
             lower_bound = sym.get_lower_bound()
             if lower_bound is not None and \
-               kconfiglib.tri_less(lower_bound, sym.calc_value()):
+               kconfiglib.tri_less(lower_bound, sym.get_value()):
 
-                sym.set_value(lower_bound)
+                sym.set_user_value(lower_bound)
                 # We just changed the value of some symbol. As this may affect
                 # other symbols, keep going.
                 done = False

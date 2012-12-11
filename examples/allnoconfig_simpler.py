@@ -6,7 +6,7 @@
 # selects.
 
 # This version is a bit slower compared allnoconfig.py since Kconfiglib
-# invalidates all dependent symbols for each set_value() call. This does not
+# invalidates all dependent symbols for each set_user_value() call. This does not
 # happen for load_config(), which instead invalidates all symbols once after
 # the configuration has been loaded. This is OK for load_config() since nearly
 # all symbols will tend to be affected anyway.
@@ -18,6 +18,6 @@ conf = kconfiglib.Config(sys.argv[1])
 
 for sym in conf:
     if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
-        sym.set_value("n")
+        sym.set_user_value("n")
 
 conf.write_config(".config")

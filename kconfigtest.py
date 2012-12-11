@@ -182,7 +182,7 @@ def run_selftests():
     verify_val("y", "y")
     verify_val("M", "y")
     # Modules
-    c["MODULES"].set_value("y")
+    c["MODULES"].set_user_value("y")
     verify_val("n", "n")
     verify_val("m", "m")
     verify_val("y", "y")
@@ -528,7 +528,7 @@ def run_selftests():
 
     def assign_and_verify_new_user_value(sym, val, new_val):
         old_val = sym.get_user_value()
-        sym.set_value(val)
+        sym.set_user_value(val)
         verify(sym.get_user_value() == new_val,
                "{0} should have the value {1} after being assigned {2}. "
                "The old value was {3}.".
@@ -559,7 +559,7 @@ def run_selftests():
     assign_and_verify_new_user_value(h, "foo", "0x123")
 
     for s in syms:
-        s.reset()
+        s.unset_user_value()
         verify(s.get_user_value() is None,
                "{0} should not have a user value after being reset".
                format(s.get_name()))
@@ -629,9 +629,10 @@ def run_compatibility_tests():
     arch_configs = get_arch_configs()
 
     for (test_fn, compare_configs) in all_arch_tests:
-        print "\nResetting all architecture Config instances prior to next test..."
+        print "\nUnsetting user values on all architecture Config instances "\
+              "prior to next test..."
         for arch in arch_configs:
-            arch.reset()
+            arch.unset_user_values()
 
         # The test description is taken from the docstring of the corresponding
         # function
@@ -785,13 +786,13 @@ def test_call_all(conf):
 
     conf.get_config_header()
     conf.get_base_dir()
-    conf.reset()
+    conf.unset_user_values()
     conf.get_symbols(False)
     conf.get_mainmenu_text()
 
     for s in conf.get_symbols():
-        s.reset()
-        s.calc_value()
+        s.unset_user_value()
+        s.get_value()
         s.get_user_value()
         s.get_name()
         s.get_upper_bound()
@@ -862,7 +863,7 @@ def test_call_all(conf):
         c.get_referenced_symbols(True)
         c.get_def_locations()
         c.get_visibility()
-        c.calc_mode()
+        c.get_mode()
         c.is_optional()
         c.__str__()
 

@@ -209,9 +209,10 @@ class Config():
         # Build Symbol.dep for all symbols
         self._build_dep()
 
-    def load_config(self, filename, reset = True):
+    def load_config(self, filename, replace = True):
         """Loads symbol values from a file in the familiar .config format.
-           Equivalent to calling Symbol.set_value() to set each of the values.
+           Equivalent to calling Symbol.set_user_value() to set each of the
+           values.
 
            filename -- The .config file to load. $-references to environment
                        variables will be expanded. For scripts to work even
@@ -219,8 +220,8 @@ class Config():
                        Linux kernel, you need to refer to the top-level kernel
                        directory with "$srctree".
 
-           reset (default: True) -- True if the configuration should replace
-                 the old configuration; False if it should add to it."""
+           replace (default: True) -- True if the configuration should replace
+                   the old configuration; False if it should add to it."""
 
         def warn_override(filename, linenr, name, old_user_val, new_user_val):
             self._warn("overriding the value of {0}. "
@@ -236,8 +237,8 @@ class Config():
 
         self.config_filename = filename
 
-        if reset:
-            self.reset()
+        if replace:
+            self.unset_user_values()
 
         # Invalidate everything. This is usually faster than finding the
         # minimal set of symbols that needs to be invalidated, as nearly all
@@ -312,7 +313,7 @@ class Config():
                                        filename,
                                        linenr)
 
-                    sym._set_value_no_invalidate(val, True)
+                    sym._set_user_value_no_invalidate(val, True)
 
                 else:
                     self._undef_assign('attempt to assign the value "{0}" to the '
@@ -332,7 +333,7 @@ class Config():
                     if old_user_val is not None:
                         warn_override(filename, linenr, name, old_user_val, "n")
 
-                    sym._set_value_no_invalidate("n", True)
+                    sym._set_user_value_no_invalidate("n", True)
 
     def write_config(self, filename, header = None):
         """Writes out symbol values in the familiar .config format.
@@ -486,7 +487,7 @@ class Config():
         has the value "y", then config.eval("y && (FOO || BAR)") => "y"
 
         This functions always yields a tristate value. To get the value of
-        non-bool, non-tristate symbols, use calc_value().
+        non-bool, non-tristate symbols, use get_value().
 
         The result of this function is consistent with how evaluation works for
         conditional expressions in the configuration as well as in the C
@@ -517,7 +518,7 @@ class Config():
     def set_print_warnings(self, print_warnings):
         """Determines whether warnings related to this configuration (for
         things like attempting to assign illegal values to symbols with
-        Symbol.set_value()) should be printed to stderr.
+        Symbol.set_user_value()) should be printed to stderr.
 
         print_warnings -- True if warnings should be
                           printed, otherwise False."""
@@ -548,11 +549,11 @@ class Config():
         include such symbols as well, see config.get_symbols()."""
         return iter(self.kconfig_syms)
 
-    def reset(self):
+    def unset_user_values(self):
         """Resets the values of all symbols, as if Config.load_config() or
-        Symbol.set_value() had never been called."""
+        Symbol.set_user_value() had never been called."""
         for sym in self.syms.itervalues():
-            sym._reset_no_recursive_invalidate()
+            sym._unset_user_value_no_recursive_invalidate()
 
     def __str__(self):
         """Returns a string containing various information about the Config."""
@@ -1485,7 +1486,7 @@ error, and you should e-mail kconfiglib@gmail.com.
             return obj
 
         # obj is a Symbol
-        return obj.calc_value()
+        return obj.get_value()
 
     def _eval_min(self, e1, e2):
         e1_eval = self._eval_expr(e1)
@@ -1505,7 +1506,7 @@ error, and you should e-mail kconfiglib@gmail.com.
 
     def _has_modules(self):
         modules_sym = self.syms.get("MODULES")
-        return (modules_sym is not None) and (modules_sym.calc_value() == "y")
+        return (modules_sym is not None) and (modules_sym.get_value() == "y")
 
     #
     # Dependency tracking
@@ -1568,7 +1569,7 @@ error, and you should e-mail kconfiglib@gmail.com.
         if get_val_instead_of_eval:
             if isinstance(expr, str):
                 return _expr_to_str(expr)
-            val = expr.calc_value()
+            val = expr.get_value()
         else:
             val = self._eval_expr(expr)
 
@@ -1585,7 +1586,7 @@ error, and you should e-mail kconfiglib@gmail.com.
 
             sym_name = sym_ref_re_match.group(0)[1:]
             sym = self.syms.get(sym_name)
-            expansion = "" if sym is None else sym.calc_value()
+            expansion = "" if sym is None else sym.get_value()
 
             s = s[:sym_ref_re_match.start()] + \
                 expansion + \
@@ -1640,7 +1641,7 @@ error, and you should e-mail kconfiglib@gmail.com.
         if isinstance(sc, Symbol):
 
             # Build value string
-            value_str = s(sc.calc_value())
+            value_str = s(sc.get_value())
 
             # Build ranges string
             if isinstance(sc, Symbol):
@@ -1738,7 +1739,7 @@ error, and you should e-mail kconfiglib@gmail.com.
             sel_str = sel.get_name()
 
         # Build mode string
-        mode_str = s(sc.calc_mode())
+        mode_str = s(sc.get_mode())
 
         # Build default values string
         if sc.def_exprs == []:
@@ -2218,14 +2219,14 @@ class _HasVisibility():
     def _invalidate(self):
         self.cached_visibility = None
 
-    def _calc_visibility(self):
+    def _get_visibility(self):
         if self.cached_visibility is None:
             vis = "n"
             for (prompt, cond_expr) in self.prompts:
                 vis = self.config._eval_max(vis, cond_expr)
 
             if isinstance(self, Symbol) and self.is_choice_item():
-                vis = self.config._eval_min(vis, self.parent._calc_visibility())
+                vis = self.config._eval_min(vis, self.parent._get_visibility())
 
             # Promote "m" to "y" if we're dealing with a non-tristate
             if vis == "m" and self.type != TRISTATE:
@@ -2243,7 +2244,7 @@ class Symbol(Item, _HasVisibility):
     # Public interface
     #
 
-    def calc_value(self):
+    def get_value(self):
         """Calculate and return the value of the symbol."""
 
         if self.cached_value is not None:
@@ -2260,16 +2261,16 @@ class Symbol(Item, _HasVisibility):
 
         new_val = default_value[self.type]
 
-        vis = self._calc_visibility()
+        vis = self._get_visibility()
 
         if self.type in (BOOL, TRISTATE):
             # The visibility and mode (modules-only or single-selection) of
-            # choice items will be taken into account in self._calc_visibility()
+            # choice items will be taken into account in self._get_visibility()
 
             if self.is_choice_item():
                 if vis != "n":
                     choice = self.parent
-                    mode = choice.calc_mode()
+                    mode = choice.get_mode()
 
                     self.write_to_conf = (mode != "n")
 
@@ -2419,15 +2420,15 @@ class Symbol(Item, _HasVisibility):
         self.cached_value = new_val
         return new_val
 
-    def set_value(self, v):
-        """Sets the (user) value of the symbol.
+    def set_user_value(self, v):
+        """Sets the user value of the symbol.
 
         Equal in effect to assigning the value to the symbol within a .config
         file. Use get_lower/upper_bound() or get_assignable_values() to find
         the range of currently assignable values for bool and tristate symbols;
         setting values outside this range will cause the user value to differ
-        from the result of Symbol.calc_value() (be truncated). Values that are
-        invalid for the type (such as a_bool.set_value("foo")) are ignored, and
+        from the result of Symbol.get_value() (be truncated). Values that are
+        invalid for the type (such as a_bool.set_user_value("foo")) are ignored, and
         a warning is emitted if an attempt is made to assign such a value.
 
         For any type of symbol, is_modifiable() can be used to check if a user
@@ -2435,7 +2436,8 @@ class Symbol(Item, _HasVisibility):
         its visibility and range of assignable values. Any value that is valid
         for the type (bool, tristate, etc.) will end up being reflected in
         Symbol.get_user_value() though, and might have an effect later if
-        conditions change. To get rid of the user value, use reset().
+        conditions change. To get rid of the user value, use
+        unset_user_value().
 
         Any symbols dependent on the symbol are (recursively) invalidated, so
         things will just work with regards to dependencies.
@@ -2443,7 +2445,7 @@ class Symbol(Item, _HasVisibility):
         v -- The user value to give to the symbol."""
         old_user_val = self.user_val
 
-        self._set_value_no_invalidate(v, False)
+        self._set_user_value_no_invalidate(v, False)
 
         # If the user value changed, invalidate all dependent symbols
         if self.user_val != old_user_val:
@@ -2456,15 +2458,16 @@ class Symbol(Item, _HasVisibility):
             self._invalidate()
             self._invalidate_dependent()
 
-    def reset(self):
-        """Resets the value of the symbol, as if the symbol had never gotten a
-        (user) value via Config.load_config() or Symbol.set_value()."""
-        self._reset_no_recursive_invalidate()
+    def unset_user_value(self):
+        """Resets the user value of the symbol, as if the symbol had never
+        gotten a user value via Config.load_config() or
+        Symbol.set_user_value()."""
+        self._unset_user_value_no_recursive_invalidate()
         self._invalidate_dependent()
 
     def get_user_value(self):
         """Returns the value assigned to the symbol in a .config or via
-        Symbol.set_value() (provided the value was valid for the type of the
+        Symbol.set_user_value() (provided the value was valid for the type of the
         symbol). Returns None in case of no user value."""
         return self.user_val
 
@@ -2477,7 +2480,7 @@ class Symbol(Item, _HasVisibility):
         cannot be modified (see is_modifiable()), returns None.
 
         Otherwise, returns the highest value the symbol can be set to with
-        Symbol.set_value() (that will not be truncated): one of "m" or "y",
+        Symbol.set_user_value() (that will not be truncated): one of "m" or "y",
         arranged from lowest to highest. This corresponds to the highest value
         the symbol could be given in e.g. the 'make menuconfig' interface.
 
@@ -2489,7 +2492,7 @@ class Symbol(Item, _HasVisibility):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        vis = self._calc_visibility()
+        vis = self._get_visibility()
         if (tri_to_int[vis] - tri_to_int[rev_dep]) > 0:
             return vis
         return None
@@ -2499,7 +2502,7 @@ class Symbol(Item, _HasVisibility):
         cannot be modified (see is_modifiable()), returns None.
 
         Otherwise, returns the lowest value the symbol can be set to with
-        Symbol.set_value() (that will not be truncated): one of "n" or "m",
+        Symbol.set_user_value() (that will not be truncated): one of "n" or "m",
         arranged from lowest to highest. This corresponds to the lowest value
         the symbol could be given in e.g. the 'make menuconfig' interface.
 
@@ -2511,7 +2514,7 @@ class Symbol(Item, _HasVisibility):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        if (tri_to_int[self._calc_visibility()] - tri_to_int[rev_dep]) > 0:
+        if (tri_to_int[self._get_visibility()] - tri_to_int[rev_dep]) > 0:
             return rev_dep
         return None
 
@@ -2523,7 +2526,7 @@ class Symbol(Item, _HasVisibility):
         assigned to the symbol (that won't be truncated). Usage example:
 
         if "m" in sym.get_assignable_values():
-            sym.set_value("m")
+            sym.set_user_value("m")
 
         This is basically a more convenient interface to
         get_lower/upper_bound() when wanting to test if a particular tristate
@@ -2535,7 +2538,7 @@ class Symbol(Item, _HasVisibility):
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
         res = ["n", "m", "y"][tri_to_int[rev_dep] :
-                              tri_to_int[self._calc_visibility()] + 1]
+                              tri_to_int[self._get_visibility()] + 1]
         return res if len(res) > 1 else []
 
     def get_type(self):
@@ -2595,7 +2598,7 @@ class Symbol(Item, _HasVisibility):
         get_assignable_values() and is_modifiable() before using this. Not sure
         if it should even be public.
         """
-        return self._calc_visibility()
+        return self._get_visibility()
 
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
@@ -2681,7 +2684,7 @@ class Symbol(Item, _HasVisibility):
 
     def is_modifiable(self):
         """Returns True if the value of the symbol could be modified by calling
-        Symbol.set_value() and False otherwise.
+        Symbol.set_user_value() and False otherwise.
 
         For bools and tristates, this corresponds to the symbol being visible
         in the 'make menuconfig' interface and not already being pinned to a
@@ -2696,9 +2699,9 @@ class Symbol(Item, _HasVisibility):
             # A bool selected to "m" gets promoted to "y"
             if self.type == BOOL and rev_dep == "m":
                 rev_dep = "y"
-            return (tri_to_int[self._calc_visibility()] -
+            return (tri_to_int[self._get_visibility()] -
                     tri_to_int[rev_dep]) > 0
-        return self._calc_visibility() != "n"
+        return self._get_visibility() != "n"
 
     def is_defined(self):
         """Returns False if the symbol is referred to in the Kconfig but never
@@ -2849,12 +2852,12 @@ class Symbol(Item, _HasVisibility):
         for sym in self._get_dependent():
             sym._invalidate()
 
-    def _set_value_no_invalidate(self, v, suppress_load_warnings):
-        """Like set_value(), but does not invalidate any symbols.
+    def _set_user_value_no_invalidate(self, v, suppress_load_warnings):
+        """Like set_user_value(), but does not invalidate any symbols.
 
         suppress_load_warnings --
           some warnings don't make sense when loading a .config that do make
-          sense when manually invoking set_value(). This flag is set to True to
+          sense when manually invoking set_user_value(). This flag is set to True to
           suppress such warnings."""
 
         if self.is_special_:
@@ -2913,16 +2916,16 @@ class Symbol(Item, _HasVisibility):
                 choice.user_val = None
                 choice.user_mode = "m"
 
-    def _reset_no_recursive_invalidate(self):
+    def _unset_user_value_no_recursive_invalidate(self):
         self._invalidate()
         self.user_val = None
 
         if self.is_choice_item():
-            self.parent._reset()
+            self.parent._unset_user_value()
 
     def _should_write(self):
         # This check shouldn't be necessary as write_to_conf is never modified
-        # in calc_value() for special symbols, but just to be on the safe side:
+        # in get_value() for special symbols, but just to be on the safe side:
         if self.is_special_:
             return False
 
@@ -2931,9 +2934,9 @@ class Symbol(Item, _HasVisibility):
         if self.already_written:
             return False
 
-        # write_to_conf is determined in calc_value(), so we need to call that
+        # write_to_conf is determined in get_value(), so we need to call that
         # first
-        self.calc_value()
+        self.get_value()
 
         return self.write_to_conf
 
@@ -2944,15 +2947,15 @@ class Symbol(Item, _HasVisibility):
         self.already_written = True
 
         if self.type in (BOOL, TRISTATE):
-            if self.calc_value() in ("m", "y"):
-                return ["CONFIG_{0}={1}".format(self.name, self.calc_value())]
+            if self.get_value() in ("m", "y"):
+                return ["CONFIG_{0}={1}".format(self.name, self.get_value())]
             return ["# CONFIG_{0} is not set".format(self.name)]
 
         elif self.type == STRING:
-            return ['CONFIG_{0}="{1}"'.format(self.name, self.calc_value())]
+            return ['CONFIG_{0}="{1}"'.format(self.name, self.get_value())]
 
         elif self.type in (INT, HEX):
-            return ["CONFIG_{0}={1}".format(self.name, self.calc_value())]
+            return ["CONFIG_{0}={1}".format(self.name, self.get_value())]
 
         else:
             _internal_error('Internal error while creating .config: unknown type "{0}".'
@@ -3171,12 +3174,12 @@ class Choice(Item, _HasVisibility):
                 return None
             return self.cached_selection
 
-        if self.calc_mode() != "y":
+        if self.get_mode() != "y":
             return self._cache_ret(None)
 
         # User choice available?
         if self.user_val is not None and \
-           self.user_val._calc_visibility() == "y":
+           self.user_val._get_visibility() == "y":
             return self._cache_ret(self.user_val)
 
         if self.optional:
@@ -3199,11 +3202,11 @@ class Choice(Item, _HasVisibility):
             chosen_symbol = self.actual_items[0]
 
         # Is the chosen symbol visible?
-        if chosen_symbol._calc_visibility() != "n":
+        if chosen_symbol._get_visibility() != "n":
             return chosen_symbol
         # Otherwise, pick the first visible symbol
         for sym in self.actual_items:
-            if sym._calc_visibility() != "n":
+            if sym._get_visibility() != "n":
                 return sym
         return None
 
@@ -3269,14 +3272,14 @@ class Choice(Item, _HasVisibility):
         "y". This acts as an upper limit on the mode of the choice (though bool
         choices can only have the mode "y"). See the class documentation for an
         explanation of modes."""
-        return self._calc_visibility()
+        return self._get_visibility()
 
-    def calc_mode(self):
+    def get_mode(self):
         """Returns the mode of the choice. See the class documentation for
         an explanation of modes."""
         minimum_mode = "n" if self.optional else "m"
         mode = self.user_mode if self.user_mode is not None else minimum_mode
-        mode = self.config._eval_min(mode, self._calc_visibility())
+        mode = self.config._eval_min(mode, self._get_visibility())
 
         # Promote "m" to "y" for boolean choices
         if mode == "m" and self.type == BOOL:
@@ -3404,7 +3407,7 @@ class Choice(Item, _HasVisibility):
         _HasVisibility._invalidate(self)
         self.cached_selection = None
 
-    def _reset(self):
+    def _unset_user_value(self):
         self._invalidate()
         self.user_val = None
         self.user_mode = None
