@@ -53,7 +53,9 @@ Kconfiglib requires Python 2. For (i)scriptconfig the command to run the Python
 interpreter can be passed in the environment variable PYTHONCMD (defaults to
 'python'; PyPy works too and is a bit faster).
 
-Look in the examples/ subdirectory for examples.
+Look in the examples/ subdirectory for examples, which can be run with e.g.
+
+ $ make scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
 
 Look in kconfigtest.py for the test suite.
 
