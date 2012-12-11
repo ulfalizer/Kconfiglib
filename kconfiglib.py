@@ -2429,16 +2429,16 @@ class Symbol(Item, _HasVisibility):
         the range of currently assignable values for bool and tristate symbols;
         setting values outside this range will cause the user value to differ
         from the result of Symbol.get_value() (be truncated). Values that are
-        invalid for the type (such as a_bool.set_user_value("foo")) are ignored, and
-        a warning is emitted if an attempt is made to assign such a value.
+        invalid for the type (such as a_bool.set_user_value("foo")) are
+        ignored, and a warning is emitted if an attempt is made to assign such
+        a value.
 
         For any type of symbol, is_modifiable() can be used to check if a user
         value will currently have any effect on the symbol, as determined by
         its visibility and range of assignable values. Any value that is valid
         for the type (bool, tristate, etc.) will end up being reflected in
-        Symbol.get_user_value() though, and might have an effect later if
-        conditions change. To get rid of the user value, use
-        unset_user_value().
+        get_user_value() though, and might have an effect later if conditions
+        change. To get rid of the user value, use unset_user_value().
 
         Any symbols dependent on the symbol are (recursively) invalidated, so
         things will just work with regards to dependencies.
@@ -2523,7 +2523,7 @@ class Symbol(Item, _HasVisibility):
         """For string/hex/int symbols and for bool and tristate symbols that
         cannot be modified (see is_modifiable()), returns the empty list.
 
-        Otherwise, returns a list containing the tristate values that can be
+        Otherwise, returns a list containing the user values that can be
         assigned to the symbol (that won't be truncated). Usage example:
 
         if "m" in sym.get_assignable_values():
