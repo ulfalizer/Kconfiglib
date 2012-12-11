@@ -1065,15 +1065,18 @@ class Config():
 
             elif t0 == T_SOURCE:
                 kconfig_file = tokens.get_next()
-                f = os.path.join(self.base_dir, self._expand_sym_refs(kconfig_file))
+                exp_kconfig_file = self._expand_sym_refs(kconfig_file)
+                f = os.path.join(self.base_dir, exp_kconfig_file)
 
                 if not os.path.exists(f):
-                    raise IOError, ('{0}:{1}: sourced file "{2}" not found. Perhaps '
-                                    'base_dir (argument to Config.__init__(), currently '
+                    raise IOError, ('{0}:{1}: sourced file "{2}" (expands to\n'
+                                    '"{3}") not found. Perhaps base_dir\n'
+                                    '(argument to Config.__init__(), currently\n'
                                     '"{3}") is set to the wrong value.'
                                     .format(filename,
                                             linenr,
                                             kconfig_file,
+                                            exp_kconfig_file,
                                             self.base_dir))
 
                 # Add items to the same block
