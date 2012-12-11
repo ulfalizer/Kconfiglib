@@ -30,18 +30,19 @@ Kconfig-based configuration systems. Features include the following:
 
 For the Linux kernel, scripts are run using
 
- $ make scriptconfig SCRIPT=<path to script>
+ $ make scriptconfig SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
 
 Running scripts via the 'scriptconfig' target ensures that required environment
 variables (SRCARCH, ARCH, srctree, KERNELVERSION, etc.) are set up correctly.
 Alternative architectures can be specified like for other 'make *config'
 targets:
 
- $ make scriptconfig ARCH=mips SCRIPT=<path to script>
+ $ make scriptconfig ARCH=mips SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
 
 The script will receive the name of the Kconfig file to load in sys.argv[1].
 (As of Linux 3.7.0-rc8 this is always "Kconfig" from the kernel top-level
-directory.)
+directory.) If an argument is provided with SCRIPT_ARG, it will appear in
+sys.argv[2].
 
 To get an interactive Python prompt with Kconfiglib preloaded and a Config
 object 'c' created, use
