@@ -2245,7 +2245,8 @@ class Symbol(Item, _HasVisibility):
     #
 
     def get_value(self):
-        """Calculate and return the value of the symbol."""
+        """Calculate and return the value of the symbol. See also
+        Symbol.set_user_value()."""
 
         if self.cached_value is not None:
             return self.cached_value
