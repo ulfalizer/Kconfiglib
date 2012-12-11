@@ -388,33 +388,75 @@ def run_selftests():
 
     c = kconfiglib.Config("Kconfiglib/tests/Kref")
 
-    def verify_refs(sym_name, refs_no_enclosing, refs_enclosing):
-        sym = c[sym_name]
-        sym_refs = sym.get_referenced_symbols()
-        sym_refs_enclosing = sym.get_referenced_symbols(True)
-        verify(len(sym_refs) == len(refs_no_enclosing),
-               "Wrong number of refs excluding enclosing for {0}".
-               format(sym.get_name()))
-        verify(len(sym_refs_enclosing) == len(refs_enclosing),
-               "Wrong number of refs including enclosing for {0}".
-               format(sym.get_name()))
-        for r in [c[name] for name in refs_no_enclosing]:
-            verify(r in sym_refs,
-                   "{0} should reference {1} when excluding enclosing".
-                   format(sym.get_name(), r.get_name()))
-        for r in [c[name] for name in refs_enclosing]:
-            verify(r in sym_refs_enclosing,
-                   "{0} should reference {1} when including enclosing".
-                   format(sym.get_name(), r.get_name()))
+    # General function for checking get_referenced_symbols() output.
+    # Specialized for symbols below.
+    def verify_refs(item, refs_no_enclosing, refs_enclosing):
+        item_refs = item.get_referenced_symbols()
+        item_refs_enclosing = item.get_referenced_symbols(True)
 
-    verify_refs("NO_REF", [], [])
-    verify_refs("ONE_REF", ["A"], ["A"])
+        # For failure messages
+        if item.is_symbol():
+            item_string = item.get_name()
+        elif item.is_choice():
+            if item.get_name() is None:
+                item_string = "choice"
+            else:
+                item_string = "choice " + item.get_name()
+        elif item.is_menu():
+            item_string = 'menu "{0}"'.format(item.get_title())
+        else:
+            # Comment
+            item_string = 'comment "{0}"'.format(item.get_text())
+
+        verify(len(item_refs) == len(refs_no_enclosing),
+               "Wrong number of refs excluding enclosing for {0}".
+               format(item_string))
+        verify(len(item_refs_enclosing) == len(refs_enclosing),
+               "Wrong number of refs including enclosing for {0}".
+               format(item_string))
+        for r in [c[name] for name in refs_no_enclosing]:
+            verify(r in item_refs,
+                   "{0} should reference {1} when excluding enclosing".
+                   format(item_string, r.get_name()))
+        for r in [c[name] for name in refs_enclosing]:
+            verify(r in item_refs_enclosing,
+                   "{0} should reference {1} when including enclosing".
+                   format(item_string, r.get_name()))
+
+    # Symbols referenced by symbols
+
+    def verify_sym_refs(sym_name, refs_no_enclosing, refs_enclosing):
+        verify_refs(c[sym_name], refs_no_enclosing, refs_enclosing)
+
+    verify_sym_refs("NO_REF", [], [])
+    verify_sym_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
                 "M", "N", "O"]
-    verify_refs("MANY_REF",
-                own_refs,
-                own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
-                            "MENU_REF_2"])
+    verify_sym_refs("MANY_REF",
+      own_refs,
+      own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
+                  "MENU_REF_2"])
+
+    # Symbols referenced by choices
+
+    own_refs = ["CHOICE_REF_4", "CHOICE_REF_5", "CHOICE_REF_6"]
+    verify_refs(c.get_choices()[0],
+      own_refs,
+      own_refs + ["CHOICE_REF_1", "CHOICE_REF_2", "CHOICE_REF_3"])
+
+    # Symbols referenced by menus
+
+    own_refs = ["NO_REF", "MENU_REF_3"]
+    verify_refs(c.get_menus()[1],
+      own_refs,
+      own_refs + ["MENU_REF_1", "MENU_REF_2"])
+
+    # Symbols referenced by comments
+
+    own_refs = ["COMMENT_REF_3", "COMMENT_REF_4", "COMMENT_REF_5"]
+    verify_refs(c.get_comments()[0],
+      own_refs,
+      own_refs + ["COMMENT_REF_1", "COMMENT_REF_2"])
 
     #
     # get_selected_symbols() (same test file)
