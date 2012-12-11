@@ -480,6 +480,8 @@ def run_selftests():
 
     print "Testing object dependencies..."
 
+    # Note: This tests an internal API
+
     c = kconfiglib.Config("Kconfiglib/tests/Kdep")
 
     def verify_dependent(sym_name, deps_names):
