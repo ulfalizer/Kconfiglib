@@ -930,8 +930,8 @@ def test_defconfig(conf):
     nonsensical groupings of arches with defconfigs from other arches (every
     arch/defconfig combination) and an order of magnitude longer time to run.
 
-    This test appends any failures to a file test_defconfig_fails in the
-    root."""
+    With logging enabled, this test appends any failures to a file
+    test_defconfig_fails in the root."""
 
     global nconfigs
     defconfigs = []
