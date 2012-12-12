@@ -10,3 +10,7 @@ config M
 
 menuconfig Y
     def_tristate y
+
+config Y_STRING
+    string
+    default "y"

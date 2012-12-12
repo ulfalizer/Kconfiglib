@@ -180,14 +180,37 @@ def run_selftests():
     verify_val("n", "n")
     verify_val("m", "n")
     verify_val("y", "y")
+    verify_val("'n'", "n")
+    verify_val("'m'", "n")
+    verify_val("'y'", "y")
     verify_val("M", "y")
     # Modules
     c["MODULES"].set_user_value("y")
     verify_val("n", "n")
     verify_val("m", "m")
     verify_val("y", "y")
+    verify_val("'n'", "n")
+    verify_val("'m'", "m")
+    verify_val("'y'", "y")
     verify_val("M", "m")
     verify_val("(Y || N) && (m && y)", "m")
+
+    # Non-bool/non-tristate symbols are always "n" in a tristate sense
+    verify_val("Y_STRING", "n")
+    verify_val("Y_STRING || m", "m")
+
+    # As are all constants besides "y" and "m"
+    verify_val('"foo"', "n")
+    verify_val('"foo" || "bar"', "n")
+
+    # Compare some constants...
+    verify_val('"foo" != "bar"', "y")
+    verify_val('"foo" = "bar"', "n")
+    verify_val('"foo" = "foo"', "y")
+    # As a quirk, undefined values get their name as their value
+    c.set_print_warnings(False)
+    verify_val("'not_defined' = not_defined", "y")
+    verify_val("not_defined_2 = not_defined_2", "y")
 
     #
     # Text queries

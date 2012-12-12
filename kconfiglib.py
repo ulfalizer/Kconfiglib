@@ -1421,10 +1421,15 @@ error, and you should e-mail kconfiglib@gmail.com.
         if expr is None:
             return "y"
 
-        if isinstance(expr, (str, Symbol)):
-            val = self._get_str_value(expr)
-            # Expressions always have a tristate value
-            return val if val in ("y", "m") else "n"
+        if isinstance(expr, Symbol):
+            # Non-bool/tristate symbols are always "n" in a tristate sense,
+            # regardless of their value
+            if expr.type != BOOL and expr.type != TRISTATE:
+                return "n"
+            return expr.get_value()
+
+        if isinstance(expr, str):
+            return expr if (expr == "y" or expr == "m") else "n"
 
         first_expr = expr[0]
 
@@ -1484,7 +1489,6 @@ error, and you should e-mail kconfiglib@gmail.com.
     def _get_str_value(self, obj):
         if isinstance(obj, str):
             return obj
-
         # obj is a Symbol
         return obj.get_value()
 
