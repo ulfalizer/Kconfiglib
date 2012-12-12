@@ -504,7 +504,7 @@ def run_selftests():
 
     print "Testing get_defconfig_filename()..."
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_none")
+    c = kconfiglib.Config("Kconfiglib/tests/Kempty")
     verify(c.get_defconfig_filename() is None,
            "get_defconfig_filename() should be None with no defconfig_list "
            "symbol")
