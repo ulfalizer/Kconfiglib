@@ -24,9 +24,9 @@ manually.
 
 The test suite is run with
 
-> $ python Kconfiglib/kconfigtest.py
+> $ python Kconfiglib/testsuite.py
 
-You might want to use the "speedy" option. See kconfigtest.py.
+You might want to use the "speedy" option. See testsuite.py.
 
 Please tell me if you miss some API instead of digging into internals. The
 internal data structures and APIs, and dependency stuff in particular, are

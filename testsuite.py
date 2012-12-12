@@ -4,7 +4,7 @@
 # utilities for different targets and defconfigs. It should be run from the
 # top-level kernel directory with
 #
-#  $ python Kconfiglib/kconfigtest.py
+#  $ python Kconfiglib/testsuite.py
 #
 # Some additional options can be turned on by passing arguments. With no argument,
 # they default to off.
@@ -28,7 +28,7 @@
 #
 # For example, to run in speedy mode with logging, run
 #
-#  $ python Kconfiglib/kconfigtest.py speedy log
+#  $ python Kconfiglib/testsuite.py speedy log
 #
 # (PyPy also works, and runs the defconfig tests roughly 20% faster on my
 # machine. Some of the other tests get an even greater speed-up.)

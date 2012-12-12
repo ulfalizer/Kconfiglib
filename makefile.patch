@@ -1,4 +1,4 @@
-From 7329f3d49ccc1bb698ab2d2556d85747ea2b168a Mon Sep 17 00:00:00 2001
+From 10d327f145cfd2004ba5c9f4e8fbb6a9a6d725a4 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
 Date: Fri, 7 Dec 2012 03:58:36 +0100
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
@@ -8,7 +8,7 @@ Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
  1 file changed, 35 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 3091794..0f29810 100644
+index 3091794..012bafb 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
 @@ -11,6 +11,41 @@ else
@@ -44,7 +44,7 @@ index 3091794..0f29810 100644
 +	   print \"A Config instance 'c' for the architecture ({0}) has been created.\".format(c.get_arch())" \
 +	  $(srctree)/$(Kconfig)
 +
-+# Used by kconfigtest.py to be able to compare output for nonsensical
++# Used by testsuite.py to be able to compare output for nonsensical
 +# arch/defconfig combinations, which has proven effective for finding obscure
 +# bugs
 +kconfiglibtestconfig: $(obj)/conf

@@ -12,7 +12,7 @@
 #
 #  $ make scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
 #
-# Look in kconfigtest.py for the test suite.
+# Look in testsuite.py for the test suite.
 
 """
 Kconfiglib is a Python library for scripting and extracting information from
@@ -57,7 +57,7 @@ Look in the examples/ subdirectory for examples, which can be run with e.g.
 
  $ make scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
 
-Look in kconfigtest.py for the test suite.
+Look in testsuite.py for the test suite.
 
 Credits: Written by Ulf "Ulfalizer" Magnusson
 
