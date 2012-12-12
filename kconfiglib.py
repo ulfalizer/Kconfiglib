@@ -1040,8 +1040,8 @@ class Config():
                 # choice item
                 if choice.type == UNKNOWN:
                     for item in choice.get_actual_items():
-                        if item.get_type() != UNKNOWN:
-                            choice.type = item.get_type()
+                        if item.type != UNKNOWN:
+                            choice.type = item.type
                             break
 
                 # Each choice item of UNKNOWN type gets the type of the choice
@@ -1670,7 +1670,7 @@ error, and you should e-mail kconfiglib@gmail.com.
                 defaults_str_rows = []
 
                 for (val_expr, cond_expr) in sc.orig_def_exprs:
-                    row_str = " " + self._expr_val_str(val_expr, "(none)", sc.get_type() == STRING)
+                    row_str = " " + self._expr_val_str(val_expr, "(none)", sc.type == STRING)
                     defaults_str_rows.append(row_str)
                     defaults_str_rows.append("  Condition: " + self._expr_val_str(cond_expr))
 
