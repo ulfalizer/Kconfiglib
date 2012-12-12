@@ -16,6 +16,11 @@ import sys
 
 conf = kconfiglib.Config(sys.argv[1])
 
+# Avoid warnings printed by Kconfiglib when assigning a user value with
+# set_user_value() to a symbol that has no prompt (such assignments never have
+# an effect)
+conf.set_print_warnings(False)
+
 for sym in conf:
     if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
         sym.set_user_value("n")

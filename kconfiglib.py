@@ -2214,7 +2214,7 @@ class _HasVisibility():
 
     """Base class for elements that have a "visibility" that acts as an upper
     limit on the values a user can set for them. Subclasses are Symbol and
-    Choice."""
+    Choice (which supply some of the attributes)."""
 
     def __init__(self):
         self.cached_visibility = None
@@ -2857,9 +2857,11 @@ class Symbol(Item, _HasVisibility):
         """Like set_user_value(), but does not invalidate any symbols.
 
         suppress_load_warnings --
-          some warnings don't make sense when loading a .config that do make
-          sense when manually invoking set_user_value(). This flag is set to True to
-          suppress such warnings."""
+          some warnings are annoying when loading a .config that can be helpful
+          when manually invoking set_user_value(). This flag is set to True to
+          suppress such warnings.
+
+          Perhaps this could be made optional for load_config() instead."""
 
         if self.is_special_:
             if self.is_from_env:
@@ -2900,11 +2902,11 @@ class Symbol(Item, _HasVisibility):
 
         # This warning is annoying when running allnoconfig_simpler.py. Make it
         # optional?
-        #if self.prompts == [] and not suppress_load_warnings:
-            #self.config._warn('assigning "{0}" to the symbol {1} which lacks '
-                              #'prompts and thus has visibility "n". The assignment '
-                              #'will have no effect.'
-                              #.format(v, self.name))
+        if self.prompts == [] and not suppress_load_warnings:
+            self.config._warn('assigning "{0}" to the symbol {1} which lacks '
+                              'prompts and thus has visibility "n". The assignment '
+                              'will have no effect.'
+                              .format(v, self.name))
 
         self.user_val = v
 

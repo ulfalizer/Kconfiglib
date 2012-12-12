@@ -541,6 +541,10 @@ def run_selftests():
 
     print "Testing get_user_value()..."
 
+    # Avoid warnings from assigning invalid user values and assigning user
+    # values to symbols without prompts
+    c.set_print_warnings(False)
+
     syms = [c[name] for name in \
       ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
     b, t, s, i, h = syms
@@ -570,8 +574,6 @@ def run_selftests():
 
     # Assign invalid values for the types. They should retain their old user
     # value.
-
-    c.set_print_warnings(False)
 
     assign_and_verify_new_user_value(b, "m", "y")
     assign_and_verify_new_user_value(b, "foo", "y")
