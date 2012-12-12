@@ -300,12 +300,12 @@ class Config():
                 if name in self.syms:
                     sym = self.syms[name]
 
-                    old_user_val = sym.get_user_value()
+                    old_user_val = sym.user_val
                     if old_user_val is not None:
                         warn_override(filename, linenr, name, old_user_val, val)
 
                     if sym.is_choice_item_:
-                        user_mode = sym.get_parent()._get_user_mode()
+                        user_mode = sym.parent.user_mode
                         if user_mode is not None and user_mode != val:
                             self._warn("assignment to {0} changes mode of containing "
                                        'choice from "{1}" to "{2}".'
@@ -329,7 +329,7 @@ class Config():
                 if name in self.syms:
                     sym = self.syms[name]
 
-                    old_user_val = sym.get_user_value()
+                    old_user_val = sym.user_val
                     if old_user_val is not None:
                         warn_override(filename, linenr, name, old_user_val, "n")
 
@@ -1277,7 +1277,7 @@ get the empty string as its value.
 If you're using kconfiglib via 'make (i)scriptconfig' it should have set up the
 environment correctly for you. If you still got this message, that might be an
 error, and you should e-mail kconfiglib@gmail.com.
-."""                               .format(stmt.get_name(), env_var),
+."""                               .format(stmt.name, env_var),
                                    filename,
                                    linenr)
 
@@ -1704,10 +1704,10 @@ error, and you should e-mail kconfiglib@gmail.com.
                              "Visibility     : " + visibility_str,
                              "Is choice item : " + bool_str[sc.is_choice_item_],
                              "Is defined     : " + bool_str[sc.is_defined_],
-                             "Is from env.   : " + bool_str[sc.is_from_environment()],
+                             "Is from env.   : " + bool_str[sc.is_from_env],
                              "Is special     : " + bool_str[sc.is_special_] + "\n")
 
-            if sc.has_ranges():
+            if sc.ranges != []:
                 res += _sep_lines("Ranges:",
                                   ranges_str + "\n")
 
@@ -1730,17 +1730,17 @@ error, and you should e-mail kconfiglib@gmail.com.
         #
 
         # Build name string (for named choices)
-        if sc.get_name() is None:
+        if sc.name is None:
             name_str = "(no name)"
         else:
-            name_str = sc.get_name()
+            name_str = sc.name
 
         # Build selected symbol string
         sel = sc.get_selection()
         if sel is None:
             sel_str = "(no selection)"
         else:
-            sel_str = sel.get_name()
+            sel_str = sel.name
 
         # Build mode string
         mode_str = s(sc.get_mode())
@@ -1753,15 +1753,15 @@ error, and you should e-mail kconfiglib@gmail.com.
 
             for (sym, cond_expr) in sc.orig_def_exprs:
                 if cond_expr is None:
-                    defaults_str_rows.append(" {0}".format(sym.get_name()))
+                    defaults_str_rows.append(" {0}".format(sym.name))
                 else:
-                    defaults_str_rows.append(" {0} if ".format(sym.get_name()) +
+                    defaults_str_rows.append(" {0} if ".format(sym.name) +
                                              self._expr_val_str(cond_expr))
 
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
-        names = [sym.get_name() for sym in sc.get_actual_items()]
+        names = [sym.name for sym in sc.get_actual_items()]
 
         if names == []:
             syms_string = "(empty)"
@@ -2970,7 +2970,7 @@ class Symbol(Item, _HasVisibility):
         res = set()
 
         if self.is_choice_item_:
-            for s in self.get_parent().get_actual_items():
+            for s in self.parent.get_actual_items():
                 if s is not self:
                     res.add(s)
                 s._add_dependent_ignore_siblings(res)
@@ -3397,9 +3397,6 @@ class Choice(Item, _HasVisibility):
             self.cached_selection = selection
 
         return selection
-
-    def _get_user_mode(self):
-        return self.user_mode
 
     def _invalidate(self):
         _HasVisibility._invalidate(self)

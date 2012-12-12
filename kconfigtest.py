@@ -222,6 +222,7 @@ def run_selftests():
 
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
 
+    verify_equals(c["S"].get_name(), "S")
     verify_equals(c["NO_HELP"].get_help(), None)
     verify_equals(c["S"].get_help(), "help for\nS\n")
     verify_equals(c.get_choices()[0].get_help(), "help for\nC\n")
