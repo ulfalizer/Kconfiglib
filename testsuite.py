@@ -528,6 +528,22 @@ def run_selftests():
            "Kconfiglib/tests/defconfig_2")
 
     #
+    # get_mainmenu_text()
+    #
+
+    print "Testing get_mainmenu_text()..."
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kempty")
+    verify(c.get_mainmenu_text() is None,
+           "An empty Kconfig should not have a mainmenu text")
+
+    # Expanded in the mainmenu text
+    os.environ["FOO"] = "bar baz"
+    c = kconfiglib.Config("Kconfiglib/tests/Kmainmenu")
+    verify(c.get_mainmenu_text() == "---bar baz---",
+           "Wrong mainmenu text")
+
+    #
     # Misc. minor APIs
     #
 
