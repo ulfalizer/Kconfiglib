@@ -2925,11 +2925,6 @@ class Symbol(Item, _HasVisibility):
             self.parent._unset_user_value()
 
     def _should_write(self):
-        # This check shouldn't be necessary as write_to_conf is never modified
-        # in get_value() for special symbols, but just to be on the safe side:
-        if self.is_special_:
-            return False
-
         # Symbols defined in multiple locations only get one entry in the
         # .config.
         if self.already_written:
@@ -3239,11 +3234,11 @@ class Choice(Item, _HasVisibility):
         return self.block.get_items()
 
     def get_actual_items(self):
-        """A quirk (perhaps better described as a bug) of kconfig is that you
-        can put items within a choice that will not be considered members of
-        the choice insofar as selection is concerned. This happens for example
-        if one symbol within a choice 'depends on' the symbol preceding it, or
-        if you put non-symbol items within choices.
+        """A quirk (perhaps a bug) of Kconfig is that you can put items within
+        a choice that will not be considered members of the choice insofar as
+        selection is concerned. This happens for example if one symbol within a
+        choice 'depends on' the symbol preceding it, or if you put non-symbol
+        items within choices.
 
         This function gets a list of the "proper" elements of the choice in the
         order they appears in the choice, excluding such items."""
