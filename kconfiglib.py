@@ -3599,7 +3599,7 @@ def _strip_quotes(s, line, filename, linenr):
     unmodified."""
     s = s.strip()
     if not s:
-        return s
+        return ""
     if s[0] == '"' or s[0] == "'":
         if len(s) < 2 or s[-1] != s[0]:
             _parse_error(line,
