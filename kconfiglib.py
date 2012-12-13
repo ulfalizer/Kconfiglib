@@ -951,7 +951,7 @@ class Config():
             if t0 == end_marker:
                 return block
 
-            elif t0 in (T_CONFIG, T_MENUCONFIG):
+            elif t0 == T_CONFIG or t0 == T_MENUCONFIG:
                 # The tokenizer will automatically allocate a new Symbol object
                 # for any new names it encounters, so we don't need to worry
                 # about that here.
@@ -1800,10 +1800,12 @@ error, and you should e-mail kconfiglib@gmail.com.
             if isinstance(expr, Symbol):
                 return expr is sym
 
-            if expr[0] in (EQUAL, UNEQUAL):
+            e0 = expr[0]
+
+            if e0 == EQUAL or e0 == UNEQUAL:
                 return self._eq_to_sym(expr) is sym
 
-            if expr[0] == AND:
+            if e0 == AND:
                 for and_expr in expr[1]:
                     if rec(and_expr):
                         return True
@@ -1827,7 +1829,7 @@ error, and you should e-mail kconfiglib@gmail.com.
         if not isinstance(left, Symbol):
             return None
 
-        if (relation == EQUAL   and right in ("m", "y")) or \
+        if (relation == EQUAL   and (right == "m" or right == "y")) or \
            (relation == UNEQUAL and right == "n"):
             return left
 
@@ -1922,7 +1924,8 @@ def _get_expr_syms(expr):
 def _make_or(e1, e2):
     # Perform trivial simplification and avoid None's (which
     # correspond to y's)
-    if "y" in (e1, e2) or None in (e1, e2):
+    if e1 is None or e2 is None or \
+       e1 == "y" or e2 == "y":
         return "y"
 
     if e1 == "n":
@@ -1947,13 +1950,13 @@ def _make_or(e1, e2):
 # Note: returns None if e1 == e2 == None
 
 def _make_and(e1, e2):
-    if "n" in (e1, e2):
+    if e1 == "n" or e2 == "n":
         return "n"
 
-    if e1 in (None, "y"):
+    if e1 is None or e1 == "y":
         return e2
 
-    if e2 in (None, "y"):
+    if e2 is None or e2 == "y":
         return e1
 
     # Prefer to merge/update argument list if possible instead of creating
@@ -2137,10 +2140,12 @@ def _expr_to_str_rec(expr):
     if isinstance(expr, (Symbol, str)):
         return [_sym_str_string(expr)]
 
-    if expr[0] in (OR, AND):
+    e0 = expr[0]
+
+    if e0 == OR or e0 == AND:
         return _intersperse(expr[1], expr[0])
 
-    if expr[0] == NOT:
+    if e0 == NOT:
         need_parens = not isinstance(expr[1], (str, Symbol))
 
         res = ["!"]
@@ -2151,7 +2156,7 @@ def _expr_to_str_rec(expr):
             res.append(")")
         return res
 
-    if expr[0] in (EQUAL, UNEQUAL):
+    if e0 == EQUAL or e0 == UNEQUAL:
         return [_sym_str_string(expr[1]),
                 op_to_str[expr[0]],
                 _sym_str_string(expr[2])]
@@ -2282,7 +2287,7 @@ class Symbol(Item, _HasVisibility):
                     if mode == "y":
                         new_val = "y" if (choice.get_selection() is self) else "n"
                     elif mode == "m":
-                        if self.user_val in ("m", "y"):
+                        if self.user_val == "m" or self.user_val == "y":
                             new_val = "m"
 
             else:
@@ -2397,7 +2402,7 @@ class Symbol(Item, _HasVisibility):
                                       self.type == HEX else str(clamped_val))
 
                             break
-                else:
+                else: # For the for loop
                     # If no user value or default kicks in but the hex/int has
                     # an active range, then the low end of the range is used,
                     # provided it's > 0, with "0x" prepended as appropriate.
@@ -2470,7 +2475,7 @@ class Symbol(Item, _HasVisibility):
 
         See also the tri_less*() and tri_greater*() functions, which could come
         in handy."""
-        if self.type not in (BOOL, TRISTATE):
+        if self.type != BOOL and self.type != TRISTATE:
             return None
         rev_dep = self.config._eval_expr(self.rev_dep)
         # A bool selected to "m" gets promoted to "y"
@@ -2492,7 +2497,7 @@ class Symbol(Item, _HasVisibility):
 
         See also the tri_less*() and tri_greater*() functions, which could come
         in handy."""
-        if self.type not in (BOOL, TRISTATE):
+        if self.type != BOOL and self.type != TRISTATE:
             return None
         rev_dep = self.config._eval_expr(self.rev_dep)
         # A bool selected to "m" gets promoted to "y"
@@ -2515,7 +2520,7 @@ class Symbol(Item, _HasVisibility):
         This is basically a more convenient interface to
         get_lower/upper_bound() when wanting to test if a particular tristate
         value can be assigned."""
-        if self.type not in (BOOL, TRISTATE):
+        if self.type != BOOL and self.type != TRISTATE:
             return []
         rev_dep = self.config._eval_expr(self.rev_dep)
         # A bool selected to "m" gets promoted to "y"
@@ -2674,7 +2679,7 @@ class Symbol(Item, _HasVisibility):
         Symbol.get_visibility().)"""
         if self.is_special_:
             return False
-        if self.type in (BOOL, TRISTATE):
+        if self.type == BOOL or self.type == TRISTATE:
             rev_dep = self.config._eval_expr(self.rev_dep)
             # A bool selected to "m" gets promoted to "y"
             if self.type == BOOL and rev_dep == "m":
@@ -2867,11 +2872,12 @@ class Symbol(Item, _HasVisibility):
 
         # Check if the value is valid for our type
 
-        valid = ( self.type == BOOL     and v in ("n", "y")      ) or \
-                ( self.type == TRISTATE and v in ("n", "m", "y") ) or \
-                ( self.type == STRING                            ) or \
-                ( self.type == INT      and _is_base_n(v, 10)    ) or \
-                ( self.type == HEX      and _is_base_n(v, 16)    )
+        valid = ( self.type == BOOL     and (v == "n" or v == "y")    ) or \
+                ( self.type == TRISTATE and (v == "n" or v == "m" or
+                                             v == "y")                ) or \
+                ( self.type == STRING                                 ) or \
+                ( self.type == INT      and _is_base_n(v, 10)         ) or \
+                ( self.type == HEX      and _is_base_n(v, 16)         )
 
         if not valid:
             self.config._warn('the value "{0}" is invalid for {1}, which has type {2}. '
@@ -2882,14 +2888,15 @@ class Symbol(Item, _HasVisibility):
         # This warning is annoying when running allnoconfig_simpler.py. Make it
         # optional?
         if self.prompts == [] and not suppress_load_warnings:
-            self.config._warn('assigning "{0}" to the symbol {1} which lacks '
-                              'prompts and thus has visibility "n". The assignment '
-                              'will have no effect.'
+            self.config._warn('assigning "{0}" to the symbol {1} which '
+                              'lacks prompts and thus has visibility "n". '
+                              'The assignment will have no effect.'
                               .format(v, self.name))
 
         self.user_val = v
 
-        if self.is_choice_item_ and self.type in (BOOL, TRISTATE):
+        if self.is_choice_item_ and (self.type == BOOL or
+                                     self.type == TRISTATE):
             choice = self.parent
             if v == "y":
                 choice.user_val = self
@@ -2923,15 +2930,16 @@ class Symbol(Item, _HasVisibility):
 
         self.already_written = True
 
-        if self.type in (BOOL, TRISTATE):
-            if self.get_value() in ("m", "y"):
+        if self.type == BOOL or self.type == TRISTATE:
+            val = self.get_value()
+            if val == "m" or val == "y":
                 return ["CONFIG_{0}={1}".format(self.name, self.get_value())]
             return ["# CONFIG_{0} is not set".format(self.name)]
 
         elif self.type == STRING:
             return ['CONFIG_{0}="{1}"'.format(self.name, self.get_value())]
 
-        elif self.type in (INT, HEX):
+        elif self.type == INT or self.type == HEX:
             return ["CONFIG_{0}={1}".format(self.name, self.get_value())]
 
         else:
