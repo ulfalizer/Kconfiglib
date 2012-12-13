@@ -3645,7 +3645,7 @@ def _sep_lines(*args):
 
 def _comment(s):
     """Returns a new string with "# " inserted before each line in 's'."""
-    return "\n".join(["# " + line for line in s.splitlines()])
+    return "\n".join(["#" + line for line in s.splitlines()])
 
 def _get_lines(filename):
     """Returns a list of lines from 'filename', joining any line ending in \\
