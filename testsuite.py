@@ -1029,10 +1029,12 @@ def run_selftests():
     os.environ["SRCARCH"] = "SRCARCH value"
     os.environ["srctree"] = "srctree value"
     c = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+    c.load_config("Kconfiglib/tests/empty")
 
     arch = c.get_arch()
     srcarch = c.get_srcarch()
     srctree = c.get_srctree()
+    config_filename = c.get_config_filename()
     kconfig_filename = c.get_kconfig_filename()
 
     print "Testing get_arch()..."
@@ -1044,6 +1046,9 @@ def run_selftests():
     print "Testing get_srctree()..."
     verify(srctree == "srctree value",
            "Wrong srctree value - got '{0}'".format(srctree))
+    print "Testing get_config_filename()..."
+    verify(config_filename == "Kconfiglib/tests/empty",
+           "Wrong config filename - got '{0}'".format(config_filename))
     print "Testing get_kconfig_filename()..."
     verify(kconfig_filename == "Kconfiglib/tests/Kmisc",
            "Wrong Kconfig filename - got '{0}'".format(kconfig_filename))
