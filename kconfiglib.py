@@ -3001,8 +3001,8 @@ class Menu(Item):
     #
 
     def get_visibility(self):
-        """Returns the visibility the menu gets from 'depends on' conditions.
-        This is propagated to subitems."""
+        """Returns the visibility of the menu. This also affects the visibility
+        of subitems. See also Symbol.get_visibility()."""
         return self.config._eval_expr(self.dep_expr)
 
     def get_visible_if_visibility(self):
@@ -3408,6 +3408,11 @@ class Comment(Item):
     #
     # Public interface
     #
+
+    def get_visibility(self):
+        """Returns the visibility of the comment. See also
+        Symbol.get_visibility()."""
+        return self.config._eval_expr(self.dep_expr)
 
     def get_text(self):
         """Returns the text of the comment."""

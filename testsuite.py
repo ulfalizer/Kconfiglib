@@ -1101,6 +1101,7 @@ def test_call_all(conf):
         m.__str__()
 
     for c in conf.get_comments():
+        c.get_visibility()
         c.get_text()
         c.get_parent()
         c.get_referenced_symbols()
