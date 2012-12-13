@@ -935,6 +935,17 @@ def run_selftests():
                "{0} should not have a user value after being reset".
                format(s.get_name()))
 
+    print "Testing .config header reading and writing..."
+
+    header = "a b\nc d\ne f"
+    config_test = "Kconfiglib/tests/config_header_test"
+    c.write_config(config_test, header)
+    c.load_config(config_test)
+    read_header = c.get_config_header()
+    verify(read_header == header,
+           "Read .config header '{0}' does not match written header '{1}'".
+           format(read_header, header))
+
     print "Testing get_config()..."
 
     c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc")
