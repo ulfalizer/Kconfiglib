@@ -19,7 +19,7 @@
 #  - obsessive:
 #    By default, only valid arch/defconfig pairs will be tested. With this
 #    enabled, every arch will be tested with every defconfig, which increases
-#    the test time by an order of magnitude. Occassionally finds (usually very
+#    the test time by an order of magnitude. Occasionally finds (usually very
 #    obscure) bugs, and I make sure everything passes with it.
 #
 #  - log:
