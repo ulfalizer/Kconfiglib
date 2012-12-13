@@ -1022,6 +1022,33 @@ def run_selftests():
            "Config instance state separation or get_config() is broken")
 
     #
+    # get_arch/srcarch/srctree/kconfig_filename()
+    #
+
+    os.environ["ARCH"] = "ARCH value"
+    os.environ["SRCARCH"] = "SRCARCH value"
+    os.environ["srctree"] = "srctree value"
+    c = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+
+    arch = c.get_arch()
+    srcarch = c.get_srcarch()
+    srctree = c.get_srctree()
+    kconfig_filename = c.get_kconfig_filename()
+
+    print "Testing get_arch()..."
+    verify(arch == "ARCH value",
+           "Wrong arch value - got '{0}'".format(arch))
+    print "Testing get_srcarch()..."
+    verify(srcarch == "SRCARCH value",
+           "Wrong srcarch value - got '{0}'".format(srcarch))
+    print "Testing get_srctree()..."
+    verify(srctree == "srctree value",
+           "Wrong srctree value - got '{0}'".format(srctree))
+    print "Testing get_kconfig_filename()..."
+    verify(kconfig_filename == "Kconfiglib/tests/Kmisc",
+           "Wrong Kconfig filename - got '{0}'".format(kconfig_filename))
+
+    #
     # Object dependencies
     #
 
