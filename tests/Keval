@@ -14,3 +14,15 @@ menuconfig Y
 config Y_STRING
     string
     default "y"
+
+config FOO_BAR_STRING
+    string
+    default "foo bar"
+
+config INT_3
+    int
+    default 3
+
+config HEX_0X3
+    hex
+    default 0x3

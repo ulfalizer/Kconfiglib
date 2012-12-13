@@ -197,7 +197,7 @@ def run_selftests():
     verify_bounds("HEX", None, None)
 
     #
-    # eval() (Already well exercised. Just test some basics.)
+    # eval()
     #
 
     # TODO: Stricter syntax checking?
@@ -237,6 +237,43 @@ def run_selftests():
     # As are all constants besides "y" and "m"
     verify_val('"foo"', "n")
     verify_val('"foo" || "bar"', "n")
+
+    # Test equality for symbols
+
+    verify_val("N = N", "y")
+    verify_val("N = n", "y")
+    verify_val("N = 'n'", "y")
+    verify_val("N != N", "n")
+    verify_val("N != n", "n")
+    verify_val("N != 'n'", "n")
+
+    verify_val("M = M", "y")
+    verify_val("M = m", "y")
+    verify_val("M = 'm'", "y")
+    verify_val("M != M", "n")
+    verify_val("M != m", "n")
+    verify_val("M != 'm'", "n")
+
+    verify_val("Y = Y", "y")
+    verify_val("Y = y", "y")
+    verify_val("Y = 'y'", "y")
+    verify_val("Y != Y", "n")
+    verify_val("Y != y", "n")
+    verify_val("Y != 'y'", "n")
+
+    verify_val("N != M", "y")
+    verify_val("N != Y", "y")
+    verify_val("M != Y", "y")
+
+    # string/int/hex
+    verify_val("Y_STRING = y", "y")
+    verify_val("Y_STRING = 'y'", "y")
+    verify_val('FOO_BAR_STRING = "foo bar"', "y")
+    verify_val('FOO_BAR_STRING != "foo bar baz"', "y")
+    verify_val('INT_3 = 3', "y")
+    verify_val("INT_3 = '3'", "y")
+    verify_val('HEX_0X3 = 0x3', "y")
+    verify_val("HEX_0X3 = '0x3'", "y")
 
     # Compare some constants...
     verify_val('"foo" != "bar"', "y")
