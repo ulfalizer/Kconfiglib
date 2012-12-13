@@ -487,7 +487,7 @@ class Config():
         has the value "y", then config.eval("y && (FOO || BAR)") => "y"
 
         This functions always yields a tristate value. To get the value of
-        non-bool, non-tristate symbols, use get_value().
+        non-bool, non-tristate symbols, use Symbol.get_value().
 
         The result of this function is consistent with how evaluation works for
         conditional expressions in the configuration as well as in the C
