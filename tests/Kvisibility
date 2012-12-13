@@ -259,3 +259,19 @@ comment "double-nested m comment"
     depends on y
 endmenu
 endif
+
+# Used to verify that string/int/hex symbols with m visibility accept a user
+# value
+
+if m
+
+config STRING_m
+    string "string"
+
+config INT_m
+    int "int"
+
+config HEX_m
+    hex "hex"
+
+endif

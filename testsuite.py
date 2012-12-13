@@ -562,6 +562,12 @@ def run_selftests():
     verify_comment_visibility(comment_if_y, "y", "y")
     verify_comment_visibility(comment_m_nested, "n", "m")
 
+    # Verify that string/int/hex symbols with m visibility accept a user value
+
+    assign_and_verify_new_value("STRING_m", "foo bar", "foo bar")
+    assign_and_verify_new_value("INT_m", "123", "123")
+    assign_and_verify_new_value("HEX_m", "0x123", "0x123")
+
     #
     # Object relations
     #
