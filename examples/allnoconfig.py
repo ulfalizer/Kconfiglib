@@ -15,7 +15,7 @@ while not done:
     for sym in conf:
         # Choices take care of themselves for allnoconfig, so we only need to
         # worry about non-choice symbols
-        if not sym.is_choice_item():
+        if not sym.is_choice_symbol():
             # If we can assign a value to the symbol (where "n", "m" and "y"
             # are ordered from lowest to highest), then assign the lowest
             # value. lower_bound() returns None for symbols whose values cannot

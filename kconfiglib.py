@@ -304,7 +304,7 @@ class Config():
                     if old_user_val is not None:
                         warn_override(filename, linenr, name, old_user_val, val)
 
-                    if sym.is_choice_item_:
+                    if sym.is_choice_symbol_:
                         user_mode = sym.parent.user_mode
                         if user_mode is not None and user_mode != val:
                             self._warn("assignment to {0} changes mode of containing "
@@ -1034,18 +1034,18 @@ class Config():
                                                  None,
                                                  visible_if_deps)
 
-                choice._determine_actual_items()
+                choice._determine_actual_symbols()
 
                 # If no type is set for the choice, its type is that of the first
                 # choice item
                 if choice.type == UNKNOWN:
-                    for item in choice.get_actual_items():
+                    for item in choice.get_symbols():
                         if item.type != UNKNOWN:
                             choice.type = item.type
                             break
 
                 # Each choice item of UNKNOWN type gets the type of the choice
-                for item in choice.get_actual_items():
+                for item in choice.get_symbols():
                     if item.type == UNKNOWN:
                         item.type = choice.type
 
@@ -1554,7 +1554,7 @@ error, and you should e-mail kconfiglib@gmail.com.
                 add_expr_deps(u, sym)
                 add_expr_deps(e, sym)
 
-            if sym.is_choice_item_:
+            if sym.is_choice_symbol_:
                 choice = sym.parent
 
                 for (_, e) in choice.prompts:
@@ -1702,7 +1702,7 @@ error, and you should e-mail kconfiglib@gmail.com.
                              "Value          : " + value_str,
                              "User value     : " + user_value_str,
                              "Visibility     : " + visibility_str,
-                             "Is choice item : " + bool_str[sc.is_choice_item_],
+                             "Is choice item : " + bool_str[sc.is_choice_symbol_],
                              "Is defined     : " + bool_str[sc.is_defined_],
                              "Is from env.   : " + bool_str[sc.is_from_env],
                              "Is special     : " + bool_str[sc.is_special_] + "\n")
@@ -1761,7 +1761,7 @@ error, and you should e-mail kconfiglib@gmail.com.
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
-        names = [sym.name for sym in sc.get_actual_items()]
+        names = [sym.name for sym in sc.get_symbols()]
 
         if names == []:
             syms_string = "(empty)"
@@ -2234,7 +2234,7 @@ class _HasVisibility():
             for (prompt, cond_expr) in self.prompts:
                 vis = self.config._eval_max(vis, cond_expr)
 
-            if isinstance(self, Symbol) and self.is_choice_item_:
+            if isinstance(self, Symbol) and self.is_choice_symbol_:
                 vis = self.config._eval_min(vis, self.parent._get_visibility())
 
             # Promote "m" to "y" if we're dealing with a non-tristate
@@ -2277,7 +2277,7 @@ class Symbol(Item, _HasVisibility):
             # The visibility and mode (modules-only or single-selection) of
             # choice items will be taken into account in self._get_visibility()
 
-            if self.is_choice_item_:
+            if self.is_choice_symbol_:
                 if vis != "n":
                     choice = self.parent
                     mode = choice.get_mode()
@@ -2708,17 +2708,17 @@ class Symbol(Item, _HasVisibility):
         limits what values it can take on, otherwise False."""
         return self.ranges != []
 
-    def is_choice_item(self):
+    def is_choice_symbol(self):
         """Returns True if the symbol is in a choice statement and is an actual
-        choice item (see Choice.get_actual_items()); otherwise, returns
+        choice symbol (see Choice.get_symbols()); otherwise, returns
         False."""
-        return self.is_choice_item_
+        return self.is_choice_symbol_
 
     def is_choice_selection(self):
         """Returns True if the symbol is contained in a choice statement and is
-        the selected item, otherwise False. Equivalent to 'sym.is_choice_item()
+        the selected item, otherwise False. Equivalent to 'sym.is_choice_symbol()
         and sym.get_parent().get_selection() is sym'."""
-        return self.is_choice_item_ and \
+        return self.is_choice_symbol_ and \
                self.parent.get_selection() is self
 
     def __str__(self):
@@ -2770,14 +2770,14 @@ class Symbol(Item, _HasVisibility):
         # dependencies inherited from enclosing menus and if's
         self.all_referenced_syms = set()
 
-        # This is set to True for "actual" choice items. See
-        # Choice._determine_actual_items(). The trailing underscore avoids a
-        # collision with is_choice_item().
-        self.is_choice_item_ = False
+        # This is set to True for "actual" choice symbols. See
+        # Choice._determine_actual_symbols(). The trailing underscore avoids a
+        # collision with is_choice_symbol().
+        self.is_choice_symbol_ = False
 
         # This records only dependencies specified with 'depends on'. Needed
         # when determining actual choice items (hrrrr...). See also
-        # Choice._determine_actual_items().
+        # Choice._determine_actual_symbols().
         self.menu_dep = None
 
         # See Symbol.get_ref/def_locations().
@@ -2825,7 +2825,7 @@ class Symbol(Item, _HasVisibility):
         if self.is_special_:
             return
 
-        if self.is_choice_item_:
+        if self.is_choice_symbol_:
             self.parent._invalidate()
 
         _HasVisibility._invalidate(self)
@@ -2895,8 +2895,8 @@ class Symbol(Item, _HasVisibility):
 
         self.user_val = v
 
-        if self.is_choice_item_ and (self.type == BOOL or
-                                     self.type == TRISTATE):
+        if self.is_choice_symbol_ and (self.type == BOOL or
+                                       self.type == TRISTATE):
             choice = self.parent
             if v == "y":
                 choice.user_val = self
@@ -2909,7 +2909,7 @@ class Symbol(Item, _HasVisibility):
         self._invalidate()
         self.user_val = None
 
-        if self.is_choice_item_:
+        if self.is_choice_symbol_:
             self.parent._unset_user_value()
 
     def _should_write(self):
@@ -2956,8 +2956,8 @@ class Symbol(Item, _HasVisibility):
 
         res = set()
 
-        if self.is_choice_item_:
-            for s in self.parent.get_actual_items():
+        if self.is_choice_symbol_:
+            for s in self.parent.get_symbols():
                 if s is not self:
                     res.add(s)
                 s._add_dependent_ignore_siblings(res)
@@ -2978,7 +2978,7 @@ class Symbol(Item, _HasVisibility):
             to.update(s._get_dependent())
 
     def _has_auto_menu_dep_on(self, on):
-        """See Choice._determine_actual_items()."""
+        """See Choice._determine_actual_symbols()."""
         if not isinstance(self.parent, Choice):
             _internal_error("Attempt to determine auto menu dependency for symbol ouside of choice.")
 
@@ -3176,7 +3176,7 @@ class Choice(Item, _HasVisibility):
         """Like Choice.get_selection(), but acts as if no symbol has been
         selected by the user and no 'optional' flag is in effect."""
 
-        if self.actual_items == []:
+        if self.actual_symbols == []:
             return None
 
         for (symbol, cond_expr) in self.def_exprs:
@@ -3184,13 +3184,13 @@ class Choice(Item, _HasVisibility):
                 chosen_symbol = symbol
                 break
         else:
-            chosen_symbol = self.actual_items[0]
+            chosen_symbol = self.actual_symbols[0]
 
         # Is the chosen symbol visible?
         if chosen_symbol._get_visibility() != "n":
             return chosen_symbol
         # Otherwise, pick the first visible symbol
-        for sym in self.actual_items:
+        for sym in self.actual_symbols:
             if sym._get_visibility() != "n":
                 return sym
         return None
@@ -3222,16 +3222,22 @@ class Choice(Item, _HasVisibility):
         of Linux 3.7.0-rc8, in drivers/usb/gadget/Kconfig)."""
         return self.block.get_items()
 
-    def get_actual_items(self):
-        """A quirk (perhaps a bug) of Kconfig is that you can put items within
-        a choice that will not be considered members of the choice insofar as
+    def get_symbols(self):
+        """Returns a list containing the choice's symbols.
+
+        A quirk (perhaps a bug) of Kconfig is that you can put items within a
+        choice that will not be considered members of the choice insofar as
         selection is concerned. This happens for example if one symbol within a
         choice 'depends on' the symbol preceding it, or if you put non-symbol
         items within choices.
 
-        This function gets a list of the "proper" elements of the choice in the
-        order they appears in the choice, excluding such items."""
-        return self.actual_items
+        As of Linux 3.7.0-rc8, this seems to be used intentionally in one
+        place: drivers/usb/gadget/Kconfig.
+
+        This function returns the "proper" symbols of the choice in the order
+        they appear in the choice, excluding such items. If you want all items
+        in the choice, use get_items()."""
+        return self.actual_symbols
 
     def get_parent(self):
         """Returns the menu or choice statement that contains the choice, or
@@ -3313,9 +3319,9 @@ class Choice(Item, _HasVisibility):
 
         # We need to filter out symbols that appear within the choice block but
         # are not considered choice items (see
-        # Choice._determine_actual_items()) This list holds the "actual" choice
+        # Choice._determine_actual_symbols()) This list holds the "actual" choice
         # items.
-        self.actual_items = []
+        self.actual_symbols = []
 
         # The set of symbols referenced by this choice (see
         # get_referenced_symbols())
@@ -3333,7 +3339,7 @@ class Choice(Item, _HasVisibility):
 
         self.cached_selection = None
 
-    def _determine_actual_items(self):
+    def _determine_actual_symbols(self):
         """If a symbol's visibility depends on the preceding symbol within a
         choice, it is no longer viewed as a choice item (quite possibly a bug,
         but some things consciously use it.. ugh. It stems from automatic
@@ -3341,7 +3347,7 @@ class Choice(Item, _HasVisibility):
         comments within choices, and those shouldn't be considered as choice
         items either. Only drivers/usb/gadget/Kconfig seems to depend on any of
         this. This method computes the "actual" items in the choice and sets
-        the is_choice_item_ flag on them (retrieved via is_choice_item()).
+        the is_choice_symbol_ flag on them (retrieved via is_choice_symbol()).
 
         Don't let this scare you: an earlier version simply checked for a
         sequence of symbols where all symbols after the first appeared in the
@@ -3364,14 +3370,14 @@ class Choice(Item, _HasVisibility):
             while stack != []:
                 if item._has_auto_menu_dep_on(stack[-1]):
                     # The item should not be viewed as a choice item, so don't
-                    # set item.is_choice_item_.
+                    # set item.is_choice_symbol_.
                     stack.append(item)
                     break
                 else:
                     stack.pop()
             else:
-                item.is_choice_item_ = True
-                self.actual_items.append(item)
+                item.is_choice_symbol_ = True
+                self.actual_symbols.append(item)
                 stack.append(item)
 
     def _cache_ret(self, selection):

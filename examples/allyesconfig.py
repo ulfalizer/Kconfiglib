@@ -21,7 +21,7 @@ conf = kconfiglib.Config(sys.argv[1])
 
 # Get a list of all symbols that are not in choices
 non_choice_syms = [sym for sym in conf.get_symbols() if
-                   not sym.is_choice_item()]
+                   not sym.is_choice_symbol()]
 
 done = False
 while not done:
@@ -56,7 +56,7 @@ while not done:
         # "m" for example.
 
         elif choice.get_visibility() == "m":
-            for sym in choice.get_actual_items():
+            for sym in choice.get_symbols():
                 if sym.get_value() != "m" and \
                    sym.get_upper_bound() != "n":
                     sym.set_user_value("m")

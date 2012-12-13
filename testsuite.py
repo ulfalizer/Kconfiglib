@@ -460,8 +460,8 @@ def run_selftests():
     verify(choice_1.get_items() == [B, C, D],
            "Wrong get_items() items in 'choice'")
     # Test Kconfig quirk
-    verify(choice_1.get_actual_items() == [B, D],
-           "Wrong get_actual_items() items in 'choice'")
+    verify(choice_1.get_symbols() == [B, D],
+           "Wrong get_symbols() symbols in 'choice'")
 
     verify(menu_1.get_items() == [E, menu_2, I], "Wrong items in first menu")
     verify(menu_1.get_symbols() == [E, I], "Wrong symbols in first menu")
@@ -1065,7 +1065,7 @@ def test_call_all(conf):
         s.is_defined()
         s.is_from_environment()
         s.has_ranges()
-        s.is_choice_item()
+        s.is_choice_symbol()
         s.is_choice_selection()
         s.__str__()
 
@@ -1077,7 +1077,7 @@ def test_call_all(conf):
         c.get_type()
         c.get_name()
         c.get_items()
-        c.get_actual_items()
+        c.get_symbols()
         c.get_parent()
         c.get_referenced_symbols()
         c.get_referenced_symbols(True)

@@ -14,7 +14,7 @@ generated with
 
 Installation instructions for the Linux kernel (in the kernel root):
 
-> $ git clone git://github.com/ulfalizer/Kconfiglib.git  
+> $ git clone git://github.com/ulfalizer/Kconfiglib.git
 > $ git am Kconfiglib/makefile.patch
 
 (Note: The directory name Kconfiglib/ is significant.)
@@ -37,6 +37,8 @@ renamed as follows:
  * Symbol.calc\_value() -> Symbol.get\_value()
  * Choice.calc\_mode() -> Choice.get\_mode()
  * Symbol.set\_value() -> Symbol.set\_user\_value()
+ * Choice.get\_actual\_items() -> Choice.get\_symbols()
+ * Symbol.is\_choice\_item() -> Symbol.is\_choice\_symbol()
  * Symbol.reset() -> Symbol.unset\_user\_value()
  * Config.reset() -> Config.unset\_user\_values()
 
