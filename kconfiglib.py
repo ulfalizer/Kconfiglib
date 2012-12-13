@@ -3195,8 +3195,8 @@ class Choice(Item, _HasVisibility):
         return None
 
     def get_user_selection(self):
-        """If the choice is in "y" mode and has a user-selected
-        symbol, returns that symbol. Otherwise, returns None."""
+        """If the choice is in "y" mode and has a user-selected symbol, returns
+        that symbol. Otherwise, returns None."""
         return self.user_val
 
     def get_config(self):
@@ -3205,8 +3205,8 @@ class Choice(Item, _HasVisibility):
 
     def get_name(self):
         """For named choices, returns the name. Returns None for unnamed
-        choices. No named choices appear anywhere in the kernel Kconfig
-        files as of Linux 3.7.0-rc8."""
+        choices. No named choices appear anywhere in the kernel Kconfig files
+        as of Linux 3.7.0-rc8."""
         return self.name
 
     def get_help(self):
