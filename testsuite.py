@@ -1091,7 +1091,7 @@ def test_call_all(conf):
         m.get_items()
         m.get_symbols(False)
         m.get_symbols(True)
-        m.get_depends_on_visibility()
+        m.get_visibility()
         m.get_visible_if_visibility()
         m.get_title()
         m.get_parent()

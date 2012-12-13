@@ -2580,9 +2580,7 @@ class Symbol(Item, _HasVisibility):
         wouldn't be safe.
 
         You should probably look at get_lower/upper_bound(),
-        get_assignable_values() and is_modifiable() before using this. Not sure
-        if it should even be public.
-        """
+        get_assignable_values() and is_modifiable() before using this."""
         return self._get_visibility()
 
     def get_parent(self):
@@ -3002,7 +3000,7 @@ class Menu(Item):
     # Public interface
     #
 
-    def get_depends_on_visibility(self):
+    def get_visibility(self):
         """Returns the visibility the menu gets from 'depends on' conditions.
         This is propagated to subitems."""
         return self.config._eval_expr(self.dep_expr)
