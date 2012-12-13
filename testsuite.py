@@ -842,7 +842,7 @@ def run_selftests():
 
     print "Testing get_defconfig_filename()..."
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kempty")
+    c = kconfiglib.Config("Kconfiglib/tests/empty")
     verify(c.get_defconfig_filename() is None,
            "get_defconfig_filename() should be None with no defconfig_list "
            "symbol")
@@ -871,7 +871,7 @@ def run_selftests():
 
     print "Testing get_mainmenu_text()..."
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kempty")
+    c = kconfiglib.Config("Kconfiglib/tests/empty")
     verify(c.get_mainmenu_text() is None,
            "An empty Kconfig should not have a mainmenu text")
 
