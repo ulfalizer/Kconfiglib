@@ -935,16 +935,73 @@ def run_selftests():
                "{0} should not have a user value after being reset".
                format(s.get_name()))
 
-    print "Testing .config header reading and writing..."
+    #
+    # .config reading and writing
+    #
 
-    header = "a b\nc d\ne f"
-    config_test = "Kconfiglib/tests/config_header_test"
-    c.write_config(config_test, header)
-    c.load_config(config_test)
+    print "Testing .config reading and writing..."
+
+    def verify_header(config_name, header):
+        c.load_config(config_name)
+        read_header = c.get_config_header()
+        verify(read_header == header,
+               "Expected the header '{0}' from '{1}', got the header '{2}'.".
+               format(header, config_name, read_header))
+
+    def write_and_verify_header(header):
+        header_test_file = "Kconfiglib/tests/config_header_test"
+        c.write_config(header_test_file, header)
+        verify_header(header_test_file, header)
+
     read_header = c.get_config_header()
-    verify(read_header == header,
-           "Read .config header '{0}' does not match written header '{1}'".
-           format(read_header, header))
+    verify(read_header is None,
+           "Expected no header before .config loaded, got '{0}'".
+           format(read_header))
+
+    write_and_verify_header("")
+    write_and_verify_header("#")
+    write_and_verify_header("a")
+    write_and_verify_header("abcdef")
+    write_and_verify_header("foo\nbar baz\n\n\n qaz#")
+
+    c.load_config("Kconfiglib/tests/empty")
+    read_header = c.get_config_header()
+    verify(c.get_config_header() is None,
+           "Expected no header in empty .config, got '{0}'".
+           format(read_header))
+
+    c.load_config("Kconfiglib/tests/config_hash")
+    read_header = c.get_config_header()
+    verify(c.get_config_header() == "",
+           "Expected empty header in file with just '#', got '{0}'".
+           format(read_header))
+
+    # Appending values from a .config
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kappend")
+
+    # Values before assigning
+    verify_value("BOOL", "n")
+    verify_value("STRING", "")
+
+    # Assign BOOL
+    c.load_config("Kconfiglib/tests/config_set_bool", replace = False)
+    verify_value("BOOL", "y")
+    verify_value("STRING", "")
+
+    # Assign STRING
+    c.load_config("Kconfiglib/tests/config_set_string", replace = False)
+    verify_value("BOOL", "y")
+    verify_value("STRING", "foo bar")
+
+    # Reset BOOL
+    c.load_config("Kconfiglib/tests/config_set_string")
+    verify_value("BOOL", "n")
+    verify_value("STRING", "foo bar")
+
+    #
+    # get_config()
+    #
 
     print "Testing get_config()..."
 
