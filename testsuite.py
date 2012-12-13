@@ -418,6 +418,151 @@ def run_selftests():
     verify_location(comment_2, ("Kconfiglib/tests/Klocation_included", 34))
 
     #
+    # Visibility queries
+    #
+
+    print "Testing visibility queries..."
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kvisibility")
+
+    def verify_sym_visibility(sym_name, no_module_vis, module_vis):
+        sym = c[sym_name]
+
+        c["MODULES"].set_user_value("n")
+        sym_vis = sym.get_visibility()
+        verify(sym_vis == no_module_vis,
+               "{0} should have visibility '{1}' without modules, had "
+               "visibility '{2}'".
+               format(sym.get_name(), no_module_vis, sym_vis))
+
+        c["MODULES"].set_user_value("y")
+        sym_vis = sym.get_visibility()
+        verify(sym_vis == module_vis,
+               "{0} should have visibility '{1}' with modules, had "
+               "visibility '{2}'".
+               format(sym.get_name(), module_vis, sym_vis))
+
+    # Symbol visibility
+
+    verify_sym_visibility("NO_PROMPT", "n", "n")
+    verify_sym_visibility("BOOL_n", "n", "n")
+    verify_sym_visibility("BOOL_m", "n", "y") # Promoted
+    verify_sym_visibility("BOOL_MOD", "y", "y") # Promoted
+    verify_sym_visibility("BOOL_y", "y", "y")
+    verify_sym_visibility("TRISTATE_m", "n", "m")
+    verify_sym_visibility("TRISTATE_MOD", "y", "m") # Promoted
+    verify_sym_visibility("TRISTATE_y", "y", "y")
+    verify_sym_visibility("BOOL_if_n", "n", "n")
+    verify_sym_visibility("BOOL_if_m", "n", "y") # Promoted
+    verify_sym_visibility("BOOL_if_y", "y", "y")
+    verify_sym_visibility("BOOL_menu_n", "n", "n")
+    verify_sym_visibility("BOOL_menu_m", "n", "y") # Promoted
+    verify_sym_visibility("BOOL_menu_y", "y", "y")
+    verify_sym_visibility("BOOL_choice_n", "n", "n")
+    verify_sym_visibility("BOOL_choice_m", "n", "y") # Promoted
+    verify_sym_visibility("BOOL_choice_y", "y", "y")
+    verify_sym_visibility("TRISTATE_if_n", "n", "n")
+    verify_sym_visibility("TRISTATE_if_m", "n", "m") # Promoted
+    verify_sym_visibility("TRISTATE_if_y", "y", "y")
+    verify_sym_visibility("TRISTATE_menu_n", "n", "n")
+    verify_sym_visibility("TRISTATE_menu_m", "n", "m") # Promoted
+    verify_sym_visibility("TRISTATE_menu_y", "y", "y")
+    verify_sym_visibility("TRISTATE_choice_n", "n", "n")
+    verify_sym_visibility("TRISTATE_choice_m", "n", "m") # Promoted
+    verify_sym_visibility("TRISTATE_choice_y", "y", "y")
+
+    # Choice visibility
+
+    def verify_choice_visibility(choice, no_module_vis, module_vis):
+        c["MODULES"].set_user_value("n")
+        choice_vis = choice.get_visibility()
+        verify(choice_vis == no_module_vis,
+               "choice {0} should have visibility '{1}' without modules, "
+               "has visibility '{2}'".
+               format(choice.get_name(), no_module_vis, choice_vis))
+
+        c["MODULES"].set_user_value("y")
+        choice_vis = choice.get_visibility()
+        verify(choice_vis == module_vis,
+               "choice {0} should have visibility '{1}' with modules, "
+               "has visibility '{2}'".
+               format(choice.get_name(), module_vis, choice_vis))
+
+    choice_bool_n, choice_bool_m, choice_bool_y, choice_tristate_n, \
+      choice_tristate_m, choice_tristate_y, choice_tristate_if_m_and_y, \
+      choice_tristate_menu_n_and_y \
+      = c.get_choices()[3:]
+
+    verify(choice_bool_n.get_name() == "BOOL_CHOICE_n", "Ops - testing the wrong choices")
+
+    verify_choice_visibility(choice_bool_n, "n", "n")
+    verify_choice_visibility(choice_bool_m, "n", "y") # Promoted
+    verify_choice_visibility(choice_bool_y, "y", "y")
+    verify_choice_visibility(choice_tristate_n, "n", "n")
+    verify_choice_visibility(choice_tristate_m, "n", "m")
+    verify_choice_visibility(choice_tristate_y, "y", "y")
+
+    verify_choice_visibility(choice_tristate_if_m_and_y, "n", "m")
+    verify_choice_visibility(choice_tristate_menu_n_and_y, "n", "n")
+
+    # Menu visibility
+
+    def verify_menu_visibility(menu, no_module_vis, module_vis):
+        c["MODULES"].set_user_value("n")
+        menu_vis = menu.get_visibility()
+        verify(menu_vis == no_module_vis,
+               "menu \"{0}\" should have visibility '{1}' without modules, "
+               "has visibility '{2}'".
+               format(menu.get_title(), no_module_vis, menu_vis))
+
+        c["MODULES"].set_user_value("y")
+        menu_vis = menu.get_visibility()
+        verify(menu_vis == module_vis,
+               "menu \"{0}\" should have visibility '{1}' with modules, "
+               "has visibility '{2}'".
+               format(menu.get_title(), module_vis, menu_vis))
+
+    menu_n, menu_m, menu_y, menu_if_n, menu_if_m, menu_if_y, \
+      menu_if_m_and_y = c.get_menus()[4:-1]
+    verify(menu_n.get_title() == "menu n", "Ops - testing the wrong menus")
+
+    verify_menu_visibility(menu_n, "n", "n")
+    verify_menu_visibility(menu_m, "n", "m")
+    verify_menu_visibility(menu_y, "y", "y")
+    verify_menu_visibility(menu_if_n, "n", "n")
+    verify_menu_visibility(menu_if_m, "n", "m")
+    verify_menu_visibility(menu_if_y, "y", "y")
+    verify_menu_visibility(menu_if_m_and_y, "n", "m")
+
+    # Comment visibility
+
+    def verify_comment_visibility(comment, no_module_vis, module_vis):
+        c["MODULES"].set_user_value("n")
+        comment_vis = comment.get_visibility()
+        verify(comment_vis == no_module_vis,
+               "comment \"{0}\" should have visibility '{1}' without "
+               "modules, has visibility '{2}'".
+               format(comment.get_text(), no_module_vis, comment_vis))
+
+        c["MODULES"].set_user_value("y")
+        comment_vis = comment.get_visibility()
+        verify(comment_vis == module_vis,
+               "comment \"{0}\" should have visibility '{1}' with "
+               "modules, has visibility '{2}'".
+               format(comment.get_text(), module_vis, comment_vis))
+
+    comment_n, comment_m, comment_y, comment_if_n, comment_if_m, \
+      comment_if_y, comment_m_nested = c.get_comments()
+
+    verify_comment_visibility(comment_n, "n", "n")
+    verify_comment_visibility(comment_m, "n", "m")
+    verify_comment_visibility(comment_y, "y", "y")
+    verify_comment_visibility(comment_if_n, "n", "n")
+    verify_comment_visibility(comment_if_m, "n", "m")
+    verify_comment_visibility(comment_if_y, "y", "y")
+    verify_comment_visibility(comment_m_nested, "n", "m")
+
+    #
     # Object relations
     #
 
