@@ -35,3 +35,7 @@ config INT
 
 config HEX
     hex "hex"
+
+comment "comment"
+menu "menu"
+endmenu

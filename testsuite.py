@@ -929,6 +929,24 @@ def run_selftests():
                "{0} should not have a user value after being reset".
                format(s.get_name()))
 
+    print "Testing get_config()..."
+
+    c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+    c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+
+    c1_bool, c1_choice, c1_menu, c1_comment = c1["BOOL"], \
+      c1.get_choices()[0], c1.get_menus()[0], c1.get_comments()[0]
+    c2_bool, c2_choice, c2_menu, c2_comment = c2["BOOL"], \
+      c2.get_choices()[0], c2.get_menus()[0], c2.get_comments()[0]
+
+    verify((c1_bool is not c2_bool) and (c1_choice is not c2_choice) and
+           (c1_menu is not c2_menu) and (c1_comment is not c2_comment) and
+           (c1_bool.get_config()    is c1) and (c2_bool.get_config()    is c2) and
+           (c1_choice.get_config()  is c1) and (c2_choice.get_config()  is c2) and
+           (c1_menu.get_config()    is c1) and (c2_menu.get_config()    is c2) and
+           (c1_comment.get_config() is c1) and (c2_comment.get_config() is c2),
+           "Config instance state separation or get_config() is broken")
+
     #
     # Object dependencies
     #
