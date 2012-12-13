@@ -712,20 +712,20 @@ def run_selftests():
         assign_and_verify_new_value(sym_name, too_low_str, default_str)
         assign_and_verify_new_value(sym_name, too_high_str, default_str)
 
-    verify_range("HEX_RANGE_10_20_LOW_DEFAULT",          0x10, 0x20,  0x10)
-    verify_range("HEX_RANGE_10_20_HIGH_DEFAULT",         0x10, 0x20,  0x20)
-    verify_range("HEX_RANGE_10_20_OK_DEFAULT",           0x10, 0x20,  0x15)
+    verify_range("HEX_RANGE_10_20_LOW_DEFAULT",  0x10, 0x20,  0x10)
+    verify_range("HEX_RANGE_10_20_HIGH_DEFAULT", 0x10, 0x20,  0x20)
+    verify_range("HEX_RANGE_10_20_OK_DEFAULT",   0x10, 0x20,  0x15)
 
-    verify_range("INT_RANGE_10_20_LOW_DEFAULT",          10,   20,    10)
-    verify_range("INT_RANGE_10_20_HIGH_DEFAULT",         10,   20,    20)
-    verify_range("INT_RANGE_10_20_OK_DEFAULT",           10,   20,    15)
+    verify_range("INT_RANGE_10_20_LOW_DEFAULT",  10,   20,    10)
+    verify_range("INT_RANGE_10_20_HIGH_DEFAULT", 10,   20,    20)
+    verify_range("INT_RANGE_10_20_OK_DEFAULT",   10,   20,    15)
 
-    verify_range("HEX_RANGE_10_20",                      0x10, 0x20,  0x10)
-    verify_range("HEX_RANGE_0_10",                       0x0,  0x10,  None)
+    verify_range("HEX_RANGE_10_20",              0x10, 0x20,  0x10)
+    verify_range("HEX_RANGE_0_10",               0x0,  0x10,  None)
 
-    verify_range("INT_RANGE_10_20",                      10,  20,     10)
-    verify_range("INT_RANGE_0_10",                       0,   10,     None)
-    verify_range("INT_RANGE_NEG_10_10",                  -10, 10,     None)
+    verify_range("INT_RANGE_10_20",              10,  20,     10)
+    verify_range("INT_RANGE_0_10",               0,   10,     None)
+    verify_range("INT_RANGE_NEG_10_10",          -10, 10,     None)
 
     # Dependent ranges
 
