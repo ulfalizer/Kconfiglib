@@ -2268,7 +2268,7 @@ class Symbol(Item, _HasVisibility):
 
         vis = self._get_visibility()
 
-        if self.type in (BOOL, TRISTATE):
+        if self.type == BOOL or self.type == TRISTATE:
             # The visibility and mode (modules-only or single-selection) of
             # choice items will be taken into account in self._get_visibility()
 
@@ -2333,94 +2333,77 @@ class Symbol(Item, _HasVisibility):
                         new_val = self.config._get_str_value(val_expr)
                         break
 
-        elif self.type in (HEX, INT):
-            active_range = None
+        elif self.type == HEX or self.type == INT:
+            has_active_range = False
+            low = None
+            high = None
             use_defaults = True
 
-            # TODO: HEX case should only accept hex and dec numbers
+            base = 16 if self.type == HEX else 10
 
-            for(l, u, cond_expr) in self.ranges:
+            for(l, h, cond_expr) in self.ranges:
                 if self.config._eval_expr(cond_expr) != "n":
-                    l_str = self.config._get_str_value(l)
-                    u_str = self.config._get_str_value(u)
+                    has_active_range = True
 
-                    if self.type == INT:
-                        if not _is_dec(l_str):
-                            l_str = "0"
+                    low_str = self.config._get_str_value(l)
+                    high_str = self.config._get_str_value(h)
 
-                        if not _is_dec(u_str):
-                            u_str = "0"
-
-                        active_range = (int(l_str), int(u_str))
-
-                    else: # self.type == HEX
-                        if not _is_hex(l_str):
-                            l_str = "0x0"
-
-                        if not _is_hex(u_str):
-                            u_str = "0x0"
-
-                        active_range = (int(l_str, 16), int(u_str, 16))
+                    low = int(low_str, base) if \
+                      _is_base_n(low_str, base) else 0
+                    high = int(high_str, base) if \
+                      _is_base_n(high_str, base) else 0
 
                     break
 
             if vis != "n":
                 self.write_to_conf = True
 
-                if self.user_val is not None:
-                    if self.type == INT:
-                        if _is_dec(self.user_val):
-                            num = int(self.user_val)
-                            if active_range is None or \
-                               active_range[0] <= num <= active_range[1]:
+                if self.user_val is not None and \
+                   _is_base_n(self.user_val, base) and \
+                   (not has_active_range or
+                    low <= int(self.user_val, base) <= high):
 
-                               use_defaults = False
-                               new_val = self.user_val
+                    # If the user value is OK, it is stored in exactly the same
+                    # form as specified in the assignment (with or without
+                    # "0x", etc).
 
-                    else: # HEX
-                        if _is_hex(self.user_val):
-                            num = int(self.user_val, 16)
-                            if active_range is None or \
-                               active_range[0] <= num <= active_range[1]:
-
-                               use_defaults = False
-                               new_val = self.user_val
+                    use_defaults = False
+                    new_val = self.user_val
 
             if use_defaults:
                 for (val_expr, cond_expr) in self.def_exprs:
                     if self.config._eval_expr(cond_expr) != "n":
                         self.write_to_conf = True
 
-                        # Kconfig allows arbitrary string values for hex/int.
-                        # (Possibly a bug, but we still emulate it.)
+                        # If the default value is OK, it is stored in exactly
+                        # the same form as specified. Otherwise, it is clamped
+                        # to the range, and the output has "0x" as appropriate
+                        # for the type.
 
                         new_val = self.config._get_str_value(val_expr)
 
-                        if self.type == INT:
-                            if _is_dec(new_val):
-                                new_val_num = int(new_val)
-                        elif self.type == HEX:
-                            if _is_hex(new_val):
-                                new_val_num = int(new_val, 16)
+                        if _is_base_n(new_val, base):
+                            new_val_num = int(new_val, base)
+                            if has_active_range:
+                                clamped_val = None
 
-                        if new_val_num is not None:
-                            if active_range is not None:
-                                l_num, u_num = active_range
+                                if new_val_num < low:
+                                    clamped_val = low
+                                elif new_val_num > high:
+                                    clamped_val = high
 
-                                was_clamped = False
+                                if clamped_val is not None:
+                                    new_val = (hex(clamped_val) if \
+                                      self.type == HEX else str(clamped_val))
 
-                                if new_val_num < l_num:
-                                    new_val_num = l_num
-                                    was_clamped = True
-                                elif new_val_num > u_num:
-                                    new_val_num = u_num
-                                    was_clamped = True
+                            break
+                else:
+                    # If no user value or default kicks in but the hex/int has
+                    # an active range, then the low end of the range is used,
+                    # provided it's > 0, with "0x" prepended as appropriate.
 
-                                if was_clamped:
-                                    new_val = (str(new_val_num) if self.type == INT else
-                                               hex(new_val_num))
-
-                        break
+                    if has_active_range and low > 0:
+                        new_val = (hex(low) if self.type == HEX else str(low))
 
         self.cached_value = new_val
         return new_val
@@ -2548,11 +2531,7 @@ class Symbol(Item, _HasVisibility):
         so you'd do something like
 
         if sym.get_type() == kconfiglib.STRING:
-            ...
-
-        This is basically just a different interface to
-        is_symbol/menu/choice/comment().
-        """
+            ..."""
         return self.type
 
     def get_visibility(self):
@@ -2891,8 +2870,8 @@ class Symbol(Item, _HasVisibility):
         valid = ( self.type == BOOL     and v in ("n", "y")      ) or \
                 ( self.type == TRISTATE and v in ("n", "m", "y") ) or \
                 ( self.type == STRING                            ) or \
-                ( self.type == INT      and _is_dec(v)           ) or \
-                ( self.type == HEX      and _is_hex(v)           )
+                ( self.type == INT      and _is_base_n(v, 10)    ) or \
+                ( self.type == HEX      and _is_base_n(v, 16)    )
 
         if not valid:
             self.config._warn('the value "{0}" is invalid for {1}, which has type {2}. '
@@ -3623,12 +3602,6 @@ def _deindent(line, indent):
     if len(line) <= indent:
         return line
     return line[indent:]
-
-def _is_hex(s):
-    return _is_base_n(s, 16)
-
-def _is_dec(s):
-    return _is_base_n(s, 10)
 
 def _is_base_n(s, n):
     try:
