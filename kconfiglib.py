@@ -2621,8 +2621,7 @@ class Symbol(Item, _HasVisibility):
         return self.help
 
     def get_config(self):
-        """Returns the Config instance that represents the configuration this
-        symbol is from."""
+        """Returns the Config instance this symbol is from."""
         return self.config
 
     def get_def_locations(self):
@@ -3000,6 +2999,10 @@ class Menu(Item):
     # Public interface
     #
 
+    def get_config(self):
+        """Return the Config instance this menu is from."""
+        return self.config
+
     def get_visibility(self):
         """Returns the visibility of the menu. This also affects the visibility
         of subitems. See also Symbol.get_visibility()."""
@@ -3197,6 +3200,10 @@ class Choice(Item, _HasVisibility):
         """If the choice is in "y" mode and has a user-selected
         symbol, returns that symbol. Otherwise, returns None."""
         return self.user_val
+
+    def get_config(self):
+        """Returns the Config instance this choice is from."""
+        return self.config
 
     def get_name(self):
         """For named choices, returns the name. Returns None for unnamed
@@ -3408,6 +3415,10 @@ class Comment(Item):
     #
     # Public interface
     #
+
+    def get_config(self):
+        """Returns the Config instance this comment is from."""
+        return self.config
 
     def get_visibility(self):
         """Returns the visibility of the comment. See also
