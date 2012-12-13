@@ -206,83 +206,83 @@ def run_selftests():
 
     c = kconfiglib.Config("Kconfiglib/tests/Keval")
 
-    def verify_val(expr, val):
+    def verify_eval(expr, val):
         res = c.eval(expr)
         verify(res == val,
                "'{0}' evaluated to {1}, expected {2}".format(expr, res, val))
 
     # No modules
-    verify_val("n", "n")
-    verify_val("m", "n")
-    verify_val("y", "y")
-    verify_val("'n'", "n")
-    verify_val("'m'", "n")
-    verify_val("'y'", "y")
-    verify_val("M", "y")
+    verify_eval("n", "n")
+    verify_eval("m", "n")
+    verify_eval("y", "y")
+    verify_eval("'n'", "n")
+    verify_eval("'m'", "n")
+    verify_eval("'y'", "y")
+    verify_eval("M", "y")
     # Modules
     c["MODULES"].set_user_value("y")
-    verify_val("n", "n")
-    verify_val("m", "m")
-    verify_val("y", "y")
-    verify_val("'n'", "n")
-    verify_val("'m'", "m")
-    verify_val("'y'", "y")
-    verify_val("M", "m")
-    verify_val("(Y || N) && (m && y)", "m")
+    verify_eval("n", "n")
+    verify_eval("m", "m")
+    verify_eval("y", "y")
+    verify_eval("'n'", "n")
+    verify_eval("'m'", "m")
+    verify_eval("'y'", "y")
+    verify_eval("M", "m")
+    verify_eval("(Y || N) && (m && y)", "m")
 
     # Non-bool/non-tristate symbols are always "n" in a tristate sense
-    verify_val("Y_STRING", "n")
-    verify_val("Y_STRING || m", "m")
+    verify_eval("Y_STRING", "n")
+    verify_eval("Y_STRING || m", "m")
 
     # As are all constants besides "y" and "m"
-    verify_val('"foo"', "n")
-    verify_val('"foo" || "bar"', "n")
+    verify_eval('"foo"', "n")
+    verify_eval('"foo" || "bar"', "n")
 
     # Test equality for symbols
 
-    verify_val("N = N", "y")
-    verify_val("N = n", "y")
-    verify_val("N = 'n'", "y")
-    verify_val("N != N", "n")
-    verify_val("N != n", "n")
-    verify_val("N != 'n'", "n")
+    verify_eval("N = N", "y")
+    verify_eval("N = n", "y")
+    verify_eval("N = 'n'", "y")
+    verify_eval("N != N", "n")
+    verify_eval("N != n", "n")
+    verify_eval("N != 'n'", "n")
 
-    verify_val("M = M", "y")
-    verify_val("M = m", "y")
-    verify_val("M = 'm'", "y")
-    verify_val("M != M", "n")
-    verify_val("M != m", "n")
-    verify_val("M != 'm'", "n")
+    verify_eval("M = M", "y")
+    verify_eval("M = m", "y")
+    verify_eval("M = 'm'", "y")
+    verify_eval("M != M", "n")
+    verify_eval("M != m", "n")
+    verify_eval("M != 'm'", "n")
 
-    verify_val("Y = Y", "y")
-    verify_val("Y = y", "y")
-    verify_val("Y = 'y'", "y")
-    verify_val("Y != Y", "n")
-    verify_val("Y != y", "n")
-    verify_val("Y != 'y'", "n")
+    verify_eval("Y = Y", "y")
+    verify_eval("Y = y", "y")
+    verify_eval("Y = 'y'", "y")
+    verify_eval("Y != Y", "n")
+    verify_eval("Y != y", "n")
+    verify_eval("Y != 'y'", "n")
 
-    verify_val("N != M", "y")
-    verify_val("N != Y", "y")
-    verify_val("M != Y", "y")
+    verify_eval("N != M", "y")
+    verify_eval("N != Y", "y")
+    verify_eval("M != Y", "y")
 
     # string/int/hex
-    verify_val("Y_STRING = y", "y")
-    verify_val("Y_STRING = 'y'", "y")
-    verify_val('FOO_BAR_STRING = "foo bar"', "y")
-    verify_val('FOO_BAR_STRING != "foo bar baz"', "y")
-    verify_val('INT_3 = 3', "y")
-    verify_val("INT_3 = '3'", "y")
-    verify_val('HEX_0X3 = 0x3', "y")
-    verify_val("HEX_0X3 = '0x3'", "y")
+    verify_eval("Y_STRING = y", "y")
+    verify_eval("Y_STRING = 'y'", "y")
+    verify_eval('FOO_BAR_STRING = "foo bar"', "y")
+    verify_eval('FOO_BAR_STRING != "foo bar baz"', "y")
+    verify_eval('INT_3 = 3', "y")
+    verify_eval("INT_3 = '3'", "y")
+    verify_eval('HEX_0X3 = 0x3', "y")
+    verify_eval("HEX_0X3 = '0x3'", "y")
 
     # Compare some constants...
-    verify_val('"foo" != "bar"', "y")
-    verify_val('"foo" = "bar"', "n")
-    verify_val('"foo" = "foo"', "y")
+    verify_eval('"foo" != "bar"', "y")
+    verify_eval('"foo" = "bar"', "n")
+    verify_eval('"foo" = "foo"', "y")
     # As a quirk, undefined values get their name as their value
     c.set_print_warnings(False)
-    verify_val("'not_defined' = not_defined", "y")
-    verify_val("not_defined_2 = not_defined_2", "y")
+    verify_eval("'not_defined' = not_defined", "y")
+    verify_eval("not_defined_2 = not_defined_2", "y")
 
     #
     # Text queries
