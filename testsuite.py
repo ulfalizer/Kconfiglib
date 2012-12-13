@@ -84,6 +84,41 @@ def run_tests():
 def run_selftests():
     """Runs tests on specific configurations provided by us."""
 
+    #
+    # Helper functions
+    #
+
+    # Verifies that a symbol has a particular value
+    def verify_value(sym_name, val):
+        sym = c[sym_name]
+        sym_val = sym.get_value()
+        verify(sym_val == val,
+               "{0} should have the value {1} but has the value {2}"
+               .format(sym.get_name(), val, sym_val))
+
+    # Assigns a user value to the symbol and verifies the new value
+    def assign_and_verify_new_value(sym_name, val, new_val):
+        sym = c[sym_name]
+        sym_old_val = sym.get_value()
+        sym.set_user_value(val)
+        sym_new_val = sym.get_value()
+        verify(sym_new_val == new_val,
+               "{0} should have the new value {1} after being assigned the "
+               "user value {2}. Instead, the value was {3}. The old user "
+               "value was {4}."
+               .format(sym.get_name(), new_val, val, sym_new_val, sym_old_val))
+
+    # Assigns a user value to the symbol and verifies the new user value
+    def assign_and_verify_new_user_value(sym_name, val, new_val):
+        sym = c[sym_name]
+        sym_old_val = sym.get_user_value()
+        sym.set_user_value(val)
+        sym_new_val = sym.get_user_value()
+        verify(sym_new_val == new_val,
+               "{0} should have the user value {1} after being assigned {2}. "
+               "Instead, the new user value was {3}. The old user value was {4}.".
+               format(sym.get_name(), new_val, val, sym_new_val, sym_old_val))
+
     print "Running selftests...\n"
 
     print "Testing is_modifiable() and range queries..."
@@ -407,6 +442,121 @@ def run_selftests():
            "Wrong recursive symbols in second menu")
 
     #
+    # hex/int ranges
+    #
+
+    print "Testing hex/int ranges..."
+
+    c = kconfiglib.Config("Kconfiglib/tests/Krange")
+
+    for sym_name in ("HEX_NO_RANGE", "INT_NO_RANGE", "HEX_40", "INT_40"):
+        sym = c[sym_name]
+        verify(not sym.has_ranges(),
+               "{0} should not have ranges".format(sym.get_name()))
+
+    for sym_name in ("HEX_ALL_RANGES_DISABLED", "INT_ALL_RANGES_DISABLED",
+                     "HEX_RANGE_10_20_LOW_DEFAULT",
+                     "INT_RANGE_10_20_LOW_DEFAULT"):
+        sym = c[sym_name]
+        verify(sym.has_ranges(),
+               "{0} should have ranges".format(sym.get_name()))
+
+    # hex/int symbols without defaults should get no default value
+    verify_value("HEX_NO_RANGE", "")
+    verify_value("INT_NO_RANGE", "")
+    # And neither if all ranges are disabled
+    verify_value("HEX_ALL_RANGES_DISABLED", "")
+    verify_value("INT_ALL_RANGES_DISABLED", "")
+    # Make sure they are assignable though, and test that the form of the user
+    # value is reflected in the value for hex symbols
+    assign_and_verify_new_value("HEX_NO_RANGE", "0x123", "0x123")
+    assign_and_verify_new_value("HEX_NO_RANGE", "123", "123")
+    assign_and_verify_new_value("INT_NO_RANGE", "123", "123")
+
+    # Defaults outside of the valid range should be clamped
+    verify_value("HEX_RANGE_10_20_LOW_DEFAULT", "0x10")
+    verify_value("HEX_RANGE_10_20_HIGH_DEFAULT", "0x20")
+    verify_value("INT_RANGE_10_20_LOW_DEFAULT", "10")
+    verify_value("INT_RANGE_10_20_HIGH_DEFAULT", "20")
+    # Defaults inside the valid range should be preserved. For hex symbols,
+    # they should additionally use the same form as in the assignment.
+    verify_value("HEX_RANGE_10_20_OK_DEFAULT", "0x15")
+    verify_value("HEX_RANGE_10_20_OK_DEFAULT_ALTERNATE", "15")
+    verify_value("INT_RANGE_10_20_OK_DEFAULT", "15")
+
+    # hex/int symbols with no defaults but valid ranges should default to the
+    # lower end of the range if it's > 0
+    verify_value("HEX_RANGE_10_20", "0x10")
+    verify_value("HEX_RANGE_0_10", "")
+    verify_value("INT_RANGE_10_20", "10")
+    verify_value("INT_RANGE_0_10", "")
+    verify_value("INT_RANGE_NEG_10_10", "")
+
+    # User values and dependent ranges
+
+    def verify_range(sym_name, low, high, default):
+        """Tests that the values in the range 'low'-'high' can be assigned, and
+        that assigning values outside this range reverts the value back to
+        'default' (None if it should revert back to "")."""
+        is_hex = (c[sym_name].get_type() == kconfiglib.HEX)
+        for i in range(low, high + 1):
+            assign_and_verify_new_user_value(sym_name, str(i), str(i))
+            if is_hex:
+                # The form of the user value should be preserved for hex
+                # symbols
+                assign_and_verify_new_user_value(sym_name, hex(i), hex(i))
+
+        # Verify that assigning a user value just outside the range uses causes
+        # defaults to be used
+
+        if default is None:
+            default_str = ""
+        else:
+            default_str = hex(default) if is_hex else str(default)
+
+        if is_hex:
+            too_low_str = hex(low - 1)
+            too_high_str = hex(high + 1)
+        else:
+            too_low_str = str(low - 1)
+            too_high_str = str(high + 1)
+
+        assign_and_verify_new_value(sym_name, too_low_str, default_str)
+        assign_and_verify_new_value(sym_name, too_high_str, default_str)
+
+    verify_range("HEX_RANGE_10_20_LOW_DEFAULT",          0x10, 0x20,  0x10)
+    verify_range("HEX_RANGE_10_20_HIGH_DEFAULT",         0x10, 0x20,  0x20)
+    verify_range("HEX_RANGE_10_20_OK_DEFAULT",           0x10, 0x20,  0x15)
+
+    verify_range("INT_RANGE_10_20_LOW_DEFAULT",          10,   20,    10)
+    verify_range("INT_RANGE_10_20_HIGH_DEFAULT",         10,   20,    20)
+    verify_range("INT_RANGE_10_20_OK_DEFAULT",           10,   20,    15)
+
+    verify_range("HEX_RANGE_10_20",                      0x10, 0x20,  0x10)
+    verify_range("HEX_RANGE_0_10",                       0x0,  0x10,  None)
+
+    verify_range("INT_RANGE_10_20",                      10,  20,     10)
+    verify_range("INT_RANGE_0_10",                       0,   10,     None)
+    verify_range("INT_RANGE_NEG_10_10",                  -10, 10,     None)
+
+    # Dependent ranges
+
+    verify_value("HEX_40", "40")
+    verify_value("INT_40", "40")
+
+    c["HEX_RANGE_10_20"].unset_user_value()
+    c["INT_RANGE_10_20"].unset_user_value()
+    verify_value("HEX_RANGE_10_40_DEPENDENT", "0x10")
+    verify_value("INT_RANGE_10_40_DEPENDENT", "10")
+    c["HEX_RANGE_10_20"].set_user_value("15")
+    c["INT_RANGE_10_20"].set_user_value("15")
+    verify_value("HEX_RANGE_10_40_DEPENDENT", "0x15")
+    verify_value("INT_RANGE_10_40_DEPENDENT", "15")
+    c.unset_user_values()
+    verify_range("HEX_RANGE_10_40_DEPENDENT", 0x10, 0x40,  0x10)
+    verify_range("INT_RANGE_10_40_DEPENDENT", 10,   40,    10)
+
+    #
     # get_referenced_symbols()
     #
 
@@ -564,41 +714,32 @@ def run_selftests():
 
     syms = [c[name] for name in \
       ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
-    b, t, s, i, h = syms
 
     for sym in syms:
         verify(sym.get_user_value() is None,
                "{0} should not have a user value to begin with")
 
-    def assign_and_verify_new_user_value(sym, val, new_val):
-        old_val = sym.get_user_value()
-        sym.set_user_value(val)
-        verify(sym.get_user_value() == new_val,
-               "{0} should have the value {1} after being assigned {2}. "
-               "The old value was {3}.".
-               format(sym.get_name(), new_val, val, old_val))
-
     # Assign valid values for the types
 
-    assign_and_verify_new_user_value(b, "n", "n")
-    assign_and_verify_new_user_value(b, "y", "y")
-    assign_and_verify_new_user_value(t, "n", "n")
-    assign_and_verify_new_user_value(t, "m", "m")
-    assign_and_verify_new_user_value(t, "y", "y")
-    assign_and_verify_new_user_value(s, "foo bar", "foo bar")
-    assign_and_verify_new_user_value(i, "123", "123")
-    assign_and_verify_new_user_value(h, "0x123", "0x123")
+    assign_and_verify_new_user_value("BOOL", "n", "n")
+    assign_and_verify_new_user_value("BOOL", "y", "y")
+    assign_and_verify_new_user_value("TRISTATE", "n", "n")
+    assign_and_verify_new_user_value("TRISTATE", "m", "m")
+    assign_and_verify_new_user_value("TRISTATE", "y", "y")
+    assign_and_verify_new_user_value("STRING", "foo bar", "foo bar")
+    assign_and_verify_new_user_value("INT", "123", "123")
+    assign_and_verify_new_user_value("HEX", "0x123", "0x123")
 
     # Assign invalid values for the types. They should retain their old user
     # value.
 
-    assign_and_verify_new_user_value(b, "m", "y")
-    assign_and_verify_new_user_value(b, "foo", "y")
-    assign_and_verify_new_user_value(b, "1", "y")
-    assign_and_verify_new_user_value(t, "foo", "y")
-    assign_and_verify_new_user_value(t, "1", "y")
-    assign_and_verify_new_user_value(i, "foo", "123")
-    assign_and_verify_new_user_value(h, "foo", "0x123")
+    assign_and_verify_new_user_value("BOOL", "m", "y")
+    assign_and_verify_new_user_value("BOOL", "foo", "y")
+    assign_and_verify_new_user_value("BOOL", "1", "y")
+    assign_and_verify_new_user_value("TRISTATE", "foo", "y")
+    assign_and_verify_new_user_value("TRISTATE", "1", "y")
+    assign_and_verify_new_user_value("INT", "foo", "123")
+    assign_and_verify_new_user_value("HEX", "foo", "0x123")
 
     for s in syms:
         s.unset_user_value()
