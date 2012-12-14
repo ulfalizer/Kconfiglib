@@ -404,6 +404,7 @@ def run_selftests():
       ("Kconfiglib/tests/Klocation_included", 12),
       ("Kconfiglib/tests/Klocation_included", 13),
       ("Kconfiglib/tests/Klocation_included", 33),
+      ("Kconfiglib/tests/Klocation_included", 38),
       ("Kconfiglib/tests/Klocation", 45),
       ("Kconfiglib/tests/Klocation", 46),
       ("Kconfiglib/tests/Klocation", 47))
@@ -412,7 +413,8 @@ def run_selftests():
       ("Kconfiglib/tests/Klocation", 7),
       ("Kconfiglib/tests/Klocation", 22),
       ("Kconfiglib/tests/Klocation_included", 12),
-      ("Kconfiglib/tests/Klocation_included", 33))
+      ("Kconfiglib/tests/Klocation_included", 33),
+      ("Kconfiglib/tests/Klocation_included", 39))
 
     # Location queries for choices
 
@@ -452,7 +454,7 @@ def run_selftests():
                             menu_or_comment_loc,
                             loc))
 
-    menu_1, menu_2 = c.get_menus()
+    menu_1, menu_2 = c.get_menus()[:-1]
     comment_1, comment_2 = c.get_comments()
 
     verify_location(menu_1, ("Kconfiglib/tests/Klocation", 5))

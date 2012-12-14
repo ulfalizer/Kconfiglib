@@ -33,3 +33,8 @@ endchoice
 if !(NOT_DEFINED != A)
 comment "comment 2"
 endif
+
+menu "visible if menu"
+    visible if A
+    visible if NOT_DEFINED
+endmenu
