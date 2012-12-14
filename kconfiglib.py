@@ -2950,16 +2950,15 @@ class Symbol(Item, _HasVisibility):
 
         res = set()
 
+        self._add_dependent_ignore_siblings(res)
         if self.is_choice_symbol_:
             for s in self.parent.get_symbols():
                 if s is not self:
                     res.add(s)
-                s._add_dependent_ignore_siblings(res)
-        else:
-            self._add_dependent_ignore_siblings(res)
+                    s._add_dependent_ignore_siblings(res)
 
         self.cached_deps = res
-        return self.cached_deps
+        return res
 
     def _add_dependent_ignore_siblings(self, to):
         """Calculating dependencies gets a bit tricky for choice items as they
