@@ -321,6 +321,7 @@ def run_selftests():
     c.set_print_warnings(False)
     verify_eval("'not_defined' = not_defined", "y")
     verify_eval("not_defined_2 = not_defined_2", "y")
+    verify_eval("not_defined_1 != not_defined_2", "y")
 
     #
     # Text queries
