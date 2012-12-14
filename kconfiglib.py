@@ -2262,9 +2262,9 @@ class Symbol(Item, _HasVisibility):
 
         self.write_to_conf = False
 
-        # The following means that what to the user looks like a reference to
-        # an undefined symbol will actually get treated like a string whose
-        # value is the symbol name, which can be a bit unexpected.
+        # As a quirk of Kconfig, undefined symbols get their name as their
+        # value. This is why things like "FOO = bar" work for seeing if FOO has
+        # the value "bar".
         if self.type == UNKNOWN:
             self.cached_value = self.name
             return self.name
@@ -2586,7 +2586,7 @@ class Symbol(Item, _HasVisibility):
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
         None if the symbol is at the top level. Note that if statements are
-        treated as syntactic sugar and do not have an explicit class
+        treated as syntactic and do not have an explicit class
         representation."""
         return self.parent
 
