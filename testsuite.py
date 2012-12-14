@@ -121,6 +121,38 @@ def run_selftests():
 
     print "Running selftests...\n"
 
+    print "Testing tristate comparisons..."
+
+    def verify_truth_table(comp_fn, *bools):
+        bools_list = list(bools)
+        for (x, y) in (("n", "n"), ("n", "m"), ("n", "y"),
+                       ("m", "n"), ("m", "m"), ("m", "y"),
+                       ("y", "n"), ("y", "m"), ("y", "y")):
+            expected = bools_list.pop(0)
+            verify(comp_fn(x, y) == expected,
+                   "Expected {0} on ('{1}', '{2}') to be {3}".
+                   format(comp_fn, x, y, expected))
+
+    verify_truth_table(kconfiglib.tri_less,
+                       False, True, True,
+                       False, False, True,
+                       False, False, False)
+
+    verify_truth_table(kconfiglib.tri_less_eq,
+                       True, True, True,
+                       False, True, True,
+                       False, False, True)
+
+    verify_truth_table(kconfiglib.tri_greater,
+                       False, False, False,
+                       True, False, False,
+                       True, True, False)
+
+    verify_truth_table(kconfiglib.tri_greater_eq,
+                       True, False, False,
+                       True, True, False,
+                       True, True, True)
+
     print "Testing is_modifiable() and range queries..."
 
     #
