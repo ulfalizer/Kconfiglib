@@ -167,9 +167,9 @@ def run_selftests():
         verify(sym.is_modifiable(),
                "{0} should be modifiable".format(sym_name))
 
-    for sym_name in ("NOT_VISIBLE", "SELECTED_TO_Y", "BOOL_SELECTED_TO_M",
-                     "M_VISIBLE_TRISTATE_SELECTED_TO_M", "NOT_VISIBLE_STRING",
-                     "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
+    for sym_name in ("n", "m", "y", "NOT_VISIBLE", "SELECTED_TO_Y",
+                     "BOOL_SELECTED_TO_M", "M_VISIBLE_TRISTATE_SELECTED_TO_M",
+                     "NOT_VISIBLE_STRING", "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
         sym = c[sym_name]
         verify(not sym.is_modifiable(),
                "{0} should not be modifiable".format(sym_name))
@@ -218,6 +218,9 @@ def run_selftests():
                        "thinks the symbol should not be modifiable".
                        format(sym_name, bound_range))
 
+    verify_bounds("n", None, None)
+    verify_bounds("m", None, None)
+    verify_bounds("y", None, None)
     verify_bounds("Y_VISIBLE_BOOL", "n", "y")
     verify_bounds("Y_VISIBLE_TRISTATE", "n", "y")
     verify_bounds("M_VISIBLE_BOOL", "n", "y")
@@ -355,6 +358,10 @@ def run_selftests():
     os.environ["FOO"] = "tests"
 
     c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib/")
+
+    verify_def_locations("n")
+    verify_def_locations("m")
+    verify_def_locations("y")
 
     verify_def_locations("A",
       ("Kconfiglib/tests/Klocation", 2),
@@ -905,6 +912,10 @@ def run_selftests():
             sel_sym = c[sel_name]
             verify(sel_sym in sym_selections,
                    "{0} should be selected by {1}".format(sel_name, sym_name))
+
+    verify_selects("n", [])
+    verify_selects("m", [])
+    verify_selects("y", [])
 
     verify_selects("NO_REF", [])
     verify_selects("MANY_REF", ["I", "N"])
