@@ -923,7 +923,9 @@ def run_selftests():
     # Misc. minor APIs
     #
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+    os.environ["ENV_VAR"] = "foo"
+    # Contains reference to undefined environment variable, so disable warnings
+    c = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
 
     print "Testing is_optional()..."
 
@@ -972,6 +974,63 @@ def run_selftests():
         verify(s.get_user_value() is None,
                "{0} should not have a user value after being reset".
                format(s.get_name()))
+
+    print "Testing is_defined()..."
+
+    for sym_name in ("n", "m", "y", "A", "B", "C", "D", "BOOL", "TRISTATE",
+                     "STRING", "INT", "HEX"):
+        sym = c[sym_name]
+        verify(sym.is_defined(),
+               "{0} should be defined".format(sym_name))
+
+    for sym_name in ("NOT_DEFINED_1", "NOT_DEFINED_2", "NOT_DEFINED_3",
+                     "NOT_DEFINED_4"):
+        sym = c[sym_name]
+        verify(not sym.is_defined(),
+               "{0} should not be defined".format(sym_name))
+
+    print "Testing is_special()..."
+
+    for sym_name in ("n", "m", "y", "FROM_ENV", "FROM_ENV_MISSING"):
+        sym = c[sym_name]
+        verify(sym.is_special(),
+               "{0} should be special".format(sym_name))
+
+    for sym_name in ("A", "B", "C", "D", "BOOL", "TRISTATE", "STRING",
+                     "INT", "HEX", "NOT_DEFINED_1", "NOT_DEFINED_2",
+                     "NOT_DEFINED_3", "NOT_DEFINED_4"):
+        sym = c[sym_name]
+        verify(not sym.is_special(),
+               "{0} should not be special".format(sym_name))
+
+    print "Testing is_from_environment()..."
+
+    for sym_name in ("FROM_ENV", "FROM_ENV_MISSING"):
+        sym = c[sym_name]
+        verify(sym.is_from_environment(),
+               "{0} should be from the environment".format(sym_name))
+
+    for sym_name in ("n", "m", "y", "A", "B", "C", "D", "BOOL", "TRISTATE",
+                     "STRING", "INT", "HEX", "NOT_DEFINED_1", "NOT_DEFINED_2",
+                     "NOT_DEFINED_3", "NOT_DEFINED_4"):
+        sym = c[sym_name]
+        verify(not sym.is_from_environment(),
+               "{0} should not be from the environment".format(sym_name))
+
+    print "Testing is_choice_symbol()..."
+
+    for sym_name in ("A", "B", "C", "D"):
+        sym = c[sym_name]
+        verify(sym.is_choice_symbol(),
+               "{0} should be a choice symbol".format(sym_name))
+
+    for sym_name in ("n", "m", "y", "Q1", "Q2", "Q3", "BOOL", "TRISTATE",
+                     "STRING", "INT", "HEX", "FROM_ENV", "FROM_ENV_MISSING",
+                     "NOT_DEFINED_1", "NOT_DEFINED_2", "NOT_DEFINED_3",
+                     "NOT_DEFINED_4"):
+        sym = c[sym_name]
+        verify(not sym.is_choice_symbol(),
+               "{0} should not be a choice symbol".format(sym_name))
 
     #
     # .config reading and writing
@@ -1048,8 +1107,8 @@ def run_selftests():
 
     print "Testing get_config()..."
 
-    c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc")
-    c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+    c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
+    c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
 
     c1_bool, c1_choice, c1_menu, c1_comment = c1["BOOL"], \
       c1.get_choices()[0], c1.get_menus()[0], c1.get_comments()[0]
@@ -1071,7 +1130,7 @@ def run_selftests():
     os.environ["ARCH"] = "ARCH value"
     os.environ["SRCARCH"] = "SRCARCH value"
     os.environ["srctree"] = "srctree value"
-    c = kconfiglib.Config("Kconfiglib/tests/Kmisc")
+    c = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
     c.load_config("Kconfiglib/tests/empty")
 
     arch = c.get_arch()
