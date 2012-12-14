@@ -996,8 +996,13 @@ def run_selftests():
            format(read_header))
 
     write_and_verify_header("")
+    write_and_verify_header(" ")
+    write_and_verify_header("\n")
+    write_and_verify_header("\n\n")
     write_and_verify_header("#")
     write_and_verify_header("a")
+    write_and_verify_header("a\n")
+    write_and_verify_header("a\n\n")
     write_and_verify_header("abcdef")
     write_and_verify_header("foo\nbar baz\n\n\n qaz#")
 
