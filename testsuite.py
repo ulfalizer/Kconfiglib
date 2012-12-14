@@ -94,7 +94,7 @@ def run_selftests():
         sym_val = sym.get_value()
         verify(sym_val == val,
                "{0} should have the value {1} but has the value {2}"
-               .format(sym.get_name(), val, sym_val))
+               .format(sym_name, val, sym_val))
 
     # Assigns a user value to the symbol and verifies the new value
     def assign_and_verify_new_value(sym_name, val, new_val):
@@ -106,7 +106,7 @@ def run_selftests():
                "{0} should have the new value {1} after being assigned the "
                "user value {2}. Instead, the value was {3}. The old user "
                "value was {4}."
-               .format(sym.get_name(), new_val, val, sym_new_val, sym_old_val))
+               .format(sym_name, new_val, val, sym_new_val, sym_old_val))
 
     # Assigns a user value to the symbol and verifies the new user value
     def assign_and_verify_new_user_value(sym_name, val, new_val):
@@ -117,7 +117,7 @@ def run_selftests():
         verify(sym_new_val == new_val,
                "{0} should have the user value {1} after being assigned {2}. "
                "Instead, the new user value was {3}. The old user value was {4}.".
-               format(sym.get_name(), new_val, val, sym_new_val, sym_old_val))
+               format(sym_name, new_val, val, sym_new_val, sym_old_val))
 
     print "Running selftests...\n"
 
@@ -129,15 +129,18 @@ def run_selftests():
 
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
 
-    for s in ("VISIBLE", "TRISTATE_SELECTED_TO_M", "VISIBLE_STRING",
-              "VISIBLE_INT", "VISIBLE_HEX"):
-        verify(c[s].is_modifiable(),
-               "{0} should be modifiable".format(c[s].get_name()))
-    for s in ("NOT_VISIBLE", "SELECTED_TO_Y", "BOOL_SELECTED_TO_M",
-              "M_VISIBLE_TRISTATE_SELECTED_TO_M", "NOT_VISIBLE_STRING",
-              "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
-        verify(not c[s].is_modifiable(),
-               "{0} should not be modifiable".format(c[s].get_name()))
+    for sym_name in ("VISIBLE", "TRISTATE_SELECTED_TO_M", "VISIBLE_STRING",
+                     "VISIBLE_INT", "VISIBLE_HEX"):
+        sym = c[sym_name]
+        verify(sym.is_modifiable(),
+               "{0} should be modifiable".format(sym_name))
+
+    for sym_name in ("NOT_VISIBLE", "SELECTED_TO_Y", "BOOL_SELECTED_TO_M",
+                     "M_VISIBLE_TRISTATE_SELECTED_TO_M", "NOT_VISIBLE_STRING",
+                     "NOT_VISIBLE_INT", "NOT_VISIBLE_HEX"):
+        sym = c[sym_name]
+        verify(not sym.is_modifiable(),
+               "{0} should not be modifiable".format(sym_name))
 
     #
     # get_lower/upper_bound() and get_assignable_values()
@@ -151,8 +154,8 @@ def run_selftests():
         sym_high = sym.get_upper_bound()
         verify(sym_low == low and sym_high == high,
                "Incorrectly calculated bounds for {0}: {1}-{2}. "
-               "Expected {3}-{4}.".format(sym.get_name(),
-                                          sym_low, sym_high, low, high))
+               "Expected {3}-{4}.".format(sym_name, sym_low, sym_high,
+                                          low, high))
         # See that we get back the corresponding range from
         # get_assignable_values()
         if sym_low is None:
@@ -160,13 +163,13 @@ def run_selftests():
             verify(vals == [],
                    "get_assignable_values() thinks there should be assignable "
                    "values for {0} ({1}) but not get_lower/upper_bound()".
-                   format(sym.get_name(), vals))
+                   format(sym_name, vals))
             if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
                 verify(not sym.is_modifiable(),
                        "get_lower_bound() thinks there should be no "
                        "assignable values for the bool/tristate {0} but "
                        "is_modifiable() thinks it should be modifiable".
-                       format(sym.get_name(), vals))
+                       format(sym_name, vals))
         else:
             tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
             bound_range = ["n", "m", "y"][tri_to_int[sym_low] :
@@ -175,13 +178,13 @@ def run_selftests():
             verify(bound_range == assignable_range,
                    "get_lower/upper_bound() thinks the range for {0} should "
                    "be {1} while get_assignable_values() thinks it should be "
-                   "{2}".format(sym.get_name(), bound_range, assignable_range))
+                   "{2}".format(sym_name, bound_range, assignable_range))
             if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
                 verify(sym.is_modifiable(),
                        "get_lower/upper_bound() thinks the range for the "
                        "bool/tristate{0} should be {1} while is_modifiable() "
                        "thinks the symbol should not be modifiable".
-                       format(sym.get_name(), bound_range))
+                       format(sym_name, bound_range))
 
     verify_bounds("Y_VISIBLE_BOOL", "n", "y")
     verify_bounds("Y_VISIBLE_TRISTATE", "n", "y")
@@ -433,14 +436,14 @@ def run_selftests():
         verify(sym_vis == no_module_vis,
                "{0} should have visibility '{1}' without modules, had "
                "visibility '{2}'".
-               format(sym.get_name(), no_module_vis, sym_vis))
+               format(sym_name, no_module_vis, sym_vis))
 
         c["MODULES"].set_user_value("y")
         sym_vis = sym.get_visibility()
         verify(sym_vis == module_vis,
                "{0} should have visibility '{1}' with modules, had "
                "visibility '{2}'".
-               format(sym.get_name(), module_vis, sym_vis))
+               format(sym_name, module_vis, sym_vis))
 
     # Symbol visibility
 
@@ -678,14 +681,13 @@ def run_selftests():
     for sym_name in ("HEX_NO_RANGE", "INT_NO_RANGE", "HEX_40", "INT_40"):
         sym = c[sym_name]
         verify(not sym.has_ranges(),
-               "{0} should not have ranges".format(sym.get_name()))
+               "{0} should not have ranges".format(sym_name))
 
     for sym_name in ("HEX_ALL_RANGES_DISABLED", "INT_ALL_RANGES_DISABLED",
                      "HEX_RANGE_10_20_LOW_DEFAULT",
                      "INT_RANGE_10_20_LOW_DEFAULT"):
         sym = c[sym_name]
-        verify(sym.has_ranges(),
-               "{0} should have ranges".format(sym.get_name()))
+        verify(sym.has_ranges(), "{0} should have ranges".format(sym_name))
 
     # hex/int symbols without defaults should get no default value
     verify_value("HEX_NO_RANGE", "")
@@ -866,10 +868,11 @@ def run_selftests():
         sym = c[sym_name]
         sym_selections = sym.get_selected_symbols()
         verify(len(sym_selections) == len(selection_names),
-               "Wrong number of selects for {0}".format(sym.get_name()))
-        for s in [c[name] for name in selection_names]:
-            verify(s in sym_selections, "{0} should be selected by {1}".
-                                        format(s.get_name(), sym.get_name()))
+               "Wrong number of selects for {0}".format(sym_name))
+        for sel_name in selection_names:
+            sel_sym = c[sel_name]
+            verify(sel_sym in sym_selections,
+                   "{0} should be selected by {1}".format(sel_name, sym_name))
 
     verify_selects("NO_REF", [])
     verify_selects("MANY_REF", ["I", "N"])
@@ -1170,14 +1173,12 @@ def run_selftests():
         deps = [c[name] for name in deps_names]
         sym_deps = sym._get_dependent()
         verify(len(sym_deps) == len(deps),
-               "Wrong number of dependent symbols for {0}".
-               format(sym.get_name()))
+               "Wrong number of dependent symbols for {0}".format(sym_name))
         verify(len(sym_deps) == len(set(sym_deps)),
-               "{0}'s dependencies contains duplicates".
-               format(sym.get_name()))
+               "{0}'s dependencies contains duplicates".format(sym_name))
         for dep in deps:
             verify(dep in sym_deps, "{0} should depend on {1}".
-                                    format(dep.get_name(), sym.get_name()))
+                                    format(dep.get_name(), sym_name))
 
     # Test twice to cover dependency caching
     for i in range(0, 2):
