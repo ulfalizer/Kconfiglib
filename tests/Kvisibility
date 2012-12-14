@@ -275,3 +275,33 @@ config HEX_m
     hex "hex"
 
 endif
+
+# Menu 'visible if' visibility
+
+menu "n-visible menu"
+    visible if n
+config VISIBLE_IF_n
+    tristate "visible if n"
+endmenu
+
+menu "m-visible menu"
+    visible if m
+config VISIBLE_IF_m
+    tristate "visible if m"
+endmenu
+
+menu "y-visible menu"
+    visible if y
+config VISIBLE_IF_y
+    tristate "visible if m"
+endmenu
+
+menu "m-visible menu 2"
+    visible if y || n
+    visible if m && y
+    visible if y
+if y
+config VISIBLE_IF_m_2
+    tristate "visible if m 2"
+endif
+endmenu

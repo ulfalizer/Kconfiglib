@@ -523,7 +523,7 @@ def run_selftests():
                format(menu.get_title(), module_vis, menu_vis))
 
     menu_n, menu_m, menu_y, menu_if_n, menu_if_m, menu_if_y, \
-      menu_if_m_and_y = c.get_menus()[4:-1]
+      menu_if_m_and_y = c.get_menus()[4:-5]
     verify(menu_n.get_title() == "menu n", "Ops - testing the wrong menus")
 
     verify_menu_visibility(menu_n, "n", "n")
@@ -533,6 +533,43 @@ def run_selftests():
     verify_menu_visibility(menu_if_m, "n", "m")
     verify_menu_visibility(menu_if_y, "y", "y")
     verify_menu_visibility(menu_if_m_and_y, "n", "m")
+
+    # Menu 'visible if' visibility
+
+    menu_visible_if_n, menu_visible_if_m, menu_visible_if_y, \
+      menu_visible_if_m_2 = c.get_menus()[12:]
+
+    def verify_visible_if_visibility(menu, no_module_vis, module_vis):
+        c["MODULES"].set_user_value("n")
+        menu_vis = menu.get_visible_if_visibility()
+        verify(menu_vis == no_module_vis,
+               "menu \"{0}\" should have 'visible if' visibility '{1}' "
+               "without modules, has 'visible if' visibility '{2}'".
+               format(menu.get_title(), no_module_vis, menu_vis))
+
+        c["MODULES"].set_user_value("y")
+        menu_vis = menu.get_visible_if_visibility()
+        verify(menu_vis == module_vis,
+               "menu \"{0}\" should have 'visible if' visibility '{1}' "
+               "with modules, has 'visible if' visibility '{2}'".
+               format(menu.get_title(), module_vis, menu_vis))
+
+    # Ordinary visibility should not affect 'visible if' visibility
+    verify_visible_if_visibility(menu_n, "y", "y")
+    verify_visible_if_visibility(menu_if_n, "y", "y")
+    verify_visible_if_visibility(menu_m, "y", "y")
+    verify_visible_if_visibility(menu_if_m, "y", "y")
+
+    verify_visible_if_visibility(menu_visible_if_n, "n", "n")
+    verify_visible_if_visibility(menu_visible_if_m, "n", "m")
+    verify_visible_if_visibility(menu_visible_if_y, "y", "y")
+    verify_visible_if_visibility(menu_visible_if_m_2, "n", "m")
+
+    # Verify that 'visible if' visibility gets propagated to contained symbols
+    verify_sym_visibility("VISIBLE_IF_n", "n", "n")
+    verify_sym_visibility("VISIBLE_IF_m", "n", "m")
+    verify_sym_visibility("VISIBLE_IF_y", "y", "y")
+    verify_sym_visibility("VISIBLE_IF_m_2", "n", "m")
 
     # Comment visibility
 
