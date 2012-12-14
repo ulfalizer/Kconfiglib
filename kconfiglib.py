@@ -57,6 +57,10 @@ Look in the examples/ subdirectory for examples, which can be run with e.g.
 
  $ make scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
 
+or
+
+ $ make scriptconfig SCRIPT=Kconfiglib/examples/help_grep.py SCRIPT_ARG="kernel"
+
 Look in testsuite.py for the test suite.
 
 Credits: Written by Ulf "Ulfalizer" Magnusson
