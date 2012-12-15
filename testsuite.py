@@ -93,7 +93,7 @@ def run_selftests():
         sym = c[sym_name]
         sym_val = sym.get_value()
         verify(sym_val == val,
-               "{0} should have the value {1} but has the value {2}"
+               "{0} should have the value '{1}' but has the value '{2}'"
                .format(sym_name, val, sym_val))
 
     # Assigns a user value to the symbol and verifies the new value
@@ -103,9 +103,9 @@ def run_selftests():
         sym.set_user_value(val)
         sym_new_val = sym.get_value()
         verify(sym_new_val == new_val,
-               "{0} should have the new value {1} after being assigned the "
-               "user value {2}. Instead, the value was {3}. The old user "
-               "value was {4}."
+               "{0} should have the new value '{1}' after being assigned the "
+               "user value '{2}'. Instead, the value was '{3}'. The old user "
+               "value was '{4}'."
                .format(sym_name, new_val, val, sym_new_val, sym_old_val))
 
     # Assigns a user value to the symbol and verifies the new user value
@@ -115,9 +115,10 @@ def run_selftests():
         sym.set_user_value(val)
         sym_new_val = sym.get_user_value()
         verify(sym_new_val == new_val,
-               "{0} should have the user value {1} after being assigned {2}. "
-               "Instead, the new user value was {3}. The old user value was {4}.".
-               format(sym_name, new_val, val, sym_new_val, sym_old_val))
+               "{0} should have the user value '{1}' after being assigned "
+               "'{2}'. Instead, the new user value was '{3}'. The old user "
+               "value was '{4}'."
+               .format(sym_name, new_val, val, sym_new_val, sym_old_val))
 
     print "Running selftests...\n"
 
