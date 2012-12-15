@@ -2812,7 +2812,7 @@ class Symbol(Item, _HasVisibility):
         # _get_dependent().
         self.cached_deps = None
 
-        # Does the symbol have an entry in the Kconfig file? The Trailing
+        # Does the symbol have an entry in the Kconfig file? The trailing
         # underscore avoids a collision with is_defined().
         self.is_defined_ = False
 
