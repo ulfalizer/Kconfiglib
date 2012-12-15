@@ -1656,7 +1656,7 @@ def equal_confs():
 _all_ok = True
 
 def verify(cond, msg):
-    """Fails and prints 'msg' if 'conf' is False."""
+    """Fails and prints 'msg' if 'cond' is False."""
     if not cond:
         fail(msg)
 
