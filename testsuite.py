@@ -1339,6 +1339,15 @@ def run_selftests():
         verify_dependent("C", ["A", "B"])
         verify_dependent("S", ["A", "B", "C"])
 
+    # Verify that the last symbol depends on the first in a long chain of
+    # dependencies. Test twice to cover dependency caching.
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kchain")
+
+    for i in range(0, 2):
+        verify(c["CHAIN_23"] in c["CHAIN_1"]._get_dependent(),
+               "Dependency chain broken")
+
     print
     if _all_ok:
         print "All selftests passed"
