@@ -959,7 +959,7 @@ class Config():
             if t0 == end_marker:
                 return block
 
-            elif t0 == T_CONFIG or t0 == T_MENUCONFIG:
+            if t0 == T_CONFIG or t0 == T_MENUCONFIG:
                 # The tokenizer will automatically allocate a new Symbol object
                 # for any new names it encounters, so we don't need to worry
                 # about that here.
