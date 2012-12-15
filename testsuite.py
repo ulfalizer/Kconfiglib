@@ -1329,7 +1329,7 @@ def run_selftests():
 
     verify((c["MMT_4"].get_type(), c["MMT_5"].get_type()) ==
              (kconfiglib.BOOL, kconfiglib.BOOL),
-           "Wrong types for first choice with missing member types")
+           "Wrong types for second choice with missing member types")
 
     #
     # Object dependencies
