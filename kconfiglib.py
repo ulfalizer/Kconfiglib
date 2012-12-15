@@ -3727,12 +3727,8 @@ def _parse_error(s, msg, filename, linenr):
     if s.endswith("\n"):
         s = s[:-1]
 
-    error_str += 'Error while parsing "{0}"'.format(s)
-
-    if msg is None:
-        error_str += "."
-    else:
-        error_str += ": " + msg
+    error_str += 'Error while parsing "{0}"'.format(s) + \
+      ("." if msg is None else ": " + msg)
 
     raise Kconfig_Syntax_Error, error_str
 
