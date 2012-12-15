@@ -869,6 +869,9 @@ class Config():
             self.parse_expr_cur_sym_or_choice.referenced_syms.add(sym_or_string)
 
         next_token = feed.peek_next()
+
+        # For conditional expressions ('depends on <expr>', '... if <expr>',
+        # etc.), "m" and m are rewritten to "m" && MODULES.
         if next_token != T_EQUAL and next_token != T_UNEQUAL:
             if self.parse_expr_transform_m and (sym_or_string is self.m or
                                                 sym_or_string == "m"):
