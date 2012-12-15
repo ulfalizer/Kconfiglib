@@ -1495,7 +1495,9 @@ def test_call_all(conf):
 
     for c in conf.get_choices():
         c.__str__()
+        c.get_config()
         c.get_def_locations()
+        c.get_help()
         c.get_items()
         c.get_mode()
         c.get_name()
