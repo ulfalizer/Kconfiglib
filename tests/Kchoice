@@ -74,3 +74,23 @@ config OPT_3
 config OPT_4
     tristate "OPT_4"
 endchoice
+
+# Choices without an explicitly specified type should get the type of the first
+# symbol with a type
+
+choice NO_TYPE_BOOL
+    prompt "no type bool"
+config NTB_1
+    bool "NTB_1"
+config NTB_2
+    tristate "NTB_2"
+endchoice
+
+choice NO_TYPE_TRISTATE
+    prompt "no type tristate"
+config NTT_1
+config NTT_2
+    tristate "NTB_2"
+config NTT_3
+    bool "NTT_3"
+endchoice

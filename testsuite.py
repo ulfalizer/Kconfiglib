@@ -1214,7 +1214,8 @@ def run_selftests():
     c = kconfiglib.Config("Kconfiglib/tests/Kchoice")
 
     choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
-      choice_bool_m, choice_tristate_m, choice_defaults = c.get_choices()
+      choice_bool_m, choice_tristate_m, choice_defaults, \
+      choice_no_type_bool, choice_no_type_tristate = c.get_choices()
 
     for choice in (choice_bool, choice_bool_opt, choice_bool_m,
                    choice_defaults):
@@ -1303,8 +1304,18 @@ def run_selftests():
 
     for sym_name in ("TM_1", "TM_2"):
         assign_and_verify_new_value(sym_name, "m", "m")
+        assign_and_verify_new_value(sym_name, "n", "n")
         # "y" should be truncated
         assign_and_verify_new_value(sym_name, "y", "m")
+
+    # Verify that choices with no explicitly specified type get the type of the
+    # first contained symbol with a type
+
+    verify(choice_no_type_bool.get_type() == kconfiglib.BOOL,
+           "Expected first choice without explicit type to have type bool")
+    verify(choice_no_type_tristate.get_type() == kconfiglib.TRISTATE,
+           "Expected second choice without explicit type to have type "
+           "tristate")
 
     #
     # Object dependencies
