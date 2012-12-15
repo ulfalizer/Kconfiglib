@@ -1215,7 +1215,9 @@ def run_selftests():
 
     choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
       choice_bool_m, choice_tristate_m, choice_defaults, \
-      choice_no_type_bool, choice_no_type_tristate = c.get_choices()
+      choice_no_type_bool, choice_no_type_tristate, \
+      choice_missing_member_type_1, choice_missing_member_type_2 \
+      = c.get_choices()
 
     for choice in (choice_bool, choice_bool_opt, choice_bool_m,
                    choice_defaults):
@@ -1316,6 +1318,18 @@ def run_selftests():
     verify(choice_no_type_tristate.get_type() == kconfiglib.TRISTATE,
            "Expected second choice without explicit type to have type "
            "tristate")
+
+    # Verify that symbols without a type in the choice get the type of the
+    # choice
+
+    verify((c["MMT_1"].get_type(), c["MMT_2"].get_type(),
+            c["MMT_3"].get_type()) ==
+             (kconfiglib.BOOL, kconfiglib.BOOL, kconfiglib.TRISTATE),
+           "Wrong types for first choice with missing member types")
+
+    verify((c["MMT_4"].get_type(), c["MMT_5"].get_type()) ==
+             (kconfiglib.BOOL, kconfiglib.BOOL),
+           "Wrong types for first choice with missing member types")
 
     #
     # Object dependencies

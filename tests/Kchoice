@@ -94,3 +94,20 @@ config NTT_2
 config NTT_3
     bool "NTT_3"
 endchoice
+
+# Choice items without an explicitly specified type should get the type of the
+# choice
+
+choice MISSING_MEMBER_TYPES_1
+    bool "missing member types"
+config MMT_1
+config MMT_2
+config MMT_3
+    tristate
+endchoice
+
+choice MISSING_MEMBER_TYPES_2
+config MMT_4
+config MMT_5
+    bool
+endchoice
