@@ -1206,6 +1206,107 @@ def run_selftests():
            "Wrong Kconfig filename - got '{0}'".format(kconfig_filename))
 
     #
+    # Choice semantics
+    #
+
+    print "Testing choice semantics..."
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kchoice")
+
+    choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
+      choice_bool_m, choice_tristate_m, choice_defaults = c.get_choices()
+
+    for choice in (choice_bool, choice_bool_opt, choice_bool_m,
+                   choice_defaults):
+        verify(choice.get_type() == kconfiglib.BOOL,
+               "choice {0} should have type bool".format(choice.get_name()))
+
+    for choice in (choice_tristate, choice_tristate_opt, choice_tristate_m):
+        verify(choice.get_type() == kconfiglib.TRISTATE,
+               "choice {0} should have type tristate"
+               .format(choice.get_name()))
+
+    def select_and_verify(sym):
+        choice = sym.get_parent()
+        sym.set_user_value("y")
+        verify(choice.get_mode() == "y",
+               'The mode of the choice should be "y" after selecting a '
+               "symbol")
+        verify(sym.is_choice_selection(),
+               "is_choice_selection() should be true for {0}"
+               .format(sym.get_name()))
+        verify(choice.get_selection() is sym,
+               "{0} should be the selected symbol".format(sym.get_name()))
+        verify(choice.get_user_selection() is sym,
+               "{0} should be the user selection of the choice"
+               .format(sym.get_name()))
+
+    def select_and_verify_all(choice):
+        choice_syms = choice.get_symbols()
+        # Select in forward order
+        for sym in choice_syms:
+            select_and_verify(sym)
+        # Select in reverse order
+        for i in range(len(choice_syms) - 1, 0, -1):
+            select_and_verify(choice_syms[i])
+
+    def verify_mode(choice, no_modules_mode, modules_mode):
+        c["MODULES"].set_user_value("n")
+        choice_mode = choice.get_mode()
+        verify(choice_mode == no_modules_mode,
+               'Wrong mode for choice {0} with no modules. Expected "{1}", '
+               'got "{2}".'.format(choice.get_name(), no_modules_mode,
+                                   choice_mode))
+
+        c["MODULES"].set_user_value("y")
+        choice_mode = choice.get_mode()
+        verify(choice_mode == modules_mode,
+               'Wrong mode for choice {0} with modules. Expected "{1}", '
+               'got "{2}".'.format(choice.get_name(), modules_mode,
+                                   choice_mode))
+
+    verify_mode(choice_bool, "y", "y")
+    verify_mode(choice_bool_opt, "n", "n")
+    verify_mode(choice_tristate, "y", "m")
+    verify_mode(choice_tristate_opt, "n", "n")
+    verify_mode(choice_bool_m, "n", "y") # Promoted
+    verify_mode(choice_tristate_m, "n", "m")
+
+    # Test defaults
+
+    c["TRISTATE_SYM"].set_user_value("n")
+    verify(choice_defaults.get_selection_from_defaults() is c["OPT_4"] and
+           choice_defaults.get_selection() is c["OPT_4"],
+           "Wrong choice default with TRISTATE_SYM = n")
+    c["TRISTATE_SYM"].set_user_value("y")
+    verify(choice_defaults.get_selection_from_defaults() is c["OPT_2"] and
+           choice_defaults.get_selection() is c["OPT_2"],
+           "Wrong choice default with TRISTATE_SYM = y")
+    c["OPT_1"].set_user_value("y")
+    verify(choice_defaults.get_selection_from_defaults() is c["OPT_2"],
+           "User selection changed default selection - shouldn't have")
+    verify(choice_defaults.get_selection() is c["OPT_1"],
+           "User selection should override defaults")
+
+    # Test "y" mode selection
+
+    c["MODULES"].set_user_value("y")
+
+    select_and_verify_all(choice_bool)
+    select_and_verify_all(choice_bool_opt)
+    select_and_verify_all(choice_tristate)
+    select_and_verify_all(choice_tristate_opt)
+    # For BOOL_M, the mode should have been promoted
+    select_and_verify_all(choice_bool_m)
+
+    # Test "m" mode selection
+
+    for sym_name in ("TM_1", "TM_2"):
+        assign_and_verify_new_value(sym_name, "m", "m")
+        # "y" should be truncated
+        assign_and_verify_new_value(sym_name, "y", "m")
+
+    #
     # Object dependencies
     #
 
