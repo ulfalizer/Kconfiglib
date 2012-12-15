@@ -2726,8 +2726,7 @@ class Symbol(Item, _HasVisibility):
         """Returns True if the symbol is contained in a choice statement and is
         the selected item, otherwise False. Equivalent to 'sym.is_choice_symbol()
         and sym.get_parent().get_selection() is sym'."""
-        return self.is_choice_symbol_ and \
-               self.parent.get_selection() is self
+        return self.is_choice_symbol_ and self.parent.get_selection() is self
 
     def __str__(self):
         """Returns a string containing various information about the symbol."""
