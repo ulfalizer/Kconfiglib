@@ -360,7 +360,11 @@ class Config():
                 f.write(_comment(header))
                 f.write("\n")
 
-            # Write configuration
+            # Write configuration.
+            # (You'd think passing a list around to all the nodes and appending
+            # to it to avoid copying would be faster, but it's actually a lot
+            # slower with PyPy, and about as fast with Python. Passing the file
+            # around is slower too.)
             f.write("\n".join(self.top_block._make_conf()))
             f.write("\n")
 
