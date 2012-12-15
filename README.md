@@ -41,7 +41,7 @@ renamed as follows:
  * Symbol.is\_choice\_item() -> Symbol.is\_choice\_symbol()
  * Symbol.reset() -> Symbol.unset\_user\_value()
  * Config.reset() -> Config.unset\_user\_values()
- * Menu.get\_get\_depends\_on\_visibility() -> Menu.get\_visibility()
+ * Menu.get\_depends\_on\_visibility() -> Menu.get\_visibility()
 
 
 The test suite failures for the following Blackfin defconfigs on e.g.
