@@ -2910,35 +2910,27 @@ class Symbol(Item, _HasVisibility):
         if self.is_choice_symbol_:
             self.parent._unset_user_value()
 
-    def _should_write(self):
-        # Symbols defined in multiple locations only get one entry in the
-        # .config.
-        if self.already_written:
-            return False
-
-        # write_to_conf is determined in get_value(), so we need to call that
-        # first
-        self.get_value()
-
-        return self.write_to_conf
-
     def _make_conf(self):
-        if not self._should_write():
+        if self.already_written:
             return []
 
         self.already_written = True
 
+        # Note: write_to_conf is determined in get_value()
+        val = self.get_value()
+        if not self.write_to_conf:
+            return []
+
         if self.type == BOOL or self.type == TRISTATE:
-            val = self.get_value()
             if val == "m" or val == "y":
-                return ["CONFIG_{0}={1}".format(self.name, self.get_value())]
+                return ["CONFIG_{0}={1}".format(self.name, val)]
             return ["# CONFIG_{0} is not set".format(self.name)]
 
         elif self.type == STRING:
-            return ['CONFIG_{0}="{1}"'.format(self.name, self.get_value())]
+            return ['CONFIG_{0}="{1}"'.format(self.name, val)]
 
         elif self.type == INT or self.type == HEX:
-            return ["CONFIG_{0}={1}".format(self.name, self.get_value())]
+            return ["CONFIG_{0}={1}".format(self.name, val)]
 
         else:
             _internal_error('Internal error while creating .config: unknown type "{0}".'
