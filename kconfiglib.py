@@ -2826,9 +2826,6 @@ class Symbol(Item, _HasVisibility):
         # Does the symbol get its value from the environment?
         self.is_from_env = False
 
-        # See Choice._make_conf()
-        self.already_written = False
-
     def _invalidate(self):
         if self.is_special_:
             return
