@@ -1324,7 +1324,7 @@ error, and you should e-mail kconfiglib@gmail.com.
             stmt.dep_expr = _make_and(stmt.dep_expr, deps)
 
             stmt.all_referenced_syms = \
-              stmt.referenced_syms.union(_get_expr_syms(deps))
+              stmt.referenced_syms | _get_expr_syms(deps)
 
         # For symbols and choices..
         else:
@@ -1370,8 +1370,8 @@ error, and you should e-mail kconfiglib@gmail.com.
 
             # The set of symbols referenced directly by the symbol/choice plus
             # all symbols referenced by enclosing menus and if's.
-            stmt.all_referenced_syms \
-              = stmt.referenced_syms.union(_get_expr_syms(deps))
+            stmt.all_referenced_syms = \
+              stmt.referenced_syms | _get_expr_syms(deps)
 
             # Propagate dependencies from enclosing menus and if's
 
@@ -2968,7 +2968,7 @@ class Symbol(Item, _HasVisibility):
         items."""
         for s in self.dep:
             to.add(s)
-            to.update(s._get_dependent())
+            to |= s._get_dependent()
 
     def _has_auto_menu_dep_on(self, on):
         """See Choice._determine_actual_symbols()."""
