@@ -318,7 +318,7 @@ def run_selftests():
     verify_eval('"foo" != "bar"', "y")
     verify_eval('"foo" = "bar"', "n")
     verify_eval('"foo" = "foo"', "y")
-    # As a quirk, undefined values get their name as their value
+    # Undefined symbols get their name as their value
     c.set_print_warnings(False)
     verify_eval("'not_defined' = not_defined", "y")
     verify_eval("not_defined_2 = not_defined_2", "y")
