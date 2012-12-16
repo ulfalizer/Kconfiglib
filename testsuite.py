@@ -88,37 +88,39 @@ def run_selftests():
     # Helper functions
     #
 
-    # Verifies that a symbol has a particular value
     def verify_value(sym_name, val):
+        """Verifies that a symbol has a particular value."""
         sym = c[sym_name]
         sym_val = sym.get_value()
         verify(sym_val == val,
                "{0} should have the value '{1}' but has the value '{2}'"
                .format(sym_name, val, sym_val))
 
-    # Assigns a user value to the symbol and verifies the new value
-    def assign_and_verify_new_value(sym_name, val, new_val):
+    def assign_and_verify_new_value(sym_name, user_val, new_val):
+        """Assigns a user value to the symbol and verifies the new value."""
         sym = c[sym_name]
         sym_old_val = sym.get_value()
-        sym.set_user_value(val)
+        sym.set_user_value(user_val)
         sym_new_val = sym.get_value()
         verify(sym_new_val == new_val,
                "{0} should have the new value '{1}' after being assigned the "
-               "user value '{2}'. Instead, the value was '{3}'. The old user "
+               "user value '{2}'. Instead, the value is '{3}'. The old "
                "value was '{4}'."
-               .format(sym_name, new_val, val, sym_new_val, sym_old_val))
+               .format(sym_name, new_val, user_val, sym_new_val, sym_old_val))
 
-    # Assigns a user value to the symbol and verifies the new user value
-    def assign_and_verify_new_user_value(sym_name, val, new_val):
+    def assign_and_verify_new_user_value(sym_name, user_val, new_user_val):
+        """Assigns a user value to the symbol and verifies the new user
+        value."""
         sym = c[sym_name]
-        sym_old_val = sym.get_user_value()
-        sym.set_user_value(val)
-        sym_new_val = sym.get_user_value()
-        verify(sym_new_val == new_val,
+        sym_old_user_val = sym.get_user_value()
+        sym.set_user_value(user_val)
+        sym_new_user_val = sym.get_user_value()
+        verify(sym_new_user_val == new_user_val,
                "{0} should have the user value '{1}' after being assigned "
-               "'{2}'. Instead, the new user value was '{3}'. The old user "
-               "value was '{4}'."
-               .format(sym_name, new_val, val, sym_new_val, sym_old_val))
+               "the user value '{2}'. Instead, the new user value was '{3}'. "
+               "The old user value was '{4}'."
+               .format(sym_name, new_user_val, user_val, sym_new_user_val,
+                       sym_old_user_val))
 
     print "Running selftests...\n"
 
