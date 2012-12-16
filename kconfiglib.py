@@ -268,7 +268,7 @@ class Config():
             self.config_header = first_line[1:]
 
             # Read remaining header lines
-            while True:
+            while 1:
                 line = line_feeder.get_next()
 
                 if line is None:
@@ -288,7 +288,7 @@ class Config():
 
         filename = line_feeder.get_filename()
 
-        while True:
+        while 1:
             line = line_feeder.get_next()
             if line is None:
                 return
@@ -699,7 +699,7 @@ class Config():
                 quote = c
                 value = ""
                 i += 1
-                while True:
+                while 1:
                     if i >= strlen:
                         _tokenization_error(s, strlen, filename, linenr)
                     c = s[i]
@@ -924,7 +924,7 @@ class Config():
 
         filename = line_feeder.get_filename()
 
-        while True:
+        while 1:
 
             # Do we already have a tokenized line that we determined wasn't
             # part of whatever we were parsing earlier? See comment in
@@ -1138,7 +1138,7 @@ class Config():
         # Dependencies from 'depends on' statements
         depends_on_expr = None
 
-        while True:
+        while 1:
             line = line_feeder.get_next()
             if line is None:
                 break
@@ -1176,7 +1176,7 @@ class Config():
 
                 # The help text goes on till the first non-empty line with less
                 # indent
-                while True:
+                while 1:
                     line = line_feeder.get_next()
                     if (line is None) or \
                        (not line.isspace() and _indentation(line) < indent):
@@ -1594,7 +1594,7 @@ error, and you should e-mail kconfiglib@gmail.com.
         """Expands $-references to symbols in 's' to symbol values, or to the
         empty string for undefined symbols."""
 
-        while True:
+        while 1:
             sym_ref_re_match = sym_ref_re.search(s)
             if sym_ref_re_match is None:
                 return s
@@ -3656,7 +3656,7 @@ def _get_lines(filename):
     with open(filename, "r") as f:
         lines = []
         accum = ""
-        while True:
+        while 1:
             line = f.readline()
 
             if line == "":
