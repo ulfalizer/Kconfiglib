@@ -920,6 +920,7 @@ def run_selftests():
     verify_selects("n", [])
     verify_selects("m", [])
     verify_selects("y", [])
+    verify_selects("UNAME_RELEASE", [])
 
     verify_selects("NO_REF", [])
     verify_selects("MANY_REF", ["I", "N"])
@@ -1027,8 +1028,8 @@ def run_selftests():
 
     print "Testing is_defined()..."
 
-    for sym_name in ("n", "m", "y", "A", "B", "C", "D", "BOOL", "TRISTATE",
-                     "STRING", "INT", "HEX"):
+    for sym_name in ("n", "m", "y", "UNAME_RELEASE", "A", "B", "C", "D",
+                     "BOOL", "TRISTATE", "STRING", "INT", "HEX"):
         sym = c[sym_name]
         verify(sym.is_defined(),
                "{0} should be defined".format(sym_name))
@@ -1041,7 +1042,8 @@ def run_selftests():
 
     print "Testing is_special()..."
 
-    for sym_name in ("n", "m", "y", "FROM_ENV", "FROM_ENV_MISSING"):
+    for sym_name in ("n", "m", "y", "UNAME_RELEASE", "FROM_ENV",
+                     "FROM_ENV_MISSING"):
         sym = c[sym_name]
         verify(sym.is_special(),
                "{0} should be special".format(sym_name))
@@ -1060,9 +1062,10 @@ def run_selftests():
         verify(sym.is_from_environment(),
                "{0} should be from the environment".format(sym_name))
 
-    for sym_name in ("n", "m", "y", "A", "B", "C", "D", "BOOL", "TRISTATE",
-                     "STRING", "INT", "HEX", "NOT_DEFINED_1", "NOT_DEFINED_2",
-                     "NOT_DEFINED_3", "NOT_DEFINED_4"):
+    for sym_name in ("n", "m", "y", "UNAME_RELEASE", "A", "B", "C", "D",
+                     "BOOL", "TRISTATE", "STRING", "INT", "HEX",
+                     "NOT_DEFINED_1", "NOT_DEFINED_2", "NOT_DEFINED_3",
+                     "NOT_DEFINED_4"):
         sym = c[sym_name]
         verify(not sym.is_from_environment(),
                "{0} should not be from the environment".format(sym_name))
@@ -1074,13 +1077,17 @@ def run_selftests():
         verify(sym.is_choice_symbol(),
                "{0} should be a choice symbol".format(sym_name))
 
-    for sym_name in ("n", "m", "y", "Q1", "Q2", "Q3", "BOOL", "TRISTATE",
-                     "STRING", "INT", "HEX", "FROM_ENV", "FROM_ENV_MISSING",
-                     "NOT_DEFINED_1", "NOT_DEFINED_2", "NOT_DEFINED_3",
-                     "NOT_DEFINED_4"):
+    for sym_name in ("n", "m", "y", "UNAME_RELEASE", "Q1", "Q2", "Q3", "BOOL",
+                     "TRISTATE", "STRING", "INT", "HEX", "FROM_ENV",
+                     "FROM_ENV_MISSING", "NOT_DEFINED_1", "NOT_DEFINED_2",
+                     "NOT_DEFINED_3", "NOT_DEFINED_4"):
         sym = c[sym_name]
         verify(not sym.is_choice_symbol(),
                "{0} should not be a choice symbol".format(sym_name))
+
+    print "Testing UNAME_RELEASE value..."
+
+    verify_value("UNAME_RELEASE", os.uname()[2])
 
     #
     # .config reading and writing
