@@ -1477,9 +1477,9 @@ def get_arch_configs():
     def add_arch(ARCH, res):
         os.environ["SRCARCH"] = archdir
         os.environ["ARCH"] = ARCH
+        print "  Loading {0}...".format(ARCH)
         c = kconfiglib.Config(base_dir = ".")
         res.append(c)
-        print "  Loaded " + c.get_arch()
 
     res = []
 
