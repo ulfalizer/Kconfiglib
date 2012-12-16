@@ -21,7 +21,7 @@ Installation instructions for the Linux kernel (in the kernel root):
 
 In addition to creating a handy interface, the make targets are needed to pick
 up environment variables set in the kernel makefiles, which are referenced in
-the Kconfig files (ARCH, SRCARCH, and KERNELVERSION as of writing).
+the Kconfig files (ARCH, SRCARCH, and KERNELVERSION as of Linux 3.7.0).
 
 Please tell me if the patch does not apply. It should be trivial to apply
 manually.
