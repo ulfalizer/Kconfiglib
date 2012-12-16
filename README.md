@@ -34,6 +34,11 @@ use
 
 > $ pydoc -w kconfiglib
 
+## Examples ##
+
+The <i>examples/</i> directory contains simple example programs that make use
+of Kconfiglib. See the documentation for how to run them.
+
 ## Test suite ##
 
 The test suite is run with
