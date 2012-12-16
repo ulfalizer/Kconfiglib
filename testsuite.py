@@ -510,13 +510,13 @@ def run_selftests():
     verify_sym_visibility("BOOL_choice_m", "n", "y") # Promoted
     verify_sym_visibility("BOOL_choice_y", "y", "y")
     verify_sym_visibility("TRISTATE_if_n", "n", "n")
-    verify_sym_visibility("TRISTATE_if_m", "n", "m") # Promoted
+    verify_sym_visibility("TRISTATE_if_m", "n", "m")
     verify_sym_visibility("TRISTATE_if_y", "y", "y")
     verify_sym_visibility("TRISTATE_menu_n", "n", "n")
-    verify_sym_visibility("TRISTATE_menu_m", "n", "m") # Promoted
+    verify_sym_visibility("TRISTATE_menu_m", "n", "m")
     verify_sym_visibility("TRISTATE_menu_y", "y", "y")
     verify_sym_visibility("TRISTATE_choice_n", "n", "n")
-    verify_sym_visibility("TRISTATE_choice_m", "n", "m") # Promoted
+    verify_sym_visibility("TRISTATE_choice_m", "n", "m")
     verify_sym_visibility("TRISTATE_choice_y", "y", "y")
 
     # Choice visibility
