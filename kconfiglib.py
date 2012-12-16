@@ -705,7 +705,7 @@ class Config():
                     c = s[i]
                     if c == quote:
                         break
-                    elif c == "\\":
+                    if c == "\\":
                         if i + 1 >= strlen:
                             _tokenization_error(s, strlen, filename, linenr)
                         value += s[i + 1]
