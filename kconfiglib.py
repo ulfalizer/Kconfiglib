@@ -2702,8 +2702,9 @@ class Symbol(Item, _HasVisibility):
         return self.is_defined_
 
     def is_special(self):
-        """Returns True if the symbol is one of the special symbols n, m or y,
-        or gets its value from the environment. Otherwise, returns False."""
+        """Returns True if the symbol is one of the special symbols n, m, y, or
+        UNAME_RELEASE, or gets its value from the environment. Otherwise,
+        returns False."""
         return self.is_special_
 
     def is_from_environment(self):
