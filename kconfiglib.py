@@ -1088,7 +1088,7 @@ class Config():
                     raise IOError, ('{0}:{1}: sourced file "{2}" (expands to\n'
                                     '"{3}") not found. Perhaps base_dir\n'
                                     '(argument to Config.__init__(), currently\n'
-                                    '"{3}") is set to the wrong value.'
+                                    '"{4}") is set to the wrong value.'
                                     .format(filename,
                                             linenr,
                                             kconfig_file,
