@@ -1302,13 +1302,31 @@ def run_selftests():
     # For BOOL_M, the mode should have been promoted
     select_and_verify_all(choice_bool_m)
 
-    # Test "m" mode selection
+    # Test "m" mode selection...
+
+    # ...for a choice that can also be in "y" mode
+
+    for sym_name in ("T_1", "T_2"):
+        assign_and_verify_new_value(sym_name, "m", "m")
+        verify(choice_tristate.get_mode() == "m",
+               'Selecting {0} to "m" should have changed the mode of the '
+               'choice to "m"'.format(sym_name))
+
+        assign_and_verify_new_value(sym_name, "y", "y")
+        verify(choice_tristate.get_mode() == "y" and
+               choice_tristate.get_selection() is c[sym_name],
+               'Selecting {0} to "y" should have changed the mode of the '
+               'choice to "y" and made it the selection'.format(sym_name))
+
+    # ...for a choice that can only be in "m" mode
 
     for sym_name in ("TM_1", "TM_2"):
         assign_and_verify_new_value(sym_name, "m", "m")
         assign_and_verify_new_value(sym_name, "n", "n")
         # "y" should be truncated
         assign_and_verify_new_value(sym_name, "y", "m")
+        verify(choice_tristate_m.get_mode() == "m",
+               'A choice that can only be in "m" mode was not')
 
     # Verify that choices with no explicitly specified type get the type of the
     # first contained symbol with a type
