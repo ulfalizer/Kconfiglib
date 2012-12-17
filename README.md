@@ -16,7 +16,7 @@ Installation instructions for the Linux kernel (in the kernel root):
 <i>(Note: The directory name Kconfiglib/ is significant.)</i>
 
 In addition to creating a handy interface, the make targets are needed to pick
-up environment variables set in the kernel makefiles, which are referenced in
+up environment variables set in the kernel makefiles which are referenced in
 the Kconfig files (<i>ARCH</i>, <i>SRCARCH</i>, and <i>KERNELVERSION</i> as of
 Linux 3.7.0).
 
