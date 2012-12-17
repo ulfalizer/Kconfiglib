@@ -697,24 +697,36 @@ class Config():
 
             elif c == '"' or c == "'":
                 quote = c
-                value = ""
                 i += 1
-                while 1:
-                    if i >= strlen:
+
+                # Fast path: If the rest of the string contains no backslashes
+                # (almost always), we can simply look for the matching quote.
+                if s.find("\\", i) == -1:
+                    end = s.find(quote, i)
+                    if end == -1:
                         _tokenization_error(s, strlen, filename, linenr)
-                    c = s[i]
-                    if c == quote:
-                        break
-                    if c == "\\":
-                        if i + 1 >= strlen:
+                    append(s[i:end])
+                    i = end + 1
+                else:
+                    # Slow path. This could probably be sped up, but it's a
+                    # very unusual case anyway.
+                    value = ""
+                    while 1:
+                        if i >= strlen:
                             _tokenization_error(s, strlen, filename, linenr)
-                        value += s[i + 1]
-                        i += 2
-                    else:
-                        value += c
-                        i += 1
-                i += 1
-                append(value)
+                        c = s[i]
+                        if c == quote:
+                            break
+                        if c == "\\":
+                            if i + 1 >= strlen:
+                                _tokenization_error(s, strlen, filename, linenr)
+                            value += s[i + 1]
+                            i += 2
+                        else:
+                            value += c
+                            i += 1
+                    i += 1
+                    append(value)
 
             elif c == "&":
                 if i + 1 >= strlen:
