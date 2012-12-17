@@ -720,8 +720,8 @@ class Config():
                     i += 1
                     append(value)
                 else:
-                    # Fast path: If the rest of the string contains no backslashes
-                    # (almost always) we can simply look for the matching quote.
+                    # Fast path: If the string contains no backslashes (almost
+                    # always) we can simply look for the matching quote.
                     end = s.find(quote, i)
                     if end == -1:
                         _tokenization_error(s, strlen, filename, linenr)
