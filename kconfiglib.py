@@ -696,12 +696,12 @@ class Config():
                     append(sym)
 
             elif c == '"' or c == "'":
-                quote = c
                 i += 1
 
                 if "\\" in s:
                     # Slow path: This could probably be sped up, but it's a
                     # very unusual case anyway.
+                    quote = c
                     value = ""
                     while 1:
                         if i >= strlen:
@@ -722,7 +722,7 @@ class Config():
                 else:
                     # Fast path: If the string contains no backslashes (almost
                     # always) we can simply look for the matching quote.
-                    end = s.find(quote, i)
+                    end = s.find(c, i)
                     if end == -1:
                         _tokenization_error(s, strlen, filename, linenr)
                     append(s[i:end])
