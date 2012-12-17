@@ -156,6 +156,74 @@ def run_selftests():
                        True, True, False,
                        True, True, True)
 
+    print "Testing string literal (constant symbol) lexing..."
+
+    #
+    # String literal lexing. (This tests an internal API.)
+    #
+
+    c = kconfiglib.Config("Kconfiglib/tests/empty")
+
+    def verify_string_lex(s, res):
+        """Verifies that the string token 'res' is produced from lexing 's'.
+        Strips the first and last characters from 's' so we can use readable
+        raw strings as input."""
+        s = s[1:-1]
+        s_res = c._tokenize(s, for_eval = True)[0]
+        verify(s_res == res,
+               "'{0}' produced the string token '{1}'. Expected '{2}'."
+               .format(s, s_res, res))
+
+    verify_string_lex(r""" "" """, "")
+    verify_string_lex(r""" '' """, "")
+
+    verify_string_lex(r""" "a" """, "a")
+    verify_string_lex(r""" 'a' """, "a")
+    verify_string_lex(r""" "ab" """, "ab")
+    verify_string_lex(r""" 'ab' """, "ab")
+    verify_string_lex(r""" "abc" """, "abc")
+    verify_string_lex(r""" 'abc' """, "abc")
+
+    verify_string_lex(r""" "'" """, "'")
+    verify_string_lex(r""" '"' """, '"')
+
+    verify_string_lex(r""" "\"" """, '"')
+    verify_string_lex(r""" '\'' """, "'")
+
+    verify_string_lex(r""" "\"\"" """, '""')
+    verify_string_lex(r""" '\'\'' """, "''")
+
+    verify_string_lex(r""" "\'" """, "'")
+    verify_string_lex(r""" '\"' """, '"')
+
+    verify_string_lex(r""" "\\" """, "\\")
+    verify_string_lex(r""" '\\' """, "\\")
+
+    verify_string_lex(r""" "\a\\\b\c\"'d" """, 'a\\bc"\'d')
+    verify_string_lex(r""" '\a\\\b\c\'"d' """, "a\\bc'\"d")
+
+    def verify_string_bad(s):
+        """Verifies that tokenizing 's' throws a Kconfig_Syntax_Error. Strips
+        the first and last characters from 's' so we can use readable raw
+        strings as input."""
+        s = s[1:-1]
+        caught_exception = False
+        try:
+            c._tokenize(s, for_eval = True)
+        except kconfiglib.Kconfig_Syntax_Error:
+            caught_exception = True
+        verify(caught_exception, "Tokenization of '{0}' should have failed."
+                                 .format(s))
+
+    verify_string_bad(r""" " """)
+    verify_string_bad(r""" ' """)
+    verify_string_bad(r""" "' """)
+    verify_string_bad(r""" '" """)
+    verify_string_bad(r""" "\" """)
+    verify_string_bad(r""" '\' """)
+    verify_string_bad(r""" "foo """)
+    verify_string_bad(r""" 'foo """)
+
     print "Testing is_modifiable() and range queries..."
 
     #
