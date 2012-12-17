@@ -699,16 +699,8 @@ class Config():
                 quote = c
                 i += 1
 
-                # Fast path: If the rest of the string contains no backslashes
-                # (almost always), we can simply look for the matching quote.
-                if s.find("\\", i) == -1:
-                    end = s.find(quote, i)
-                    if end == -1:
-                        _tokenization_error(s, strlen, filename, linenr)
-                    append(s[i:end])
-                    i = end + 1
-                else:
-                    # Slow path. This could probably be sped up, but it's a
+                if "\\" in s:
+                    # Slow path: This could probably be sped up, but it's a
                     # very unusual case anyway.
                     value = ""
                     while 1:
@@ -727,6 +719,14 @@ class Config():
                             i += 1
                     i += 1
                     append(value)
+                else:
+                    # Fast path: If the rest of the string contains no backslashes
+                    # (almost always) we can simply look for the matching quote.
+                    end = s.find(quote, i)
+                    if end == -1:
+                        _tokenization_error(s, strlen, filename, linenr)
+                    append(s[i:end])
+                    i = end + 1
 
             elif c == "&":
                 if i + 1 >= strlen:
