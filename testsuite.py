@@ -1165,6 +1165,8 @@ def run_selftests():
 
     print "Testing .config reading and writing..."
 
+    config_test_file = "Kconfiglib/tests/config_test"
+
     def verify_header(config_name, header):
         c.load_config(config_name)
         read_header = c.get_config_header()
@@ -1173,9 +1175,31 @@ def run_selftests():
                format(header, config_name, read_header))
 
     def write_and_verify_header(header):
-        header_test_file = "Kconfiglib/tests/config_header_test"
-        c.write_config(header_test_file, header)
-        verify_header(header_test_file, header)
+        c.write_config(config_test_file, header)
+        verify_header(config_test_file, header)
+
+    def verify_file_contents(fname, contents):
+        with open(fname, "r") as f:
+            file_contents = f.read()
+            verify(file_contents == contents,
+                   "{0} contains '{1}'. Expected '{2}'."
+                   .format(fname, file_contents, contents))
+
+    # Writing strings with characters that need to be escaped
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kstring")
+
+    # Test the default value
+    c.write_config(config_test_file)
+    verify_file_contents(config_test_file,
+                         r'''CONFIG_STRING="\"\\"''' "\n")
+    # Write our own value
+    c["STRING"].set_user_value(r'''\"a'\\''')
+    c.write_config(config_test_file)
+    verify_file_contents(config_test_file,
+                         r'''CONFIG_STRING="\\\"a'\\\\"''' "\n")
+
+    # Reading and writing of .config headers
 
     read_header = c.get_config_header()
     verify(read_header is None,
