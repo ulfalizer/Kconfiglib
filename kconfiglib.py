@@ -325,19 +325,19 @@ class Config():
                                        .format(val, name),
                                        filename,
                                        linenr)
-                continue
 
-            unset_re_match = unset_re.match(line)
-            if unset_re_match:
-                name = unset_re_match.group(1)
-                if name in self.syms:
-                    sym = self.syms[name]
+            else:
+                unset_re_match = unset_re.match(line)
+                if unset_re_match:
+                    name = unset_re_match.group(1)
+                    if name in self.syms:
+                        sym = self.syms[name]
 
-                    old_user_val = sym.user_val
-                    if old_user_val is not None:
-                        warn_override(filename, linenr, name, old_user_val, "n")
+                        old_user_val = sym.user_val
+                        if old_user_val is not None:
+                            warn_override(filename, linenr, name, old_user_val, "n")
 
-                    sym._set_user_value_no_invalidate("n", True)
+                        sym._set_user_value_no_invalidate("n", True)
 
     def write_config(self, filename, header = None):
         """Writes out symbol values in the familiar .config format.
