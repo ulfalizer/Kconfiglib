@@ -156,11 +156,11 @@ def run_selftests():
                        True, True, False,
                        True, True, True)
 
-    print "Testing string literal (constant symbol) lexing..."
-
     #
     # String literal lexing. (This tests an internal API.)
     #
+
+    print "Testing string literal (constant symbol) lexing..."
 
     c = kconfiglib.Config("Kconfiglib/tests/empty")
 
@@ -224,11 +224,11 @@ def run_selftests():
     verify_string_bad(r""" "foo """)
     verify_string_bad(r""" 'foo """)
 
-    print "Testing is_modifiable() and range queries..."
-
     #
     # is_modifiable()
     #
+
+    print "Testing is_modifiable() and range queries..."
 
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
 
