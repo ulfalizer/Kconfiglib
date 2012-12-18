@@ -241,13 +241,13 @@ class Config():
 
         self.config_filename = filename
 
-        if replace:
-            self.unset_user_values()
-
         # Invalidate everything. This is usually faster than finding the
         # minimal set of symbols that needs to be invalidated, as nearly all
         # symbols will tend to be affected anyway.
-        self._invalidate_all()
+        if replace:
+            self.unset_user_values()
+        else:
+            self._invalidate_all()
 
         # Read header
 
