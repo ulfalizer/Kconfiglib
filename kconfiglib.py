@@ -300,7 +300,10 @@ class Config():
             set_re_match = set_re.match(line)
             if set_re_match:
                 name, val = set_re_match.groups()
-                val = _strip_quotes(val, line, filename, linenr)
+                # The unescaping producedure below should be safe since " can
+                # only appear as \" inside the string
+                val = _strip_quotes(val, line, filename, linenr)\
+                      .replace('\\"', '"').replace("\\\\", "\\")
                 if name in self.syms:
                     sym = self.syms[name]
 
