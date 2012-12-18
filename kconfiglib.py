@@ -2276,7 +2276,10 @@ class _HasVisibility():
 
 class Symbol(Item, _HasVisibility):
 
-    """Represents a configuration symbol."""
+    """Represents a configuration symbol - e.g. FOO for
+
+    config FOO
+        ..."""
 
     #
     # Public interface
