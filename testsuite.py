@@ -199,8 +199,8 @@ def run_selftests():
     verify_string_lex(r""" "\\" """, "\\")
     verify_string_lex(r""" '\\' """, "\\")
 
-    verify_string_lex(r""" "\a\\\b\c\"'d" """, 'a\\bc"\'d')
-    verify_string_lex(r""" '\a\\\b\c\'"d' """, "a\\bc'\"d")
+    verify_string_lex(r""" "\a\\'\b\c\"'d" """, 'a\\\'bc"\'d')
+    verify_string_lex(r""" '\a\\"\b\c\'"d' """, "a\\\"bc'\"d")
 
     def verify_string_bad(s):
         """Verifies that tokenizing 's' throws a Kconfig_Syntax_Error. Strips
@@ -1185,19 +1185,25 @@ def run_selftests():
                    "{0} contains '{1}'. Expected '{2}'."
                    .format(fname, file_contents, contents))
 
-    # Writing strings with characters that need to be escaped
+    # Writing/reading strings with characters that need to be escaped
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kstring")
+    c = kconfiglib.Config("Kconfiglib/tests/Kescape")
 
     # Test the default value
-    c.write_config(config_test_file)
-    verify_file_contents(config_test_file,
+    c.write_config(config_test_file + "_from_def")
+    verify_file_contents(config_test_file + "_from_def",
                          r'''CONFIG_STRING="\"\\"''' "\n")
     # Write our own value
     c["STRING"].set_user_value(r'''\"a'\\''')
-    c.write_config(config_test_file)
-    verify_file_contents(config_test_file,
+    c.write_config(config_test_file + "_from_user")
+    verify_file_contents(config_test_file + "_from_user",
                          r'''CONFIG_STRING="\\\"a'\\\\"''' "\n")
+
+    # Read back the two configs and verify the respective values
+    c.load_config(config_test_file + "_from_def")
+    verify_value("STRING", '"\\')
+    c.load_config(config_test_file + "_from_user")
+    verify_value("STRING", r'''\"a'\\''')
 
     # Reading and writing of .config headers
 
