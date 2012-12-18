@@ -2943,7 +2943,10 @@ class Symbol(Item, _HasVisibility):
             return ["# CONFIG_{0} is not set".format(self.name)]
 
         elif self.type == STRING:
-            return ['CONFIG_{0}="{1}"'.format(self.name, val)]
+            # Escape \ and "
+            return ['CONFIG_{0}="{1}"'
+                    .format(self.name,
+                            val.replace("\\", "\\\\").replace('"', '\\"'))]
 
         elif self.type == INT or self.type == HEX:
             return ["CONFIG_{0}={1}".format(self.name, val)]
