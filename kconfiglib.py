@@ -82,7 +82,10 @@ import sys
 
 class Config():
 
-    """Represents a Kconfig configuration."""
+    """Represents a Kconfig configuration, e.g. for i386 or ARM. This is the
+    set of symbols and other items appearing in the configuration together with
+    their values. Creating any number of Config objects -- including for
+    different architectures -- is safe; Kconfiglib has no global state."""
 
     #
     # Public interface
