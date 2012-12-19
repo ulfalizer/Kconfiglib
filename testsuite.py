@@ -1800,7 +1800,7 @@ def test_call_all(conf):
 
 def test_config_absent(conf):
     """
-    Test if kconfiglib generates the same configuration as 'make alldefconfig'
+    Test if Kconfiglib generates the same configuration as 'make alldefconfig'
     for each architecture."""
     conf.write_config("._config")
     if speedy_mode:
@@ -1810,10 +1810,11 @@ def test_config_absent(conf):
 
 def test_defconfig(conf):
     """
-    Test if kconfiglib generates the same .config as scripts/kconfig/conf for
+    Test if Kconfiglib generates the same .config as scripts/kconfig/conf for
     each architecture/defconfig pair. In obsessive mode, this test includes
     nonsensical groupings of arches with defconfigs from other arches (every
-    arch/defconfig combination) and an order of magnitude longer time to run.
+    arch/defconfig combination) and takes an order of magnitude longer time to
+    run.
 
     With logging enabled, this test appends any failures to a file
     test_defconfig_fails in the root."""
