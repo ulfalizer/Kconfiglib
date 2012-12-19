@@ -605,23 +605,21 @@ class Config():
         """Returns a _Feed instance containing tokens derived from the string
         's'. Registers any new symbols encountered (via _sym_lookup()).
 
-        (I experimented with a regular expression implementation, but it came
-        out 5% _slower_ and wouldn't have been as flexible.)
+        (I experimented with a pure regular expression implementation, but it
+        came out slower, less readable, and wouldn't have been as flexible.)
 
         for_eval -- True when parsing an expression for a call to
                     Config.eval(), in which case we should not treat the first
                     token specially nor register new symbols."""
-        tokens = []
-        previous = None
+        s = s.lstrip()
+        if s == "" or s[0] == "#":
+            return _Feed([])
 
-        strlen = len(s)
-        # This is a hotspot during parsing, and this speeds things up a bit
-        append = tokens.append
-
-        # The current index in the string being tokenized
-        i = 0
-
-        if not for_eval:
+        if for_eval:
+            i = 0 # The current index in the string being tokenized
+            previous = None # The previous token seen
+            tokens = []
+        else:
             # The initial word on a line is parsed specially. Let
             # command_chars = [A-Za-z0-9_]. Then
             #  - leading non-command_chars characters on the line are ignored, and
@@ -629,54 +627,42 @@ class Config():
             #    characters.
             # This is why things like "----help--" are accepted.
 
-            # Ignore leading non-command_chars characters
-            while i < strlen and s[i] not in command_chars:
-                # We need to look out for comments
-                if s[i] == "#":
-                    return _Feed([])
-                i += 1
-            keyword_start = i
-            # Locate the end of the keyword
-            while i < strlen and s[i] in command_chars:
-                i += 1
-            keyword_lexeme = s[keyword_start:i]
-            # Blank line?
-            if keyword_lexeme == "":
+            initial_token_match = initial_token_re.match(s)
+            if initial_token_match is None:
                 return _Feed([])
-            keyword = keywords.get(keyword_lexeme)
+            # The current index in the string being tokenized
+            i = initial_token_match.end()
+
+            keyword = keywords.get(initial_token_match.group(1))
             if keyword is None:
                 # We expect a keyword as the first token
-                _tokenization_error(s, strlen, filename, linenr)
+                _tokenization_error(s, len(s), filename, linenr)
             if keyword == T_HELP:
                 # Avoid junk after "help", e.g. "---", being registered as a
                 # symbol
                 return _Feed([T_HELP])
-            append(keyword)
+            tokens = [keyword]
             previous = keyword
 
-        # Main tokenization loop (handles tokens past the first one)
+        # _tokenize() is a hotspot during parsing, and this speeds things up a
+        # bit
+        strlen = len(s)
+        append = tokens.append
+
+        # Main tokenization loop. (Handles tokens past the first one.)
         while i < strlen:
-            c = s[i]
+            # Test for an identifier/keyword preceded by whitespace first; this
+            # is the most common case.
+            id_keyword_match = id_keyword_re.match(s, i)
+            if id_keyword_match:
+                # We have an identifier or keyword. The above also stripped any
+                # whitespace for us.
+                name = id_keyword_match.group(1)
+                # Jump past it
+                i = id_keyword_match.end()
 
-            # Arranged by the frequency the cases are encountered, which gives
-            # a small speed-up
-
-            if c.isspace():
-                i += 1
-                continue
-
-            if c in sym_chars:
-                name_start = i
-
-                # Locate the end of the symbol/keyword
-                i += 1
-                while i < strlen and s[i] in sym_chars:
-                    i += 1
-
-                name = s[name_start:i]
-
+                # Keyword?
                 keyword = keywords.get(name)
-
                 if keyword is not None:
                     append(keyword)
                 # What would ordinarily be considered a name is treated as a
@@ -701,90 +687,104 @@ class Config():
 
                     append(sym)
 
-            elif c == '"' or c == "'":
-                i += 1
-
-                if "\\" in s:
-                    # Slow path: This could probably be sped up, but it's a
-                    # very unusual case anyway.
-                    quote = c
-                    value = ""
-                    while 1:
-                        if i >= strlen:
-                            _tokenization_error(s, strlen, filename, linenr)
-                        c = s[i]
-                        if c == quote:
-                            break
-                        if c == "\\":
-                            if i + 1 >= strlen:
-                                _tokenization_error(s, strlen, filename, linenr)
-                            value += s[i + 1]
-                            i += 2
-                        else:
-                            value += c
-                            i += 1
-                    i += 1
-                    append(value)
-                else:
-                    # Fast path: If the string contains no backslashes (almost
-                    # always) we can simply look for the matching quote.
-                    end = s.find(c, i)
-                    if end == -1:
-                        _tokenization_error(s, strlen, filename, linenr)
-                    append(s[i:end])
-                    i = end + 1
-
-            elif c == "&":
-                if i + 1 >= strlen:
-                    # Invalid characters are ignored
-                    continue
-                if s[i + 1] != "&":
-                    # Invalid characters are ignored
-                    i += 1
-                    continue
-                append(T_AND)
-                i += 2
-
-            elif c == "|":
-                if i + 1 >= strlen:
-                    # Invalid characters are ignored
-                    continue
-                if s[i + 1] != "|":
-                    # Invalid characters are ignored
-                    i += 1
-                    continue
-                append(T_OR)
-                i += 2
-
-            elif c == "!":
-                if i + 1 >= strlen:
-                    _tokenization_error(s, strlen, filename, linenr)
-                if s[i + 1] == "=":
-                    append(T_UNEQUAL)
-                    i += 2
-                else:
-                    append(T_NOT)
-                    i += 1
-
-            elif c == "=":
-                append(T_EQUAL)
-                i += 1
-
-            elif c == "(":
-                append(T_OPEN_PAREN)
-                i += 1
-
-            elif c == ")":
-                append(T_CLOSE_PAREN)
-                i += 1
-
-            elif c == "#":
-                break
-
             else:
-                # Invalid characters are ignored
-                i += 1
-                continue
+                # This restrips whitespace that could have been stripped in the
+                # regex above, but it's worth it since identifiers/keywords are
+                # more common
+                s = s[i:].lstrip()
+                if s == "":
+                    break
+                strlen = len(s)
+                i = 0
+                c = s[0]
+
+                # String literal (constant symbol)
+                if c == '"' or c == "'":
+                    i += 1
+
+                    if "\\" in s:
+                        # Slow path: This could probably be sped up, but it's a
+                        # very unusual case anyway.
+                        quote = c
+                        value = ""
+                        while 1:
+                            if i >= strlen:
+                                _tokenization_error(s, strlen, filename,
+                                                    linenr)
+                            c = s[i]
+                            if c == quote:
+                                break
+                            if c == "\\":
+                                if i + 1 >= strlen:
+                                    _tokenization_error(s, strlen, filename,
+                                                        linenr)
+                                value += s[i + 1]
+                                i += 2
+                            else:
+                                value += c
+                                i += 1
+                        i += 1
+                        append(value)
+                    else:
+                        # Fast path: If the string contains no backslashes (almost
+                        # always) we can simply look for the matching quote.
+                        end = s.find(c, i)
+                        if end == -1:
+                            _tokenization_error(s, strlen, filename, linenr)
+                        append(s[i:end])
+                        i = end + 1
+
+                elif c == "&":
+                    if i + 1 >= strlen:
+                        # Invalid characters are ignored
+                        continue
+                    if s[i + 1] != "&":
+                        # Invalid characters are ignored
+                        i += 1
+                        continue
+                    append(T_AND)
+                    i += 2
+
+                elif c == "|":
+                    if i + 1 >= strlen:
+                        # Invalid characters are ignored
+                        continue
+                    if s[i + 1] != "|":
+                        # Invalid characters are ignored
+                        i += 1
+                        continue
+                    append(T_OR)
+                    i += 2
+
+                elif c == "!":
+                    if i + 1 >= strlen:
+                        _tokenization_error(s, strlen, filename, linenr)
+                    if s[i + 1] == "=":
+                        append(T_UNEQUAL)
+                        i += 2
+                    else:
+                        append(T_NOT)
+                        i += 1
+
+                elif c == "=":
+                    append(T_EQUAL)
+                    i += 1
+
+                elif c == "(":
+                    append(T_OPEN_PAREN)
+                    i += 1
+
+                elif c == ")":
+                    append(T_CLOSE_PAREN)
+                    i += 1
+
+                elif c == "#":
+                    break
+
+                else:
+                    # Invalid characters are ignored
+                    i += 1
+                    continue
 
             previous = tokens[-1]
 
@@ -2063,12 +2063,11 @@ bool_str = { False : "false", True : "true" }
 string_lex = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
                         T_PROMPT, T_MENU, T_COMMENT, T_SOURCE, T_MAINMENU))
 
-# Characters that may appear in symbol names
-sym_chars = frozenset(string.ascii_letters + string.digits + "._/-")
+# Matches the initial token on a line; see _tokenize().
+initial_token_re = re.compile(r"[^\w]*(\w+)")
 
-# Characters that might be the first significant character on a line. Other
-# characters are ignored at the beginning of a line.
-command_chars = frozenset(string.ascii_letters + string.digits + "_")
+# Matches an identifier/keyword optionally preceded by whitespace
+id_keyword_re = re.compile(r"\s*([\w./-]+)")
 
 # Regular expressions for parsing .config files
 set_re   = re.compile(r"CONFIG_(\w+)=(.*)")
