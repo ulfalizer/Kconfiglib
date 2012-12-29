@@ -1,0 +1,40 @@
+menuconfig A
+    bool "A"
+menuconfig A
+    bool "A"
+menu "menu 2"
+config M
+    def_bool !(n || (n || A = n))
+    default !A if y
+    default y if !A
+config S
+    bool
+    select A if NOT_DEFINED = y
+    select E if A
+endmenu
+choice
+    bool "C"
+config N
+    bool "N"
+config O
+    bool "O"
+endchoice
+choice B
+    bool "B"
+
+config B1
+    tristate "B1"
+
+config B2
+    tristate "B2"
+
+endchoice
+
+if !(NOT_DEFINED != A)
+comment "comment 2"
+endif
+
+menu "visible if menu"
+    visible if A
+    visible if NOT_DEFINED
+endmenu

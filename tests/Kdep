@@ -1,0 +1,144 @@
+config D
+   bool "D"
+
+# The symbols below depend on D in different ways
+
+config D1
+   def_bool D
+
+config D2
+   int "D2" if D
+
+config D3
+   int "D3"
+   depends on D
+
+config D4
+   bool "D4"
+   default D
+
+config D5
+   bool
+   default y if D
+
+config D6
+    int
+    range 0 1 if D
+
+menuconfig D7
+    int
+    range D 1
+
+config D8
+    int
+    range 0 D
+
+if D
+
+# Has no prompt and hence does not depend on D even though it's within the
+# 'if D' block
+config NO_DEPEND
+    bool
+
+config D9
+    bool "D9"
+
+endif
+
+menu "m"
+    depends on D
+
+config D10
+    bool "D10"
+
+menu "nested"
+
+config D11
+    bool "D11"
+
+endmenu
+endmenu
+
+# Indirect dependency
+config D12
+    def_tristate D11
+
+menu "m"
+    depends on D
+if D
+# Depends on D in lots of different ways
+config D13
+    int "D13" if D
+    depends on D && D12
+    default D if D
+    range D D if D
+endif
+endmenu
+
+# Different kinds of expressions
+
+config D14
+    bool "D14" if D || n
+
+config D15
+    bool "D15" if n || D
+
+config D16
+    bool "D16" if D && y
+
+config D17
+    bool "D17" if y && D
+
+config D18
+    bool "D18" if !D
+
+config D19
+    bool "D19" if !D && y
+
+config D20
+    bool "D20" if !(D && y)
+
+config D21
+    bool "D21" if (D)
+
+config D22
+    bool "D22" if ((D))
+
+config D23
+    bool "D23" if n || (y && n || (m || D))
+
+config D24
+    bool "D24" if D = n
+
+config D25
+    bool "D25" if n = D
+
+config D26
+    bool "D26" if n != D
+
+config D27
+    bool "D27" if D != n
+
+config D28
+    bool "D28" if n || ((n != D) || n)
+
+#
+# Choices
+#
+
+choice
+    tristate "choice" if S
+
+config A
+    bool "A"
+
+config B
+    bool "B"
+
+config C
+    bool "C"
+
+endchoice
+
+config S
+    bool "S"

@@ -1,0 +1,50 @@
+config MODULES
+    def_bool y
+
+config VISIBLE
+    tristate "bool visible"
+
+config NOT_VISIBLE
+    tristate
+
+config Y_SELECTOR
+    def_tristate y
+    select SELECTED_TO_Y
+
+config SELECTED_TO_Y
+    tristate "selected to y"
+
+config M_SELECTOR
+    def_tristate m
+    select TRISTATE_SELECTED_TO_M
+    select M_VISIBLE_TRISTATE_SELECTED_TO_M
+    select BOOL_SELECTED_TO_M
+
+config TRISTATE_SELECTED_TO_M
+    tristate "tristate selected to m"
+
+config M_VISIBLE_TRISTATE_SELECTED_TO_M
+    tristate "m-visible tristate selected to m"
+    depends on m
+
+# The "m" will get promoted to a "y", so this should still not be modifiable
+config BOOL_SELECTED_TO_M
+    bool "bool selected to m"
+
+config VISIBLE_STRING
+    string "visible string"
+
+config VISIBLE_INT
+    int "visible int"
+
+config VISIBLE_HEX
+    hex "visible hex"
+
+config NOT_VISIBLE_STRING
+    string
+
+config NOT_VISIBLE_INT
+    int "not visible int" if n
+
+config NOT_VISIBLE_HEX
+    hex

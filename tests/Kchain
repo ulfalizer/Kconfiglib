@@ -1,0 +1,114 @@
+#
+# Dependency chain.
+#
+# In the following, CHAIN_n depends on CHAIN_n-1 in different ways for n > 1.
+# We verify that the last element depends on CHAIN_1.
+#
+
+config CHAIN_1
+    bool
+
+config CHAIN_2
+    bool "chain 2"
+    depends on CHAIN_1
+
+config CHAIN_3
+    bool "chain 3" if CHAIN_2
+
+config CHAIN_4
+    def_bool CHAIN_3
+
+config CHAIN_5
+    def_bool y if CHAIN_4
+
+config CHAIN_6
+    def_tristate CHAIN_5
+
+config CHAIN_7
+    def_tristate y if CHAIN_6
+
+config CHAIN_8
+    bool
+    default CHAIN_7
+
+config CHAIN_9
+    bool
+    default y if CHAIN_8
+
+config CHAIN_10
+    bool
+    prompt "chain 10" if CHAIN_9
+
+config CHAIN_11
+    int
+    range 0 1 if CHAIN_10
+
+config CHAIN_12
+    int
+    range CHAIN_11 10
+
+config CHAIN_13
+    hex
+    range 0 CHAIN_12
+
+config CHAIN_14
+    bool "chain 14" if "0x2" = CHAIN_13
+    select CHAIN_15
+
+config CHAIN_15
+    bool "chain 15"
+
+config CHAIN_SELECT_RELAY
+    bool "chain select relay"
+    default y
+    select CHAIN_16 if CHAIN_15
+
+config CHAIN_16
+    bool "chain 16"
+
+if CHAIN_16 = 0
+config CHAIN_17
+    tristate "chain 17"
+endif
+
+menu "chain menu"
+    depends on CHAIN_17
+config CHAIN_18
+    bool "chain 18"
+endmenu
+
+menu "chain menu visible if"
+    visible if CHAIN_18
+config CHAIN_19
+    bool "chain 19"
+endmenu
+
+choice CHAIN_CHOICE_1
+    tristate "chain choice 1" if CHAIN_19
+config CHAIN_20
+    tristate "chain 20"
+config DUMMY_1
+    tristate "dummy 1"
+endchoice
+
+choice CHAIN_CHOICE_2
+    tristate "chain choice 2"
+    depends on CHAIN_20
+config DUMMY_2
+    tristate "dummy 2"
+config CHAIN_21
+    tristate "chain 18"
+endchoice
+
+choice CHAIN_CHOICE_3
+    tristate "chain choice 3"
+    default DUMMY_3 if CHAIN_21
+config CHAIN_22
+    tristate "chain 22"
+config DUMMY_3
+    tristate "dummy 3"
+endchoice
+
+config CHAIN_23
+    string "chain 19"
+    depends on CHAIN_22

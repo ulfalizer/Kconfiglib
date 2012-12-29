@@ -1,105 +1,58 @@
---- a/Documentation/kbuild/kconfig-language.txt
-+++ b/Documentation/kbuild/kconfig-language.txt
-@@ -381,3 +381,8 @@ config FOO
- 
- limits FOO to module (=m) or disabled (=n).
- 
-+Kconfiglib
-+~~~~~~~~~~
-+If you need to programmatically generate a .config or parse Kconfig files,
-+Kconfiglib might come handy. See 'scriptconfig' and 'iscriptconfig' in
-+'make help' and scripts/kconfig/kconfiglib.py.
-diff --git a/Documentation/kbuild/kconfig.txt b/Documentation/kbuild/kconfig.txt
-index cca46b1..73cf58f 100644
---- a/Documentation/kbuild/kconfig.txt
-+++ b/Documentation/kbuild/kconfig.txt
-@@ -195,4 +195,12 @@ Searching in gconfig:
- 	however, gconfig does have a few more viewing choices than
- 	xconfig does.
- 
-+======================================================================
-+scriptconfig
-+--------------------------------------------------
-+
-+If you need to programmatically generate a .config or parse Kconfig files,
-+Kconfiglib might come handy. See 'scriptconfig' and 'iscriptconfig' in
-+'make help' and scripts/kconfig/kconfiglib.py.
-+
- ###
-diff --git a/README b/README
-index 1b81d28..bb5e68f 100644
---- a/README
-+++ b/README
-@@ -196,6 +196,19 @@ CONFIGURING the kernel:
- 			   values to 'n' as much as possible.
- 	"make randconfig"  Create a ./.config file by setting symbol
- 			   values to random values.
-+	"make scriptconfig SCRIPT=<path to script>" Run a Kconfiglib
-+			   script (see scripts/kconfig/kconfiglib.py).  This
-+			   can be used to programatically generate a
-+			   ./.config, and for applications that need to
-+			   extract information from Kconfig files.
-+	"make iscriptconfig" Launch an interactive Python shell
-+			   for running Kconfiglib on the architecture's
-+			   Kconfig configuration.  The kconfiglib and sys
-+			   (for sys.argv[1] - the base Kconfig file) modules
-+			   will be imported automatically, and a Config
-+			   instance 'c' will be created for the architecture
-+			   (using c = kconfiglib.Config(sys.argv[1])).
-+
- 
-    You can find more information on using the Linux kernel config tools
-    in Documentation/kbuild/kconfig.txt.
+From 10d327f145cfd2004ba5c9f4e8fbb6a9a6d725a4 Mon Sep 17 00:00:00 2001
+From: Ulf Magnusson <ulfalizer@gmail.com>
+Date: Fri, 7 Dec 2012 03:58:36 +0100
+Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
+
+---
+ scripts/kconfig/Makefile |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 368ae30..0044933 100644
+index 3091794..012bafb 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -3,7 +3,7 @@
- # These targets are used from top-level makefile
+@@ -11,6 +11,41 @@ else
+ Kconfig := Kconfig
+ endif
  
- PHONY += oldconfig xconfig gconfig menuconfig config silentoldconfig update-po-config \
--	localmodconfig localyesconfig
-+	localmodconfig localyesconfig scriptconfig iscriptconfig kconfiglibtestconfig
- 
- ifdef KBUILD_KCONFIG
- Kconfig := $(KBUILD_KCONFIG)
-@@ -33,6 +33,30 @@ silentoldconfig: $(obj)/conf
- 	$(Q)mkdir -p include/generated
- 	$< --$@ $(Kconfig)
- 
++PHONY += scriptconfig iscriptconfig kconfiglibtestconfig
++
 +ifneq ($(filter scriptconfig iscriptconfig,$(MAKECMDGOALS)),)
 +PYTHONCMD ?= python
 +endif
 +
++ifneq ($(filter scriptconfig,$(MAKECMDGOALS)),)
++ifndef SCRIPT
++$(error Use "make scriptconfig SCRIPT=<path to script> [SCRIPT_ARG=<argument>]")
++endif
++endif
++
 +scriptconfig:
-+	$(Q)if [ ! -n "$(SCRIPT)" ]; then                                                                     \
-+			echo 'No script argument provided; use "make scriptconfig SCRIPT=<path to script>".'; \
-+	else                                                                                                  \
-+			PYTHONPATH="$(srctree)/$(src):$$PYTHONPATH"                                           \
-+			  "$(PYTHONCMD)" "$(SCRIPT)" $(srctree)/$(Kconfig);                                   \
-+	fi
++ifdef SCRIPT_ARG
++	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" \
++	  "$(PYTHONCMD)" "$(SCRIPT)" "$(srctree)/$(Kconfig)" "$(SCRIPT_ARG)"
++else
++	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" \
++	  "$(PYTHONCMD)" "$(SCRIPT)" "$(srctree)/$(Kconfig)"
++endif
 +
 +iscriptconfig:
-+	$(Q)PYTHONPATH="$(srctree)/$(src):$$PYTHONPATH" "$(PYTHONCMD)" -i -c \
++	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" "$(PYTHONCMD)" -i -c \
 +	  "import kconfiglib; \
 +	   import sys; \
 +	   c = kconfiglib.Config(sys.argv[1]); \
 +	   print \"A Config instance 'c' for the architecture ({0}) has been created.\".format(c.get_arch())" \
 +	  $(srctree)/$(Kconfig)
 +
-+# Used by kconfigtest.py to prevent an 'option defconfig' .config from being loaded
++# Used by testsuite.py to be able to compare output for nonsensical
++# arch/defconfig combinations, which has proven effective for finding obscure
++# bugs
 +kconfiglibtestconfig: $(obj)/conf
 +	$(Q)$< --defconfig=.config $(srctree)/$(Kconfig)
 +
- # if no path is given, then use src directory to find file
- ifdef LSMOD
- LSMOD_F := $(LSMOD)
-@@ -139,6 +163,8 @@ help:
- 	@echo  '  randconfig	  - New config with random answer to all options'
- 	@echo  '  listnewconfig   - List new options'
- 	@echo  '  oldnoconfig     - Same as silentoldconfig but set new symbols to n (unset)'
-+	@echo  '  scriptconfig    - Run a kconfiglib script (see scripts/kconfig/kconfiglib.py)'
-+	@echo  '  iscriptconfig   - Launch interactive Python shell for using kconfiglib'
+ xconfig: $(obj)/qconf
+ 	$< $(Kconfig)
  
- # lxdialog stuff
- check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
+-- 
+1.7.9.5
+

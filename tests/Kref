@@ -1,0 +1,57 @@
+# For testing get_referenced_symbols(), get_selected_symbols(), etc.
+
+config NO_REF
+    bool
+
+config ONE_REF
+    def_bool A
+
+menu "menu 1"
+    depends on MENU_REF_1 && MENU_REF_2
+
+if IF_REF_1 && IF_REF_2
+
+config MANY_REF
+    int "BAR" if A && B
+    default C if D
+    range E F if !G
+    depends on H
+    select I if J = K || L != M
+    select N if (A || !(B && (C = O)))
+
+endif
+
+endmenu
+
+if MENU_REF_1
+if MENU_REF_1 = MENU_REF_2
+
+menu "menu 2"
+    depends on NO_REF || MENU_REF_3
+endmenu
+endif
+endif
+
+if CHOICE_REF_1
+if CHOICE_REF_2 = CHOICE_REF_3
+choice
+    tristate "choice" if CHOICE_REF_4 || CHOICE_REF_5
+    depends on !CHOICE_REF_6
+
+config A
+    bool "A"
+
+config B
+    bool "B"
+
+endchoice
+endif
+endif
+
+if COMMENT_REF_1
+if !COMMENT_REF_2
+comment "comment"
+    depends on COMMENT_REF_3 != COMMENT_REF_4
+    depends on COMMENT_REF_5
+endif
+endif

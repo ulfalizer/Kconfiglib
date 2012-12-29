@@ -1,0 +1,49 @@
+config MODULES
+    def_bool y
+
+config Y_VISIBLE_BOOL
+    bool "y-visible bool"
+
+config Y_VISIBLE_TRISTATE
+    tristate "y-visible tristate"
+
+config M_VISIBLE_BOOL
+    bool "m-visible bool" if m
+
+menuconfig M_VISIBLE_TRISTATE
+    tristate "m-visible tristate" if m
+
+config Y_SELECTOR
+    def_tristate y
+    select Y_SELECTED_BOOL
+    select Y_SELECTED_TRISTATE
+
+config M_SELECTOR
+    def_tristate m
+    select M_SELECTED_BOOL
+    select M_SELECTED_TRISTATE
+    select M_SELECTED_M_VISIBLE_TRISTATE
+
+config Y_SELECTED_BOOL
+    bool "y-selected bool"
+
+config Y_SELECTED_TRISTATE
+    tristate "y-selected tristate"
+
+config M_SELECTED_BOOL
+    bool "m-selected bool"
+
+config M_SELECTED_TRISTATE
+    tristate "m-selected tristate"
+
+config M_SELECTED_M_VISIBLE_TRISTATE
+    tristate "m-selected m-visible tristate" if m
+
+config STRING
+    string "string"
+
+config INT
+    int "int"
+
+config HEX
+    hex "hex"

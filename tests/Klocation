@@ -1,0 +1,47 @@
+# Defined and referenced in multiple locations
+config A
+    bool
+
+menu "menu 1"
+    depends on A
+    visible if A && NOT_DEFINED
+
+# Also defined in Klocation_included
+choice B
+    bool "b" if A
+
+config C
+    bool "c"
+
+config D
+    bool "d"
+
+endchoice
+
+config A
+    def_bool NOT_DEFINED
+
+comment "comment 1"
+
+config E
+    bool "E" if A
+    depends on A
+
+endmenu
+
+config FOO
+    string
+    option env="FOO"
+
+config BAR
+    string
+    default "_included"
+
+# Expands to "tests/Klocation_included"
+source "$FOO/Klocation$BAR"
+
+config I
+    int
+    range A 0
+    range 0 A
+    range 0 1 if A
