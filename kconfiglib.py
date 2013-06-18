@@ -169,6 +169,9 @@ class Config():
         self.arch    = os.environ.get("ARCH")
         self.srcarch = os.environ.get("SRCARCH")
 
+        # See Symbol.get_srcarch()
+        self.srcarch = os.environ.get("SRCARCH")
+
         # See Config.__init__(). We need this for get_defconfig_filename().
         self.srctree = os.environ.get("srctree")
         if self.srctree is None:
@@ -2614,10 +2617,32 @@ class Symbol(Item, _HasVisibility):
         get_assignable_values() and is_modifiable() before using this."""
         return self._get_visibility()
 
+    def get_prompt(self):
+        """Returs the current prompt"""
+        prompt_str = None
+        for (prompt, cond_expr) in self.orig_prompts:
+            if cond_expr is None:
+                prompt_str = prompt
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    prompt_str = prompt
+        return prompt_str
+
+    def get_selects(self):
+        """Returs the list of current selects"""
+        selects_list = []
+        for (target, cond_expr) in self.orig_selects:
+            if cond_expr is None:
+                selects_list.append(target.name)
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    selects_list.append(target.name)
+        return selects_list
+
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
         None if the symbol is at the top level. Note that if statements are
-        treated as syntactic and do not have an explicit class
+        treated as syntactic sugar and do not have an explicit class
         representation."""
         return self.parent
 
@@ -3032,6 +3057,9 @@ class Menu(Item):
         condition. "y" if the menu has no 'visible if' condition."""
         return self.config._eval_expr(self.visible_if_expr)
 
+    def get_visibility(self):
+	return tri_min(self.config._eval_expr(self.dep_expr), self.config._eval_expr(self.visible_if_expr))
+
     def get_items(self, recursive = False):
         """Returns a list containing the items (symbols, menus, choice
         statements and comments) in in the menu, in the same order that the
@@ -3289,6 +3317,16 @@ class Choice(Item, _HasVisibility):
         explanation of modes."""
         return self._get_visibility()
 
+    def get_prompt(self):
+        prompt_str = None
+        for (prompt, cond_expr) in self.orig_prompts:
+            if cond_expr is None:
+                prompt_str = prompt
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    prompt_str = prompt
+        return prompt_str
+
     def get_mode(self):
         """Returns the mode of the choice. See the class documentation for
         an explanation of modes."""
@@ -3447,6 +3485,9 @@ class Comment(Item):
     def get_text(self):
         """Returns the text of the comment."""
         return self.text
+
+    def get_visibility(self):
+	return self.config._eval_expr(self.orig_deps)
 
     def get_parent(self):
         """Returns the menu or choice statement that contains the comment, or
@@ -3610,6 +3651,12 @@ def tri_greater_eq(v1, v2):
     v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
     returns False."""
     return tri_to_int[v1] >= tri_to_int[v2]
+
+def tri_max(v1, v2):
+    return v1 if tri_greater(v1, v2) else v2
+
+def tri_min(v1, v2):
+    return v1 if tri_less(v1, v2) else v2
 
 #
 # Helper functions, mostly related to text processing
