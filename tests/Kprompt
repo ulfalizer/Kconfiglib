@@ -1,0 +1,77 @@
+config NO_PROMPT
+    tristate
+
+config SINGLE_PROMPT_1
+    bool "single prompt 1"
+
+config SINGLE_PROMPT_2
+    bool
+    prompt "single prompt 2" if n
+
+config MULTI_PROMPT
+    bool "ignored prompt"
+    prompt "prompt 1"
+config MULTI_PROMPT
+    bool "prompt 2"
+config MULTI_PROMPT
+    bool
+config MULTI_PROMPT
+    bool
+    prompt "prompt 3"
+config MULTI_PROMPT
+    bool
+    prompt "ignored prompt"
+    prompt "ignored prompt 2" if y
+    prompt "prompt 4" if y
+
+choice NO_PROMPT_CHOICE
+    tristate
+config A
+    bool
+config B
+    bool
+endchoice
+
+choice SINGLE_PROMPT_1_CHOICE
+    bool "single prompt 1 choice"
+config C
+    bool
+config D
+    bool
+endchoice
+
+choice SINGLE_PROMPT_2_CHOICE
+    bool "ignored prompt"
+    prompt "single prompt 2 choice"
+config E
+    bool
+config F
+    bool
+endchoice
+
+choice MULTI_PROMPT_CHOICE
+    bool "prompt 1 choice"
+config G
+    bool
+config H
+    bool
+endchoice
+
+choice MULTI_PROMPT_CHOICE
+    bool
+    prompt "prompt 2 choice"
+config I
+    bool
+config J
+    bool
+endchoice
+
+choice MULTI_PROMPT_CHOICE
+    bool
+    prompt "ignored prompt"
+    prompt "prompt 3 choice"
+config K
+    bool
+config L
+    bool
+endchoice

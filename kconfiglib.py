@@ -2495,6 +2495,16 @@ class Symbol(Item, _HasVisibility):
         """Returns the name of the symbol."""
         return self.name
 
+    def get_prompts(self):
+        """Returns a list of prompts defined for the symbol, in the order they
+        appear in the configuration files. Returns the empty list for symbols
+        with no prompt.
+
+        This list will have a single entry for the vast majority of symbols
+        having prompts, but having multiple prompts for a single symbol is
+        possible through having multiple 'config' entries for it."""
+        return [prompt for prompt, _ in self.orig_prompts]
+
     def get_upper_bound(self):
         """For string/hex/int symbols and for bool and tristate symbols that
         cannot be modified (see is_modifiable()), returns None.
@@ -3229,6 +3239,17 @@ class Choice(Item, _HasVisibility):
         choices. No named choices appear anywhere in the kernel Kconfig files
         as of Linux 3.7.0-rc8."""
         return self.name
+
+    def get_prompts(self):
+        """Returns a list of prompts defined for the choice, in the order they
+        appear in the configuration files. Returns the empty list for choices
+        with no prompt.
+
+        This list will have a single entry for the vast majority of choices
+        having prompts, but having multiple prompts for a single choice is
+        possible through having multiple 'choice' entries for it (though I'm
+        not sure if that ever happens in practice)."""
+        return [prompt for prompt, _ in self.orig_prompts]
 
     def get_help(self):
         """Returns the help text of the choice, or None if the choice has no
