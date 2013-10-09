@@ -412,6 +412,46 @@ def run_selftests():
     verify_equals(c.get_menus()[0].get_title(), "a menu")
 
     #
+    # Prompt queries
+    #
+
+    print "Testing prompt queries..."
+
+    def verify_prompts(sym_or_choice, prompts):
+        sym_or_choice_prompts = sym_or_choice.get_prompts()
+        verify(len(sym_or_choice_prompts) == len(prompts),
+               "Wrong number of prompts for " + sym_or_choice.get_name())
+        for i in range(0, len(sym_or_choice_prompts)):
+            verify(sym_or_choice_prompts[i] == prompts[i],
+                   "Prompt {0} wrong for {1}: Was '{2}', should be '{3}'".
+                   format(i, sym_or_choice.get_name(), sym_or_choice_prompts[i],
+                          prompts[i]))
+
+    def verify_sym_prompts(sym_name, *prompts):
+        verify_prompts(c[sym_name], prompts)
+
+    def verify_choice_prompts(choice, *prompts):
+        verify_prompts(choice, prompts)
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kprompt")
+
+    # Symbols
+    verify_sym_prompts("NO_PROMPT")
+    verify_sym_prompts("SINGLE_PROMPT_1", "single prompt 1")
+    verify_sym_prompts("SINGLE_PROMPT_2", "single prompt 2")
+    verify_sym_prompts("MULTI_PROMPT", "prompt 1", "prompt 2", "prompt 3", "prompt 4")
+
+    no_prompt_choice, single_prompt_1_choice, single_prompt_2_choice, multi_prompt_choice = \
+      c.get_choices()
+
+    # Choices
+    verify_choice_prompts(no_prompt_choice)
+    verify_choice_prompts(single_prompt_1_choice, "single prompt 1 choice")
+    verify_choice_prompts(single_prompt_2_choice, "single prompt 2 choice")
+    verify_choice_prompts(multi_prompt_choice,
+      "prompt 1 choice", "prompt 2 choice", "prompt 3 choice")
+
+    #
     # Location queries
     #
 
@@ -1704,6 +1744,7 @@ def test_call_all(conf):
         s.get_lower_bound()
         s.get_name()
         s.get_parent()
+        s.get_prompts()
         s.get_ref_locations()
         s.get_referenced_symbols()
         s.get_referenced_symbols(True)
@@ -1763,6 +1804,7 @@ def test_call_all(conf):
         c.get_mode()
         c.get_name()
         c.get_parent()
+        c.get_prompts()
         c.get_referenced_symbols()
         c.get_referenced_symbols(True)
         c.get_selection()

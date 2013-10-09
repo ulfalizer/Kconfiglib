@@ -1,14 +1,14 @@
-From 10d327f145cfd2004ba5c9f4e8fbb6a9a6d725a4 Mon Sep 17 00:00:00 2001
+From 10fe390db4051fea50e017f0fd5d284bc3c03182 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
-Date: Fri, 7 Dec 2012 03:58:36 +0100
+Date: Tue, 18 Jun 2013 19:49:35 +0200
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
 
 ---
- scripts/kconfig/Makefile |   35 +++++++++++++++++++++++++++++++++++
+ scripts/kconfig/Makefile | 35 +++++++++++++++++++++++++++++++++++
  1 file changed, 35 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 3091794..012bafb 100644
+index 3091794..cd2d18f 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
 @@ -11,6 +11,41 @@ else
@@ -40,7 +40,7 @@ index 3091794..012bafb 100644
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" "$(PYTHONCMD)" -i -c \
 +	  "import kconfiglib; \
 +	   import sys; \
-+	   c = kconfiglib.Config(sys.argv[1]); \
++	   c = kconfiglib.Config(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
 +	   print \"A Config instance 'c' for the architecture ({0}) has been created.\".format(c.get_arch())" \
 +	  $(srctree)/$(Kconfig)
 +
@@ -54,5 +54,5 @@ index 3091794..012bafb 100644
  	$< $(Kconfig)
  
 -- 
-1.7.9.5
+1.8.1.2
 
