@@ -3025,10 +3025,7 @@ class Symbol(Item, _HasVisibility):
             to.add(s)
             to |= s._get_dependent()
 
-    def _has_auto_menu_dep_on(self, on):
-        """See Choice._determine_actual_symbols()."""
-        if not isinstance(self.parent, Choice):
-            _internal_error("Attempt to determine auto menu dependency for symbol ouside of choice.")
+    def has_auto_menu_dep_on(self, on):
 
         if self.prompts == []:
             # If we have no prompt, use the menu dependencies instead (what was
@@ -3176,6 +3173,13 @@ class Menu(Item):
            self.config._eval_expr(self.visible_if_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.title)] + item_conf
         return item_conf
+
+    def has_auto_menu_dep_on(self, on):
+        if self.config._expr_depends_on(self.dep_expr, on):
+            return True
+        if self.config._expr_depends_on(self.visible_if_expr, on):
+            return True
+        return False
 
 class Choice(Item, _HasVisibility):
 
@@ -3445,7 +3449,7 @@ class Choice(Item, _HasVisibility):
                 continue
 
             while stack != []:
-                if item._has_auto_menu_dep_on(stack[-1]):
+                if item.has_auto_menu_dep_on(stack[-1]):
                     # The item should not be viewed as a choice item, so don't
                     # set item.is_choice_symbol_.
                     stack.append(item)
@@ -3479,6 +3483,20 @@ class Choice(Item, _HasVisibility):
 
     def _make_conf(self):
         return self.block._make_conf()
+
+    def has_auto_menu_dep_on(self, on):
+
+        if self.prompts == []:
+            # If we have no prompt, use the menu dependencies instead (what was
+            # specified with 'depends on')
+            return self.menu_dep is not None and \
+                   self.config._expr_depends_on(self.menu_dep, on)
+
+        for (_, cond_expr) in self.prompts:
+            if self.config._expr_depends_on(cond_expr, on):
+                return True
+
+        return False
 
 class Comment(Item):
 
@@ -3567,6 +3585,11 @@ class Comment(Item):
         if self.config._eval_expr(self.dep_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.text)]
         return []
+
+    def has_auto_menu_dep_on(self, on):
+        if self.config._expr_depends_on(self.dep_expr, on):
+            return True
+        return False
 
 class _Feed:
 
