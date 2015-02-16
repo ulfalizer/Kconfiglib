@@ -1324,6 +1324,11 @@ error, and you should e-mail kconfiglib@gmail.com.
                                filename,
                                linenr)
 
+                elif tokens.check(T_ALLNOCONFIG_Y):
+                    self._warn("the 'allnoconfig_y' option is not supported.",
+                               filename,
+                               linenr)
+
                 else:
                     _parse_error(line, "unrecognized option.", filename, linenr)
 
@@ -2017,8 +2022,8 @@ def _make_and(e1, e2):
  T_OPTIONAL, T_PROMPT, T_DEFAULT,
  T_BOOL, T_TRISTATE, T_HEX, T_INT, T_STRING,
  T_DEF_BOOL, T_DEF_TRISTATE,
- T_SELECT, T_RANGE, T_OPTION, T_ENV,
- T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(0, 38)
+ T_SELECT, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
+ T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(0, 39)
 
 # Keyword to token map
 keywords = {
@@ -2050,6 +2055,7 @@ keywords = {
         "select"         : T_SELECT,
         "range"          : T_RANGE,
         "option"         : T_OPTION,
+        "allnoconfig_y"  : T_ALLNOCONFIG_Y,
         "env"            : T_ENV,
         "defconfig_list" : T_DEFCONFIG_LIST,
         "modules"        : T_MODULES,
