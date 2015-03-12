@@ -64,3 +64,10 @@ config FROM_ENV
 config FROM_ENV_MISSING
     string
     option env="MISSING_ENV_VAR"
+
+config NOT_ALLNOCONFIG_Y
+    bool "not allnoconfig_y"
+
+config ALLNOCONFIG_Y
+    bool "allnoconfig_y"
+    option allnoconfig_y
