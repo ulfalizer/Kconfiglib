@@ -8,20 +8,22 @@ import sys
 
 conf = kconfiglib.Config(sys.argv[1])
 
+# Do an initial pass to give allnoconfig_y symbols the user value 'y'. It might
+# be possible to handle this through "successive raising" similarly to the
+# "successive lowering" below too, but keep it simple.
+for sym in conf:
+    if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE) and \
+       sym.is_allnoconfig_y():
+        sym.set_user_value('y')
+
 done = False
 while not done:
     done = True
 
     for sym in conf:
-        if sym.is_allnoconfig_y():
-            if sym.get_value() != 'y':
-                sym.set_user_value('y')
-                # We just changed the value of some symbol. As this may affect
-                # other symbols, keep going.
-                done = False
         # Choices take care of themselves for allnoconfig, so we only need to
         # worry about non-choice symbols
-        elif not sym.is_choice_symbol():
+        if not sym.is_choice_symbol() and not sym.is_allnoconfig_y():
             # If we can assign a value to the symbol (where "n", "m" and "y"
             # are ordered from lowest to highest), then assign the lowest
             # value. lower_bound() returns None for symbols whose values cannot
