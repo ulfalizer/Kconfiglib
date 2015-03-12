@@ -13,9 +13,15 @@ while not done:
     done = True
 
     for sym in conf:
+        if sym.is_allnoconfig_y():
+            if sym.get_value() != 'y':
+                sym.set_user_value('y')
+                # We just changed the value of some symbol. As this may affect
+                # other symbols, keep going.
+                done = False
         # Choices take care of themselves for allnoconfig, so we only need to
         # worry about non-choice symbols
-        if not sym.is_choice_symbol():
+        elif not sym.is_choice_symbol():
             # If we can assign a value to the symbol (where "n", "m" and "y"
             # are ordered from lowest to highest), then assign the lowest
             # value. lower_bound() returns None for symbols whose values cannot

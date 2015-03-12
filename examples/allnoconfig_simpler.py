@@ -22,7 +22,9 @@ conf = kconfiglib.Config(sys.argv[1])
 conf.set_print_warnings(False)
 
 for sym in conf:
-    if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
+    if sym.is_allnoconfig_y():
+        sym.set_user_value('y')
+    elif sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
         sym.set_user_value("n")
 
 conf.write_config(".config")
