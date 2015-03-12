@@ -1060,7 +1060,7 @@ class Config():
                 choice.block = self._parse_block(line_feeder,
                                                  T_ENDCHOICE,
                                                  choice,
-                                                 None,
+                                                 deps,
                                                  visible_if_deps)
 
                 choice._determine_actual_symbols()
