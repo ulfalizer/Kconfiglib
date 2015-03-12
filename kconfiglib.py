@@ -1320,7 +1320,10 @@ error, and you should e-mail kconfiglib@gmail.com.
                 elif tokens.check(T_MODULES):
                     self._warn("the 'modules' option is not supported. "
                                "Let me know if this is a problem for you; "
-                               "it shouldn't be that hard to implement.",
+                               "it shouldn't be that hard to implement. "
+                               "(Note that modules are still supported -- "
+                               "Kconfiglib just assumes the symbol name "
+                               "MODULES.)",
                                filename,
                                linenr)
 
