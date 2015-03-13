@@ -2636,10 +2636,32 @@ class Symbol(Item, _HasVisibility):
         get_assignable_values() and is_modifiable() before using this."""
         return self._get_visibility()
 
+    def get_prompt(self):
+        """Returs the current prompt"""
+        prompt_str = None
+        for (prompt, cond_expr) in self.orig_prompts:
+            if cond_expr is None:
+                prompt_str = prompt
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    prompt_str = prompt
+        return prompt_str
+
+    def get_selects(self):
+        """Returs the list of current selects"""
+        selects_list = []
+        for (target, cond_expr) in self.orig_selects:
+            if cond_expr is None:
+                selects_list.append(target.name)
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    selects_list.append(target.name)
+        return selects_list
+
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
         None if the symbol is at the top level. Note that if statements are
-        treated as syntactic and do not have an explicit class
+        treated as syntactic sugar and do not have an explicit class
         representation."""
         return self.parent
 
@@ -3023,10 +3045,7 @@ class Symbol(Item, _HasVisibility):
             to.add(s)
             to |= s._get_dependent()
 
-    def _has_auto_menu_dep_on(self, on):
-        """See Choice._determine_actual_symbols()."""
-        if not isinstance(self.parent, Choice):
-            _internal_error("Attempt to determine auto menu dependency for symbol ouside of choice.")
+    def has_auto_menu_dep_on(self, on):
 
         if self.prompts == []:
             # If we have no prompt, use the menu dependencies instead (what was
@@ -3174,6 +3193,13 @@ class Menu(Item):
            self.config._eval_expr(self.visible_if_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.title)] + item_conf
         return item_conf
+
+    def has_auto_menu_dep_on(self, on):
+        if self.config._expr_depends_on(self.dep_expr, on):
+            return True
+        if self.config._expr_depends_on(self.visible_if_expr, on):
+            return True
+        return False
 
 class Choice(Item, _HasVisibility):
 
@@ -3330,6 +3356,16 @@ class Choice(Item, _HasVisibility):
         explanation of modes."""
         return self._get_visibility()
 
+    def get_prompt(self):
+        prompt_str = None
+        for (prompt, cond_expr) in self.orig_prompts:
+            if cond_expr is None:
+                prompt_str = prompt
+            else:
+                if self.config._eval_expr(cond_expr) != "n":
+                    prompt_str = prompt
+        return prompt_str
+
     def get_mode(self):
         """Returns the mode of the choice. See the class documentation for
         an explanation of modes."""
@@ -3433,7 +3469,7 @@ class Choice(Item, _HasVisibility):
                 continue
 
             while stack != []:
-                if item._has_auto_menu_dep_on(stack[-1]):
+                if item.has_auto_menu_dep_on(stack[-1]):
                     # The item should not be viewed as a choice item, so don't
                     # set item.is_choice_symbol_.
                     stack.append(item)
@@ -3467,6 +3503,20 @@ class Choice(Item, _HasVisibility):
 
     def _make_conf(self):
         return self.block._make_conf()
+
+    def has_auto_menu_dep_on(self, on):
+
+        if self.prompts == []:
+            # If we have no prompt, use the menu dependencies instead (what was
+            # specified with 'depends on')
+            return self.menu_dep is not None and \
+                   self.config._expr_depends_on(self.menu_dep, on)
+
+        for (_, cond_expr) in self.prompts:
+            if self.config._expr_depends_on(cond_expr, on):
+                return True
+
+        return False
 
 class Comment(Item):
 
@@ -3555,6 +3605,11 @@ class Comment(Item):
         if self.config._eval_expr(self.dep_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.text)]
         return []
+
+    def has_auto_menu_dep_on(self, on):
+        if self.config._expr_depends_on(self.dep_expr, on):
+            return True
+        return False
 
 class _Feed:
 
@@ -3651,6 +3706,12 @@ def tri_greater_eq(v1, v2):
     v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
     returns False."""
     return tri_to_int[v1] >= tri_to_int[v2]
+
+def tri_max(v1, v2):
+    return v1 if tri_greater(v1, v2) else v2
+
+def tri_min(v1, v2):
+    return v1 if tri_less(v1, v2) else v2
 
 #
 # Helper functions, mostly related to text processing
