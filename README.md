@@ -11,7 +11,7 @@ utilities in the kernel, usually invoked via make targets such as
 Thanks to a patch from Philip Craig (https://github.com/philipc) that adds support
 for the new `allnoconfig_y` option (which sets the user value of certain symbols
 to `y` during `make allconfig` to improve coverage) and fixes an obscure issue
-with comments inside `choice`s, the testsuite now passes with Linux v4.0-rc3. Very
+with `comment`s inside `choice`s, the testsuite now passes with Linux v4.0-rc3. Very
 little seems to have changed in the C implementation over the past years, which makes
 me happy. :)
 
