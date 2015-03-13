@@ -18,7 +18,7 @@ changed in the C implementation over the past years, which makes me happy. :)
 Despite the warnings, modules *are* supported by the way (otherwise tests would break
 horribly). The warnings are related to `option modules`, which lets you select which
 symbol serves as the `MODULES` symbol. (It's always `MODULES` in the kernel, and
-older versions of the `Kconfig` files not set `option modules` on it -- hence the
+older versions of the `Kconfig` files did not set `option modules` on it -- hence the
 warnings. With newer versions of the C implementation it's required.) I should add
 support for `option modules` in a backwards-compatible way.
 
