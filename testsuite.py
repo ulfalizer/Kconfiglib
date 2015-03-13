@@ -1195,6 +1195,13 @@ def run_selftests():
         verify(not sym.is_choice_symbol(),
                "{0} should not be a choice symbol".format(sym_name))
 
+    print "Testing is_allnoconfig_y()..."
+
+    verify(not c["NOT_ALLNOCONFIG_Y"].is_allnoconfig_y(),
+           "NOT_ALLNOCONFIG_Y should not be allnoconfig_y")
+    verify(c["ALLNOCONFIG_Y"].is_allnoconfig_y(),
+           "ALLNOCONFIG_Y should be allnoconfig_y")
+
     print "Testing UNAME_RELEASE value..."
 
     verify_value("UNAME_RELEASE", os.uname()[2])
@@ -1760,6 +1767,7 @@ def test_call_all(conf):
         s.is_defined()
         s.is_from_environment()
         s.is_modifiable()
+        s.is_allnoconfig_y()
         s.unset_user_value()
 
         # Check get_ref/def_location() sanity

@@ -1060,7 +1060,7 @@ class Config():
                 choice.block = self._parse_block(line_feeder,
                                                  T_ENDCHOICE,
                                                  choice,
-                                                 None,
+                                                 deps,
                                                  visible_if_deps)
 
                 choice._determine_actual_symbols()
@@ -1325,9 +1325,12 @@ error, and you should e-mail kconfiglib@gmail.com.
                                linenr)
 
                 elif tokens.check(T_ALLNOCONFIG_Y):
-                    self._warn("the 'allnoconfig_y' option is not supported.",
-                               filename,
-                               linenr)
+                    if not isinstance(stmt, Symbol):
+                        _parse_error(line,
+                                     "the 'allnoconfig_y' option is only valid for symbols.",
+                                     filename,
+                                     linenr)
+                    stmt.allnoconfig_y = True
 
                 else:
                     _parse_error(line, "unrecognized option.", filename, linenr)
@@ -2765,6 +2768,11 @@ class Symbol(Item, _HasVisibility):
         and sym.get_parent().get_selection() is sym'."""
         return self.is_choice_symbol_ and self.parent.get_selection() is self
 
+    def is_allnoconfig_y(self):
+        """Returns True if the symbol has the 'allnoconfig_y' option set;
+        otherwise, returns False."""
+        return self.allnoconfig_y
+
     def __str__(self):
         """Returns a string containing various information about the symbol."""
         return self.config._get_sym_or_choice_str(self)
@@ -2861,6 +2869,9 @@ class Symbol(Item, _HasVisibility):
 
         # Does the symbol get its value from the environment?
         self.is_from_env = False
+
+        # Does the symbol have the 'allnoconfig_y' option set?
+        self.allnoconfig_y = False
 
     def _invalidate(self):
         if self.is_special_:
