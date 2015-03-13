@@ -18,7 +18,7 @@ Installation instructions for the Linux kernel (in the kernel root):
 In addition to creating a handy interface, the make targets are needed to pick
 up environment variables set in the kernel makefiles which are referenced in
 the Kconfig files (<i>ARCH</i>, <i>SRCARCH</i>, and <i>KERNELVERSION</i> as of
-Linux 3.7.0).
+Linux v4.0-rc3).
 
 Please tell me if the patch does not apply. It should be trivial to apply
 manually.
@@ -85,7 +85,7 @@ defconfigs on e.g. Linux 3.7.0-rc8 are due to
 
 ## License (ISC) ##
 
-Copyright (c) 2011-2013, Ulf Magnusson <ulfalizer@gmail.com>
+Copyright (c) 2011-2015, Ulf Magnusson <ulfalizer@gmail.com>
 
 Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
 
