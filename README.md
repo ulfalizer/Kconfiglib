@@ -6,6 +6,21 @@ extract information, query and set symbol values, and read and write
 utilities in the kernel, usually invoked via make targets such as
 <i>menuconfig</i> and <i>defconfig</i>.
 
+**Update: Mar 13 2015**
+
+Thanks to a patch from Philip Craig (https://github.com/philipc) that adds support
+for the new `allnoconfig_y` option (which sets the user value of certain symbols
+to `y` during `make allconfig` to improve coverage) and fixes an obscure issue
+with comments inside `choice`s, the testsuite now passes with Linux v4.0-rc3. Very
+little seems to have changed in the C implementation over the past years, which makes
+me happy. :)
+
+Despite the warnings, modules *are* supported by the way (otherwise tests would break
+horribly). The warnings are related to `option modules`, which lets you select which
+symbol serves as the `MODULES` symbol. (In the kernel, it's always `MODULES`, and old
+version didn't require setting `option modules` on it -- hence the warnings.) I should
+add support for `option modules` in a backwards-compatible way.
+
 ## Installation ##
 
 Installation instructions for the Linux kernel (in the kernel root):
