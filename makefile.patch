@@ -1,17 +1,17 @@
-From 10fe390db4051fea50e017f0fd5d284bc3c03182 Mon Sep 17 00:00:00 2001
+From 61cfb087f144aeb17f4c663a998acbda03053943 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
-Date: Tue, 18 Jun 2013 19:49:35 +0200
+Date: Fri, 13 Mar 2015 01:22:48 +0100
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
 
 ---
- scripts/kconfig/Makefile | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ scripts/kconfig/Makefile | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 3091794..cd2d18f 100644
+index 9645c07..be21e03 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -11,6 +11,41 @@ else
+@@ -11,6 +11,42 @@ else
  Kconfig := Kconfig
  endif
  
@@ -50,9 +50,10 @@ index 3091794..cd2d18f 100644
 +kconfiglibtestconfig: $(obj)/conf
 +	$(Q)$< --defconfig=.config $(srctree)/$(Kconfig)
 +
- xconfig: $(obj)/qconf
- 	$< $(Kconfig)
++
+ # We need this, in case the user has it in its environment
+ unexport CONFIG_
  
 -- 
-1.8.1.2
+2.1.0
 
