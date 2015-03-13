@@ -11,9 +11,9 @@ utilities in the kernel, usually invoked via make targets such as
 Thanks to a patch from Philip Craig (https://github.com/philipc) that adds support
 for the new `allnoconfig_y` option (which sets the user value of certain symbols
 to `y` during `make allconfig` to improve coverage) and fixes an obscure issue
-with `comment`s inside `choice`s, the testsuite now passes with Linux v4.0-rc3. Very
-little seems to have changed in the C implementation over the past years, which makes
-me happy. :)
+with `comment`s inside `choice`s (that didn't affect correctness but made outputs
+differ), the testsuite now passes with Linux v4.0-rc3. Very little seems to have
+changed in the C implementation over the past years, which makes me happy. :)
 
 Despite the warnings, modules *are* supported by the way (otherwise tests would break
 horribly). The warnings are related to `option modules`, which lets you select which
