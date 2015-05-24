@@ -423,7 +423,15 @@ class Config():
         If the environment variable 'srctree' was set when the Config was
         created, get_defconfig_filename() will first look relative to that
         directory before looking in the current directory; see
-        Config.__init__()."""
+        Config.__init__().
+
+        WARNING: A wart here is that scripts/kconfig/Makefile sometimes uses the
+        --defconfig=<defconfig> option when calling the C implementation of e.g.
+        'make defconfig'. This option overrides the 'option defconfig_list'
+        symbol, meaning the result from get_defconfig_filename() might not
+        match what 'make defconfig' would use. That probably ought to be worked
+        around somehow, so that this function always gives the "expected"
+        result."""
 
         if self.defconfig_sym is None:
             return None
