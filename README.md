@@ -13,7 +13,7 @@ for the new `allnoconfig_y` option (which sets the user value of certain symbols
 to `y` during `make allnoconfig` to improve coverage) and fixes an obscure issue
 with `comment`s inside `choice`s (that didn't affect correctness but made outputs
 differ) the test suite now passes with Linux v4.0-rc3. Very little seems to have
-changed in the C implementation over the past years, which makes me happy. :)
+changed in the C implementation over the past years, which is nice. :)
 
 Despite the warnings, modules *are* supported by the way (or tests would break
 horribly). The warnings are related to `option modules`, which specifies what
