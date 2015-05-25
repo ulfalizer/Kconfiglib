@@ -8,7 +8,7 @@ utilities in the kernel, usually invoked via make targets such as
 
 **Update: Mar 13 2015**
 
-Thanks to a patch from Philip Craig (https://github.com/philipc) that adds support
+Thanks to a patch from [Philip Craig](https://github.com/philipc) that adds support
 for the new `allnoconfig_y` option (which sets the user value of certain symbols
 to `y` during `make allnoconfig` to improve coverage) and fixes an obscure issue
 with `comment`s inside `choice`s (that didn't affect correctness but made outputs
