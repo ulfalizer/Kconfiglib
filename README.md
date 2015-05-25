@@ -15,9 +15,9 @@ with `comment`s inside `choice`s (that didn't affect correctness but made output
 differ) the test suite now passes with Linux v4.0-rc3. Very little seems to have
 changed in the C implementation over the past years, which is nice. :)
 
-Despite the warnings, modules *are* supported by the way (or tests would break
+Despite the warnings, modules *are* supported (or tests would break
 horribly). The warnings are related to `option modules`, which specifies what
-symbol serves as the `MODULES` symbol. It's always `MODULES` in the kernel, and
+symbol serves as the `MODULES` symbol. It's always "MODULES" in the kernel, and
 older versions of the `Kconfig` files did not set `option modules` on it -- hence the
 warnings. With newer versions of the C implementation it's required. I should add
 support for `option modules` in a backwards-compatible way.
