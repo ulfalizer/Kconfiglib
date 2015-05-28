@@ -52,7 +52,7 @@ use
 
 ## Examples ##
 
-The <i>examples/</i> directory contains simple example programs that make use
+The [examples/](examples/) directory contains simple example programs that make use
 of Kconfiglib. See the documentation for how to run them.
 
 ## Test suite ##
