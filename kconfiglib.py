@@ -1326,14 +1326,21 @@ error, and you should e-mail kconfiglib@gmail.com.
                     self.defconfig_sym = stmt
 
                 elif tokens.check(T_MODULES):
-                    self._warn("the 'modules' option is not supported. "
-                               "Let me know if this is a problem for you; "
-                               "it shouldn't be that hard to implement. "
-                               "(Note that modules are still supported -- "
-                               "Kconfiglib just assumes the symbol name "
-                               "MODULES.)",
-                               filename,
-                               linenr)
+                    # To reduce warning spam, only warn if 'option modules' is
+                    # set on some symbol that isn't MODULES, which should be
+                    # safe. I haven't run into any projects that make use
+                    # modules besides the kernel yet, and there it's likely to
+                    # keep being called "MODULES".
+                    if stmt.name != "MODULES":
+                        self._warn("the 'modules' option is not supported. "
+                                   "Let me know if this is a problem for you; "
+                                   "it shouldn't be that hard to implement. "
+                                   "(Note that modules are still supported -- "
+                                   "Kconfiglib just assumes the symbol name "
+                                   "MODULES, like older versions of the C "
+                                   "did when 'option modules' wasn't used.)",
+                                   filename,
+                                   linenr)
 
                 elif tokens.check(T_ALLNOCONFIG_Y):
                     if not isinstance(stmt, Symbol):
