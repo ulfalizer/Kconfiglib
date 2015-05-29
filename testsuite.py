@@ -285,7 +285,7 @@ def run_selftests():
             if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
                 verify(sym.is_modifiable(),
                        "get_lower/upper_bound() thinks the range for the "
-                       "bool/tristate{0} should be {1} while is_modifiable() "
+                       "bool/tristate {0} should be {1} while is_modifiable() "
                        "thinks the symbol should not be modifiable".
                        format(sym_name, bound_range))
 
@@ -887,7 +887,7 @@ def run_selftests():
                 # symbols
                 assign_and_verify_new_user_value(sym_name, hex(i), hex(i))
 
-        # Verify that assigning a user value just outside the range uses causes
+        # Verify that assigning a user value just outside the range causes
         # defaults to be used
 
         if default is None:

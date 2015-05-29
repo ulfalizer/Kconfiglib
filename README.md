@@ -35,7 +35,8 @@ In addition to creating a handy interface, the make targets created by the patch
 (`scriptconfig` and `iscripconfig`) are needed to pick up environment variables
 set in the kernel makefiles and later referenced in the Kconfig files (<i>ARCH</i>,
 <i>SRCARCH</i>, and <i>KERNELVERSION</i> as of Linux v4.0-rc3). The documentation
-explains how the make targets are used.
+explains how the make targets are used. The compatibility tests in the test suite
+also needs them.
 
 Please tell me if the patch does not apply. It should be trivial to apply
 manually.
