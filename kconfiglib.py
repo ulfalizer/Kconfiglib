@@ -1338,7 +1338,8 @@ error, and you should e-mail kconfiglib@gmail.com.
                                    "(Note that modules are still supported -- "
                                    "Kconfiglib just assumes the symbol name "
                                    "MODULES, like older versions of the C "
-                                   "did when 'option modules' wasn't used.)",
+                                   "implementation did when 'option modules' "
+                                   "wasn't used.)",
                                    filename,
                                    linenr)
 
