@@ -71,7 +71,7 @@ language has some dark corners.
 
  * [genboardscfg.py](http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD) from [Das U-Boot](http://www.denx.de/wiki/U-Boot) generates some sort of legacy boards database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
 
- * Originally, Kconfiglib was used in chapter 4 my [master's thesis](http://liu.diva-portal.org/smash/get/diva2:473038/FULLTEXT01.pdf) to automatically generate a "minimal" kernel for a given system. Some of the other code in it bothers me a bit now that I have more experience, but that's how it goes with old code.
+ * Originally, Kconfiglib was used in chapter 4 my [master's thesis](http://liu.diva-portal.org/smash/get/diva2:473038/FULLTEXT01.pdf) to automatically generate a "minimal" kernel for a given system. Parts of it bother me a bit now, but that's how it goes with old work.
  
 ## Test suite ##
 
