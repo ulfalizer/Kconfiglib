@@ -30,44 +30,41 @@ Kconfig-based configuration systems. Features include the following:
 
 For the Linux kernel, scripts are run using
 
- $ make scriptconfig SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
+ $ make scriptconfig [ARCH=<architecture>] SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
 
-Running scripts via the 'scriptconfig' target ensures that required environment
-variables (SRCARCH, ARCH, srctree, KERNELVERSION, etc.) are set up correctly.
-Alternative architectures can be specified like for other 'make *config'
-targets:
+Using the 'scriptconfig' target ensures that required environment variables
+(SRCARCH, ARCH, srctree, KERNELVERSION, etc.) are set up correctly.
 
- $ make scriptconfig ARCH=mips SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
-
-The script will receive the name of the Kconfig file to load in sys.argv[1].
-(As of Linux 3.7.0-rc8 this is always "Kconfig" from the kernel top-level
-directory.) If an argument is provided with SCRIPT_ARG, it will appear in
-sys.argv[2].
+Scripts receive the name of the Kconfig file to load in sys.argv[1]. As of
+Linux 4.1.0-rc5, this is always "Kconfig" from the kernel top-level directory.
+If an argument is provided with SCRIPT_ARG, it appears as sys.argv[2].
 
 To get an interactive Python prompt with Kconfiglib preloaded and a Config
-object 'c' created, use
+object 'c' created, run
 
  $ make iscriptconfig [ARCH=<architecture>]
 
-Kconfiglib requires Python 2. For (i)scriptconfig the command to run the Python
-interpreter can be passed in the environment variable PYTHONCMD (defaults to
-'python'; PyPy works too and is a bit faster).
+Kconfiglib currently uses Python 2. For (i)scriptconfig, the Python interpreter
+to use can be passed in PYTHONCMD. It defaults to 'python', but PyPy works too
+and might be faster for long-running jobs.
 
-Look in the examples/ subdirectory for examples, which can be run with e.g.
+The examples/ directory contains short example scripts, which can be run with
+e.g.
 
  $ make scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
 
 or
 
- $ make scriptconfig SCRIPT=Kconfiglib/examples/help_grep.py SCRIPT_ARG="kernel"
+ $ make scriptconfig SCRIPT=Kconfiglib/examples/help_grep.py SCRIPT_ARG=kernel
 
-Look in testsuite.py for the test suite.
+testsuite.py contains the test suite. See the top of the script for how to run
+it.
 
 Credits: Written by Ulf "Ulfalizer" Magnusson
 
-Send bug reports, suggestions and other feedback to kconfiglib@gmail.com .
-Don't wrestle with internal APIs. Tell me what you need and I might add it in a
-safe way as a client API instead."""
+Send bug reports, suggestions and other feedback to kconfiglib@gmail.com. Don't
+wrestle with internal APIs. Tell me what you need and I might add it in a safe
+way as a client API instead."""
 
 # If you have Psyco installed (32-bit installations, Python <= 2.6 only),
 # setting this to True (right here, not at runtime) might give a nice speedup.
@@ -100,12 +97,12 @@ class Config():
         Raises Kconfig_Syntax_Error on syntax errors.
 
         filename (default: "Kconfig") -- The base Kconfig file of the
-                 configuration. For the Linux kernel, this should usually be be
+                 configuration. For the Linux kernel, you'll probably want
                  "Kconfig" from the top-level directory, as environment
                  variables will make sure the right Kconfig is included from
-                 there (usually arch/<architecture>/Kconfig). If you are using
-                 kconfiglib via 'make scriptconfig' the filename of the
-                 correct Kconfig will be in sys.argv[1].
+                 there (arch/<architecture>/Kconfig). If you are using
+                 kconfiglib via 'make scriptconfig', the filename of the base
+                 base Kconfig file will be in sys.argv[1].
 
         base_dir (default: "$srctree") -- The base directory relative to which
                 'source' statements within Kconfig files will work. For the
@@ -220,6 +217,10 @@ class Config():
         """Loads symbol values from a file in the familiar .config format.
            Equivalent to calling Symbol.set_user_value() to set each of the
            values.
+
+           "# CONFIG_FOO is not set" within a .config file is treated specially
+           and sets the user value of FOO to 'n'. The C implementation works
+           the same way.
 
            filename -- The .config file to load. $-references to environment
                        variables will be expanded. For scripts to work even
@@ -348,6 +349,9 @@ class Config():
     def write_config(self, filename, header = None):
         """Writes out symbol values in the familiar .config format.
 
+           Kconfiglib makes sure the format matches what the C implementation
+           would generate, down to whitespace. This eases testing.
+
            filename -- The filename under which to save the configuration.
 
            header (default: None) -- A textual header that will appear at the
@@ -389,8 +393,8 @@ class Config():
     def get_srcarch(self):
         """Returns the value the environment variable SRCARCH had at the time
         the Config instance was created, or None if SRCARCH was not set. For
-        the kernel, this corresponds to the arch/ subdirectory containing
-        architecture-specific source code."""
+        the kernel, this corresponds to the particular arch/ subdirectory
+        containing architecture-specific code."""
         return self.srcarch
 
     def get_srctree(self):
@@ -401,8 +405,8 @@ class Config():
         return self.srctree
 
     def get_config_filename(self):
-        """Returns the name of the most recently loaded configuration file, or
-        None if no configuration has been loaded."""
+        """Returns the filename of the most recently loaded configuration file,
+        or None if no configuration has been loaded."""
         return self.config_filename
 
     def get_mainmenu_text(self):
@@ -477,8 +481,8 @@ class Config():
         for sym in config.get_symbols(False):
             ...
 
-        all_symbols (default: True) -- If True, all symbols - including special
-                    and undefined symbols - will be included in the result, in
+        all_symbols (default: True) -- If True, all symbols -- including special
+                    and undefined symbols -- will be included in the result, in
                     an undefined order. If False, only symbols actually defined
                     and not merely referred to in the configuration will be
                     included in the result, and will appear in the order that
@@ -542,8 +546,7 @@ class Config():
         things like attempting to assign illegal values to symbols with
         Symbol.set_user_value()) should be printed to stderr.
 
-        print_warnings -- True if warnings should be
-                          printed, otherwise False."""
+        print_warnings -- True if warnings should be printed."""
         self.print_warnings = print_warnings
 
     def set_print_undef_assign(self, print_undef_assign):
@@ -2252,22 +2255,22 @@ class Item():
     Symbol, Choice, Menu, and Comment."""
 
     def is_symbol(self):
-        """Returns True if the item is a symbol, otherwise False. Short for
+        """Returns True if the item is a symbol. Short for
         isinstance(item, kconfiglib.Symbol)."""
         return isinstance(self, Symbol)
 
     def is_choice(self):
-        """Returns True if the item is a choice, otherwise False. Short for
+        """Returns True if the item is a choice. Short for
         isinstance(item, kconfiglib.Choice)."""
         return isinstance(self, Choice)
 
     def is_menu(self):
-        """Returns True if the item is a menu, otherwise False. Short for
+        """Returns True if the item is a menu. Short for
         isinstance(item, kconfiglib.Menu)."""
         return isinstance(self, Menu)
 
     def is_comment(self):
-        """Returns True if the item is a comment, otherwise False. Short for
+        """Returns True if the item is a comment. Short for
         isinstance(item, kconfiglib.Comment)."""
         return isinstance(self, Comment)
 
@@ -2735,7 +2738,7 @@ class Symbol(Item, _HasVisibility):
 
     def is_modifiable(self):
         """Returns True if the value of the symbol could be modified by calling
-        Symbol.set_user_value() and False otherwise.
+        Symbol.set_user_value().
 
         For bools and tristates, this corresponds to the symbol being visible
         in the 'make menuconfig' interface and not already being pinned to a
@@ -2756,40 +2759,36 @@ class Symbol(Item, _HasVisibility):
 
     def is_defined(self):
         """Returns False if the symbol is referred to in the Kconfig but never
-        actually defined, otherwise True."""
+        actually defined."""
         return self.is_defined_
 
     def is_special(self):
         """Returns True if the symbol is one of the special symbols n, m, y, or
-        UNAME_RELEASE, or gets its value from the environment. Otherwise,
-        returns False."""
+        UNAME_RELEASE, or gets its value from the environment."""
         return self.is_special_
 
     def is_from_environment(self):
-        """Returns True if the symbol gets its value from the environment.
-        Otherwise, returns False."""
+        """Returns True if the symbol gets its value from the environment."""
         return self.is_from_env
 
     def has_ranges(self):
         """Returns True if the symbol is of type INT or HEX and has ranges that
-        limits what values it can take on, otherwise False."""
+        limit what values it can take on."""
         return self.ranges != []
 
     def is_choice_symbol(self):
         """Returns True if the symbol is in a choice statement and is an actual
-        choice symbol (see Choice.get_symbols()); otherwise, returns
-        False."""
+        choice symbol (see Choice.get_symbols())."""
         return self.is_choice_symbol_
 
     def is_choice_selection(self):
         """Returns True if the symbol is contained in a choice statement and is
-        the selected item, otherwise False. Equivalent to 'sym.is_choice_symbol()
-        and sym.get_parent().get_selection() is sym'."""
+        the selected item. Equivalent to
+        'sym.is_choice_symbol() and sym.get_parent().get_selection() is sym'."""
         return self.is_choice_symbol_ and self.parent.get_selection() is self
 
     def is_allnoconfig_y(self):
-        """Returns True if the symbol has the 'allnoconfig_y' option set;
-        otherwise, returns False."""
+        """Returns True if the symbol has the 'allnoconfig_y' option set."""
         return self.allnoconfig_y
 
     def __str__(self):
@@ -3360,8 +3359,8 @@ class Choice(Item, _HasVisibility):
         return mode
 
     def is_optional(self):
-        """Returns True if the symbol has the optional flag set (and so will default
-        to "n" mode). Otherwise, returns False."""
+        """Returns True if the choice has the 'optional' flag set (and so will
+        default to "n" mode)."""
         return self.optional
 
     def __str__(self):
@@ -3422,13 +3421,14 @@ class Choice(Item, _HasVisibility):
 
     def _determine_actual_symbols(self):
         """If a symbol's visibility depends on the preceding symbol within a
-        choice, it is no longer viewed as a choice item (quite possibly a bug,
-        but some things consciously use it.. ugh. It stems from automatic
-        submenu creation). In addition, it's possible to have choices and
-        comments within choices, and those shouldn't be considered as choice
-        items either. Only drivers/usb/gadget/Kconfig seems to depend on any of
-        this. This method computes the "actual" items in the choice and sets
-        the is_choice_symbol_ flag on them (retrieved via is_choice_symbol()).
+        choice, it is no longer viewed as a choice item. (This is quite
+        possibly a bug, but some things consciously use it... ugh. It stems
+        from automatic submenu creation.) In addition, it's possible to have
+        choices and comments within choices, and those shouldn't be considered
+        choice items either. Only drivers/usb/gadget/Kconfig seems to depend on
+        any of this. This method computes the "actual" items in the choice and
+        sets the is_choice_symbol_ flag on them (retrieved via
+        is_choice_symbol()).
 
         Don't let this scare you: an earlier version simply checked for a
         sequence of symbols where all symbols after the first appeared in the
@@ -3646,26 +3646,22 @@ class _FileFeed(_Feed):
 
 def tri_less(v1, v2):
     """Returns True if the tristate v1 is less than the tristate v2, where "n",
-    "m" and "y" are ordered from lowest to highest. Otherwise, returns
-    False."""
+    "m" and "y" are ordered from lowest to highest."""
     return tri_to_int[v1] < tri_to_int[v2]
 
 def tri_less_eq(v1, v2):
     """Returns True if the tristate v1 is less than or equal to the tristate
-    v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
-    returns False."""
+    v2, where "n", "m" and "y" are ordered from lowest to highest."""
     return tri_to_int[v1] <= tri_to_int[v2]
 
 def tri_greater(v1, v2):
     """Returns True if the tristate v1 is greater than the tristate v2, where
-    "n", "m" and "y" are ordered from lowest to highest. Otherwise, returns
-    False."""
+    "n", "m" and "y" are ordered from lowest to highest."""
     return tri_to_int[v1] > tri_to_int[v2]
 
 def tri_greater_eq(v1, v2):
     """Returns True if the tristate v1 is greater than or equal to the tristate
-    v2, where "n", "m" and "y" are ordered from lowest to highest. Otherwise,
-    returns False."""
+    v2, where "n", "m" and "y" are ordered from lowest to highest."""
     return tri_to_int[v1] >= tri_to_int[v2]
 
 #
