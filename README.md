@@ -97,6 +97,10 @@ internal data structures and APIs, and dependency stuff in particular, are
 unlikely to be exactly what you want as a user (hence why they're internal :).
 Patches are welcome too of course. ;)
 
+[fpemud](https://github.com/fpemud) has put together [Python
+bindings](https://github.com/fpemud/pylkc) to internal functions in the C
+implementation. This is an alternative to Kconfiglib's all-Python approach.
+
 The test suite failures (should be the only ones) for the following Blackfin
 defconfigs on e.g. Linux 3.7.0-rc8 are due to
 [a bug in the C implementation](https://lkml.org/lkml/2012/12/5/458):
