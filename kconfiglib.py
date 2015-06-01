@@ -62,7 +62,7 @@ it.
 
 Credits: Written by Ulf "Ulfalizer" Magnusson
 
-Send bug reports, suggestions and other feedback to kconfiglib@gmail.com. Don't
+Send bug reports, suggestions and other feedback to ulfalizer@gmail.com. Don't
 wrestle with internal APIs. Tell me what you need and I might add it in a safe
 way as a client API instead."""
 
@@ -1316,7 +1316,7 @@ get the empty string as its value.
 
 If you're using kconfiglib via 'make (i)scriptconfig' it should have set up the
 environment correctly for you. If you still got this message, that might be an
-error, and you should e-mail kconfiglib@gmail.com.
+error, and you should e-mail ulfalizer@gmail.com.
 ."""                               .format(stmt.name, env_var),
                                    filename,
                                    linenr)
@@ -3809,7 +3809,7 @@ def _parse_error(s, msg, filename, linenr):
     raise Kconfig_Syntax_Error, error_str
 
 def _internal_error(msg):
-    msg += "\nSorry! You may want to send an email to kconfiglib@gmail.com " \
+    msg += "\nSorry! You may want to send an email to ulfalizer@gmail.com " \
            "to tell me about this. Include the message above and the stack " \
            "trace and describe what you were doing."
 
