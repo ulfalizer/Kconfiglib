@@ -35,7 +35,8 @@
 #
 # The tests have been roughly arranged in order of time needed.
 #
-# All tests should pass. Report regressions to kconfiglib@gmail.com
+# All tests should pass. Report regressions to ulfalizer a.t Google's email
+# service.
 
 import kconfiglib
 import os
