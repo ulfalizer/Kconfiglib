@@ -6,15 +6,6 @@ extract information, query and set symbol values, and read and write
 utilities in the kernel, usually invoked via make targets such as
 <i>menuconfig</i> and <i>defconfig</i>.
 
-**Update: Mar 13 2015**
-
-Thanks to a patch from [Philip Craig](https://github.com/philipc) that adds support
-for the new `allnoconfig_y` option (which sets the user value of certain symbols
-to `y` during `make allnoconfig` to improve coverage) and fixes an obscure issue
-with `comment`s inside `choice`s (that didn't affect correctness but made outputs
-differ) the test suite now passes with Linux v4.0-rc3. Very little seems to have
-changed in the C implementation over the past years, which is nice. :)
-
 One feature is missing: Kconfiglib assumes the modules symbol is `MODULES`, and
 will warn if `option modules` is set on some other symbol. Let me know if this
 is a problem for you, as adding support shouldn't be that hard. I haven't seen
@@ -123,6 +114,14 @@ defconfigs on e.g. Linux 3.7.0-rc8 are due to
    * arch/blackfin/configs/BF527-EZKIT\_defconfig  
    * arch/blackfin/configs/BF527-EZKIT-V2\_defconfig  
    * arch/blackfin/configs/TCM-BF537\_defconfig
+
+## Thanks ##
+
+Thanks to [Philip Craig](https://github.com/philipc) for adding
+support for the `allnoconfig_y` option and fixing an obscure issue
+with `comment`s inside `choice`s (that didn't affect correctness but
+made outputs differ). `allnoconfig_y` is used to force certain symbols
+to `y` during `make allnoconfig` to improve coverage.
 
 ## License (ISC) ##
 
