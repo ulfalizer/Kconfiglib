@@ -108,7 +108,7 @@ Patches are welcome too of course. ;)
    * 'menuconfig' sometimes creates menus implicitly by looking at dependencies.
      For example, a list of symbols where all symbols depend on the first symbol
      might create such a menu rooted at the first symbol. Recreating such "cosmetic"
-     menus might be awkard.
+     menus might be awkward.
 
  * [fpemud](https://github.com/fpemud) has put together [Python
 bindings](https://github.com/fpemud/pylkc) to internal functions in the C
