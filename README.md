@@ -97,6 +97,17 @@ internal data structures and APIs, and dependency stuff in particular, are
 unlikely to be exactly what you want as a user (hence why they're internal :).
 Patches are welcome too of course. ;)
 
+ * At least two things make it a bit awkward to replicate a 'menuconfig'-like
+   interface in Kconfiglib at the moment. APIs could be added if needed.
+
+   * There are no good APIs for figuring out what other symbols change in value
+     when the value of some symbol is changed.
+
+   * 'menuconfig' sometimes creates menus implicitly by looking at dependencies.
+     For example, a list of symbols where all symbols depend on the first symbol
+     might create such a menu rooted at the first symbol. Recreating such "cosmetic"
+     menus might be awkard.
+
  * [fpemud](https://github.com/fpemud) has put together [Python
 bindings](https://github.com/fpemud/pylkc) to internal functions in the C
 implementation. This is an alternative to Kconfiglib's all-Python approach.
