@@ -66,12 +66,6 @@ Send bug reports, suggestions and other feedback to ulfalizer a.t Google's
 email service. Don't wrestle with internal APIs. Tell me what you need and I
 might add it in a safe way as a client API instead."""
 
-# If you have Psyco installed (32-bit installations, Python <= 2.6 only),
-# setting this to True (right here, not at runtime) might give a nice speedup.
-# (22% faster for parsing arch/x86/Kconfig and 58% faster for evaluating all
-# symbols in it without a .config on my Core Duo.)
-use_psyco = False
-
 import os
 import re
 import string
@@ -3814,12 +3808,3 @@ def _internal_error(msg):
            "and the stack trace and describe what you were doing."
 
     raise Internal_Error, msg
-
-if use_psyco:
-    import psyco
-
-    Config._tokenize  = psyco.proxy(Config._tokenize)
-    Config._eval_expr = psyco.proxy(Config._eval_expr)
-
-    _indentation = psyco.proxy(_indentation)
-    _get_lines   = psyco.proxy(_get_lines)
