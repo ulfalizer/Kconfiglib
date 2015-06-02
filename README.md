@@ -101,7 +101,8 @@ Patches are welcome too of course. ;)
    interface in Kconfiglib at the moment. APIs could be added if needed.
 
    * There are no good APIs for figuring out what other symbols change in value
-     when the value of some symbol is changed.
+     when the value of some symbol is changed. This is needed for "live" updates
+     in the configuration interface.
 
    * 'menuconfig' sometimes creates menus implicitly by looking at dependencies.
      For example, a list of symbols where all symbols depend on the first symbol
