@@ -1310,8 +1310,8 @@ get the empty string as its value.
 
 If you're using kconfiglib via 'make (i)scriptconfig' it should have set up the
 environment correctly for you. If you still got this message, that might be an
-error, and you should email ulfalizer a.t Google's email service.
-."""                               .format(stmt.name, env_var),
+error, and you should email ulfalizer a.t Google's email service."""
+                                   .format(stmt.name, env_var),
                                    filename,
                                    linenr)
 
