@@ -71,7 +71,7 @@ import re
 import string
 import sys
 
-class Config():
+class Config(object):
 
     """Represents a Kconfig configuration, e.g. for i386 or ARM. This is the
     set of symbols and other items appearing in the configuration together with
@@ -2214,7 +2214,7 @@ def _expr_to_str_rec(expr):
                 op_to_str[expr[0]],
                 _sym_str_string(expr[2])]
 
-class _Block:
+class _Block(object):
 
     """Represents a list of items (symbols, menus, choice statements and
     comments) appearing at the top-level of a file or witin a menu, choice or
@@ -2243,7 +2243,7 @@ class _Block:
         for item in self.items:
             item.add_depend_expr(expr)
 
-class Item():
+class Item(object):
 
     """Base class for symbols and other Kconfig constructs. Subclasses are
     Symbol, Choice, Menu, and Comment."""
@@ -2268,7 +2268,7 @@ class Item():
         isinstance(item, kconfiglib.Comment)."""
         return isinstance(self, Comment)
 
-class _HasVisibility():
+class _HasVisibility(object):
 
     """Base class for elements that have a "visibility" that acts as an upper
     limit on the values a user can set for them. Subclasses are Symbol and
@@ -3566,7 +3566,7 @@ class Comment(Item):
             return ["\n#\n# {0}\n#".format(self.text)]
         return []
 
-class _Feed:
+class _Feed(object):
 
     """Class for working with sequences in a stream-like fashion; handy for tokens."""
 
