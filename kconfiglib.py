@@ -166,7 +166,7 @@ class Config(object):
             self.srctree = "."
 
         self.filename = filename
-        self.base_dir = _strip_trailing_slash(os.path.expandvars(base_dir))
+        self.base_dir = os.path.expandvars(base_dir).rstrip("/")
 
         # The 'mainmenu' text
         self.mainmenu_text = None
@@ -3739,15 +3739,11 @@ def _get_lines(filename):
                 accum = ""
         return lines
 
-def _strip_trailing_slash(path):
-    """Removes any trailing slash from 'path'."""
-    return path[:-1] if path.endswith("/") else path
-
 def _clean_up_path(path):
     """Strips any initial "./" and trailing slash from 'path'."""
     if path.startswith("./"):
         path = path[2:]
-    return _strip_trailing_slash(path)
+    return path.rstrip("/")
 
 #
 # Error handling
