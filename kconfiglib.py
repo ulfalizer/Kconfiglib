@@ -639,7 +639,7 @@ class Config(object):
             keyword = keywords.get(initial_token_match.group(1))
             if keyword is None:
                 # We expect a keyword as the first token
-                _tokenization_error(s, len(s), filename, linenr)
+                _tokenization_error(s, filename, linenr)
             if keyword == T_HELP:
                 # Avoid junk after "help", e.g. "---", being registered as a
                 # symbol
@@ -712,15 +712,13 @@ class Config(object):
                         value = ""
                         while 1:
                             if i >= strlen:
-                                _tokenization_error(s, strlen, filename,
-                                                    linenr)
+                                _tokenization_error(s, filename, linenr)
                             c = s[i]
                             if c == quote:
                                 break
                             if c == "\\":
                                 if i + 1 >= strlen:
-                                    _tokenization_error(s, strlen, filename,
-                                                        linenr)
+                                    _tokenization_error(s, filename, linenr)
                                 value += s[i + 1]
                                 i += 2
                             else:
@@ -733,7 +731,7 @@ class Config(object):
                         # always) we can simply look for the matching quote.
                         end = s.find(c, i)
                         if end == -1:
-                            _tokenization_error(s, strlen, filename, linenr)
+                            _tokenization_error(s, filename, linenr)
                         append(s[i:end])
                         i = end + 1
 
@@ -761,7 +759,7 @@ class Config(object):
 
                 elif c == "!":
                     if i + 1 >= strlen:
-                        _tokenization_error(s, strlen, filename, linenr)
+                        _tokenization_error(s, filename, linenr)
                     if s[i + 1] == "=":
                         append(T_UNEQUAL)
                         i += 2
@@ -3746,31 +3744,10 @@ class Internal_Error(Exception):
     """Exception raised for internal errors."""
     pass
 
-def _tokenization_error(s, index, filename, linenr):
-    if filename is not None:
-        assert linenr is not None
-        sys.stderr.write("{0}:{1}:\n".format(filename, linenr))
-
-    if s.endswith("\n"):
-        s = s[:-1]
-
-    # Calculate the visual offset corresponding to index 'index' in 's'
-    # assuming tabstops are spaced 8 characters apart
-    vis_index = 0
-    for c in s[:index]:
-        if c == "\t":
-            vis_index = (vis_index + 8) & ~7
-        else:
-            vis_index += 1
-
-    # Don't output actual tabs to be independent of how the terminal renders
-    # them
-    s = s.expandtabs()
-
-    raise Kconfig_Syntax_Error, (
-        _sep_lines("Error during tokenization at location indicated by caret.\n",
-                   s,
-                   " " * vis_index + "^\n"))
+def _tokenization_error(s, filename, linenr):
+    loc = "" if filename is None else "{0}:{1}: ".format(filename, linenr)
+    raise Kconfig_Syntax_Error, "{0}Couldn't tokenize '{1}'" \
+                                .format(loc, s.strip())
 
 def _parse_error(s, msg, filename, linenr):
     error_str = ""
