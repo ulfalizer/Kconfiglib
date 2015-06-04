@@ -3729,7 +3729,7 @@ def _get_lines(filename):
         return lines
 
 def _clean_up_path(path):
-    """Strips any initial "./" and trailing slash from 'path'."""
+    """Strips an initial "./" and any trailing slashes from 'path'."""
     if path.startswith("./"):
         path = path[2:]
     return path.rstrip("/")
