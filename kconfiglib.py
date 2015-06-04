@@ -3750,19 +3750,10 @@ def _tokenization_error(s, filename, linenr):
                                 .format(loc, s.strip())
 
 def _parse_error(s, msg, filename, linenr):
-    error_str = ""
-
-    if filename is not None:
-        assert linenr is not None
-        error_str += "{0}:{1}: ".format(filename, linenr)
-
-    if s.endswith("\n"):
-        s = s[:-1]
-
-    error_str += 'Error while parsing "{0}"'.format(s) + \
-      ("." if msg is None else ": " + msg)
-
-    raise Kconfig_Syntax_Error, error_str
+    loc = "" if filename is None else "{0}:{1}: ".format(filename, linenr)
+    raise Kconfig_Syntax_Error, "{0}Couldn't parse '{1}'{2}" \
+                                .format(loc, s.strip(),
+                                        "." if msg is None else ": " + msg)
 
 def _internal_error(msg):
     msg += "\nSorry! You may want to send an email to ulfalizer a.t Google's " \
