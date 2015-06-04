@@ -3625,8 +3625,9 @@ class _Feed(object):
 
 class _FileFeed(_Feed):
 
-    """_Feed subclass that feeds lines from a file. Keeps track of the filename
-    and current line number."""
+    """_Feed subclass that feeds lines from a file. Joins any line ending in
+    \\ with the following line. Keeps track of the filename and current line
+    number."""
 
     def __init__(self, filename):
         self.filename = _clean_up_path(filename)
