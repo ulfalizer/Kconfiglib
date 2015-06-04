@@ -3731,18 +3731,13 @@ def _get_lines(filename):
     with open(filename, "r") as f:
         lines = []
         accum = ""
-        while 1:
-            line = f.readline()
-
-            if line == "":
-                return lines
-
+        for line in f:
             if line.endswith("\\\n"):
                 accum += line[:-2]
             else:
-                accum += line
-                lines.append(accum)
+                lines.append(accum + line)
                 accum = ""
+        return lines
 
 def _strip_trailing_slash(path):
     """Removes any trailing slash from 'path'."""
