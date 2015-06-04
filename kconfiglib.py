@@ -951,7 +951,6 @@ class Config(object):
             # part of whatever we were parsing earlier? See comment in
             # Config.__init__().
             if self.end_line is not None:
-                assert self.end_line_tokens is not None
                 tokens = self.end_line_tokens
                 tokens.go_to_start()
 
@@ -979,9 +978,8 @@ class Config(object):
 
             t0 = tokens.get_next()
 
-            # Have we reached the end of the block?
-            if t0 == end_marker:
-                return block
+            # Cases are ordered roughly by frequency, which speeds things up a
+            # bit
 
             if t0 == T_CONFIG or t0 == T_MENUCONFIG:
                 # The tokenizer will automatically allocate a new Symbol object
@@ -1001,6 +999,56 @@ class Config(object):
                 block.add_item(sym)
 
                 self._parse_properties(line_feeder, sym, deps, visible_if_deps)
+
+            elif t0 == T_SOURCE:
+                kconfig_file = tokens.get_next()
+                exp_kconfig_file = self._expand_sym_refs(kconfig_file)
+                f = os.path.join(self.base_dir, exp_kconfig_file)
+
+                if not os.path.exists(f):
+                    raise IOError, ('{0}:{1}: sourced file "{2}" (expands to\n'
+                                    '"{3}") not found. Perhaps base_dir\n'
+                                    '(argument to Config.__init__(), currently\n'
+                                    '"{4}") is set to the wrong value.'
+                                    .format(filename,
+                                            linenr,
+                                            kconfig_file,
+                                            exp_kconfig_file,
+                                            self.base_dir))
+
+                # Add items to the same block
+                self._parse_file(f, parent, deps, visible_if_deps, block)
+
+            elif t0 == end_marker:
+                # We have reached the end of the block
+                return block
+
+            elif t0 == T_IF:
+                # If statements are treated as syntactic sugar for adding
+                # dependencies to enclosed items and do not have an explicit
+                # object representation.
+
+                dep_expr = self._parse_expr(tokens, None, line, filename, linenr)
+                self._parse_block(line_feeder,
+                                  T_ENDIF,
+                                  parent,
+                                  _make_and(dep_expr, deps),
+                                  visible_if_deps,
+                                  block) # Add items to the same block
+
+            elif t0 == T_COMMENT:
+                comment = Comment()
+                comment.config = self
+                comment.parent = parent
+
+                comment.filename = filename
+                comment.linenr = linenr
+
+                comment.text = tokens.get_next()
+                self._parse_properties(line_feeder, comment, deps, visible_if_deps)
+
+                block.add_item(comment)
+                self.comments.append(comment)
 
             elif t0 == T_MENU:
                 menu = Menu()
@@ -1022,19 +1070,6 @@ class Config(object):
                                                          menu.visible_if_expr))
 
                 block.add_item(menu)
-
-            elif t0 == T_IF:
-                # If statements are treated as syntactic sugar for adding
-                # dependencies to enclosed items and do not have an explicit
-                # object representation.
-
-                dep_expr = self._parse_expr(tokens, None, line, filename, linenr)
-                self._parse_block(line_feeder,
-                                  T_ENDIF,
-                                  parent,
-                                  _make_and(dep_expr, deps),
-                                  visible_if_deps,
-                                  block) # Add items to the same block
 
             elif t0 == T_CHOICE:
                 # We support named choices
@@ -1085,39 +1120,6 @@ class Config(object):
                 # at the first definition
                 if not already_defined:
                     block.add_item(choice)
-
-            elif t0 == T_COMMENT:
-                comment = Comment()
-                comment.config = self
-                comment.parent = parent
-
-                comment.filename = filename
-                comment.linenr = linenr
-
-                comment.text = tokens.get_next()
-                self._parse_properties(line_feeder, comment, deps, visible_if_deps)
-
-                block.add_item(comment)
-                self.comments.append(comment)
-
-            elif t0 == T_SOURCE:
-                kconfig_file = tokens.get_next()
-                exp_kconfig_file = self._expand_sym_refs(kconfig_file)
-                f = os.path.join(self.base_dir, exp_kconfig_file)
-
-                if not os.path.exists(f):
-                    raise IOError, ('{0}:{1}: sourced file "{2}" (expands to\n'
-                                    '"{3}") not found. Perhaps base_dir\n'
-                                    '(argument to Config.__init__(), currently\n'
-                                    '"{4}") is set to the wrong value.'
-                                    .format(filename,
-                                            linenr,
-                                            kconfig_file,
-                                            exp_kconfig_file,
-                                            self.base_dir))
-
-                # Add items to the same block
-                self._parse_file(f, parent, deps, visible_if_deps, block)
 
             elif t0 == T_MAINMENU:
                 text = tokens.get_next()
