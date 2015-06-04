@@ -235,7 +235,7 @@ class Config(object):
         filename = os.path.expandvars(filename)
 
         # Put this first so that a missing file doesn't screw up our state
-        line_feeder = _FileFeed(_get_lines(filename), filename)
+        line_feeder = _FileFeed(filename)
 
         self.config_filename = filename
 
@@ -918,8 +918,8 @@ class Config(object):
         """Parse the Kconfig file 'filename'. The result is a _Block with all
         items from the file. See _parse_block() for the meaning of the
         parameters."""
-        line_feeder = _FileFeed(_get_lines(filename), filename)
-        return self._parse_block(line_feeder, None, parent, deps, visible_if_deps, res)
+        return self._parse_block(_FileFeed(filename), None, parent, deps,
+                                 visible_if_deps, res)
 
     def _parse_block(self, line_feeder, end_marker, parent, deps,
                      visible_if_deps = None, res = None):
@@ -3625,12 +3625,12 @@ class _Feed(object):
 
 class _FileFeed(_Feed):
 
-    """Feed subclass that keeps track of the current filename and line
-    number."""
+    """_Feed subclass that feeds lines from a file. Keeps track of the filename
+    and current line number."""
 
-    def __init__(self, lines, filename):
+    def __init__(self, filename):
         self.filename = _clean_up_path(filename)
-        _Feed.__init__(self, lines)
+        _Feed.__init__(self, _get_lines(filename))
 
     def get_filename(self):
         return self.filename
