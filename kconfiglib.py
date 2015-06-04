@@ -3681,19 +3681,10 @@ def _strip_quotes(s, line, filename, linenr):
     return s
 
 def _indentation(line):
-    """Returns the indentation of the line, treating tab stops as being spaced
-    8 characters apart."""
-    if line.isspace():
-        _internal_error("Attempt to take indentation of blank line.")
-    indent = 0
-    for c in line:
-        if c == " ":
-            indent += 1
-        elif c == "\t":
-            # Go to the next tab stop
-            indent = (indent + 8) & ~7
-        else:
-            return indent
+    """Returns the length of the line's leading whitespace, treating tab stops
+    as being spaced 8 characters apart."""
+    line = line.expandtabs()
+    return len(line) - len(line.lstrip())
 
 def _deindent(line, indent):
     """Deindent 'line' by 'indent' spaces."""
