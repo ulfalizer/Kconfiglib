@@ -1174,7 +1174,22 @@ class Config(object):
 
             t0 = tokens.get_next()
 
-            if t0 == T_HELP:
+            # Cases are ordered roughly by frequency, which speeds things up a
+            # bit
+
+            if t0 == T_DEPENDS:
+                if not tokens.check(T_ON):
+                    _parse_error(line, 'expected "on" after "depends".', filename, linenr)
+
+                parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
+
+                if isinstance(stmt, (Menu, Comment)):
+                    stmt.dep_expr = _make_and(stmt.dep_expr, parsed_deps)
+                else:
+                    depends_on_expr = _make_and(depends_on_expr, parsed_deps)
+
+
+            elif t0 == T_HELP:
                 # Find first non-empty line and get its indentation
 
                 line_feeder.remove_while(str.isspace)
@@ -1211,39 +1226,6 @@ class Config(object):
 
                 line_feeder.go_back()
 
-            elif t0 == T_PROMPT:
-                # 'prompt' properties override each other within a single
-                # definition of a symbol, but additional prompts can be added
-                # by defining the symbol multiple times; hence 'new_prompt'
-                # instead of 'prompt'.
-                new_prompt = parse_val_and_cond(tokens, line, filename, linenr)
-
-            elif t0 == T_DEFAULT:
-                new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
-
-            elif t0 == T_DEPENDS:
-                if not tokens.check(T_ON):
-                    _parse_error(line, 'expected "on" after "depends".', filename, linenr)
-
-                parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
-
-                if isinstance(stmt, (Menu, Comment)):
-                    stmt.dep_expr = _make_and(stmt.dep_expr, parsed_deps)
-                else:
-                    depends_on_expr = _make_and(depends_on_expr, parsed_deps)
-
-            elif t0 == T_VISIBLE:
-                if not tokens.check(T_IF):
-                    _parse_error(line, 'expected "if" after "visible".', filename, linenr)
-                if not isinstance(stmt, Menu):
-                    _parse_error(line,
-                                 "'visible if' is only valid for menus.",
-                                 filename,
-                                 linenr)
-
-                parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
-                stmt.visible_if_expr = _make_and(stmt.visible_if_expr, parsed_deps)
-
             elif t0 == T_SELECT:
                 target = tokens.get_next()
 
@@ -1262,6 +1244,22 @@ class Config(object):
                 if len(tokens) > 1:
                     new_prompt = parse_val_and_cond(tokens, line, filename, linenr)
 
+            elif t0 == T_DEFAULT:
+                new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
+
+            elif t0 == T_DEF_BOOL:
+                stmt.type = BOOL
+
+                if len(tokens) > 1:
+                    new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
+
+            elif t0 == T_PROMPT:
+                # 'prompt' properties override each other within a single
+                # definition of a symbol, but additional prompts can be added
+                # by defining the symbol multiple times; hence 'new_prompt'
+                # instead of 'prompt'.
+                new_prompt = parse_val_and_cond(tokens, line, filename, linenr)
+
             elif t0 == T_RANGE:
                 lower = tokens.get_next()
                 upper = tokens.get_next()
@@ -1274,25 +1272,11 @@ class Config(object):
                 else:
                     stmt.ranges.append((lower, upper, None))
 
-            elif t0 == T_DEF_BOOL:
-                stmt.type = BOOL
-
-                if len(tokens) > 1:
-                    new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
-
             elif t0 == T_DEF_TRISTATE:
                 stmt.type = TRISTATE
 
                 if len(tokens) > 1:
                     new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
-
-            elif t0 == T_OPTIONAL:
-                if not isinstance(stmt, Choice):
-                    _parse_error(line,
-                                 '"optional" is only valid for choices.',
-                                 filename,
-                                 linenr)
-                stmt.optional = True
 
             elif t0 == T_OPTION:
                 if tokens.check(T_ENV) and tokens.check(T_EQUAL):
@@ -1348,6 +1332,26 @@ error, and you should email ulfalizer a.t Google's email service."""
 
                 else:
                     _parse_error(line, "unrecognized option.", filename, linenr)
+
+            elif t0 == T_VISIBLE:
+                if not tokens.check(T_IF):
+                    _parse_error(line, 'expected "if" after "visible".', filename, linenr)
+                if not isinstance(stmt, Menu):
+                    _parse_error(line,
+                                 "'visible if' is only valid for menus.",
+                                 filename,
+                                 linenr)
+
+                parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
+                stmt.visible_if_expr = _make_and(stmt.visible_if_expr, parsed_deps)
+
+            elif t0 == T_OPTIONAL:
+                if not isinstance(stmt, Choice):
+                    _parse_error(line,
+                                 '"optional" is only valid for choices.',
+                                 filename,
+                                 linenr)
+                stmt.optional = True
 
             else:
                 # See comment in Config.__init__()
