@@ -1484,23 +1484,6 @@ error, and you should email ulfalizer a.t Google's email service."""
 
         first_expr = expr[0]
 
-        if first_expr == OR:
-            res = "n"
-
-            for subexpr in expr[1]:
-                ev = self._eval_expr_2(subexpr)
-
-                # Return immediately upon discovering a "y" term
-                if ev == "y":
-                    return "y"
-
-                if ev == "m":
-                    res = "m"
-
-            # 'res' is either "n" or "m" here; we already handled the
-            # short-circuiting "y" case in the loop.
-            return res
-
         if first_expr == AND:
             res = "y"
 
@@ -1516,6 +1499,23 @@ error, and you should email ulfalizer a.t Google's email service."""
 
             # 'res' is either "m" or "y" here; we already handled the
             # short-circuiting "n" case in the loop.
+            return res
+
+        if first_expr == OR:
+            res = "n"
+
+            for subexpr in expr[1]:
+                ev = self._eval_expr_2(subexpr)
+
+                # Return immediately upon discovering a "y" term
+                if ev == "y":
+                    return "y"
+
+                if ev == "m":
+                    res = "m"
+
+            # 'res' is either "n" or "m" here; we already handled the
+            # short-circuiting "y" case in the loop.
             return res
 
         if first_expr == NOT:
@@ -2193,7 +2193,7 @@ def _expr_to_str_rec(expr):
 
     e0 = expr[0]
 
-    if e0 == OR or e0 == AND:
+    if e0 == AND or e0 == OR:
         return _intersperse(expr[1], expr[0])
 
     if e0 == NOT:
