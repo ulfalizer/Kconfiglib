@@ -252,11 +252,9 @@ class Config(object):
         self.config_header = None
 
         def is_header_line(line):
-            return line.startswith("#") and \
-                   not unset_re.match(line)
+            return line.startswith("#") and not unset_re_match(line)
 
         first_line = line_feeder.get_next()
-
         if first_line is None:
             return
 
@@ -295,9 +293,9 @@ class Config(object):
 
             line = line.strip()
 
-            set_re_match = set_re.match(line)
-            if set_re_match:
-                name, val = set_re_match.groups()
+            set_match = set_re_match(line)
+            if set_match:
+                name, val = set_match.groups()
                 # The unescaping producedure below should be safe since " can
                 # only appear as \" inside the string
                 val = _strip_quotes(val, line, filename, linenr)\
@@ -328,9 +326,9 @@ class Config(object):
                                        linenr)
 
             else:
-                unset_re_match = unset_re.match(line)
-                if unset_re_match:
-                    name = unset_re_match.group(1)
+                unset_match = unset_re_match(line)
+                if unset_match:
+                    name = unset_match.group(1)
                     if name in self.syms:
                         sym = self.syms[name]
 
@@ -632,7 +630,7 @@ class Config(object):
             #    characters.
             # This is why things like "----help--" are accepted.
 
-            initial_token_match = initial_token_re.match(s)
+            initial_token_match = initial_token_re_match(s)
             if initial_token_match is None:
                 return _Feed([])
             # The current index in the string being tokenized
@@ -658,7 +656,7 @@ class Config(object):
         while i < strlen:
             # Test for an identifier/keyword preceded by whitespace first; this
             # is the most common case.
-            id_keyword_match = id_keyword_re.match(s, i)
+            id_keyword_match = id_keyword_re_match(s, i)
             if id_keyword_match:
                 # We have an identifier or keyword. The above also stripped any
                 # whitespace for us.
@@ -1637,17 +1635,17 @@ error, and you should email ulfalizer a.t Google's email service."""
         empty string for undefined symbols."""
 
         while 1:
-            sym_ref_re_match = sym_ref_re.search(s)
-            if sym_ref_re_match is None:
+            sym_ref_match = sym_ref_re_search(s)
+            if sym_ref_match is None:
                 return s
 
-            sym_name = sym_ref_re_match.group(0)[1:]
+            sym_name = sym_ref_match.group(0)[1:]
             sym = self.syms.get(sym_name)
             expansion = "" if sym is None else sym.get_value()
 
-            s = s[:sym_ref_re_match.start()] + \
+            s = s[:sym_ref_match.start()] + \
                 expansion + \
-                s[sym_ref_re_match.end():]
+                s[sym_ref_match.end():]
 
     def _get_sym_or_choice_str(self, sc):
         """Symbols and choices have many properties in common, so we factor out
@@ -2089,17 +2087,17 @@ string_lex = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
                         T_PROMPT, T_MENU, T_COMMENT, T_SOURCE, T_MAINMENU))
 
 # Matches the initial token on a line; see _tokenize().
-initial_token_re = re.compile(r"[^\w]*(\w+)")
+initial_token_re_match = re.compile(r"[^\w]*(\w+)").match
 
 # Matches an identifier/keyword optionally preceded by whitespace
-id_keyword_re = re.compile(r"\s*([\w./-]+)")
+id_keyword_re_match = re.compile(r"\s*([\w./-]+)").match
 
 # Regular expressions for parsing .config files
-set_re   = re.compile(r"CONFIG_(\w+)=(.*)")
-unset_re = re.compile(r"# CONFIG_(\w+) is not set")
+set_re_match   = re.compile(r"CONFIG_(\w+)=(.*)").match
+unset_re_match = re.compile(r"# CONFIG_(\w+) is not set").match
 
 # Regular expression for finding $-references to symbols in strings
-sym_ref_re = re.compile(r"\$[A-Za-z0-9_]+")
+sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 
 # Integers representing symbol types
 UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(0, 6)
