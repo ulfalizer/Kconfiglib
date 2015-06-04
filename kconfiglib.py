@@ -736,10 +736,7 @@ class Config(object):
                         i = end + 1
 
                 elif c == "&":
-                    if i + 1 >= strlen:
-                        # Invalid characters are ignored
-                        continue
-                    if s[i + 1] != "&":
+                    if i + 1 >= strlen or s[i + 1] != "&":
                         # Invalid characters are ignored
                         i += 1
                         continue
@@ -747,10 +744,7 @@ class Config(object):
                     i += 2
 
                 elif c == "|":
-                    if i + 1 >= strlen:
-                        # Invalid characters are ignored
-                        continue
-                    if s[i + 1] != "|":
+                    if i + 1 >= strlen or s[i + 1] != "|":
                         # Invalid characters are ignored
                         i += 1
                         continue
