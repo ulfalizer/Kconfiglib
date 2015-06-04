@@ -3668,12 +3668,10 @@ def tri_greater_eq(v1, v2):
 #
 
 def _strip_quotes(s, line, filename, linenr):
-    """Removes any quotes surrounding 's' if it has them; otherwise returns 's'
-    unmodified."""
+    """Strips leading and trailing whitespace from 's' and then strips any
+    surrounding quotes."""
     s = s.strip()
-    if not s:
-        return ""
-    if s[0] == '"' or s[0] == "'":
+    if s.startswith(('"', "'")):
         if len(s) < 2 or s[-1] != s[0]:
             _parse_error(line,
                          "malformed string literal",
