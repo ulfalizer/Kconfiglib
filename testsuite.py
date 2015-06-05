@@ -170,7 +170,7 @@ def run_selftests():
         Strips the first and last characters from 's' so we can use readable
         raw strings as input."""
         s = s[1:-1]
-        s_res = c._tokenize(s, for_eval = True)[0]
+        s_res = c._tokenize(s, for_eval = True).get_next()
         verify(s_res == res,
                "'{0}' produced the string token '{1}'. Expected '{2}'."
                .format(s, s_res, res))

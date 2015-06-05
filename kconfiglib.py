@@ -934,7 +934,6 @@ class Config(object):
 
                 self.end_line = None
                 self.end_line_tokens = None
-
             else:
                 line = line_feeder.get_next()
                 if line is None:
@@ -1046,21 +1045,18 @@ class Config(object):
                                                          menu.visible_if_expr))
 
             elif t0 == T_CHOICE:
-                # We support named choices
-                already_defined = False
-                name = None
-                if len(tokens) > 1 and isinstance(tokens[1], str):
-                    name = tokens[1]
-                    already_defined = name in self.named_choices
-
-                if already_defined:
-                    choice = self.named_choices[name]
-                else:
+                name = tokens.get_next()
+                if name is None:
                     choice = Choice()
                     self.choices.append(choice)
-                    if name is not None:
+                else:
+                    # Named choice
+                    choice = self.named_choices.get(name)
+                    if choice is None:
+                        choice = Choice()
                         choice.name = name
                         self.named_choices[name] = choice
+                        self.choices.append(choice)
 
                 choice.config = self
                 choice.parent = parent
@@ -1090,10 +1086,7 @@ class Config(object):
                     if item.type == UNKNOWN:
                         item.type = choice.type
 
-                # For named choices defined in multiple locations, only record
-                # at the first definition
-                if not already_defined:
-                    block.append(choice)
+                block.append(choice)
 
             elif t0 == T_MAINMENU:
                 text = tokens.get_next()
@@ -3528,9 +3521,6 @@ class _Feed(object):
 
     def go_to_start(self):
         self.i = 0
-
-    def __getitem__(self, index):
-        return self.items[index]
 
     def __len__(self):
         return len(self.items)
