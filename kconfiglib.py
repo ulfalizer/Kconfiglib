@@ -640,7 +640,7 @@ class Config(object):
             # The current index in the string being tokenized
             i = initial_token_match.end()
 
-            keyword = keywords.get(initial_token_match.group(1))
+            keyword = get_keyword(initial_token_match.group(1))
             if keyword is None:
                 # We expect a keyword as the first token
                 _tokenization_error(s, filename, linenr)
@@ -669,7 +669,7 @@ class Config(object):
                 i = id_keyword_match.end()
 
                 # Keyword?
-                keyword = keywords.get(name)
+                keyword = get_keyword(name)
                 if keyword is not None:
                     append(keyword)
                 # What would ordinarily be considered a name is treated as a
@@ -2023,8 +2023,9 @@ def _make_and(e1, e2):
  T_SELECT, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
  T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(0, 39)
 
-# Keyword to token map
-keywords = {
+# Keyword to token map. Note that the get() method is assigned directly as a
+# small optimization.
+get_keyword = {
         "mainmenu"       : T_MAINMENU,
         "menu"           : T_MENU,
         "endmenu"        : T_ENDMENU,
@@ -2057,7 +2058,7 @@ keywords = {
         "env"            : T_ENV,
         "defconfig_list" : T_DEFCONFIG_LIST,
         "modules"        : T_MODULES,
-        "visible"        : T_VISIBLE }
+        "visible"        : T_VISIBLE }.get
 
 # Strings to use for True and False
 bool_str = { False : "false", True : "true" }
