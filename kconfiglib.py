@@ -2084,27 +2084,16 @@ sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(0, 6)
 
 # Strings to use for types
-typename = { UNKNOWN  : "unknown",
-             BOOL     : "bool",
-             TRISTATE : "tristate",
-             STRING   : "string",
-             HEX      : "hex",
-             INT      : "int" }
+typename = { UNKNOWN : "unknown", BOOL : "bool", TRISTATE : "tristate",
+             STRING : "string", HEX : "hex", INT : "int" }
 
 # Token to type mapping
-token_to_type = { T_BOOL     : BOOL,
-                  T_TRISTATE : TRISTATE,
-                  T_STRING   : STRING,
-                  T_INT      : INT,
-                  T_HEX      : HEX }
+token_to_type = { T_BOOL : BOOL, T_TRISTATE : TRISTATE, T_STRING : STRING,
+                  T_INT : INT, T_HEX : HEX }
 
 # Default values for symbols of different types (the value the symbol gets if
 # it is not assigned a user value and none of its 'default' clauses kick in)
-default_value = { BOOL     : "n",
-                  TRISTATE : "n",
-                  STRING   : "",
-                  INT      : "",
-                  HEX      : "" }
+default_value = { BOOL : "n", TRISTATE : "n", STRING : "", INT : "", HEX : "" }
 
 # Indicates that no item is selected in a choice statement
 NO_SELECTION = 0
@@ -2117,16 +2106,11 @@ tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
 
 # Printing-related stuff
 
-op_to_str = { AND     : " && ",
-              OR      : " || ",
-              EQUAL   : " = ",
-              UNEQUAL : " != " }
-
+op_to_str = { AND : " && ", OR : " || ", EQUAL : " = ", UNEQUAL : " != " }
 precedence = { OR : 0, AND : 1, NOT : 2 }
 
 # Types of informational messages
-WARNING = 0
-UNDEF_ASSIGN = 1
+WARNING, UNDEF_ASSIGN = 0, 1
 
 def _intersperse(lst, op):
     """_expr_to_str() helper. Gets the string representation of each expression in lst
