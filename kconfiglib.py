@@ -2217,10 +2217,6 @@ class _Block(object):
 
         return strings
 
-    def add_depend_expr(self, expr):
-        for item in self.items:
-            item.add_depend_expr(expr)
-
 class Item(object):
 
     """Base class for symbols and other Kconfig constructs. Subclasses are
