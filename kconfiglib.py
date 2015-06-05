@@ -1013,13 +1013,13 @@ class Config(object):
 
             elif t0 == T_COMMENT:
                 comment = Comment()
+
                 comment.config = self
                 comment.parent = parent
-
                 comment.filename = filename
                 comment.linenr = linenr
-
                 comment.text = tokens.get_next()
+
                 self._parse_properties(line_feeder, comment, deps, visible_if_deps)
 
                 block.add_item(comment)
@@ -1027,13 +1027,12 @@ class Config(object):
 
             elif t0 == T_MENU:
                 menu = Menu()
-                self.menus.append(menu)
+
                 menu.config = self
                 menu.parent = parent
-                menu.title = tokens.get_next()
-
                 menu.filename = filename
                 menu.linenr = linenr
+                menu.title = tokens.get_next()
 
                 # Parse properties and contents
                 self._parse_properties(line_feeder, menu, deps, visible_if_deps)
@@ -1045,6 +1044,8 @@ class Config(object):
                                                          menu.visible_if_expr))
 
                 block.add_item(menu)
+                self.menus.append(menu)
+
 
             elif t0 == T_CHOICE:
                 # We support named choices
@@ -1065,7 +1066,6 @@ class Config(object):
 
                 choice.config = self
                 choice.parent = parent
-
                 choice.def_locations.append((filename, linenr))
 
                 # Parse properties and contents
