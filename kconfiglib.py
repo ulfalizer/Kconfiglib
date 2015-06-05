@@ -2025,40 +2025,39 @@ def _make_and(e1, e2):
 
 # Keyword to token map. Note that the get() method is assigned directly as a
 # small optimization.
-get_keyword = {
-        "mainmenu"       : T_MAINMENU,
-        "menu"           : T_MENU,
-        "endmenu"        : T_ENDMENU,
-        "endif"          : T_ENDIF,
-        "endchoice"      : T_ENDCHOICE,
-        "source"         : T_SOURCE,
-        "choice"         : T_CHOICE,
-        "config"         : T_CONFIG,
-        "comment"        : T_COMMENT,
-        "menuconfig"     : T_MENUCONFIG,
-        "help"           : T_HELP,
-        "if"             : T_IF,
-        "depends"        : T_DEPENDS,
-        "on"             : T_ON,
-        "optional"       : T_OPTIONAL,
-        "prompt"         : T_PROMPT,
-        "default"        : T_DEFAULT,
-        "bool"           : T_BOOL,
-        "boolean"        : T_BOOL,
-        "tristate"       : T_TRISTATE,
-        "int"            : T_INT,
-        "hex"            : T_HEX,
-        "def_bool"       : T_DEF_BOOL,
-        "def_tristate"   : T_DEF_TRISTATE,
-        "string"         : T_STRING,
-        "select"         : T_SELECT,
-        "range"          : T_RANGE,
-        "option"         : T_OPTION,
-        "allnoconfig_y"  : T_ALLNOCONFIG_Y,
-        "env"            : T_ENV,
-        "defconfig_list" : T_DEFCONFIG_LIST,
-        "modules"        : T_MODULES,
-        "visible"        : T_VISIBLE }.get
+get_keyword = { "mainmenu"       : T_MAINMENU,
+                "menu"           : T_MENU,
+                "endmenu"        : T_ENDMENU,
+                "endif"          : T_ENDIF,
+                "endchoice"      : T_ENDCHOICE,
+                "source"         : T_SOURCE,
+                "choice"         : T_CHOICE,
+                "config"         : T_CONFIG,
+                "comment"        : T_COMMENT,
+                "menuconfig"     : T_MENUCONFIG,
+                "help"           : T_HELP,
+                "if"             : T_IF,
+                "depends"        : T_DEPENDS,
+                "on"             : T_ON,
+                "optional"       : T_OPTIONAL,
+                "prompt"         : T_PROMPT,
+                "default"        : T_DEFAULT,
+                "bool"           : T_BOOL,
+                "boolean"        : T_BOOL,
+                "tristate"       : T_TRISTATE,
+                "int"            : T_INT,
+                "hex"            : T_HEX,
+                "def_bool"       : T_DEF_BOOL,
+                "def_tristate"   : T_DEF_TRISTATE,
+                "string"         : T_STRING,
+                "select"         : T_SELECT,
+                "range"          : T_RANGE,
+                "option"         : T_OPTION,
+                "allnoconfig_y"  : T_ALLNOCONFIG_Y,
+                "env"            : T_ENV,
+                "defconfig_list" : T_DEFCONFIG_LIST,
+                "modules"        : T_MODULES,
+                "visible"        : T_VISIBLE }.get
 
 # Strings to use for True and False
 bool_str = { False : "false", True : "true" }
@@ -2085,13 +2084,12 @@ sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(0, 6)
 
 # Strings to use for types
-typename = {
-        UNKNOWN  : "unknown",
-        BOOL     : "bool",
-        TRISTATE : "tristate",
-        STRING   : "string",
-        HEX      : "hex",
-        INT      : "int" }
+typename = { UNKNOWN  : "unknown",
+             BOOL     : "bool",
+             TRISTATE : "tristate",
+             STRING   : "string",
+             HEX      : "hex",
+             INT      : "int" }
 
 # Token to type mapping
 token_to_type = { T_BOOL     : BOOL,
