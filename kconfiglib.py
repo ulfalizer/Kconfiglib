@@ -697,27 +697,24 @@ class Config(object):
                 s = s[i:].lstrip()
                 if s == "":
                     break
-                strlen = len(s)
-                i = 0
                 c = s[0]
+                i = 1
 
                 # String literal (constant symbol)
                 if c == '"' or c == "'":
-                    i += 1
-
                     if "\\" in s:
                         # Slow path: This could probably be sped up, but it's a
                         # very unusual case anyway.
                         quote = c
                         value = ""
                         while 1:
-                            if i >= strlen:
+                            if i >= len(s):
                                 _tokenization_error(s, filename, linenr)
                             c = s[i]
                             if c == quote:
                                 break
                             if c == "\\":
-                                if i + 1 >= strlen:
+                                if i + 1 >= len(s):
                                     _tokenization_error(s, filename, linenr)
                                 value += s[i + 1]
                                 i += 2
@@ -736,50 +733,32 @@ class Config(object):
                         i = end + 1
 
                 elif c == "&":
-                    if i + 1 >= strlen or s[i + 1] != "&":
-                        # Invalid characters are ignored
-                        i += 1
-                        continue
+                    # Invalid characters are ignored
+                    if i >= len(s) or s[i] != "&": continue
                     append(T_AND)
-                    i += 2
+                    i += 1
 
                 elif c == "|":
-                    if i + 1 >= strlen or s[i + 1] != "|":
-                        # Invalid characters are ignored
-                        i += 1
-                        continue
+                    # Invalid characters are ignored
+                    if i >= len(s) or s[i] != "|": continue
                     append(T_OR)
-                    i += 2
+                    i += 1
 
                 elif c == "!":
-                    if i + 1 >= strlen:
+                    if i >= len(s):
                         _tokenization_error(s, filename, linenr)
-                    if s[i + 1] == "=":
+                    if s[i] == "=":
                         append(T_UNEQUAL)
-                        i += 2
+                        i += 1
                     else:
                         append(T_NOT)
-                        i += 1
 
-                elif c == "=":
-                    append(T_EQUAL)
-                    i += 1
+                elif c == "=": append(T_EQUAL)
+                elif c == "(": append(T_OPEN_PAREN)
+                elif c == ")": append(T_CLOSE_PAREN)
+                elif c == "#": break # Comment
 
-                elif c == "(":
-                    append(T_OPEN_PAREN)
-                    i += 1
-
-                elif c == ")":
-                    append(T_CLOSE_PAREN)
-                    i += 1
-
-                elif c == "#":
-                    break
-
-                else:
-                    # Invalid characters are ignored
-                    i += 1
-                    continue
+                else: continue # Invalid characters are ignored
 
             previous = tokens[-1]
 
