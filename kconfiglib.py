@@ -1921,7 +1921,7 @@ def _get_expr_syms(expr):
 
         e0 = expr[0]
 
-        if e0 == OR or e0 == AND:
+        if e0 == AND or e0 == OR:
             for term in expr[1]:
                 rec(term)
 
@@ -2010,7 +2010,7 @@ def _make_and(e1, e2):
 #
 
 # Tokens
-(T_OR, T_AND, T_NOT,
+(T_AND, T_OR, T_NOT,
  T_OPEN_PAREN, T_CLOSE_PAREN,
  T_EQUAL, T_UNEQUAL,
  T_MAINMENU, T_MENU, T_ENDMENU,
@@ -2110,7 +2110,7 @@ default_value = { BOOL     : "n",
 NO_SELECTION = 0
 
 # Integers representing expression types
-OR, AND, NOT, EQUAL, UNEQUAL = range(0, 5)
+AND, OR, NOT, EQUAL, UNEQUAL = range(0, 5)
 
 # Map from tristate values to integers
 tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
