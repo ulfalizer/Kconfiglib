@@ -948,10 +948,9 @@ class Config(object):
 
                 tokens = self._tokenize(line, False, filename, linenr)
 
-            if tokens.is_empty():
-                continue
-
             t0 = tokens.get_next()
+            if t0 is None:
+                continue
 
             # Cases are ordered roughly by frequency, which speeds things up a
             # bit
@@ -1146,10 +1145,9 @@ class Config(object):
 
             tokens = self._tokenize(line, False, filename, linenr)
 
-            if tokens.is_empty():
-                continue
-
             t0 = tokens.get_next()
+            if t0 is None:
+                continue
 
             # Cases are ordered roughly by frequency, which speeds things up a
             # bit
@@ -3536,9 +3534,6 @@ class _Feed(object):
 
     def __len__(self):
         return len(self.items)
-
-    def is_empty(self):
-        return self.items == []
 
     def check(self, token):
         """Check if the next token is 'token'. If so, remove it from the token
