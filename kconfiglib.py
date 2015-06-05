@@ -132,14 +132,14 @@ class Config(object):
         # by name (a string)
         self.named_choices = {}
 
-        def register_special_symbol(type, name, value):
+        def register_special_symbol(type, name, val):
             sym = Symbol()
             sym.is_special_ = True
             sym.is_defined_ = True
             sym.config = self
             sym.name = name
             sym.type = type
-            sym.cached_value = value
+            sym.cached_val = val
             self.syms[name] = sym
             return sym
 
@@ -1274,9 +1274,9 @@ error, and you should email ulfalizer a.t Google's email service."""
                                    filename,
                                    linenr)
 
-                        stmt.cached_value = ""
+                        stmt.cached_val = ""
                     else:
-                        stmt.cached_value = os.environ[env_var]
+                        stmt.cached_val = os.environ[env_var]
 
                 elif tokens.check(T_DEFCONFIG_LIST):
                     self.defconfig_sym = stmt
@@ -2246,8 +2246,8 @@ class Symbol(Item, _HasVisibility):
         """Calculate and return the value of the symbol. See also
         Symbol.set_user_value()."""
 
-        if self.cached_value is not None:
-            return self.cached_value
+        if self.cached_val is not None:
+            return self.cached_val
 
         self.write_to_conf = False
 
@@ -2255,7 +2255,7 @@ class Symbol(Item, _HasVisibility):
         # value. This is why things like "FOO = bar" work for seeing if FOO has
         # the value "bar".
         if self.type == UNKNOWN:
-            self.cached_value = self.name
+            self.cached_val = self.name
             return self.name
 
         new_val = default_value[self.type]
@@ -2399,7 +2399,7 @@ class Symbol(Item, _HasVisibility):
                     if has_active_range and low > 0:
                         new_val = (hex(low) if self.type == HEX else str(low))
 
-        self.cached_value = new_val
+        self.cached_val = new_val
         return new_val
 
     def set_user_value(self, v):
@@ -2789,7 +2789,7 @@ class Symbol(Item, _HasVisibility):
         self.write_to_conf = False
 
         # Caches the calculated value
-        self.cached_value = None
+        self.cached_val = None
 
         # Note: An instance variable 'self.dep' gets set on the Symbol in
         # Config._build_dep(), linking the symbol to the symbols that
@@ -2807,7 +2807,7 @@ class Symbol(Item, _HasVisibility):
 
         # Does the symbol get its value in some special way, e.g. from the
         # environment or by being one of the special symbols n, m, and y? If
-        # so, the value is stored in self.cached_value, which is never
+        # so, the value is stored in self.cached_val, which is never
         # invalidated. The trailing underscore avoids a collision with
         # is_special().
         self.is_special_ = False
@@ -2828,7 +2828,7 @@ class Symbol(Item, _HasVisibility):
         _HasVisibility._invalidate(self)
 
         self.write_to_conf = False
-        self.cached_value = None
+        self.cached_val = None
 
     def _invalidate_dependent(self):
         for sym in self._get_dependent():
