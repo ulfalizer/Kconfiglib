@@ -363,11 +363,13 @@ class Config(object):
                 f.write("\n")
 
             # Write configuration.
-            # (You'd think passing a list around to all the nodes and appending
-            # to it to avoid copying would be faster, but it's actually a lot
-            # slower with PyPy, and about as fast with Python. Passing the file
-            # around is slower too.)
-            f.write("\n".join(self.top_block._make_conf()))
+
+            # Passing a list around to all the nodes and appending to it to
+            # avoid copying was surprisingly a lot slower with PyPy, and about
+            # as fast with Python. Passing the file around was slower too. Been
+            # a while since I last measured though.
+
+            f.write("\n".join(_make_block_conf(self.top_block)))
             f.write("\n")
 
     def get_kconfig_filename(self):
@@ -459,7 +461,7 @@ class Config(object):
         statements and comments) at the top level of the configuration -- that
         is, all items that do not appear within a menu or choice. The items
         appear in the same order as within the configuration."""
-        return self.top_block.get_items()
+        return self.top_block
 
     def get_symbols(self, all_symbols = True):
         """Returns a list of symbols from the configuration. An alternative for
@@ -890,17 +892,15 @@ class Config(object):
         return (relation, sym_or_string, sym_or_string_2)
 
     def _parse_file(self, filename, parent, deps, visible_if_deps, res = None):
-        """Parse the Kconfig file 'filename'. The result is a _Block with all
-        items from the file. See _parse_block() for the meaning of the
-        parameters."""
+        """Parses the Kconfig file 'filename'. Returns a list with the Items in
+        the file. See _parse_block() for the meaning of the parameters."""
         return self._parse_block(_FileFeed(filename), None, parent, deps,
                                  visible_if_deps, res)
 
     def _parse_block(self, line_feeder, end_marker, parent, deps,
                      visible_if_deps = None, res = None):
         """Parses a block, which is the contents of either a file or an if,
-        menu, or choice statement. The result is a _Block with the items from
-        the block.
+        menu, or choice statement. Returns a list with the Items in the block.
 
         end_marker -- The token that ends the block, e.g. T_ENDIF ("endif") for
                       if's. None for files.
@@ -913,10 +913,10 @@ class Config(object):
         visible_if_deps (default: None) -- 'visible if' dependencies from
                         enclosing menus.
 
-        res (default: None) -- The _Block to add items to. If None, a new
-                               _Block is created to hold the items."""
+        res (default: None) -- The list to add items to. If None, a new list is
+                               created to hold the items."""
 
-        block = _Block() if res is None else res
+        block = [] if res is None else res
 
         filename = line_feeder.get_filename()
 
@@ -971,7 +971,7 @@ class Config(object):
                 sym.is_defined_ = True
 
                 self.kconfig_syms.append(sym)
-                block.add_item(sym)
+                block.append(sym)
 
                 self._parse_properties(line_feeder, sym, deps, visible_if_deps)
 
@@ -1021,7 +1021,7 @@ class Config(object):
                 comment.text = tokens.get_next()
 
                 self.comments.append(comment)
-                block.add_item(comment)
+                block.append(comment)
 
                 self._parse_properties(line_feeder, comment, deps, visible_if_deps)
 
@@ -1035,7 +1035,7 @@ class Config(object):
                 menu.title = tokens.get_next()
 
                 self.menus.append(menu)
-                block.add_item(menu)
+                block.append(menu)
 
                 # Parse properties and contents
                 self._parse_properties(line_feeder, menu, deps, visible_if_deps)
@@ -1094,7 +1094,7 @@ class Config(object):
                 # For named choices defined in multiple locations, only record
                 # at the first definition
                 if not already_defined:
-                    block.add_item(choice)
+                    block.append(choice)
 
             elif t0 == T_MAINMENU:
                 text = tokens.get_next()
@@ -2192,31 +2192,6 @@ def _expr_to_str_rec(expr):
                 op_to_str[expr[0]],
                 _sym_str_string(expr[2])]
 
-class _Block(object):
-
-    """Represents a list of items (symbols, menus, choice statements and
-    comments) appearing at the top-level of a file or witin a menu, choice or
-    if statement."""
-
-    def __init__(self):
-        self.items = []
-
-    def get_items(self):
-        return self.items
-
-    def add_item(self, item):
-        self.items.append(item)
-
-    def _make_conf(self):
-        # Collect the substrings in a list and later use join() instead of +=
-        # to build the final .config contents. With older Python versions, this
-        # yields linear instead of quadratic complexity.
-        strings = []
-        for item in self.items:
-            strings.extend(item._make_conf())
-
-        return strings
-
 class Item(object):
 
     """Base class for symbols and other Kconfig constructs. Subclasses are
@@ -3055,10 +3030,10 @@ class Menu(Item):
                                       recursively (preorder)."""
 
         if not recursive:
-            return self.block.get_items()
+            return self.block
 
         res = []
-        for item in self.block.get_items():
+        for item in self.block:
             res.append(item)
             if isinstance(item, Menu):
                 res.extend(item.get_items(True))
@@ -3151,7 +3126,7 @@ class Menu(Item):
         self.linenr = None
 
     def _make_conf(self):
-        item_conf = self.block._make_conf()
+        item_conf = _make_block_conf(self.block)
 
         if self.config._eval_expr(self.dep_expr) != "n" and \
            self.config._eval_expr(self.visible_if_expr) != "n":
@@ -3268,7 +3243,7 @@ class Choice(Item, _HasVisibility):
         the configuration ("items" instead of "symbols" since choices and
         comments might appear within choices. This only happens in one place as
         of Linux 3.7.0-rc8, in drivers/usb/gadget/Kconfig)."""
-        return self.block.get_items()
+        return self.block
 
     def get_symbols(self):
         """Returns a list containing the choice's symbols.
@@ -3405,13 +3380,11 @@ class Choice(Item, _HasVisibility):
         drivers/usb/gadget/Kconfig turns even more sinister. It might very well
         be overkilling things (especially if that file is refactored ;)."""
 
-        items = self.block.get_items()
-
         # Items might depend on each other in a tree structure, so we need a
         # stack to keep track of the current tentative parent
         stack = []
 
-        for item in items:
+        for item in self.block:
             if not isinstance(item, Symbol):
                 stack = []
                 continue
@@ -3450,7 +3423,7 @@ class Choice(Item, _HasVisibility):
         self.user_mode = None
 
     def _make_conf(self):
-        return self.block._make_conf()
+        return _make_block_conf(self.block)
 
 class Comment(Item):
 
@@ -3539,6 +3512,17 @@ class Comment(Item):
         if self.config._eval_expr(self.dep_expr) != "n":
             return ["\n#\n# {0}\n#".format(self.text)]
         return []
+
+def _make_block_conf(block):
+    """Returns a list of .config strings for a block (list) of items."""
+
+    # Collect the substrings in a list and later use join() instead of += to
+    # build the final .config contents. With older Python versions, this yields
+    # linear instead of quadratic complexity.
+    strings = []
+    for item in block:
+        strings.extend(item._make_conf())
+    return strings
 
 class _Feed(object):
 
@@ -3732,4 +3716,3 @@ def _internal_error(msg):
       "\nSorry! You may want to send an email to ulfalizer a.t Google's " \
       "email service to tell me about this. Include the message above " \
       "and the stack trace and describe what you were doing."
-
