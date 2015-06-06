@@ -427,10 +427,14 @@ def run_selftests():
 
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
 
-    verify_equals(c["S"].get_name(), "S")
     verify_equals(c["NO_HELP"].get_help(), None)
+    verify_equals(c["EMPTY_HELP"].get_help(), "")
+    verify_equals(c["TRICKY_HELP"].get_help(),
+                  "a\n b\n  c\n\n d\n  e\n   f\n\n\ng\n h\n  i\n")
     verify_equals(c["S"].get_help(), "help for\nS\n")
     verify_equals(c.get_choices()[0].get_help(), "help for\nC\n")
+
+    verify_equals(c["S"].get_name(), "S")
     verify_equals(c.get_comments()[0].get_text(), "a comment")
     verify_equals(c.get_menus()[0].get_title(), "a menu")
 

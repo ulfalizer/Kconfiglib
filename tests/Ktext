@@ -1,6 +1,11 @@
 config NO_HELP
     bool
 
+config EMPTY_HELP
+  bool
+  help
+config DUMMY
+
 config S
     bool
     help
@@ -23,3 +28,23 @@ comment "a comment"
 
 menu "a menu"
 endmenu
+
+# Tricker help text
+
+config TRICKY_HELP
+  bool
+  help
+
+
+  a
+   b
+    c
+
+   d
+    e
+     f
+
+
+  g
+   h
+    i
