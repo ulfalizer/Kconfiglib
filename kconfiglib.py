@@ -3667,14 +3667,14 @@ class Internal_Error(Exception):
 
 def _tokenization_error(s, filename, linenr):
     loc = "" if filename is None else "{0}:{1}: ".format(filename, linenr)
-    raise Kconfig_Syntax_Error, "{0}Couldn't tokenize '{1}'" \
-                                .format(loc, s.strip())
+    raise Kconfig_Syntax_Error("{0}Couldn't tokenize '{1}'"
+                               .format(loc, s.strip()))
 
 def _parse_error(s, msg, filename, linenr):
     loc = "" if filename is None else "{0}:{1}: ".format(filename, linenr)
-    raise Kconfig_Syntax_Error, "{0}Couldn't parse '{1}'{2}" \
-                                .format(loc, s.strip(),
-                                        "." if msg is None else ": " + msg)
+    raise Kconfig_Syntax_Error("{0}Couldn't parse '{1}'{2}"
+                               .format(loc, s.strip(),
+                                       "." if msg is None else ": " + msg))
 
 def _internal_error(msg):
     raise Internal_Error, msg + \
