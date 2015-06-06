@@ -513,7 +513,10 @@ class Config(object):
         conditional expressions in the configuration as well as in the C
         implementation. "m" and m are rewritten as '"m" && MODULES' and 'm &&
         MODULES', respectively, and a result of "m" will get promoted to "y" if
-        we're running without modules."""
+        we're running without modules.
+
+        Syntax checking is somewhat lax, partly to be compatible with lax
+        parsing in the C implementation."""
         return self._eval_expr(self._parse_expr(self._tokenize(s, True), # Feed
                                                 None, # Current symbol or choice
                                                 s))   # line
