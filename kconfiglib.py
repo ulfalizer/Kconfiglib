@@ -305,10 +305,8 @@ class Config(object):
                       .replace('\\"', '"').replace("\\\\", "\\")
                 if name in self.syms:
                     sym = self.syms[name]
-
-                    old_user_val = sym.user_val
-                    if old_user_val is not None:
-                        warn_override(filename, linenr, name, old_user_val, val)
+                    if sym.user_val is not None:
+                        warn_override(filename, linenr, name, sym.user_val, val)
 
                     if sym.is_choice_symbol_:
                         user_mode = sym.parent.user_mode
@@ -318,7 +316,6 @@ class Config(object):
                                        .format(name, val, user_mode),
                                        filename,
                                        linenr)
-
                     sym._set_user_value_no_invalidate(val, True)
 
                 else:
@@ -334,10 +331,8 @@ class Config(object):
                     name = unset_match.group(1)
                     if name in self.syms:
                         sym = self.syms[name]
-
-                        old_user_val = sym.user_val
-                        if old_user_val is not None:
-                            warn_override(filename, linenr, name, old_user_val, "n")
+                        if sym.user_val is not None:
+                            warn_override(filename, linenr, name, sym.user_val, "n")
 
                         sym._set_user_value_no_invalidate("n", True)
 
