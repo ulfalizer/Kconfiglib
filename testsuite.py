@@ -429,6 +429,7 @@ def run_selftests():
 
     verify_equals(c["NO_HELP"].get_help(), None)
     verify_equals(c["EMPTY_HELP"].get_help(), "")
+    verify_equals(c["HELP_TERMINATED_BY_COMMENT"].get_help(), "a\nb\nc\n")
     verify_equals(c["TRICKY_HELP"].get_help(),
                   "a\n b\n  c\n\n d\n  e\n   f\n\n\ng\n h\n  i\n")
     verify_equals(c["S"].get_help(), "help for\nS\n")

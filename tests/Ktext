@@ -29,7 +29,13 @@ comment "a comment"
 menu "a menu"
 endmenu
 
-# Tricker help text
+config HELP_TERMINATED_BY_COMMENT
+  bool
+  help
+ a
+ b
+ c
+#
 
 config TRICKY_HELP
   bool
