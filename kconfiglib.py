@@ -751,9 +751,7 @@ class Config(object):
                     i += 1
 
                 elif c == "!":
-                    if i >= len(s):
-                        _tokenization_error(s, filename, linenr)
-                    if s[i] == "=":
+                    if i < len(s) and s[i] == "=":
                         append(T_UNEQUAL)
                         i += 1
                     else:

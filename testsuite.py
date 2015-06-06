@@ -310,8 +310,6 @@ def run_selftests():
     # eval()
     #
 
-    # TODO: Stricter syntax checking?
-
     print "Testing eval()..."
 
     c = kconfiglib.Config("Kconfiglib/tests/Keval")
@@ -320,6 +318,15 @@ def run_selftests():
         res = c.eval(expr)
         verify(res == val,
                "'{0}' evaluated to {1}, expected {2}".format(expr, res, val))
+
+    def verify_eval_bad(expr):
+        try:
+            c.eval(expr)
+        except kconfiglib.Kconfig_Syntax_Error:
+            pass
+        else:
+            fail('eval("{0}") should throw Kconfig_Syntax_Error'
+                 .format(expr))
 
     # No modules
     verify_eval("n", "n")
@@ -394,6 +401,22 @@ def run_selftests():
     verify_eval("'not_defined' = not_defined", "y")
     verify_eval("not_defined_2 = not_defined_2", "y")
     verify_eval("not_defined_1 != not_defined_2", "y")
+
+    # The C implementation's parser can be pretty lax about syntax. Kconfiglib
+    # sometimes needs to emulate that. Verify that some bad stuff throws
+    # Kconfig_Syntax_Error at least.
+    verify_eval_bad("")
+    verify_eval_bad("&")
+    verify_eval_bad("|")
+    verify_eval_bad("!")
+    verify_eval_bad("(")
+    verify_eval_bad(")")
+    verify_eval_bad("=")
+    verify_eval_bad("(X")
+    verify_eval_bad("X &&")
+    verify_eval_bad("&& X")
+    verify_eval_bad("X ||")
+    verify_eval_bad("|| X")
 
     #
     # Text queries
@@ -1733,16 +1756,6 @@ def test_call_all(conf):
     conf.unset_user_values()
 
     conf.eval("y && ARCH")
-
-    # Syntax error
-    caught_exception = False
-    try:
-        conf.eval("y && && y")
-    except kconfiglib.Kconfig_Syntax_Error:
-        caught_exception = True
-
-    verify(caught_exception,
-           "No exception generated for expression with syntax error")
 
     for s in conf.get_symbols():
         s.__str__()
