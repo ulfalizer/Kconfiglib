@@ -285,28 +285,33 @@ class Config(object):
 
         # Read assignments
 
-        filename = line_feeder.get_filename()
-
         while 1:
             line = line_feeder.get_next()
             if line is None:
                 return
-
-            linenr = line_feeder.get_linenr()
 
             line = line.strip()
 
             set_match = set_re_match(line)
             if set_match:
                 name, val = set_match.groups()
-                # The unescaping producedure below should be safe since " can
-                # only appear as \" inside the string
-                val = _strip_quotes(val, line, filename, linenr)\
-                      .replace('\\"', '"').replace("\\\\", "\\")
+
+                if val.startswith(('"', "'")):
+                    if len(val) < 2 or val[-1] != val[0]:
+                        _parse_error(line, "malformed string literal",
+                                     line_feeder.get_filename(),
+                                     line_feeder.get_linenr())
+                    # Strip quotes and remove escapings. The unescaping
+                    # producedure should be safe since " can only appear as \"
+                    # inside the string.
+                    val = val[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+
                 if name in self.syms:
                     sym = self.syms[name]
                     if sym.user_val is not None:
-                        warn_override(filename, linenr, name, sym.user_val, val)
+                        warn_override(line_feeder.get_filename(),
+                                      line_feeder.get_linenr(),
+                                      name, sym.user_val, val)
 
                     if sym.is_choice_symbol_:
                         user_mode = sym.parent.user_mode
@@ -314,16 +319,16 @@ class Config(object):
                             self._warn("assignment to {0} changes mode of containing "
                                        'choice from "{1}" to "{2}".'
                                        .format(name, val, user_mode),
-                                       filename,
-                                       linenr)
+                                       line_feeder.get_filename(),
+                                       line_feeder.get_linenr())
+
                     sym._set_user_value_no_invalidate(val, True)
 
                 else:
                     self._undef_assign('attempt to assign the value "{0}" to the '
-                                       "undefined symbol {1}."
-                                       .format(val, name),
-                                       filename,
-                                       linenr)
+                                       "undefined symbol {1}.".format(val, name),
+                                       line_feeder.get_filename(),
+                                       line_feeder.get_linenr())
 
             else:
                 unset_match = unset_re_match(line)
@@ -332,7 +337,9 @@ class Config(object):
                     if name in self.syms:
                         sym = self.syms[name]
                         if sym.user_val is not None:
-                            warn_override(filename, linenr, name, sym.user_val, "n")
+                            warn_override(line_feeder.get_filename(),
+                                          line_feeder.get_linenr(),
+                                          name, sym.user_val, "n")
 
                         sym._set_user_value_no_invalidate("n", True)
 
@@ -3580,19 +3587,6 @@ def tri_greater_eq(v1, v2):
 #
 # Helper functions, mostly related to text processing
 #
-
-def _strip_quotes(s, line, filename, linenr):
-    """Strips leading and trailing whitespace from 's' and then strips any
-    surrounding quotes."""
-    s = s.strip()
-    if s.startswith(('"', "'")):
-        if len(s) < 2 or s[-1] != s[0]:
-            _parse_error(line,
-                         "malformed string literal",
-                         filename,
-                         linenr)
-        return s[1:-1]
-    return s
 
 def _indentation(line):
     """Returns the length of the line's leading whitespace, treating tab stops
