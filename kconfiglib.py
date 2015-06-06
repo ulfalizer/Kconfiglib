@@ -3523,7 +3523,7 @@ class _Feed(object):
         self.i = 0
 
     def __len__(self):
-        return len(self.items)
+        return self.length
 
     def check(self, token):
         """Check if the next token is 'token'. If so, remove it from the token
