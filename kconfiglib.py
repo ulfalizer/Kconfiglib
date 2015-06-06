@@ -3519,12 +3519,6 @@ class _Feed(object):
     def peek_next(self):
         return None if self.i >= self.length else self.items[self.i]
 
-    def go_to_start(self):
-        self.i = 0
-
-    def __len__(self):
-        return self.length
-
     def check(self, token):
         """Check if the next token is 'token'. If so, remove it from the token
         feed and return True. Otherwise, leave it in and return False."""
@@ -3541,6 +3535,12 @@ class _Feed(object):
         if self.i <= 0:
             _internal_error("Attempt to move back in Feed while already at the beginning.")
         self.i -= 1
+
+    def go_to_start(self):
+        self.i = 0
+
+    def __len__(self):
+        return self.length
 
 class _FileFeed(_Feed):
 
