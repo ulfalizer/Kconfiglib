@@ -290,7 +290,7 @@ class Config(object):
             if line is None:
                 return
 
-            line = line.strip()
+            line = line.rstrip()
 
             set_match = set_re_match(line)
             if set_match:
