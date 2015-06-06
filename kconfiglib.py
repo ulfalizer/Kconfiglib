@@ -1163,16 +1163,14 @@ class Config(object):
 
                 line_feeder.remove_while(str.isspace)
                 line = line_feeder.get_next()
-
                 if line is None:
                     stmt.help = ""
                     break
 
                 indent = _indentation(line)
-
-                # If the first non-empty lines has zero indent, there is no
-                # help text
                 if indent == 0:
+                    # If the first non-empty lines has zero indent, there is no
+                    # help text
                     stmt.help = ""
                     line_feeder.go_back()
                     break
@@ -1183,11 +1181,10 @@ class Config(object):
                 # indent
                 while 1:
                     line = line_feeder.get_next()
-                    if (line is None) or \
+                    if line is None or \
                        (not line.isspace() and _indentation(line) < indent):
                         stmt.help = "".join(help_lines)
                         break
-
                     help_lines.append(_deindent(line, indent))
 
                 if line is None:
