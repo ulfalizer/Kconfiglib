@@ -208,13 +208,12 @@ def run_selftests():
         the first and last characters from 's' so we can use readable raw
         strings as input."""
         s = s[1:-1]
-        caught_exception = False
         try:
             c._tokenize(s, for_eval = True)
         except kconfiglib.Kconfig_Syntax_Error:
-            caught_exception = True
-        verify(caught_exception, "Tokenization of '{0}' should have failed."
-                                 .format(s))
+            pass
+        else:
+            fail("Tokenization of '{0}' should have failed.".format(s))
 
     verify_string_bad(r""" " """)
     verify_string_bad(r""" ' """)
