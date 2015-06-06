@@ -3528,13 +3528,9 @@ class _Feed(object):
     def check(self, token):
         """Check if the next token is 'token'. If so, remove it from the token
         feed and return True. Otherwise, leave it in and return False."""
-        if self.i >= self.length:
-            return None
-
-        if self.items[self.i] == token:
+        if self.i < self.length and self.items[self.i] == token:
             self.i += 1
             return True
-
         return False
 
     def remove_while(self, pred):
