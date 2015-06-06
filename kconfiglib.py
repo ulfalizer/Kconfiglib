@@ -712,7 +712,7 @@ class Config(object):
                         # Slow path: This could probably be sped up, but it's a
                         # very unusual case anyway.
                         quote = c
-                        value = ""
+                        val = ""
                         while 1:
                             if i >= len(s):
                                 _tokenization_error(s, filename, linenr)
@@ -722,13 +722,13 @@ class Config(object):
                             if c == "\\":
                                 if i + 1 >= len(s):
                                     _tokenization_error(s, filename, linenr)
-                                value += s[i + 1]
+                                val += s[i + 1]
                                 i += 2
                             else:
-                                value += c
+                                val += c
                                 i += 1
                         i += 1
-                        append(value)
+                        append(val)
                     else:
                         # Fast path: If the string contains no backslashes (almost
                         # always) we can simply look for the matching quote.
