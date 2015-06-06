@@ -918,19 +918,15 @@ class Config(object):
 
         block = [] if res is None else res
 
-        filename = line_feeder.get_filename()
-
         while 1:
 
             # Do we already have a tokenized line that we determined wasn't
             # part of whatever we were parsing earlier? See comment in
             # Config.__init__().
             if self.end_line is not None:
+                line = self.end_line
                 tokens = self.end_line_tokens
                 tokens.go_to_start()
-
-                line = self.end_line
-                linenr = line_feeder.get_linenr()
 
                 self.end_line = None
                 self.end_line_tokens = None
@@ -943,9 +939,9 @@ class Config(object):
                                 .format(line_feeder.get_filename()))
                     return block
 
-                linenr = line_feeder.get_linenr()
-
-                tokens = self._tokenize(line, False, filename, linenr)
+                tokens = self._tokenize(line, False,
+                                        line_feeder.get_filename(),
+                                        line_feeder.get_linenr())
 
             t0 = tokens.get_next()
             if t0 is None:
@@ -983,10 +979,9 @@ class Config(object):
                                     '"{3}") not found. Perhaps base_dir\n'
                                     '(argument to Config.__init__(), currently\n'
                                     '"{4}") is set to the wrong value.'
-                                    .format(filename,
-                                            linenr,
-                                            kconfig_file,
-                                            exp_kconfig_file,
+                                    .format(line_feeder.get_filename(),
+                                            line_feeder.get_linenr(),
+                                            kconfig_file, exp_kconfig_file,
                                             self.base_dir))
 
                 # Add items to the same block
@@ -1001,7 +996,9 @@ class Config(object):
                 # dependencies to enclosed items and do not have an explicit
                 # object representation.
 
-                dep_expr = self._parse_expr(tokens, None, line, filename, linenr)
+                dep_expr = self._parse_expr(tokens, None, line,
+                                            line_feeder.get_filename(),
+                                            line_feeder.get_linenr())
                 self._parse_block(line_feeder,
                                   T_ENDIF,
                                   parent,
@@ -1014,8 +1011,8 @@ class Config(object):
 
                 comment.config = self
                 comment.parent = parent
-                comment.filename = filename
-                comment.linenr = linenr
+                comment.filename = line_feeder.get_filename()
+                comment.linenr = line_feeder.get_linenr()
                 comment.text = tokens.get_next()
 
                 self.comments.append(comment)
@@ -1028,8 +1025,8 @@ class Config(object):
 
                 menu.config = self
                 menu.parent = parent
-                menu.filename = filename
-                menu.linenr = linenr
+                menu.filename = line_feeder.get_filename()
+                menu.linenr = line_feeder.get_linenr()
                 menu.title = tokens.get_next()
 
                 self.menus.append(menu)
@@ -1061,7 +1058,8 @@ class Config(object):
                 choice.config = self
                 choice.parent = parent
 
-                choice.def_locations.append((filename, linenr))
+                choice.def_locations.append((line_feeder.get_filename(),
+                                             line_feeder.get_linenr()))
 
                 # Parse properties and contents
                 self._parse_properties(line_feeder, choice, deps, visible_if_deps)
@@ -1095,13 +1093,15 @@ class Config(object):
                     self._warn("overriding 'mainmenu' text. "
                                'Old value: "{0}", new value: "{1}".'
                                 .format(self.mainmenu_text, text),
-                               filename,
-                               linenr)
+                               line_feeder.get_filename(),
+                               line_feeder.get_linenr())
 
                 self.mainmenu_text = text
 
             else:
-                _parse_error(line, "unrecognized construct.", filename, linenr)
+                _parse_error(line, "unrecognized construct.",
+                             line_feeder.get_filename(),
+                             line_feeder.get_linenr())
 
     def _parse_properties(self, line_feeder, stmt, deps, visible_if_deps):
         """Parsing of properties for symbols, menus, choices, and comments."""
