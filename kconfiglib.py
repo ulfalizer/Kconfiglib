@@ -1547,8 +1547,6 @@ error, and you should email ulfalizer a.t Google's email service."""
         for caching/invalidation purposes. The calculated sets might be larger
         than necessary as we don't do any complicated analysis of the
         expressions."""
-        for sym in self.syms.itervalues():
-            sym.dep = set()
 
         # Adds 'sym' as a directly dependent symbol to all symbols that appear
         # in the expression 'e'
@@ -2783,11 +2781,12 @@ class Symbol(Item, _HasVisibility):
         # Caches the calculated value
         self.cached_val = None
 
-        # Note: An instance variable 'self.dep' gets set on the Symbol in
-        # Config._build_dep(), linking the symbol to the symbols that
-        # immediately depend on it (in a caching/invalidation sense). The total
-        # set of dependent symbols for the symbol (the transitive closure) is
-        # calculated on an as-needed basis in _get_dependent().
+        # Populated in Config._build_dep() after parsing. Links the symbol to
+        # the symbols that immediately depend on it (in a caching/invalidation
+        # sense). The total set of dependent symbols for the symbol (the
+        # transitive closure) is calculated on an as-needed basis in
+        # _get_dependent().
+        self.dep = set()
 
         # Caches the total list of dependent symbols. Calculated in
         # _get_dependent().
