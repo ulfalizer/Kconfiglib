@@ -239,9 +239,12 @@ class Config(object):
 
         self.config_filename = filename
 
-        # Invalidate everything. This is usually faster than finding the
-        # minimal set of symbols that needs to be invalidated, as nearly all
-        # symbols will tend to be affected anyway.
+        # Invalidate everything to keep things simple. It might be possible to
+        # improve performance for the case where multiple configurations are
+        # loaded by only invalidating a symbol (and its dependent symbols) if
+        # the new user value differs from the old. One complication would be
+        # that symbols not mentioned in the .config must lose their user value
+        # when replace = True, which is the usual case.
         if replace:
             self.unset_user_values()
         else:
