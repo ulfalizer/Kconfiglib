@@ -1211,7 +1211,6 @@ class Config(object):
 
             elif t0 in (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING):
                 stmt.type = token_to_type[t0]
-
                 if len(tokens) > 1:
                     new_prompt = parse_val_and_cond(tokens, line, filename, linenr)
 
@@ -1220,7 +1219,6 @@ class Config(object):
 
             elif t0 == T_DEF_BOOL:
                 stmt.type = BOOL
-
                 if len(tokens) > 1:
                     new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
 
@@ -1245,7 +1243,6 @@ class Config(object):
 
             elif t0 == T_DEF_TRISTATE:
                 stmt.type = TRISTATE
-
                 if len(tokens) > 1:
                     new_def_exprs.append(parse_val_and_cond(tokens, line, filename, linenr))
 
