@@ -225,30 +225,11 @@ class Config(object):
            replace (default: True) -- True if the configuration should replace
                    the old configuration; False if it should add to it."""
 
-        def warn_override(filename, linenr, name, old_user_val, new_user_val):
-            self._warn("overriding the value of {0}. "
-                       'Old value: "{1}", new value: "{2}".'
-                        .format(name, old_user_val, new_user_val),
-                       filename,
-                       linenr)
-
-        filename = os.path.expandvars(filename)
-
         # Put this first so that a missing file doesn't screw up our state
+        filename = os.path.expandvars(filename)
         line_feeder = _FileFeed(filename)
 
         self.config_filename = filename
-
-        # Invalidate everything to keep things simple. It might be possible to
-        # improve performance for the case where multiple configurations are
-        # loaded by only invalidating a symbol (and its dependent symbols) if
-        # the new user value differs from the old. One complication would be
-        # that symbols not mentioned in the .config must lose their user value
-        # when replace = True, which is the usual case.
-        if replace:
-            self.unset_user_values()
-        else:
-            self._invalidate_all()
 
         # Read header
 
@@ -269,14 +250,11 @@ class Config(object):
             # Read remaining header lines
             while 1:
                 line = line_feeder.get_next()
-
                 if line is None:
                     break
-
                 if not is_header_line(line):
                     line_feeder.go_back()
                     break
-
                 self.config_header += line[1:]
 
             # Remove trailing newline
@@ -284,6 +262,23 @@ class Config(object):
                 self.config_header = self.config_header[:-1]
 
         # Read assignments
+
+        def warn_override(filename, linenr, name, old_user_val, new_user_val):
+            self._warn('overriding the value of {0}. '
+                       'Old value: "{1}", new value: "{2}".'
+                        .format(name, old_user_val, new_user_val),
+                       filename, linenr)
+
+        # Invalidate everything to keep things simple. It might be possible to
+        # improve performance for the case where multiple configurations are
+        # loaded by only invalidating a symbol (and its dependent symbols) if
+        # the new user value differs from the old. One complication would be
+        # that symbols not mentioned in the .config must lose their user value
+        # when replace = True, which is the usual case.
+        if replace:
+            self.unset_user_values()
+        else:
+            self._invalidate_all()
 
         while 1:
             line = line_feeder.get_next()
@@ -323,13 +318,11 @@ class Config(object):
                                        line_feeder.get_linenr())
 
                     sym._set_user_value_no_invalidate(val, True)
-
                 else:
                     self._undef_assign('attempt to assign the value "{0}" to the '
                                        "undefined symbol {1}.".format(val, name),
                                        line_feeder.get_filename(),
                                        line_feeder.get_linenr())
-
             else:
                 unset_match = unset_re_match(line)
                 if unset_match:
