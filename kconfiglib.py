@@ -1145,9 +1145,10 @@ class Config(object):
                     depends_on_expr = _make_and(depends_on_expr, parsed_deps)
 
             elif t0 == T_HELP:
-                # Find first non-empty line and get its indentation
+                # Find first non-blank (not all-space) line and get its
+                # indentation
 
-                line_feeder.remove_while(str.isspace)
+                line_feeder.remove_blank()
                 line = line_feeder.get_next()
                 if line is None:
                     stmt.help = ""
@@ -3506,10 +3507,6 @@ class _Feed(object):
             return True
         return False
 
-    def remove_while(self, pred):
-        while self.i < self.length and pred(self.items[self.i]):
-            self.i += 1
-
     def go_back(self):
         if self.i <= 0:
             _internal_error("Attempt to move back in Feed while already at the beginning.")
@@ -3530,6 +3527,11 @@ class _FileFeed(_Feed):
     def __init__(self, filename):
         self.filename = _clean_up_path(filename)
         _Feed.__init__(self, _get_lines(filename))
+
+    def remove_blank(self):
+        """Removes lines until the first non-blank (not all-space) line."""
+        while self.i < self.length and self.items[self.i].isspace():
+            self.i += 1
 
     def get_filename(self):
         return self.filename
