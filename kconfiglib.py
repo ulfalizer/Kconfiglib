@@ -231,37 +231,28 @@ class Config(object):
 
         self.config_filename = filename
 
+        #
         # Read header
+        #
+
+        def is_header_line(line):
+            return line is not None and line.startswith("#") and \
+                   not unset_re_match(line)
 
         self.config_header = None
 
-        def is_header_line(line):
-            return line.startswith("#") and not unset_re_match(line)
-
-        first_line = line_feeder.get_next()
-        if first_line is None:
-            return
-
-        if not is_header_line(first_line):
-            line_feeder.go_back()
-        else:
-            self.config_header = first_line[1:]
-
-            # Read remaining header lines
-            while 1:
-                line = line_feeder.get_next()
-                if line is None:
-                    break
-                if not is_header_line(line):
-                    line_feeder.go_back()
-                    break
-                self.config_header += line[1:]
-
+        line = line_feeder.peek_next()
+        if is_header_line(line):
+            self.config_header = ""
+            while is_header_line(line_feeder.peek_next()):
+                self.config_header += line_feeder.get_next()[1:]
             # Remove trailing newline
             if self.config_header.endswith("\n"):
                 self.config_header = self.config_header[:-1]
 
-        # Read assignments
+        #
+        # Read assignments. Hotspot for some workloads.
+        #
 
         def warn_override(filename, linenr, name, old_user_val, new_user_val):
             self._warn('overriding the value of {0}. '

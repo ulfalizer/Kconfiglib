@@ -1333,6 +1333,10 @@ def run_selftests():
     verify_value("BOOL", "n")
     verify_value("STRING", "foo bar")
 
+    # Loading a completely empty .config should also reset values
+    c.load_config("Kconfiglib/tests/empty")
+    verify_value("STRING", "")
+
     #
     # get_config()
     #
