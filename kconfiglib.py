@@ -84,7 +84,7 @@ class Config(object):
 
     def __init__(self,
                  filename = "Kconfig",
-                 base_dir = "$srctree",
+                 base_dir = None,
                  print_warnings = True,
                  print_undef_assign = False):
         """Creates a new Config object, representing a Kconfig configuration.
@@ -98,15 +98,17 @@ class Config(object):
                  kconfiglib via 'make scriptconfig', the filename of the base
                  base Kconfig file will be in sys.argv[1].
 
-        base_dir (default: "$srctree") -- The base directory relative to which
-                'source' statements within Kconfig files will work. For the
-                Linux kernel this should be the top-level directory of the
-                kernel tree. $-references to environment variables will be
-                expanded.
+        base_dir (default: None) -- The base directory relative to which
+                 'source' statements within Kconfig files will work. For the
+                 Linux kernel this should be the top-level directory of the
+                 kernel tree. $-references to existing environment variables
+                 will be expanded.
 
-                The environment variable 'srctree' is set by the Linux makefiles
-                to the top-level kernel directory. A default of "." would not
-                work if an alternative build directory is used.
+                 If None (the default), the environment variable 'srctree' will
+                 be used if set, and the current directory otherwise. 'srctree'
+                 is set by the Linux makefiles to the top-level kernel
+                 directory. A default of "." would not work with an alternative
+                 build directory.
 
         print_warnings (default: True) -- Set to True if warnings related to
                        this configuration should be printed to stderr. This can
@@ -166,7 +168,10 @@ class Config(object):
             self.srctree = "."
 
         self.filename = filename
-        self.base_dir = os.path.expandvars(base_dir).rstrip("/")
+        if base_dir is None:
+            self.base_dir = self.srctree
+        else:
+            self.base_dir = os.path.expandvars(base_dir)
 
         # The 'mainmenu' text
         self.mainmenu_text = None

@@ -1234,6 +1234,15 @@ def run_selftests():
 
     verify_value("UNAME_RELEASE", os.uname()[2])
 
+    # Expansion of environment variables in Config.__init__'s base_dir
+    # parameter. Just make sure we don't crash when Kbase_dir 'source's a file
+    # from the same directory.
+
+    os.environ["EnV_VaR1"] = "Kconfigl"
+    os.environ["EnV_VaR2"] = "ib/tests"
+    kconfiglib.Config("Kconfiglib/tests/Kbase_dir",
+                      base_dir = "$EnV_VaR1$EnV_VaR2/")
+
     #
     # .config reading and writing
     #
