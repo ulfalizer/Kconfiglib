@@ -1144,7 +1144,6 @@ class Config(object):
                 else:
                     depends_on_expr = _make_and(depends_on_expr, parsed_deps)
 
-
             elif t0 == T_HELP:
                 # Find first non-empty line and get its indentation
 
@@ -1162,10 +1161,9 @@ class Config(object):
                     line_feeder.go_back()
                     break
 
-                help_lines = [_deindent(line, indent)]
-
                 # The help text goes on till the first non-empty line with less
                 # indent
+                help_lines = [_deindent(line, indent)]
                 while 1:
                     line = line_feeder.get_next()
                     if line is None or \
