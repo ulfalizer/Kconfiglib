@@ -1117,10 +1117,8 @@ class Config(object):
             optional. Returns a tuple containing the parsed expressions, with
             None as the second element if the 'if' part is missing."""
             val = self._parse_expr(tokens, stmt, line, filename, linenr, False)
-
             if tokens.check(T_IF):
                 return (val, self._parse_expr(tokens, stmt, line, filename, linenr))
-
             return (val, None)
 
         # In case the symbol is defined in multiple locations, we need to
