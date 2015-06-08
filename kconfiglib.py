@@ -1782,6 +1782,8 @@ class Config(object):
 
 def _make_and(e1, e2):
     """Constructs an AND (&&) expression. Performs trivial simplification.
+    Nones equate to 'y'.
+
     Note: returns None if e1 == e2 == None."""
     if e1 == "n" or e2 == "n":
         return "n"
