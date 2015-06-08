@@ -311,10 +311,11 @@ class Config(object):
 
                     sym._set_user_value_no_invalidate(val, True)
                 else:
-                    self._undef_assign('attempt to assign the value "{0}" to the '
-                                       "undefined symbol {1}.".format(val, name),
-                                       line_feeder.get_filename(),
-                                       line_feeder.get_linenr())
+                    if self.print_undef_assign:
+                        _stderr_msg('attempt to assign the value "{0}" to the '
+                                    "undefined symbol {1}.".format(val, name),
+                                    line_feeder.get_filename(),
+                                    line_feeder.get_linenr())
             else:
                 unset_match = unset_re_match(line)
                 if unset_match:
@@ -1770,12 +1771,6 @@ class Config(object):
         """For printing warnings to stderr."""
         if self.print_warnings:
             _stderr_msg("warning: " + msg, filename, linenr)
-
-    def _undef_assign(self, msg, filename = None, linenr = None):
-        """For printing informational messages related to assignments
-        to undefined variables to stderr."""
-        if self.print_undef_assign:
-            _stderr_msg("info: " + msg, filename, linenr)
 
 def _stderr_msg(msg, filename, linenr):
     if filename is not None:
