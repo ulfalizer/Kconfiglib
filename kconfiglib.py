@@ -3557,7 +3557,7 @@ def _parse_error(s, msg, filename, linenr):
                                        "." if msg is None else ": " + msg))
 
 def _internal_error(msg):
-    raise Internal_Error, msg + \
+    raise Internal_Error(msg +
       "\nSorry! You may want to send an email to ulfalizer a.t Google's " \
       "email service to tell me about this. Include the message above " \
-      "and the stack trace and describe what you were doing."
+      "and the stack trace and describe what you were doing.")
