@@ -1896,10 +1896,6 @@ def _intersperse(lst, op):
 
     return res
 
-def _expr_to_str(expr):
-    s = "".join(_expr_to_str_rec(expr))
-    return s
-
 def _sym_str_string(sym_or_str):
     if isinstance(sym_or_str, str):
         return '"{0}"'.format(sym_or_str)
@@ -1932,6 +1928,10 @@ def _expr_to_str_rec(expr):
         return [_sym_str_string(expr[1]),
                 op_to_str[expr[0]],
                 _sym_str_string(expr[2])]
+
+def _expr_to_str(expr):
+    s = "".join(_expr_to_str_rec(expr))
+    return s
 
 # Tokens
 (T_AND, T_OR, T_NOT,
