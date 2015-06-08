@@ -1252,8 +1252,7 @@ class Config(object):
                                    "MODULES, like older versions of the C "
                                    "implementation did when 'option modules' "
                                    "wasn't used.)",
-                                   filename,
-                                   linenr)
+                                   filename, linenr)
 
                 elif tokens.check(T_ALLNOCONFIG_Y):
                     if not isinstance(stmt, Symbol):
@@ -1774,9 +1773,7 @@ class Config(object):
 
 def _stderr_msg(msg, filename, linenr):
     if filename is not None:
-        sys.stderr.write("{0}:".format(_clean_up_path(filename)))
-    if linenr is not None:
-        sys.stderr.write("{0}:".format(linenr))
+        sys.stderr.write("{0}:{1}: ".format(_clean_up_path(filename), linenr))
     sys.stderr.write(msg + "\n")
 
 def _get_expr_syms(expr):
