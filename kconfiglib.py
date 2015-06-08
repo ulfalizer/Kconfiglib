@@ -2109,7 +2109,7 @@ class _HasVisibility(object):
     def _get_visibility(self):
         if self.cached_visibility is None:
             vis = "n"
-            for prompt, cond_expr in self.prompts:
+            for _, cond_expr in self.prompts:
                 vis = self.config._eval_max(vis, cond_expr)
 
             if isinstance(self, Symbol) and self.is_choice_symbol_:
