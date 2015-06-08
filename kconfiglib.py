@@ -250,7 +250,7 @@ class Config(object):
 
         def is_header_line(line):
             return line is not None and line.startswith("#") and \
-                   not unset_re_match(line)
+                   not _unset_re_match(line)
 
         self.config_header = None
 
@@ -291,7 +291,7 @@ class Config(object):
 
             line = line.rstrip()
 
-            set_match = set_re_match(line)
+            set_match = _set_re_match(line)
             if set_match:
                 name, val = set_match.groups()
 
@@ -329,7 +329,7 @@ class Config(object):
                                     line_feeder.get_filename(),
                                     line_feeder.get_linenr())
             else:
-                unset_match = unset_re_match(line)
+                unset_match = _unset_re_match(line)
                 if unset_match:
                     name = unset_match.group(1)
                     if name in self.syms:
@@ -632,13 +632,13 @@ class Config(object):
             #    characters.
             # This is why things like "----help--" are accepted.
 
-            initial_token_match = initial_token_re_match(s)
+            initial_token_match = _initial_token_re_match(s)
             if initial_token_match is None:
                 return _Feed([])
             # The current index in the string being tokenized
             i = initial_token_match.end()
 
-            keyword = get_keyword(initial_token_match.group(1))
+            keyword = _get_keyword(initial_token_match.group(1))
             if keyword is None:
                 # We expect a keyword as the first token
                 _tokenization_error(s, filename, linenr)
@@ -658,7 +658,7 @@ class Config(object):
         while i < strlen:
             # Test for an identifier/keyword preceded by whitespace first; this
             # is the most common case.
-            id_keyword_match = id_keyword_re_match(s, i)
+            id_keyword_match = _id_keyword_re_match(s, i)
             if id_keyword_match:
                 # We have an identifier or keyword. The above also stripped any
                 # whitespace for us.
@@ -667,7 +667,7 @@ class Config(object):
                 i = id_keyword_match.end()
 
                 # Keyword?
-                keyword = get_keyword(name)
+                keyword = _get_keyword(name)
                 if keyword is not None:
                     append(keyword)
                 # What would ordinarily be considered a name is treated as a
@@ -1563,7 +1563,7 @@ class Config(object):
         empty string for undefined symbols."""
 
         while 1:
-            sym_ref_match = sym_ref_re_search(s)
+            sym_ref_match = _sym_ref_re_search(s)
             if sym_ref_match is None:
                 return s
 
@@ -3444,41 +3444,45 @@ def _internal_error(msg):
  T_SELECT, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
  T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(0, 39)
 
+# The leading underscore before the function assignments below prevent pydoc
+# from listing them. The constants could be hidden too, but they're fairly
+# obviously internal anyway, so don't bother spamming the code.
+
 # Keyword to token map. Note that the get() method is assigned directly as a
 # small optimization.
-get_keyword = { "mainmenu"       : T_MAINMENU,
-                "menu"           : T_MENU,
-                "endmenu"        : T_ENDMENU,
-                "endif"          : T_ENDIF,
-                "endchoice"      : T_ENDCHOICE,
-                "source"         : T_SOURCE,
-                "choice"         : T_CHOICE,
-                "config"         : T_CONFIG,
-                "comment"        : T_COMMENT,
-                "menuconfig"     : T_MENUCONFIG,
-                "help"           : T_HELP,
-                "if"             : T_IF,
-                "depends"        : T_DEPENDS,
-                "on"             : T_ON,
-                "optional"       : T_OPTIONAL,
-                "prompt"         : T_PROMPT,
-                "default"        : T_DEFAULT,
-                "bool"           : T_BOOL,
-                "boolean"        : T_BOOL,
-                "tristate"       : T_TRISTATE,
-                "int"            : T_INT,
-                "hex"            : T_HEX,
-                "def_bool"       : T_DEF_BOOL,
-                "def_tristate"   : T_DEF_TRISTATE,
-                "string"         : T_STRING,
-                "select"         : T_SELECT,
-                "range"          : T_RANGE,
-                "option"         : T_OPTION,
-                "allnoconfig_y"  : T_ALLNOCONFIG_Y,
-                "env"            : T_ENV,
-                "defconfig_list" : T_DEFCONFIG_LIST,
-                "modules"        : T_MODULES,
-                "visible"        : T_VISIBLE }.get
+_get_keyword = { "mainmenu"       : T_MAINMENU,
+                 "menu"           : T_MENU,
+                 "endmenu"        : T_ENDMENU,
+                 "endif"          : T_ENDIF,
+                 "endchoice"      : T_ENDCHOICE,
+                 "source"         : T_SOURCE,
+                 "choice"         : T_CHOICE,
+                 "config"         : T_CONFIG,
+                 "comment"        : T_COMMENT,
+                 "menuconfig"     : T_MENUCONFIG,
+                 "help"           : T_HELP,
+                 "if"             : T_IF,
+                 "depends"        : T_DEPENDS,
+                 "on"             : T_ON,
+                 "optional"       : T_OPTIONAL,
+                 "prompt"         : T_PROMPT,
+                 "default"        : T_DEFAULT,
+                 "bool"           : T_BOOL,
+                 "boolean"        : T_BOOL,
+                 "tristate"       : T_TRISTATE,
+                 "int"            : T_INT,
+                 "hex"            : T_HEX,
+                 "def_bool"       : T_DEF_BOOL,
+                 "def_tristate"   : T_DEF_TRISTATE,
+                 "string"         : T_STRING,
+                 "select"         : T_SELECT,
+                 "range"          : T_RANGE,
+                 "option"         : T_OPTION,
+                 "allnoconfig_y"  : T_ALLNOCONFIG_Y,
+                 "env"            : T_ENV,
+                 "defconfig_list" : T_DEFCONFIG_LIST,
+                 "modules"        : T_MODULES,
+                 "visible"        : T_VISIBLE }.get
 
 # Strings to use for True and False
 bool_str = { False : "false", True : "true" }
@@ -3489,17 +3493,17 @@ string_lex = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
                         T_PROMPT, T_MENU, T_COMMENT, T_SOURCE, T_MAINMENU))
 
 # Matches the initial token on a line; see _tokenize().
-initial_token_re_match = re.compile(r"[^\w]*(\w+)").match
+_initial_token_re_match = re.compile(r"[^\w]*(\w+)").match
 
 # Matches an identifier/keyword optionally preceded by whitespace
-id_keyword_re_match = re.compile(r"\s*([\w./-]+)").match
+_id_keyword_re_match = re.compile(r"\s*([\w./-]+)").match
 
 # Regular expressions for parsing .config files
-set_re_match   = re.compile(r"CONFIG_(\w+)=(.*)").match
-unset_re_match = re.compile(r"# CONFIG_(\w+) is not set").match
+_set_re_match   = re.compile(r"CONFIG_(\w+)=(.*)").match
+_unset_re_match = re.compile(r"# CONFIG_(\w+) is not set").match
 
 # Regular expression for finding $-references to symbols in strings
-sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
+_sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 
 # Integers representing symbol types
 UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(0, 6)
