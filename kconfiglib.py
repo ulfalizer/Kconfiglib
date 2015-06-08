@@ -142,13 +142,13 @@ class Config(object):
         # by name (a string)
         self.named_choices = {}
 
-        def register_special_symbol(type, name, val):
+        def register_special_symbol(type_, name, val):
             sym = Symbol()
             sym.is_special_ = True
             sym.is_defined_ = True
             sym.config = self
             sym.name = name
-            sym.type = type
+            sym.type = type_
             sym.cached_val = val
             self.syms[name] = sym
             return sym
