@@ -918,7 +918,7 @@ class Config(object):
                 line = line_feeder.get_next()
                 if line is None:
                     if end_marker is not None:
-                        raise Kconfig_Syntax_Error, (
+                        raise Kconfig_Syntax_Error(
                                 "Unexpected end of file {0}."
                                 .format(line_feeder.get_filename()))
                     return block
@@ -959,14 +959,14 @@ class Config(object):
                 f = os.path.join(self.base_dir, exp_kconfig_file)
 
                 if not os.path.exists(f):
-                    raise IOError, ('{0}:{1}: sourced file "{2}" (expands to\n'
-                                    '"{3}") not found. Perhaps base_dir\n'
-                                    '(argument to Config.__init__(), currently\n'
-                                    '"{4}") is set to the wrong value.'
-                                    .format(line_feeder.get_filename(),
-                                            line_feeder.get_linenr(),
-                                            kconfig_file, exp_kconfig_file,
-                                            self.base_dir))
+                    raise IOError('{0}:{1}: sourced file "{2}" (expands to '
+                                  '"{3}") not found. Perhaps base_dir '
+                                  '(argument to Config.__init__(), currently '
+                                  '"{4}") is set to the wrong value.'
+                                  .format(line_feeder.get_filename(),
+                                          line_feeder.get_linenr(),
+                                          kconfig_file, exp_kconfig_file,
+                                          self.base_dir))
 
                 # Add items to the same block
                 self._parse_file(f, parent, deps, visible_if_deps, block)
