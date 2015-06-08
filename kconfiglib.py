@@ -1217,16 +1217,17 @@ class Config(object):
                     stmt.is_from_env = True
 
                     if env_var not in os.environ:
-                        self._warn("""
-The symbol {0} references the non-existent environment variable {1} and will
-get the empty string as its value.
-
-If you're using kconfiglib via 'make (i)scriptconfig' it should have set up the
-environment correctly for you. If you still got this message, that might be an
-error, and you should email ulfalizer a.t Google's email service."""
+                        self._warn("The symbol {0} references the "
+                                   "non-existent environment variable {1} and "
+                                   "will get the empty string as its value. "
+                                   "If you're using kconfiglib via "
+                                   "'make (i)scriptconfig', it should have "
+                                   "set up the environment correctly for you. "
+                                   "If you still got this message, that "
+                                   "might be an error, and you should email "
+                                   "ulfalizer a.t Google's email service."""
                                    .format(stmt.name, env_var),
-                                   filename,
-                                   linenr)
+                                   filename, linenr)
 
                         stmt.cached_val = ""
                     else:
