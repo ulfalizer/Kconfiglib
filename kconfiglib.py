@@ -312,7 +312,7 @@ class Config(object):
                     sym._set_user_value_no_invalidate(val, True)
                 else:
                     if self.print_undef_assign:
-                        _stderr_msg('attempt to assign the value "{0}" to the '
+                        _stderr_msg('note: attempt to assign the value "{0}" to the '
                                     "undefined symbol {1}.".format(val, name),
                                     line_feeder.get_filename(),
                                     line_feeder.get_linenr())
@@ -1464,11 +1464,15 @@ class Config(object):
                         "unknown operation {0}.".format(first_expr))
 
     def _eval_min(self, e1, e2):
+        """Returns the minimum value of the two expressions. Equates None with
+        'y'."""
         e1_eval = self._eval_expr(e1)
         e2_eval = self._eval_expr(e2)
         return e1_eval if tri_less(e1_eval, e2_eval) else e2_eval
 
     def _eval_max(self, e1, e2):
+        """Returns the maximum value of the two expressions. Equates None with
+        'y'."""
         e1_eval = self._eval_expr(e1)
         e2_eval = self._eval_expr(e2)
         return e1_eval if tri_greater(e1_eval, e2_eval) else e2_eval
@@ -1771,6 +1775,61 @@ class Config(object):
         if self.print_warnings:
             _stderr_msg("warning: " + msg, filename, linenr)
 
+#
+# Functions and constants related to types, expressions, parsing, evaluation
+# and printing
+#
+
+def _make_and(e1, e2):
+    """Constructs an AND (&&) expression. Performs trivial simplification.
+    Note: returns None if e1 == e2 == None."""
+    if e1 == "n" or e2 == "n":
+        return "n"
+    if e1 is None or e1 == "y":
+        return e2
+    if e2 is None or e2 == "y":
+        return e1
+
+    # Prefer to merge/update argument list if possible instead of creating
+    # a new AND node
+
+    if isinstance(e1, tuple) and e1[0] == AND:
+        if isinstance(e2, tuple) and e2[0] == AND:
+            return (AND, e1[1] + e2[1])
+        return (AND, e1[1] + [e2])
+
+    if isinstance(e2, tuple) and e2[0] == AND:
+        return (AND, e2[1] + [e1])
+
+    return (AND, [e1, e2])
+
+def _make_or(e1, e2):
+    """Constructs an OR (||) expression. Performs trivial simplification and
+    avoids Nones. Nones equate to 'y', which is usually what we want, but needs
+    to be kept in mind."""
+
+    # Perform trivial simplification and avoid None's (which
+    # correspond to y's)
+    if e1 is None or e2 is None or e1 == "y" or e2 == "y":
+        return "y"
+    if e1 == "n":
+        return e2
+    if e2 == "n":
+        return e1
+
+    # Prefer to merge/update argument list if possible instead of creating
+    # a new OR node
+
+    if isinstance(e1, tuple) and e1[0] == OR:
+        if isinstance(e2, tuple) and e2[0] == OR:
+            return (OR, e1[1] + e2[1])
+        return (OR, e1[1] + [e2])
+
+    if isinstance(e2, tuple) and e2[0] == OR:
+        return (OR, e2[1] + [e1])
+
+    return (OR, [e1, e2])
+
 def _get_expr_syms(expr):
     """Returns the set() of symbols appearing in expr."""
     res = set()
@@ -1804,69 +1863,73 @@ def _get_expr_syms(expr):
     return res
 
 def _get_str_value(obj):
-    if isinstance(obj, str):
-        return obj
-    # obj is a Symbol
-    return obj.get_value()
+    """Returns the value of obj as a string. If obj is not a string (constant
+    symbol), it must be a Symbol."""
+    return obj if isinstance(obj, str) else obj.get_value()
 
-#
-# Construction of expressions
-#
+def _intersperse(lst, op):
+    """_expr_to_str() helper. Gets the string representation of each expression in lst
+    and produces a list where op has been inserted between the elements."""
+    if lst == []:
+        return ""
 
-# These functions as well as the _eval_min/max() functions above equate
-# None with "y", which is usually what we want, but needs to be kept in
-# mind.
+    res = []
 
-def _make_or(e1, e2):
-    # Perform trivial simplification and avoid None's (which
-    # correspond to y's)
-    if e1 is None or e2 is None or e1 == "y" or e2 == "y":
-        return "y"
-    if e1 == "n":
-        return e2
-    if e2 == "n":
-        return e1
+    def handle_sub_expr(expr):
+        no_parens = isinstance(expr, (str, Symbol)) or \
+                    expr[0] in (EQUAL, UNEQUAL) or \
+                    precedence[op] <= precedence[expr[0]]
+        if not no_parens:
+            res.append("(")
+        res.extend(_expr_to_str_rec(expr))
+        if not no_parens:
+            res.append(")")
 
-    # Prefer to merge/update argument list if possible instead of creating
-    # a new OR node
+    op_str = op_to_str[op]
 
-    if isinstance(e1, tuple) and e1[0] == OR:
-        if isinstance(e2, tuple) and e2[0] == OR:
-            return (OR, e1[1] + e2[1])
-        return (OR, e1[1] + [e2])
+    handle_sub_expr(lst[0])
+    for expr in lst[1:]:
+        res.append(op_str)
+        handle_sub_expr(expr)
 
-    if isinstance(e2, tuple) and e2[0] == OR:
-        return (OR, e2[1] + [e1])
+    return res
 
-    return (OR, [e1, e2])
+def _expr_to_str(expr):
+    s = "".join(_expr_to_str_rec(expr))
+    return s
 
-# Note: returns None if e1 == e2 == None
+def _sym_str_string(sym_or_str):
+    if isinstance(sym_or_str, str):
+        return '"{0}"'.format(sym_or_str)
+    return sym_or_str.name
 
-def _make_and(e1, e2):
-    if e1 == "n" or e2 == "n":
-        return "n"
-    if e1 is None or e1 == "y":
-        return e2
-    if e2 is None or e2 == "y":
-        return e1
+def _expr_to_str_rec(expr):
+    if expr is None:
+        return [""]
 
-    # Prefer to merge/update argument list if possible instead of creating
-    # a new AND node
+    if isinstance(expr, (Symbol, str)):
+        return [_sym_str_string(expr)]
 
-    if isinstance(e1, tuple) and e1[0] == AND:
-        if isinstance(e2, tuple) and e2[0] == AND:
-            return (AND, e1[1] + e2[1])
-        return (AND, e1[1] + [e2])
+    e0 = expr[0]
 
-    if isinstance(e2, tuple) and e2[0] == AND:
-        return (AND, e2[1] + [e1])
+    if e0 == AND or e0 == OR:
+        return _intersperse(expr[1], expr[0])
 
-    return (AND, [e1, e2])
+    if e0 == NOT:
+        need_parens = not isinstance(expr[1], (str, Symbol))
 
-#
-# Constants and functions related to types, parsing, evaluation and printing,
-# put globally to unclutter the Config class a bit.
-#
+        res = ["!"]
+        if need_parens:
+            res.append("(")
+        res.extend(_expr_to_str_rec(expr[1]))
+        if need_parens:
+            res.append(")")
+        return res
+
+    if e0 == EQUAL or e0 == UNEQUAL:
+        return [_sym_str_string(expr[1]),
+                op_to_str[expr[0]],
+                _sym_str_string(expr[2])]
 
 # Tokens
 (T_AND, T_OR, T_NOT,
@@ -1967,70 +2030,6 @@ tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
 
 op_to_str = { AND : " && ", OR : " || ", EQUAL : " = ", UNEQUAL : " != " }
 precedence = { OR : 0, AND : 1, NOT : 2 }
-
-def _intersperse(lst, op):
-    """_expr_to_str() helper. Gets the string representation of each expression in lst
-    and produces a list where op has been inserted between the elements."""
-    if lst == []:
-        return ""
-
-    res = []
-
-    def handle_sub_expr(expr):
-        no_parens = isinstance(expr, (str, Symbol)) or \
-                    expr[0] in (EQUAL, UNEQUAL) or \
-                    precedence[op] <= precedence[expr[0]]
-        if not no_parens:
-            res.append("(")
-        res.extend(_expr_to_str_rec(expr))
-        if not no_parens:
-            res.append(")")
-
-    op_str = op_to_str[op]
-
-    handle_sub_expr(lst[0])
-    for expr in lst[1:]:
-        res.append(op_str)
-        handle_sub_expr(expr)
-
-    return res
-
-def _expr_to_str(expr):
-    s = "".join(_expr_to_str_rec(expr))
-    return s
-
-def _sym_str_string(sym_or_str):
-    if isinstance(sym_or_str, str):
-        return '"{0}"'.format(sym_or_str)
-    return sym_or_str.name
-
-def _expr_to_str_rec(expr):
-    if expr is None:
-        return [""]
-
-    if isinstance(expr, (Symbol, str)):
-        return [_sym_str_string(expr)]
-
-    e0 = expr[0]
-
-    if e0 == AND or e0 == OR:
-        return _intersperse(expr[1], expr[0])
-
-    if e0 == NOT:
-        need_parens = not isinstance(expr[1], (str, Symbol))
-
-        res = ["!"]
-        if need_parens:
-            res.append("(")
-        res.extend(_expr_to_str_rec(expr[1]))
-        if need_parens:
-            res.append(")")
-        return res
-
-    if e0 == EQUAL or e0 == UNEQUAL:
-        return [_sym_str_string(expr[1]),
-                op_to_str[expr[0]],
-                _sym_str_string(expr[2])]
 
 class Item(object):
 
@@ -2709,10 +2708,11 @@ class Symbol(Item, _HasVisibility):
 
         if not self.is_defined_:
             filename, linenr = self.ref_locations[0]
-            self.config._undef_assign('attempt to assign the value "{0}" to {1}, '
-                                      "which is referenced at {2}:{3} but never "
-                                      "defined. Assignment ignored."
-                                      .format(v, self.name, filename, linenr))
+            if self.config.print_undef_assign:
+                _stderr_msg('note: attempt to assign the value "{0}" to {1}, '
+                            "which is referenced at {2}:{3} but never "
+                            "defined. Assignment ignored."
+                            .format(v, self.name, filename, linenr))
             return
 
         # Check if the value is valid for our type
