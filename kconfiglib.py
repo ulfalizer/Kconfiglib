@@ -1627,7 +1627,7 @@ error, and you should email ulfalizer a.t Google's email service."""
                     prompts_str_rows.append(' "{0}"'.format(prompt))
                 else:
                     prompts_str_rows.append(' "{0}" if {1}'
-                                            .format(prompt,self._expr_val_str(cond_expr)))
+                                            .format(prompt, self._expr_val_str(cond_expr)))
             prompts_str = "\n".join(prompts_str_rows)
 
         # Build locations string
