@@ -275,7 +275,7 @@ def run_selftests():
                        "get_lower_bound() thinks there should be no "
                        "assignable values for the bool/tristate {0} but "
                        "is_modifiable() thinks it should be modifiable".
-                       format(sym_name, vals))
+                       format(sym_name))
         else:
             tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
             bound_range = ["n", "m", "y"][tri_to_int[sym_low] :
