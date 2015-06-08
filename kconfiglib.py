@@ -1771,11 +1771,6 @@ class Config(object):
         if self.print_warnings:
             _stderr_msg("warning: " + msg, filename, linenr)
 
-def _stderr_msg(msg, filename, linenr):
-    if filename is not None:
-        sys.stderr.write("{0}:{1}: ".format(_clean_up_path(filename), linenr))
-    sys.stderr.write(msg + "\n")
-
 def _get_expr_syms(expr):
     """Returns the set() of symbols appearing in expr."""
     res = set()
@@ -3500,6 +3495,11 @@ def _clean_up_path(path):
     if path.startswith("./"):
         path = path[2:]
     return path.rstrip("/")
+
+def _stderr_msg(msg, filename, linenr):
+    if filename is not None:
+        sys.stderr.write("{0}:{1}: ".format(_clean_up_path(filename), linenr))
+    sys.stderr.write(msg + "\n")
 
 #
 # Error handling
