@@ -1615,23 +1615,19 @@ error, and you should email ulfalizer a.t Google's email service."""
         # Common symbol/choice properties
         #
 
-        user_value_str = "(no user value)" if sc.user_val is None else s(sc.user_val)
-
-        visibility_str = s(sc.get_visibility())
+        user_val_str = "(no user value)" if sc.user_val is None else s(sc.user_val)
 
         # Build prompts string
         if sc.prompts == []:
             prompts_str = " (no prompts)"
         else:
             prompts_str_rows = []
-
-            for (prompt, cond_expr) in sc.orig_prompts:
+            for prompt, cond_expr in sc.orig_prompts:
                 if cond_expr is None:
                     prompts_str_rows.append(' "{0}"'.format(prompt))
                 else:
-                    prompts_str_rows.append(' "{0}" if '.format(prompt) +
-                                            self._expr_val_str(cond_expr))
-
+                    prompts_str_rows.append(' "{0}" if {1}'
+                                            .format(prompt,self._expr_val_str(cond_expr)))
             prompts_str = "\n".join(prompts_str_rows)
 
         # Build locations string
@@ -1650,24 +1646,18 @@ error, and you should email ulfalizer a.t Google's email service."""
         #
 
         if isinstance(sc, Symbol):
-
-            # Build value string
-            value_str = s(sc.get_value())
-
             # Build ranges string
             if isinstance(sc, Symbol):
                 if sc.ranges == []:
                     ranges_str = " (no ranges)"
                 else:
                     ranges_str_rows = []
-
-                    for (l, u, cond_expr) in sc.ranges:
+                    for l, u, cond_expr in sc.ranges:
                         if cond_expr is None:
                             ranges_str_rows.append(" [{0}, {1}]".format(s(l), s(u)))
                         else:
                             ranges_str_rows.append(" [{0}, {1}] if {2}"
                                                    .format(s(l), s(u), self._expr_val_str(cond_expr)))
-
                     ranges_str = "\n".join(ranges_str_rows)
 
             # Build default values string
@@ -1675,12 +1665,10 @@ error, and you should email ulfalizer a.t Google's email service."""
                 defaults_str = " (no default values)"
             else:
                 defaults_str_rows = []
-
-                for (val_expr, cond_expr) in sc.orig_def_exprs:
+                for val_expr, cond_expr in sc.orig_def_exprs:
                     row_str = " " + self._expr_val_str(val_expr, "(none)", sc.type == STRING)
                     defaults_str_rows.append(row_str)
                     defaults_str_rows.append("  Condition: " + self._expr_val_str(cond_expr))
-
                 defaults_str = "\n".join(defaults_str_rows)
 
             # Build selects string
@@ -1688,36 +1676,27 @@ error, and you should email ulfalizer a.t Google's email service."""
                 selects_str = " (no selects)"
             else:
                 selects_str_rows = []
-
-                for (target, cond_expr) in sc.orig_selects:
+                for target, cond_expr in sc.orig_selects:
                     if cond_expr is None:
                         selects_str_rows.append(" {0}".format(target.name))
                     else:
                         selects_str_rows.append(" {0} if ".format(target.name) +
                                                 self._expr_val_str(cond_expr))
-
                 selects_str = "\n".join(selects_str_rows)
 
-            # Build reverse dependencies string
-            if sc.rev_dep == "n":
-                rev_dep_str = " (no reverse dependencies)"
-            else:
-                rev_dep_str = " " + self._expr_val_str(sc.rev_dep)
-
-            res = _sep_lines("Symbol " + (sc.name if sc.name is not None else "(no name)"),
+            res = _sep_lines("Symbol " +
+                               ("(no name)" if sc.name is None else sc.name),
                              "Type           : " + typename[sc.type],
-                             "Value          : " + value_str,
-                             "User value     : " + user_value_str,
-                             "Visibility     : " + visibility_str,
+                             "Value          : " + s(sc.get_value()),
+                             "User value     : " + user_val_str,
+                             "Visibility     : " + s(sc.get_visibility()),
                              "Is choice item : " + bool_str[sc.is_choice_symbol_],
                              "Is defined     : " + bool_str[sc.is_defined_],
                              "Is from env.   : " + bool_str[sc.is_from_env],
                              "Is special     : " + bool_str[sc.is_special_] + "\n")
-
             if sc.ranges != []:
                 res += _sep_lines("Ranges:",
                                   ranges_str + "\n")
-
             res += _sep_lines("Prompts:",
                               prompts_str,
                               "Default values:",
@@ -1725,7 +1704,8 @@ error, and you should email ulfalizer a.t Google's email service."""
                               "Selects:",
                               selects_str,
                               "Reverse dependencies:",
-                              rev_dep_str,
+                              " (no reverse dependencies)" if sc.rev_dep == "n"
+                                else " " + self._expr_val_str(sc.rev_dep),
                               "Additional dependencies from enclosing menus and if's:",
                               additional_deps_str,
                               "Locations: " + locations_str)
@@ -1736,52 +1716,35 @@ error, and you should email ulfalizer a.t Google's email service."""
         # Choice-specific stuff
         #
 
-        # Build name string (for named choices)
-        if sc.name is None:
-            name_str = "(no name)"
-        else:
-            name_str = sc.name
-
         # Build selected symbol string
         sel = sc.get_selection()
-        if sel is None:
-            sel_str = "(no selection)"
-        else:
-            sel_str = sel.name
-
-        # Build mode string
-        mode_str = s(sc.get_mode())
+        sel_str = "(no selection)" if sel is None else sel.name
 
         # Build default values string
         if sc.def_exprs == []:
             defaults_str = " (no default values)"
         else:
             defaults_str_rows = []
-
-            for (sym, cond_expr) in sc.orig_def_exprs:
+            for sym, cond_expr in sc.orig_def_exprs:
                 if cond_expr is None:
                     defaults_str_rows.append(" {0}".format(sym.name))
                 else:
                     defaults_str_rows.append(" {0} if ".format(sym.name) +
                                              self._expr_val_str(cond_expr))
-
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
         names = [sym.name for sym in sc.get_symbols()]
-
-        if names == []:
-            syms_string = "(empty)"
-        else:
-            syms_string = " ".join(names)
+        syms_string = "(empty)" if names == [] else " ".join(names)
 
         return _sep_lines("Choice",
-                          "Name (for named choices): " + name_str,
+                          "Name (for named choices): " +
+                            ("(no name)" if sc.name is None else sc.name),
                           "Type            : " + typename[sc.type],
                           "Selected symbol : " + sel_str,
-                          "User value      : " + user_value_str,
-                          "Mode            : " + mode_str,
-                          "Visibility      : " + visibility_str,
+                          "User value      : " + user_val_str,
+                          "Mode            : " + s(sc.get_mode()),
+                          "Visibility      : " + s(sc.get_visibility()),
                           "Optional        : " + bool_str[sc.optional],
                           "Prompts:",
                           prompts_str,
