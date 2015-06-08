@@ -133,6 +133,12 @@ class Config(object):
         # The set of all symbols, indexed by name (a string)
         self.syms = {}
 
+        # Python 2/3 compatibility hack. This is the only one needed.
+        if sys.version_info[0] >= 3:
+            self.syms_iter = self.syms.values
+        else:
+            self.syms_iter = self.syms.itervalues
+
         # The set of all defined symbols in the configuration in the order they
         # appear in the Kconfig files. This excludes the special symbols n, m,
         # and y as well as symbols that are referenced but never defined.
@@ -356,7 +362,7 @@ class Config(object):
         # already_written is set when _make_conf() is called on a symbol, so
         # that symbols defined in multiple locations only get one entry in the
         # .config. We need to reset it prior to writing out a new .config.
-        for sym in self.syms.itervalues():
+        for sym in self.syms_iter():
             sym.already_written = False
 
         with open(filename, "w") as f:
@@ -572,7 +578,7 @@ class Config(object):
     def unset_user_values(self):
         """Resets the values of all symbols, as if Config.load_config() or
         Symbol.set_user_value() had never been called."""
-        for sym in self.syms.itervalues():
+        for sym in self.syms_iter():
             sym._unset_user_value_no_recursive_invalidate()
 
     def __str__(self):
@@ -599,7 +605,7 @@ class Config(object):
     #
 
     def _invalidate_all(self):
-        for sym in self.syms.itervalues():
+        for sym in self.syms_iter():
             sym._invalidate()
 
     def _tokenize(self, s, for_eval = False, filename = None, linenr = None):
@@ -1520,7 +1526,7 @@ class Config(object):
         #    (these won't be included in 'dep' as that makes the dependency
         #    graph unwieldy, but Symbol._get_dependent() will include them)
         #  - Any symbols in a choice statement that depends on the symbol
-        for sym in self.syms.itervalues():
+        for sym in self.syms_iter():
             for _, e in sym.prompts:
                 add_expr_deps(e, sym)
 

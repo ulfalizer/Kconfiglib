@@ -38,6 +38,8 @@
 # All tests should pass. Report regressions to ulfalizer a.t Google's email
 # service.
 
+from __future__ import print_function
+
 import kconfiglib
 import os
 import re
@@ -68,15 +70,16 @@ def run_tests():
     for s in sys.argv[1:]:
         if s == "speedy":
             speedy_mode = True
-            print "Speedy mode enabled"
+            print("Speedy mode enabled")
         elif s == "obsessive":
             obsessive_mode = True
-            print "Obsessive mode enabled"
+            print("Obsessive mode enabled")
         elif s == "log":
             log_mode = True
-            print "Log mode enabled"
+            print("Log mode enabled")
         else:
-            print "Unrecognized option '{0}'".format(s)
+            print("Unrecognized option '{0}'".format(s))
+
             return
 
     run_selftests()
@@ -123,9 +126,9 @@ def run_selftests():
                .format(sym_name, new_user_val, user_val, sym_new_user_val,
                        sym_old_user_val))
 
-    print "Running selftests...\n"
+    print("Running selftests...\n")
 
-    print "Testing tristate comparisons..."
+    print("Testing tristate comparisons...")
 
     def verify_truth_table(comp_fn, *bools):
         bools_list = list(bools)
@@ -161,7 +164,7 @@ def run_selftests():
     # String literal lexing. (This tests an internal API.)
     #
 
-    print "Testing string literal (constant symbol) lexing..."
+    print("Testing string literal (constant symbol) lexing...")
 
     c = kconfiglib.Config("Kconfiglib/tests/empty")
 
@@ -228,7 +231,7 @@ def run_selftests():
     # is_modifiable()
     #
 
-    print "Testing is_modifiable() and range queries..."
+    print("Testing is_modifiable() and range queries...")
 
     c = kconfiglib.Config("Kconfiglib/tests/Kmodifiable")
 
@@ -309,7 +312,7 @@ def run_selftests():
     # eval()
     #
 
-    print "Testing eval()..."
+    print("Testing eval()...")
 
     c = kconfiglib.Config("Kconfiglib/tests/Keval")
 
@@ -423,7 +426,7 @@ def run_selftests():
 
     # TODO: Get rid of extra \n's at end of texts?
 
-    print "Testing text queries..."
+    print("Testing text queries...")
 
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
 
@@ -443,7 +446,7 @@ def run_selftests():
     # Prompt queries
     #
 
-    print "Testing prompt queries..."
+    print("Testing prompt queries...")
 
     def verify_prompts(sym_or_choice, prompts):
         sym_or_choice_prompts = sym_or_choice.get_prompts()
@@ -483,7 +486,7 @@ def run_selftests():
     # Location queries
     #
 
-    print "Testing location queries..."
+    print("Testing location queries...")
 
     def verify_def_locations(sym_name, *locs):
         sym_locs = c[sym_name].get_def_locations()
@@ -605,7 +608,7 @@ def run_selftests():
     # Visibility queries
     #
 
-    print "Testing visibility queries..."
+    print("Testing visibility queries...")
 
     c = kconfiglib.Config("Kconfiglib/tests/Kvisibility")
 
@@ -803,7 +806,7 @@ def run_selftests():
            "menu ordering is broken")
     menu_1, menu_2, menu_3, menu_4 = c.get_menus()
 
-    print "Testing object relations..."
+    print("Testing object relations...")
 
     verify(A.get_parent() is None, "A should not have a parent")
     verify(B.get_parent() is choice_1, "B's parent should be the first choice")
@@ -820,7 +823,7 @@ def run_selftests():
     # Object fetching (same test file)
     #
 
-    print "Testing object fetching..."
+    print("Testing object fetching...")
 
     verify_equals(c.get_symbol("NON_EXISTENT"), None)
     verify(c.get_symbol("A") is A, "get_symbol() is broken")
@@ -855,7 +858,7 @@ def run_selftests():
     # hex/int ranges
     #
 
-    print "Testing hex/int ranges..."
+    print("Testing hex/int ranges...")
 
     c = kconfiglib.Config("Kconfiglib/tests/Krange")
 
@@ -1067,7 +1070,7 @@ def run_selftests():
     # get_defconfig_filename()
     #
 
-    print "Testing get_defconfig_filename()..."
+    print("Testing get_defconfig_filename()...")
 
     c = kconfiglib.Config("Kconfiglib/tests/empty")
     verify(c.get_defconfig_filename() is None,
@@ -1096,7 +1099,7 @@ def run_selftests():
     # get_mainmenu_text()
     #
 
-    print "Testing get_mainmenu_text()..."
+    print("Testing get_mainmenu_text()...")
 
     c = kconfiglib.Config("Kconfiglib/tests/empty")
     verify(c.get_mainmenu_text() is None,
@@ -1116,14 +1119,14 @@ def run_selftests():
     # Contains reference to undefined environment variable, so disable warnings
     c = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
 
-    print "Testing is_optional()..."
+    print("Testing is_optional()...")
 
     verify(not c.get_choices()[0].is_optional(),
            "First choice should not be optional")
     verify(c.get_choices()[1].is_optional(),
            "Second choice should be optional")
 
-    print "Testing get_user_value()..."
+    print("Testing get_user_value()...")
 
     # Avoid warnings from assigning invalid user values and assigning user
     # values to symbols without prompts
@@ -1164,7 +1167,7 @@ def run_selftests():
                "{0} should not have a user value after being reset".
                format(s.get_name()))
 
-    print "Testing is_defined()..."
+    print("Testing is_defined()...")
 
     for sym_name in ("n", "m", "y", "UNAME_RELEASE", "A", "B", "C", "D",
                      "BOOL", "TRISTATE", "STRING", "INT", "HEX"):
@@ -1178,7 +1181,7 @@ def run_selftests():
         verify(not sym.is_defined(),
                "{0} should not be defined".format(sym_name))
 
-    print "Testing is_special()..."
+    print("Testing is_special()...")
 
     for sym_name in ("n", "m", "y", "UNAME_RELEASE", "FROM_ENV",
                      "FROM_ENV_MISSING"):
@@ -1193,7 +1196,7 @@ def run_selftests():
         verify(not sym.is_special(),
                "{0} should not be special".format(sym_name))
 
-    print "Testing is_from_environment()..."
+    print("Testing is_from_environment()...")
 
     for sym_name in ("FROM_ENV", "FROM_ENV_MISSING"):
         sym = c[sym_name]
@@ -1208,7 +1211,7 @@ def run_selftests():
         verify(not sym.is_from_environment(),
                "{0} should not be from the environment".format(sym_name))
 
-    print "Testing is_choice_symbol()..."
+    print("Testing is_choice_symbol()...")
 
     for sym_name in ("A", "B", "C", "D"):
         sym = c[sym_name]
@@ -1223,14 +1226,14 @@ def run_selftests():
         verify(not sym.is_choice_symbol(),
                "{0} should not be a choice symbol".format(sym_name))
 
-    print "Testing is_allnoconfig_y()..."
+    print("Testing is_allnoconfig_y()...")
 
     verify(not c["NOT_ALLNOCONFIG_Y"].is_allnoconfig_y(),
            "NOT_ALLNOCONFIG_Y should not be allnoconfig_y")
     verify(c["ALLNOCONFIG_Y"].is_allnoconfig_y(),
            "ALLNOCONFIG_Y should be allnoconfig_y")
 
-    print "Testing UNAME_RELEASE value..."
+    print("Testing UNAME_RELEASE value...")
 
     verify_value("UNAME_RELEASE", os.uname()[2])
 
@@ -1247,7 +1250,7 @@ def run_selftests():
     # .config reading and writing
     #
 
-    print "Testing .config reading and writing..."
+    print("Testing .config reading and writing...")
 
     config_test_file = "Kconfiglib/tests/config_test"
 
@@ -1350,7 +1353,7 @@ def run_selftests():
     # get_config()
     #
 
-    print "Testing get_config()..."
+    print("Testing get_config()...")
 
     c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
     c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
@@ -1384,19 +1387,19 @@ def run_selftests():
     config_filename = c.get_config_filename()
     kconfig_filename = c.get_kconfig_filename()
 
-    print "Testing get_arch()..."
+    print("Testing get_arch()...")
     verify(arch == "ARCH value",
            "Wrong arch value - got '{0}'".format(arch))
-    print "Testing get_srcarch()..."
+    print("Testing get_srcarch()...")
     verify(srcarch == "SRCARCH value",
            "Wrong srcarch value - got '{0}'".format(srcarch))
-    print "Testing get_srctree()..."
+    print("Testing get_srctree()...")
     verify(srctree == "srctree value",
            "Wrong srctree value - got '{0}'".format(srctree))
-    print "Testing get_config_filename()..."
+    print("Testing get_config_filename()...")
     verify(config_filename == "Kconfiglib/tests/empty",
            "Wrong config filename - got '{0}'".format(config_filename))
-    print "Testing get_kconfig_filename()..."
+    print("Testing get_kconfig_filename()...")
     verify(kconfig_filename == "Kconfiglib/tests/Kmisc",
            "Wrong Kconfig filename - got '{0}'".format(kconfig_filename))
 
@@ -1404,7 +1407,7 @@ def run_selftests():
     # Choice semantics
     #
 
-    print "Testing choice semantics..."
+    print("Testing choice semantics...")
 
     c = kconfiglib.Config("Kconfiglib/tests/Kchoice")
 
@@ -1548,7 +1551,7 @@ def run_selftests():
     # Object dependencies
     #
 
-    print "Testing object dependencies..."
+    print("Testing object dependencies...")
 
     # Note: This tests an internal API
 
@@ -1586,18 +1589,14 @@ def run_selftests():
         verify(c["CHAIN_23"] in c["CHAIN_1"]._get_dependent(),
                "Dependency chain broken")
 
-    print
-    if _all_ok:
-        print "All selftests passed"
-    else:
-        print "Some selftests failed"
-    print
+    print("\nAll selftests passed\n" if _all_ok else
+          "\nSome selftests failed\n")
 
 def run_compatibility_tests():
     """Runs tests on configurations from the kernel. Tests compability with the
     C implementation by comparing outputs."""
 
-    print "Running compatibility tests...\n"
+    print("Running compatibility tests...\n")
 
     # The set of tests that want to run for all architectures in the kernel
     # tree -- currently, all tests. The boolean flag indicates whether .config
@@ -1612,18 +1611,18 @@ def run_compatibility_tests():
                       # combo, hence False.
                       (test_defconfig,      False)]
 
-    print "Loading Config instances for all architectures..."
+    print("Loading Config instances for all architectures...")
     arch_configs = get_arch_configs()
 
     for (test_fn, compare_configs) in all_arch_tests:
-        print "\nUnsetting user values on all architecture Config instances "\
-              "prior to next test..."
+        print("\nUnsetting user values on all architecture Config instances "
+              "prior to next test...")
         for arch in arch_configs:
             arch.unset_user_values()
 
         # The test description is taken from the docstring of the corresponding
         # function
-        print textwrap.dedent(test_fn.__doc__)
+        print(textwrap.dedent(test_fn.__doc__))
 
         for conf in arch_configs:
             rm_configs()
@@ -1642,16 +1641,16 @@ def run_compatibility_tests():
                 sys.stdout.write("  {0:<14}".format(conf.get_arch()))
 
                 if equal_confs():
-                    print "OK"
+                    print("OK")
                 else:
-                    print "FAIL"
+                    print("FAIL")
                     fail()
 
     if all_ok():
-        print "All selftests and compatibility tests passed"
-        print nconfigs, "arch/defconfig pairs tested"
+        print("All selftests and compatibility tests passed")
+        print(nconfigs, "arch/defconfig pairs tested")
     else:
-        print "Some tests failed"
+        print("Some tests failed")
 
 def get_arch_configs():
     """Returns a list with Config instances corresponding to all arch
@@ -1663,7 +1662,7 @@ def get_arch_configs():
     def add_arch(ARCH, res):
         os.environ["SRCARCH"] = archdir
         os.environ["ARCH"] = ARCH
-        print "  Loading {0}...".format(ARCH)
+        print("  Loading {0}...".format(ARCH))
         c = kconfiglib.Config(base_dir = ".")
         res.append(c)
 
@@ -1751,7 +1750,7 @@ def test_call_all(conf):
     all public methods: some are hard to test like this, but are exercised by
     other tests) for all architectures to make sure we never crash or hang.
     Also do misc. sanity checks."""
-    print "  For {0}...".format(conf.get_arch())
+    print("  For {0}...".format(conf.get_arch()))
 
     conf.__str__()
     conf.get_arch()
@@ -1916,8 +1915,8 @@ def test_defconfig(conf):
         if not os.path.exists(defconfigs_dir):
             return
         if not os.path.isdir(defconfigs_dir):
-            print "Warning: '{0}' is not a directory - skipping"\
-                  .format(defconfigs_dir)
+            print("Warning: '{0}' is not a directory - skipping"
+                  .format(defconfigs_dir))
             return
         for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
             for filename in filenames:
@@ -1957,9 +1956,9 @@ def test_defconfig(conf):
                          format(conf.get_arch(), defconfig))
 
         if equal_confs():
-            print "OK"
+            print("OK")
         else:
-            print "FAIL"
+            print("FAIL")
             fail()
             if log_mode:
                 with open("test_defconfig_fails", "a") as fail_log:
@@ -2021,7 +2020,7 @@ def verify_equals(x, y):
 def fail(msg = None):
     global _all_ok
     if msg is not None:
-        print "Fail: " + msg
+        print("Fail: " + msg)
     _all_ok = False
 
 def all_ok():
