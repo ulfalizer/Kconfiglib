@@ -585,7 +585,6 @@ class Config(object):
                           "Print assignments to undefined symbols : " +
                             bool_str[self.print_undef_assign])
 
-
     #
     # Private methods
     #
@@ -1844,7 +1843,6 @@ def _get_expr_syms(expr):
     rec(expr)
     return res
 
-
 #
 # Construction of expressions
 #
@@ -2744,13 +2742,10 @@ class Symbol(Item, _HasVisibility):
                 self.config._warn('attempt to assign the value "{0}" to the '
                                   'special symbol {1}. Assignment ignored.'
                                   .format(v, self.name))
-
             return
-
 
         if not self.is_defined_:
             filename, linenr = self.ref_locations[0]
-
             self.config._undef_assign('attempt to assign the value "{0}" to {1}, '
                                       "which is referenced at {2}:{3} but never "
                                       "defined. Assignment ignored."
@@ -2758,14 +2753,12 @@ class Symbol(Item, _HasVisibility):
             return
 
         # Check if the value is valid for our type
-
         if not (( self.type == BOOL     and (v == "n" or v == "y")    ) or
                 ( self.type == TRISTATE and (v == "n" or v == "m" or
                                              v == "y")                ) or
                 ( self.type == STRING                                 ) or
                 ( self.type == INT      and _is_base_n(v, 10)         ) or
                 ( self.type == HEX      and _is_base_n(v, 16)         )):
-
             self.config._warn('the value "{0}" is invalid for {1}, which has type {2}. '
                               "Assignment ignored."
                               .format(v, self.name, typename[self.type]))
