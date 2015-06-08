@@ -2439,12 +2439,12 @@ class Symbol(Item):
             return
 
         # Check if the value is valid for our type
-        if not (( self.type == BOOL     and (v == "n" or v == "y")    ) or
-                ( self.type == TRISTATE and (v == "n" or v == "m" or
-                                             v == "y")                ) or
-                ( self.type == STRING                                 ) or
-                ( self.type == INT      and _is_base_n(v, 10)         ) or
-                ( self.type == HEX      and _is_base_n(v, 16)         )):
+        if not ((self.type == BOOL     and (v == "n" or v == "y")   ) or
+                (self.type == TRISTATE and (v == "n" or v == "m" or
+                                            v == "y")               ) or
+                (self.type == STRING                                ) or
+                (self.type == INT      and _is_base_n(v, 10)        ) or
+                (self.type == HEX      and _is_base_n(v, 16)        )):
             self.config._warn('the value "{0}" is invalid for {1}, which has type {2}. '
                               "Assignment ignored."
                               .format(v, self.name, typename[self.type]))
