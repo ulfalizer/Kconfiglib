@@ -1780,29 +1780,29 @@ error, and you should email ulfalizer a.t Google's email service."""
     def _warn(self, msg, filename = None, linenr = None):
         """For printing warnings to stderr."""
         if self.print_warnings:
-            self._warn_or_undef_assign(msg, WARNING, filename, linenr)
+            _warn_or_undef_assign(msg, WARNING, filename, linenr)
 
     def _undef_assign(self, msg, filename = None, linenr = None):
         """For printing informational messages related to assignments
         to undefined variables to stderr."""
         if self.print_undef_assign:
-            self._warn_or_undef_assign(msg, UNDEF_ASSIGN, filename, linenr)
+            _warn_or_undef_assign(msg, UNDEF_ASSIGN, filename, linenr)
 
-    def _warn_or_undef_assign(self, msg, msg_type, filename, linenr):
-        if filename is not None:
-            sys.stderr.write("{0}:".format(_clean_up_path(filename)))
-        if linenr is not None:
-            sys.stderr.write("{0}:".format(linenr))
+def _warn_or_undef_assign(msg, msg_type, filename, linenr):
+    if filename is not None:
+        sys.stderr.write("{0}:".format(_clean_up_path(filename)))
+    if linenr is not None:
+        sys.stderr.write("{0}:".format(linenr))
 
-        if msg_type == WARNING:
-            sys.stderr.write("warning: ")
-        elif msg_type == UNDEF_ASSIGN:
-            sys.stderr.write("info: ")
-        else:
-            _internal_error('Internal error while printing warning: unknown warning type "{0}".'
-                            .format(msg_type))
+    if msg_type == WARNING:
+        sys.stderr.write("warning: ")
+    elif msg_type == UNDEF_ASSIGN:
+        sys.stderr.write("info: ")
+    else:
+        _internal_error('Internal error while printing warning: unknown warning type "{0}".'
+                        .format(msg_type))
 
-        sys.stderr.write(msg + "\n")
+    sys.stderr.write(msg + "\n")
 
 def _get_expr_syms(expr):
     """Returns the set() of symbols appearing in expr."""
