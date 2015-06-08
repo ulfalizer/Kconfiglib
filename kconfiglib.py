@@ -1680,7 +1680,7 @@ error, and you should email ulfalizer a.t Google's email service."""
                               defaults_str,
                               "Selects:",
                               selects_str,
-                              "Reverse dependencies:",
+                              "Reverse (select-related) dependencies:",
                               " (no reverse dependencies)" if sc.rev_dep == "n"
                                 else " " + self._expr_val_str(sc.rev_dep),
                               "Additional dependencies from enclosing menus and if's:",
@@ -2160,7 +2160,6 @@ class Symbol(Item, _HasVisibility):
         if self.type == BOOL or self.type == TRISTATE:
             # The visibility and mode (modules-only or single-selection) of
             # choice items will be taken into account in self._get_visibility()
-
             if self.is_choice_symbol_:
                 if vis != "n":
                     choice = self.parent
@@ -2175,13 +2174,12 @@ class Symbol(Item, _HasVisibility):
                             new_val = "m"
 
             else:
+                # If the symbol is visible and has a user value, use that.
+                # Otherwise, look at defaults.
                 use_defaults = True
 
                 if vis != "n":
-                    # If the symbol is visible and has a user value, use that.
-                    # Otherwise, look at defaults.
                     self.write_to_conf = True
-
                     if self.user_val is not None:
                         new_val = self.config._eval_min(self.user_val, vis)
                         use_defaults = False
@@ -2189,15 +2187,13 @@ class Symbol(Item, _HasVisibility):
                 if use_defaults:
                     for val_expr, cond_expr in self.def_exprs:
                         cond_eval = self.config._eval_expr(cond_expr)
-
                         if cond_eval != "n":
                             self.write_to_conf = True
                             new_val = self.config._eval_min(val_expr, cond_eval)
                             break
 
-                # Reverse dependencies take precedence
+                # Reverse (select-related) dependencies take precedence
                 rev_dep_val = self.config._eval_expr(self.rev_dep)
-
                 if rev_dep_val != "n":
                     self.write_to_conf = True
                     new_val = self.config._eval_max(new_val, rev_dep_val)
@@ -2236,7 +2232,6 @@ class Symbol(Item, _HasVisibility):
 
                     low_str = self.config._get_str_value(l)
                     high_str = self.config._get_str_value(h)
-
                     low = int(low_str, base) if \
                       _is_base_n(low_str, base) else 0
                     high = int(high_str, base) if \
@@ -2290,7 +2285,6 @@ class Symbol(Item, _HasVisibility):
                     # If no user value or default kicks in but the hex/int has
                     # an active range, then the low end of the range is used,
                     # provided it's > 0, with "0x" prepended as appropriate.
-
                     if has_active_range and low > 0:
                         new_val = (hex(low) if self.type == HEX else str(low))
 
