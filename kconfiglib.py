@@ -72,7 +72,7 @@ import sys
 
 # File layout:
 #
-# Public classes (and the Symbol and Choice base class _HasVisibility)
+# Public classes
 # Public functions
 # Internal classes
 # Internal functions
@@ -1810,37 +1810,7 @@ class Item(object):
         isinstance(item, kconfiglib.Comment)."""
         return isinstance(self, Comment)
 
-class _HasVisibility(object):
-
-    """Base class for elements that have a "visibility" that acts as an upper
-    limit on the values a user can set for them. Subclasses are Symbol and
-    Choice (which supply some of the attributes)."""
-
-    def __init__(self):
-        self.cached_visibility = None
-        self.prompts = []
-
-    def _invalidate(self):
-        self.cached_visibility = None
-
-    def _get_visibility(self):
-        if self.cached_visibility is None:
-            vis = "n"
-            for _, cond_expr in self.prompts:
-                vis = self.config._eval_max(vis, cond_expr)
-
-            if isinstance(self, Symbol) and self.is_choice_symbol_:
-                vis = self.config._eval_min(vis, self.parent._get_visibility())
-
-            # Promote "m" to "y" if we're dealing with a non-tristate
-            if vis == "m" and self.type != TRISTATE:
-                vis = "y"
-
-            self.cached_visibility = vis
-
-        return self.cached_visibility
-
-class Symbol(Item, _HasVisibility):
+class Symbol(Item):
 
     """Represents a configuration symbol - e.g. FOO for
 
@@ -1869,11 +1839,11 @@ class Symbol(Item, _HasVisibility):
 
         new_val = default_value[self.type]
 
-        vis = self._get_visibility()
+        vis = _get_visibility(self)
 
         if self.type == BOOL or self.type == TRISTATE:
             # The visibility and mode (modules-only or single-selection) of
-            # choice items will be taken into account in self._get_visibility()
+            # choice items will be taken into account in _get_visibility()
             if self.is_choice_symbol_:
                 if vis != "n":
                     choice = self.parent
@@ -2083,7 +2053,7 @@ class Symbol(Item, _HasVisibility):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        vis = self._get_visibility()
+        vis = _get_visibility(self)
         if (tri_to_int[vis] - tri_to_int[rev_dep]) > 0:
             return vis
         return None
@@ -2105,7 +2075,7 @@ class Symbol(Item, _HasVisibility):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        if (tri_to_int[self._get_visibility()] - tri_to_int[rev_dep]) > 0:
+        if (tri_to_int[_get_visibility(self)] - tri_to_int[rev_dep]) > 0:
             return rev_dep
         return None
 
@@ -2129,7 +2099,7 @@ class Symbol(Item, _HasVisibility):
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
         res = ["n", "m", "y"][tri_to_int[rev_dep] :
-                              tri_to_int[self._get_visibility()] + 1]
+                              tri_to_int[_get_visibility(self)] + 1]
         return res if len(res) > 1 else []
 
     def get_type(self):
@@ -2183,7 +2153,7 @@ class Symbol(Item, _HasVisibility):
 
         You should probably look at get_lower/upper_bound(),
         get_assignable_values() and is_modifiable() before using this."""
-        return self._get_visibility()
+        return _get_visibility(self)
 
     def get_parent(self):
         """Returns the menu or choice statement that contains the symbol, or
@@ -2283,9 +2253,9 @@ class Symbol(Item, _HasVisibility):
             # A bool selected to "m" gets promoted to "y"
             if self.type == BOOL and rev_dep == "m":
                 rev_dep = "y"
-            return (tri_to_int[self._get_visibility()] -
+            return (tri_to_int[_get_visibility(self)] -
                     tri_to_int[rev_dep]) > 0
-        return self._get_visibility() != "n"
+        return _get_visibility(self) != "n"
 
     def is_defined(self):
         """Returns False if the symbol is referred to in the Kconfig but never
@@ -2333,8 +2303,8 @@ class Symbol(Item, _HasVisibility):
         """Symbol constructor -- not intended to be called directly by
         kconfiglib clients."""
 
-        # Set default values
-        _HasVisibility.__init__(self)
+        self.prompts = []
+        self.cached_visibility = None
 
         self.config = None
 
@@ -2429,10 +2399,9 @@ class Symbol(Item, _HasVisibility):
         if self.is_choice_symbol_:
             self.parent._invalidate()
 
-        _HasVisibility._invalidate(self)
-
-        self.write_to_conf = False
         self.cached_val = None
+        self.cached_visibility = None
+        self.write_to_conf = False
 
     def _invalidate_dependent(self):
         for sym in self._get_dependent():
@@ -2717,7 +2686,7 @@ class Menu(Item):
             return ["\n#\n# {0}\n#".format(self.title)] + item_conf
         return item_conf
 
-class Choice(Item, _HasVisibility):
+class Choice(Item):
 
     """Represents a choice statement. A choice can be in one of three modes:
 
@@ -2755,8 +2724,7 @@ class Choice(Item, _HasVisibility):
             return self._cache_ret(None)
 
         # User choice available?
-        if self.user_val is not None and \
-           self.user_val._get_visibility() == "y":
+        if self.user_val is not None and _get_visibility(self.user_val) == "y":
             return self._cache_ret(self.user_val)
 
         if self.optional:
@@ -2779,11 +2747,11 @@ class Choice(Item, _HasVisibility):
             chosen_symbol = self.actual_symbols[0]
 
         # Is the chosen symbol visible?
-        if chosen_symbol._get_visibility() != "n":
+        if _get_visibility(chosen_symbol) != "n":
             return chosen_symbol
         # Otherwise, pick the first visible symbol
         for sym in self.actual_symbols:
-            if sym._get_visibility() != "n":
+            if _get_visibility(sym) != "n":
                 return sym
         return None
 
@@ -2870,14 +2838,14 @@ class Choice(Item, _HasVisibility):
         "y". This acts as an upper limit on the mode of the choice (though bool
         choices can only have the mode "y"). See the class documentation for an
         explanation of modes."""
-        return self._get_visibility()
+        return _get_visibility(self)
 
     def get_mode(self):
         """Returns the mode of the choice. See the class documentation for
         an explanation of modes."""
         minimum_mode = "n" if self.optional else "m"
         mode = self.user_mode if self.user_mode is not None else minimum_mode
-        mode = self.config._eval_min(mode, self._get_visibility())
+        mode = self.config._eval_min(mode, _get_visibility(self))
 
         # Promote "m" to "y" for boolean choices
         if mode == "m" and self.type == BOOL:
@@ -2903,7 +2871,8 @@ class Choice(Item, _HasVisibility):
         """Choice constructor -- not intended to be called directly by
         kconfiglib clients."""
 
-        _HasVisibility.__init__(self)
+        self.prompts = []
+        self.cached_visibility = None
 
         self.config = None
 
@@ -2998,8 +2967,8 @@ class Choice(Item, _HasVisibility):
         return selection
 
     def _invalidate(self):
-        _HasVisibility._invalidate(self)
         self.cached_selection = None
+        self.cached_visibility = None
 
     def _unset_user_value(self):
         self._invalidate()
@@ -3196,6 +3165,27 @@ class _FileFeed(_Feed):
 #
 # Internal functions
 #
+
+def _get_visibility(sc):
+    """Symbols and Choices have a "visibility" that acts as an upper bound on
+    the values a user can set for them, corresponding to the visibility in e.g.
+    'make menuconfig'. This function calculates the visibility for the Symbol
+    or Choice 'sc' -- the logic is nearly identical."""
+    if sc.cached_visibility is None:
+        vis = "n"
+        for _, cond_expr in sc.prompts:
+            vis = sc.config._eval_max(vis, cond_expr)
+
+        if isinstance(sc, Symbol) and sc.is_choice_symbol_:
+            vis = sc.config._eval_min(vis, _get_visibility(sc.parent))
+
+        # Promote "m" to "y" if we're dealing with a non-tristate
+        if vis == "m" and sc.type != TRISTATE:
+            vis = "y"
+
+        sc.cached_visibility = vis
+
+    return sc.cached_visibility
 
 def _make_and(e1, e2):
     """Constructs an AND (&&) expression. Performs trivial simplification.
