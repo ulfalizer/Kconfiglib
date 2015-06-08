@@ -1749,20 +1749,16 @@ error, and you should email ulfalizer a.t Google's email service."""
         def rec(expr):
             if isinstance(expr, str):
                 return False
-
             if isinstance(expr, Symbol):
                 return expr is sym
 
             e0 = expr[0]
-
             if e0 == EQUAL or e0 == UNEQUAL:
                 return self._eq_to_sym(expr) is sym
-
             if e0 == AND:
                 for and_expr in expr[1]:
                     if rec(and_expr):
                         return True
-
             return False
 
         return rec(expr)
@@ -1771,21 +1767,17 @@ error, and you should email ulfalizer a.t Google's email service."""
         """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
         or sym != n, returns sym. For other (in)equalities, returns None."""
         relation, left, right = eq
-
         left  = self._transform_n_m_y(left)
         right = self._transform_n_m_y(right)
 
         # Make sure the symbol (if any) appears to the left
         if not isinstance(left, Symbol):
             left, right = right, left
-
         if not isinstance(left, Symbol):
             return None
-
         if (relation == EQUAL   and (right == "m" or right == "y")) or \
            (relation == UNEQUAL and right == "n"):
             return left
-
         return None
 
     def _transform_n_m_y(self, item):
@@ -1836,26 +1828,21 @@ def _get_expr_syms(expr):
         if isinstance(expr, Symbol):
             res.add(expr)
             return
-
         if isinstance(expr, str):
             return
 
         e0 = expr[0]
-
         if e0 == AND or e0 == OR:
             for term in expr[1]:
                 rec(term)
-
         elif e0 == NOT:
             rec(expr[1])
-
         elif e0 == EQUAL or e0 == UNEQUAL:
             _, v1, v2 = expr
             if isinstance(v1, Symbol):
                 res.add(v1)
             if isinstance(v2, Symbol):
                 res.add(v2)
-
         else:
             _internal_error("Internal error while fetching symbols from an "
                             "expression with token stream {0}.".format(expr))
@@ -1875,13 +1862,10 @@ def _get_expr_syms(expr):
 def _make_or(e1, e2):
     # Perform trivial simplification and avoid None's (which
     # correspond to y's)
-    if e1 is None or e2 is None or \
-       e1 == "y" or e2 == "y":
+    if e1 is None or e2 is None or e1 == "y" or e2 == "y":
         return "y"
-
     if e1 == "n":
         return e2
-
     if e2 == "n":
         return e1
 
@@ -1903,10 +1887,8 @@ def _make_or(e1, e2):
 def _make_and(e1, e2):
     if e1 == "n" or e2 == "n":
         return "n"
-
     if e1 is None or e1 == "y":
         return e2
-
     if e2 is None or e2 == "y":
         return e1
 
