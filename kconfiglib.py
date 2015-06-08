@@ -906,7 +906,6 @@ class Config(object):
         block = [] if res is None else res
 
         while 1:
-
             # Do we already have a tokenized line that we determined wasn't
             # part of whatever we were parsing earlier? See comment in
             # Config.__init__().
