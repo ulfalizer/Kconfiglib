@@ -428,7 +428,7 @@ class Config(object):
         if self.defconfig_sym is None:
             return None
 
-        for (filename, cond_expr) in self.defconfig_sym.def_exprs:
+        for filename, cond_expr in self.defconfig_sym.def_exprs:
             if self._eval_expr(cond_expr) == "y":
                 filename = self._expand_sym_refs(filename)
 
@@ -1336,10 +1336,10 @@ error, and you should email ulfalizer a.t Google's email service."""
             # should only apply to the local definition.)
 
             new_def_exprs = [(val_expr, _make_and(cond_expr, depends_on_expr))
-                             for (val_expr, cond_expr) in new_def_exprs]
+                             for val_expr, cond_expr in new_def_exprs]
 
             new_selects = [(target, _make_and(cond_expr, depends_on_expr))
-                           for (target, cond_expr) in new_selects]
+                           for target, cond_expr in new_selects]
 
             if new_prompt is not None:
                 prompt, cond_expr = new_prompt
@@ -1374,9 +1374,9 @@ error, and you should email ulfalizer a.t Google's email service."""
             # Propagate dependencies from enclosing menus and if's
 
             stmt.def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
-                                   for (val_expr, cond_expr) in new_def_exprs])
+                                   for val_expr, cond_expr in new_def_exprs])
 
-            for (target, cond) in new_selects:
+            for target, cond in new_selects:
                 target.rev_dep = _make_or(target.rev_dep,
                                           _make_and(stmt,
                                                     _make_and(cond, deps)))
@@ -1547,16 +1547,16 @@ error, and you should email ulfalizer a.t Google's email service."""
         #    graph unwieldy, but Symbol._get_dependent() will include them)
         #  - Any symbols in a choice statement that depends on the symbol
         for sym in self.syms.itervalues():
-            for (_, e) in sym.prompts:
+            for _, e in sym.prompts:
                 add_expr_deps(e, sym)
 
-            for (v, e) in sym.def_exprs:
+            for v, e in sym.def_exprs:
                 add_expr_deps(v, sym)
                 add_expr_deps(e, sym)
 
             add_expr_deps(sym.rev_dep, sym)
 
-            for (l, u, e) in sym.ranges:
+            for l, u, e in sym.ranges:
                 add_expr_deps(l, sym)
                 add_expr_deps(u, sym)
                 add_expr_deps(e, sym)
@@ -1564,10 +1564,10 @@ error, and you should email ulfalizer a.t Google's email service."""
             if sym.is_choice_symbol_:
                 choice = sym.parent
 
-                for (_, e) in choice.prompts:
+                for _, e in choice.prompts:
                     add_expr_deps(e, sym)
 
-                for (_, e) in choice.def_exprs:
+                for _, e in choice.def_exprs:
                     add_expr_deps(e, sym)
 
     def _expr_val_str(self, expr, no_value_str = "(none)", get_val_instead_of_eval = False):
@@ -2155,7 +2155,7 @@ class _HasVisibility(object):
     def _get_visibility(self):
         if self.cached_visibility is None:
             vis = "n"
-            for (prompt, cond_expr) in self.prompts:
+            for prompt, cond_expr in self.prompts:
                 vis = self.config._eval_max(vis, cond_expr)
 
             if isinstance(self, Symbol) and self.is_choice_symbol_:
@@ -2230,7 +2230,7 @@ class Symbol(Item, _HasVisibility):
                         use_defaults = False
 
                 if use_defaults:
-                    for (val_expr, cond_expr) in self.def_exprs:
+                    for val_expr, cond_expr in self.def_exprs:
                         cond_eval = self.config._eval_expr(cond_expr)
 
                         if cond_eval != "n":
@@ -2259,7 +2259,7 @@ class Symbol(Item, _HasVisibility):
                     use_defaults = False
 
             if use_defaults:
-                for (val_expr, cond_expr) in self.def_exprs:
+                for val_expr, cond_expr in self.def_exprs:
                     if self.config._eval_expr(cond_expr) != "n":
                         self.write_to_conf = True
                         new_val = self.config._get_str_value(val_expr)
@@ -2303,7 +2303,7 @@ class Symbol(Item, _HasVisibility):
                     new_val = self.user_val
 
             if use_defaults:
-                for (val_expr, cond_expr) in self.def_exprs:
+                for val_expr, cond_expr in self.def_exprs:
                     if self.config._eval_expr(cond_expr) != "n":
                         self.write_to_conf = True
 
@@ -2915,7 +2915,7 @@ class Symbol(Item, _HasVisibility):
             return self.menu_dep is not None and \
                    self.config._expr_depends_on(self.menu_dep, on)
 
-        for (_, cond_expr) in self.prompts:
+        for _, cond_expr in self.prompts:
             if self.config._expr_depends_on(cond_expr, on):
                 return True
 
@@ -3110,7 +3110,7 @@ class Choice(Item, _HasVisibility):
         if self.actual_symbols == []:
             return None
 
-        for (symbol, cond_expr) in self.def_exprs:
+        for symbol, cond_expr in self.def_exprs:
             if self.config._eval_expr(cond_expr) != "n":
                 chosen_symbol = symbol
                 break
