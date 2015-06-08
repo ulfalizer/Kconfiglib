@@ -68,7 +68,6 @@ might add it in a safe way as a client API instead."""
 
 import os
 import re
-import string
 import sys
 
 class Config(object):
