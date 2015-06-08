@@ -81,11 +81,8 @@ class Config(object):
     # Public interface
     #
 
-    def __init__(self,
-                 filename = "Kconfig",
-                 base_dir = None,
-                 print_warnings = True,
-                 print_undef_assign = False):
+    def __init__(self, filename = "Kconfig", base_dir = None,
+                 print_warnings = True, print_undef_assign = False):
         """Creates a new Config object, representing a Kconfig configuration.
         Raises Kconfig_Syntax_Error on syntax errors.
 
@@ -592,11 +589,7 @@ class Config(object):
         for sym in self.syms.itervalues():
             sym._invalidate()
 
-    def _tokenize(self,
-                  s,
-                  for_eval = False,
-                  filename = None,
-                  linenr = None):
+    def _tokenize(self, s, for_eval = False, filename = None, linenr = None):
         """Returns a _Feed instance containing tokens derived from the string
         's'. Registers any new symbols encountered (via _sym_lookup()).
 
@@ -772,13 +765,8 @@ class Config(object):
     #           <expr> '&&' <expr>
     #           <expr> '||' <expr>
 
-    def _parse_expr(self,
-                    feed,
-                    cur_sym_or_choice,
-                    line,
-                    filename = None,
-                    linenr = None,
-                    transform_m = True):
+    def _parse_expr(self, feed, cur_sym_or_choice, line, filename = None,
+                    linenr = None, transform_m = True):
         """Parse an expression from the tokens in 'feed' using a simple
         top-down approach. The result has the form (<operator>, <list
         containing parsed operands>).
