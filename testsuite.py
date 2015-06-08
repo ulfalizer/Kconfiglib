@@ -1918,7 +1918,7 @@ def test_defconfig(conf):
             print("Warning: '{0}' is not a directory - skipping"
                   .format(defconfigs_dir))
             return
-        for dirpath, dirnames, filenames in os.walk(defconfigs_dir):
+        for dirpath, _, filenames in os.walk(defconfigs_dir):
             for filename in filenames:
                 defconfigs.append(os.path.join(dirpath, filename))
 
@@ -2003,7 +2003,7 @@ def equal_confs():
             break
         i += 1
 
-    return (l1[i:] == l2)
+    return l1[i:] == l2
 
 _all_ok = True
 
