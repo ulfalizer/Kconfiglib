@@ -1896,7 +1896,7 @@ def _intersperse(lst, op):
 
 def _sym_str_string(sym_or_str):
     if isinstance(sym_or_str, str):
-        return '"{0}"'.format(sym_or_str)
+        return '"' + sym_or_str + '"'
     return sym_or_str.name
 
 def _expr_to_str_rec(expr):
