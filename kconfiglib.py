@@ -1867,6 +1867,11 @@ def _str_val(obj):
     symbol), it must be a Symbol."""
     return obj if isinstance(obj, str) else obj.get_value()
 
+def _sym_str_string(sym_or_str):
+    if isinstance(sym_or_str, str):
+        return '"' + sym_or_str + '"'
+    return sym_or_str.name
+
 def _intersperse(lst, op):
     """_expr_to_str() helper. Gets the string representation of each expression in lst
     and produces a list where op has been inserted between the elements."""
@@ -1893,11 +1898,6 @@ def _intersperse(lst, op):
         handle_sub_expr(expr)
 
     return res
-
-def _sym_str_string(sym_or_str):
-    if isinstance(sym_or_str, str):
-        return '"' + sym_or_str + '"'
-    return sym_or_str.name
 
 def _expr_to_str_rec(expr):
     if expr is None:
