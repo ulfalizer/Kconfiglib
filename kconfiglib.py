@@ -1930,8 +1930,7 @@ def _expr_to_str_rec(expr):
                 _sym_str_string(expr[2])]
 
 def _expr_to_str(expr):
-    s = "".join(_expr_to_str_rec(expr))
-    return s
+    return "".join(_expr_to_str_rec(expr))
 
 # Tokens
 (T_AND, T_OR, T_NOT,
