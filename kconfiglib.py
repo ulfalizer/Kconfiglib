@@ -823,7 +823,6 @@ class Config(object):
         # Keep parsing additional terms while the lookahead is '||'
         while feed.check(T_OR):
             or_terms.append(self._parse_or_term(feed))
-
         return or_terms[0] if len(or_terms) == 1 else (OR, or_terms)
 
     def _parse_or_term(self, feed):
@@ -831,7 +830,6 @@ class Config(object):
         # Keep parsing additional terms while the lookahead is '&&'
         while feed.check(T_AND):
             and_terms.append(self._parse_factor(feed))
-
         return and_terms[0] if len(and_terms) == 1 else (AND, and_terms)
 
     def _parse_factor(self, feed):
@@ -880,7 +878,6 @@ class Config(object):
 
         if sym_or_string is self.m:
             sym_or_string = "m"
-
         if sym_or_string_2 is self.m:
             sym_or_string_2 = "m"
 
@@ -1444,44 +1441,34 @@ error, and you should email ulfalizer a.t Google's email service."""
 
         if first_expr == AND:
             res = "y"
-
             for subexpr in expr[1]:
                 ev = self._eval_expr_2(subexpr)
-
                 # Return immediately upon discovering an "n" term
                 if ev == "n":
                     return "n"
-
                 if ev == "m":
                     res = "m"
-
             # 'res' is either "m" or "y" here; we already handled the
             # short-circuiting "n" case in the loop.
             return res
 
         if first_expr == OR:
             res = "n"
-
             for subexpr in expr[1]:
                 ev = self._eval_expr_2(subexpr)
-
                 # Return immediately upon discovering a "y" term
                 if ev == "y":
                     return "y"
-
                 if ev == "m":
                     res = "m"
-
             # 'res' is either "n" or "m" here; we already handled the
             # short-circuiting "y" case in the loop.
             return res
 
         if first_expr == NOT:
             ev = self._eval_expr_2(expr[1])
-
             if ev == "y":
                 return "n"
-
             return "y" if (ev == "n") else "m"
 
         if first_expr == EQUAL:
@@ -1504,13 +1491,11 @@ error, and you should email ulfalizer a.t Google's email service."""
     def _eval_min(self, e1, e2):
         e1_eval = self._eval_expr(e1)
         e2_eval = self._eval_expr(e2)
-
         return e1_eval if tri_less(e1_eval, e2_eval) else e2_eval
 
     def _eval_max(self, e1, e2):
         e1_eval = self._eval_expr(e1)
         e2_eval = self._eval_expr(e2)
-
         return e1_eval if tri_greater(e1_eval, e2_eval) else e2_eval
 
     #
@@ -1563,10 +1548,8 @@ error, and you should email ulfalizer a.t Google's email service."""
 
             if sym.is_choice_symbol_:
                 choice = sym.parent
-
                 for _, e in choice.prompts:
                     add_expr_deps(e, sym)
-
                 for _, e in choice.def_exprs:
                     add_expr_deps(e, sym)
 
@@ -1868,10 +1851,8 @@ def _get_expr_syms(expr):
 
         elif e0 == EQUAL or e0 == UNEQUAL:
             _, v1, v2 = expr
-
             if isinstance(v1, Symbol):
                 res.add(v1)
-
             if isinstance(v2, Symbol):
                 res.add(v2)
 
