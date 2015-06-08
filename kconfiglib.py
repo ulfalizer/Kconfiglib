@@ -1464,21 +1464,15 @@ error, and you should email ulfalizer a.t Google's email service."""
             return "y" if (ev == "n") else "m"
 
         if first_expr == EQUAL:
-            return "y" if (self._get_str_value(expr[1]) ==
-                           self._get_str_value(expr[2])) else "n"
+            return "y" if (_get_str_value(expr[1]) ==
+                           _get_str_value(expr[2])) else "n"
 
         if first_expr == UNEQUAL:
-            return "y" if (self._get_str_value(expr[1]) !=
-                           self._get_str_value(expr[2])) else "n"
+            return "y" if (_get_str_value(expr[1]) !=
+                           _get_str_value(expr[2])) else "n"
 
         _internal_error("Internal error while evaluating expression: "
                         "unknown operation {0}.".format(first_expr))
-
-    def _get_str_value(self, obj):
-        if isinstance(obj, str):
-            return obj
-        # obj is a Symbol
-        return obj.get_value()
 
     def _eval_min(self, e1, e2):
         e1_eval = self._eval_expr(e1)
@@ -1841,6 +1835,12 @@ def _get_expr_syms(expr):
 
     rec(expr)
     return res
+
+def _get_str_value(obj):
+    if isinstance(obj, str):
+        return obj
+    # obj is a Symbol
+    return obj.get_value()
 
 #
 # Construction of expressions
@@ -2212,7 +2212,7 @@ class Symbol(Item, _HasVisibility):
                 for val_expr, cond_expr in self.def_exprs:
                     if self.config._eval_expr(cond_expr) != "n":
                         self.write_to_conf = True
-                        new_val = self.config._get_str_value(val_expr)
+                        new_val = _get_str_value(val_expr)
                         break
 
         elif self.type == HEX or self.type == INT:
@@ -2227,8 +2227,8 @@ class Symbol(Item, _HasVisibility):
                 if self.config._eval_expr(cond_expr) != "n":
                     has_active_range = True
 
-                    low_str = self.config._get_str_value(l)
-                    high_str = self.config._get_str_value(h)
+                    low_str = _get_str_value(l)
+                    high_str = _get_str_value(h)
                     low = int(low_str, base) if \
                       _is_base_n(low_str, base) else 0
                     high = int(high_str, base) if \
@@ -2261,7 +2261,7 @@ class Symbol(Item, _HasVisibility):
                         # to the range, and the output has "0x" as appropriate
                         # for the type.
 
-                        new_val = self.config._get_str_value(val_expr)
+                        new_val = _get_str_value(val_expr)
 
                         if _is_base_n(new_val, base):
                             new_val_num = int(new_val, base)
