@@ -424,23 +424,18 @@ class Config(object):
         match what 'make defconfig' would use. That probably ought to be worked
         around somehow, so that this function always gives the "expected"
         result."""
-
         if self.defconfig_sym is None:
             return None
-
         for filename, cond_expr in self.defconfig_sym.def_exprs:
             if self._eval_expr(cond_expr) == "y":
                 filename = self._expand_sym_refs(filename)
-
                 # We first look in $srctree. os.path.join() won't work here as
                 # an absolute path in filename would override $srctree.
                 srctree_filename = os.path.normpath(self.srctree + "/" + filename)
                 if os.path.exists(srctree_filename):
                     return srctree_filename
-
                 if os.path.exists(filename):
                     return filename
-
         return None
 
     def get_symbol(self, name):
