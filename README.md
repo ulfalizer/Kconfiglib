@@ -24,15 +24,16 @@ Run the following commands in the kernel root:
 
 <i>(Note: The directory name Kconfiglib/ is significant.)</i>
 
-In addition to creating a handy interface, the make targets created by the patch
-(`scriptconfig` and `iscripconfig`) are needed to pick up environment variables
-set in the kernel makefiles and later referenced in the Kconfig files (<i>ARCH</i>,
-<i>SRCARCH</i>, and <i>KERNELVERSION</i> as of Linux v4.0-rc3). The documentation
-explains how the make targets are used. The compatibility tests in the test suite
-also needs them.
+In addition to creating a handy interface, the make targets created by the
+patch (`scriptconfig` and `iscriptconfig`) are needed to pick up environment
+variables set in the kernel makefiles and later referenced in the Kconfig files
+(<i>ARCH</i>, <i>SRCARCH</i>, and <i>KERNELVERSION</i> as of Linux v4.0-rc3).
+The documentation explains how the make targets are used. The compatibility
+tests in the test suite also needs them.
 
 Please tell me if the patch does not apply. It should be trivial to apply
-manually.
+manually, as it's just a block of text that needs to be inserted near the other
+<i>*conf:</i> targets.
 
 ### Installation instructions for other projects ###
 
