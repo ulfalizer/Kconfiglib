@@ -458,6 +458,7 @@ def run_selftests():
     os.environ["srctree"] = "baz"
 
     c = kconfiglib.Config("Kconfiglib/tests/Ktext", base_dir = "foobar")
+    c.load_config("Kconfiglib/tests/empty")
     c.set_print_warnings(False)
     c.set_print_undef_assign(True)
 
@@ -469,7 +470,7 @@ def run_selftests():
       Value of $SRCARCH at creation time     : bar
       Source tree (derived from $srctree;
       defaults to '.' if $srctree isn't set) : baz
-      Most recently loaded .config           : (no .config loaded)
+      Most recently loaded .config           : Kconfiglib/tests/empty
       Print warnings                         : false
       Print assignments to undefined symbols : true""")
 
