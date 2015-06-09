@@ -434,6 +434,9 @@ def run_selftests():
     except:
         pass
 
+    # The tests below aren't meant to imply that the format is set in stone.
+    # It's just to verify that the strings do not change unexpectedly.
+
     # Printing of Config
 
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
