@@ -1345,9 +1345,13 @@ def run_selftests():
     verify_value("BOOL", "n")
     verify_value("STRING", "foo bar")
 
-    # Loading a completely empty .config should also reset values
+    # Loading a completely empty .config should reset values
     c.load_config("Kconfiglib/tests/empty")
     verify_value("STRING", "")
+
+    # An indented assignment in a .config should be ignored
+    c.load_config("Kconfiglib/tests/config_indented")
+    verify_value("IGNOREME", "y")
 
     #
     # get_config()

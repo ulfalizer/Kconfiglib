@@ -6,3 +6,7 @@ config BOOL
 
 config STRING
     string "string"
+
+config IGNOREME
+    bool "ignore me"
+    default y
