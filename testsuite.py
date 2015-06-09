@@ -424,11 +424,210 @@ def run_selftests():
     # Text queries
     #
 
-    # TODO: Get rid of extra \n's at end of texts?
-
     print("Testing text queries...")
 
+    def verify_print(o, s):
+        verify_equals(str(o), textwrap.dedent(s[1:]))
+
+    try:
+        del os.environ["ARCH"], os.environ["SRCARCH"], os.environ["srctree"]
+    except:
+        pass
+
+    # Printing of Config
+
     c = kconfiglib.Config("Kconfiglib/tests/Ktext")
+
+    verify_print(c, """
+      Configuration
+      File                                   : Kconfiglib/tests/Ktext
+      Base directory                         : .
+      Value of $ARCH at creation time        : (not set)
+      Value of $SRCARCH at creation time     : (not set)
+      Source tree (derived from $srctree;
+      defaults to '.' if $srctree isn't set) : .
+      Most recently loaded .config           : (no .config loaded)
+      Print warnings                         : true
+      Print assignments to undefined symbols : false""")
+
+    os.environ["ARCH"] = "foo"
+    os.environ["SRCARCH"] = "bar"
+    os.environ["srctree"] = "baz"
+
+    c = kconfiglib.Config("Kconfiglib/tests/Ktext", base_dir = "foobar")
+    c.set_print_warnings(False)
+    c.set_print_undef_assign(True)
+
+    verify_print(c, """
+      Configuration
+      File                                   : Kconfiglib/tests/Ktext
+      Base directory                         : foobar
+      Value of $ARCH at creation time        : foo
+      Value of $SRCARCH at creation time     : bar
+      Source tree (derived from $srctree;
+      defaults to '.' if $srctree isn't set) : baz
+      Most recently loaded .config           : (no .config loaded)
+      Print warnings                         : false
+      Print assignments to undefined symbols : true""")
+
+    # Printing of Symbol
+
+    verify_print(c["BASIC"], """
+      Symbol BASIC
+      Type           : bool
+      Value          : "n"
+      User value     : (no user value)
+      Visibility     : "n"
+      Is choice item : false
+      Is defined     : true
+      Is from env.   : false
+      Is special     : false
+      Prompts:
+       (no prompts)
+      Default values:
+       (no default values)
+      Selects:
+       (no selects)
+      Reverse (select-related) dependencies:
+       (no reverse dependencies)
+      Additional dependencies from enclosing menus and if's:
+       (no additional dependencies)
+      Locations: Kconfiglib/tests/Ktext:1""")
+
+    c["ADVANCED"].set_user_value("m")
+
+    verify_print(c["ADVANCED"], """
+      Symbol ADVANCED
+      Type           : tristate
+      Value          : "y"
+      User value     : "m"
+      Visibility     : "y"
+      Is choice item : false
+      Is defined     : true
+      Is from env.   : false
+      Is special     : false
+      Prompts:
+       "advanced prompt 1" if y || BASIC && BASIC (value: "y")
+       "advanced prompt 2"
+      Default values:
+       y (value: "y")
+        Condition: BASIC && !BASIC (value: "n")
+       n (value: "n")
+        Condition: BASIC = DUMMY (value: "n")
+      Selects:
+       SELECTED_1 if BASIC && DUMMY (value: "n")
+       SELECTED_2 if !(DUMMY || BASIC) (value: "y")
+      Reverse (select-related) dependencies:
+       SELECTING_1 && BASIC || SELECTING_2 && !BASIC (value: "n")
+      Additional dependencies from enclosing menus and if's:
+       !BASIC && !BASIC (value: "y")
+      Locations: Kconfiglib/tests/Ktext:6 Kconfiglib/tests/Ktext:13""")
+
+    verify_print(c["HAS_RANGES"], """
+      Symbol HAS_RANGES
+      Type           : int
+      Value          : "1"
+      User value     : (no user value)
+      Visibility     : "y"
+      Is choice item : false
+      Is defined     : true
+      Is from env.   : false
+      Is special     : false
+      Ranges:
+       [1, 2] if !DUMMY (value: "y")
+       [INT, INT] if DUMMY (value: "n")
+       [123, 456]
+      Prompts:
+       "ranged"
+      Default values:
+       (no default values)
+      Selects:
+       (no selects)
+      Reverse (select-related) dependencies:
+       (no reverse dependencies)
+      Additional dependencies from enclosing menus and if's:
+       (no additional dependencies)
+      Locations: Kconfiglib/tests/Ktext:29""")
+
+    # Printing of Choice
+
+    verify_print(c.get_choices()[0], """
+      Choice
+      Name (for named choices): (no name)
+      Type            : bool
+      Selected symbol : CHOICE_ITEM_1
+      User value      : (no user value)
+      Mode            : "y"
+      Visibility      : "y"
+      Optional        : false
+      Prompts:
+       "choice"
+      Defaults:
+       (no default values)
+      Choice symbols:
+       CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
+      Additional dependencies from enclosing menus and if's:
+       (no additional dependencies)
+      Locations: Kconfiglib/tests/Ktext:35""")
+
+    c["CHOICE_ITEM_2"].set_user_value("y")
+
+    verify_print(c.get_choices()[0], """
+      Choice
+      Name (for named choices): (no name)
+      Type            : bool
+      Selected symbol : CHOICE_ITEM_2
+      User value      : CHOICE_ITEM_2
+      Mode            : "y"
+      Visibility      : "y"
+      Optional        : false
+      Prompts:
+       "choice"
+      Defaults:
+       (no default values)
+      Choice symbols:
+       CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
+      Additional dependencies from enclosing menus and if's:
+       (no additional dependencies)
+      Locations: Kconfiglib/tests/Ktext:35""")
+
+    # Printing of Menu
+
+    verify_print(c.get_menus()[0], """
+      Menu
+      Title                     : simple menu
+      'depends on' dependencies : (no dependencies)
+      'visible if' dependencies : (no dependencies)
+      Additional dependencies from enclosing menus and if's:
+       (no additional dependencies)
+      Location: Kconfiglib/tests/Ktext:47""")
+
+    verify_print(c.get_menus()[1], """
+      Menu
+      Title                     : advanced menu
+      'depends on' dependencies : !BASIC (value: "y")
+      'visible if' dependencies : !DUMMY (value: "y")
+      Additional dependencies from enclosing menus and if's:
+       !DUMMY (value: "y")
+      Location: Kconfiglib/tests/Ktext:51""")
+
+    # Printing of Comment
+
+    verify_print(c.get_comments()[0], """
+      Comment
+      Text: simple comment
+      Dependencies: (no dependencies)
+      Additional dependencies from enclosing menus and if's:
+       (no additional dependencies)
+      Location: Kconfiglib/tests/Ktext:57""")
+
+    verify_print(c.get_comments()[1], """
+      Comment
+      Text: advanced comment
+      Dependencies: !BASIC (value: "y")
+      Additional dependencies from enclosing menus and if's:
+       !DUMMY (value: "y")
+      Location: Kconfiglib/tests/Ktext:60""")
 
     verify_equals(c["NO_HELP"].get_help(), None)
     verify_equals(c["EMPTY_HELP"].get_help(), "")
@@ -436,11 +635,11 @@ def run_selftests():
     verify_equals(c["TRICKY_HELP"].get_help(),
                   "a\n b\n  c\n\n d\n  e\n   f\n\n\ng\n h\n  i\n")
     verify_equals(c["S"].get_help(), "help for\nS\n")
-    verify_equals(c.get_choices()[0].get_help(), "help for\nC\n")
+    verify_equals(c.get_choices()[1].get_help(), "help for\nC\n")
 
     verify_equals(c["S"].get_name(), "S")
-    verify_equals(c.get_comments()[0].get_text(), "a comment")
-    verify_equals(c.get_menus()[0].get_title(), "a menu")
+    verify_equals(c.get_comments()[2].get_text(), "a comment")
+    verify_equals(c.get_menus()[2].get_title(), "a menu")
 
     #
     # Prompt queries
