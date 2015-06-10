@@ -3189,12 +3189,12 @@ def _make_and(e1, e2):
     Nones equate to 'y'.
 
     Note: returns None if e1 == e2 == None."""
-    if e1 == "n" or e2 == "n":
-        return "n"
     if e1 is None or e1 == "y":
         return e2
     if e2 is None or e2 == "y":
         return e1
+    if e1 == "n" or e2 == "n":
+        return "n"
 
     # Prefer to merge/update argument list if possible instead of creating
     # a new AND node
