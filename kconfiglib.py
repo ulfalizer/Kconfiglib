@@ -1095,7 +1095,8 @@ class Config(object):
                              line_feeder.get_linenr())
 
     def _parse_properties(self, line_feeder, stmt, deps, visible_if_deps):
-        """Parsing of properties for symbols, menus, choices, and comments."""
+        """Parsing of properties for symbols, menus, choices, and comments.
+        Takes care of propagating dependencies from enclosing menus and ifs."""
 
         def parse_val_and_cond(tokens, line, filename, linenr):
             """Parses '<expr1> if <expr2>' constructs, where the 'if' part is
@@ -1141,7 +1142,7 @@ class Config(object):
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename, linenr)
 
                 if isinstance(stmt, (Menu, Comment)):
-                    stmt.dep_expr = _make_and(stmt.dep_expr, parsed_deps)
+                    stmt.orig_deps = _make_and(stmt.orig_deps, parsed_deps)
                 else:
                     depends_on_expr = _make_and(depends_on_expr, parsed_deps)
 
@@ -1309,27 +1310,35 @@ class Config(object):
                 self.end_line_tokens = tokens
                 break
 
-        # Propagate dependencies from enclosing menus and ifs.
+        # Done parsing properties. Now propagate 'depends on' and enclosing
+        # menu/if dependencies to expressions.
 
-        # For menus and comments..
+        # The set of symbols referenced directly by the statement plus all
+        # symbols referenced by enclosing menus and ifs
+        stmt.all_referenced_syms = stmt.referenced_syms | _get_expr_syms(deps)
+
+        # Save original dependencies from enclosing menus and ifs
+        stmt.deps_from_containing = deps
+
         if isinstance(stmt, (Menu, Comment)):
-            stmt.orig_deps = stmt.dep_expr
-            stmt.deps_from_containing = deps
-            stmt.dep_expr = _make_and(stmt.dep_expr, deps)
-
-            stmt.all_referenced_syms = \
-              stmt.referenced_syms | _get_expr_syms(deps)
-
-        # For symbols and choices..
+            stmt.dep_expr = _make_and(stmt.orig_deps, deps)
         else:
+            # Symbol or Choice
 
             # See comment for 'menu_dep'
             stmt.menu_dep = depends_on_expr
 
-            # Propagate dependencies specified with 'depends on' to any new
-            # default expressions, prompts, and selections. ("New" since a
-            # symbol might be defined in multiple places and the dependencies
-            # should only apply to the local definition.)
+            # Propagate 'depends on' dependencies to any new default
+            # expressions, prompts, and selections. ("New" since a symbol might
+            # be defined in multiple places and the dependencies should only
+            # apply to the local definition.)
+
+            if new_prompt is not None:
+                # 'visible if' dependencies from enclosing menus get propagated
+                # to prompts
+                prompt, cond_expr = new_prompt
+                cond_expr = _make_and(cond_expr, visible_if_deps)
+                new_prompt = (prompt, _make_and(cond_expr, depends_on_expr))
 
             new_def_exprs = [(val_expr, _make_and(cond_expr, depends_on_expr))
                              for val_expr, cond_expr in new_def_exprs]
@@ -1337,37 +1346,23 @@ class Config(object):
             new_selects = [(target, _make_and(cond_expr, depends_on_expr))
                            for target, cond_expr in new_selects]
 
-            if new_prompt is not None:
-                prompt, cond_expr = new_prompt
+            # Save the original expressions before any menu/if conditions have
+            # been propagated so they can be retrieved later
 
-                # 'visible if' dependencies from enclosing menus get propagated
-                # to prompts
-                if visible_if_deps is not None:
-                    cond_expr = _make_and(cond_expr, visible_if_deps)
-
-                new_prompt = (prompt, _make_and(cond_expr, depends_on_expr))
-
-            # We save the original expressions -- before any menu and if
-            # conditions have been propagated -- so these can be retrieved
-            # later.
-
-            stmt.orig_def_exprs.extend(new_def_exprs)
             if new_prompt is not None:
                 stmt.orig_prompts.append(new_prompt)
 
-            # Only symbols can select
+            stmt.orig_def_exprs.extend(new_def_exprs)
+
             if isinstance(stmt, Symbol):
+                # Only symbols can select
                 stmt.orig_selects.extend(new_selects)
 
-            # Save dependencies from enclosing menus and ifs
-            stmt.deps_from_containing = deps
+            # Propagate menu/if dependencies to finalize the dependencies
 
-            # The set of symbols referenced directly by the symbol/choice plus
-            # all symbols referenced by enclosing menus and ifs.
-            stmt.all_referenced_syms = \
-              stmt.referenced_syms | _get_expr_syms(deps)
-
-            # Propagate dependencies from enclosing menus and ifs
+            if new_prompt is not None:
+                stmt.prompts.append((new_prompt[0],
+                                    _make_and(new_prompt[1], deps)))
 
             stmt.def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
                                    for val_expr, cond_expr in new_def_exprs])
@@ -1376,10 +1371,6 @@ class Config(object):
                 target.rev_dep = _make_or(target.rev_dep,
                                           _make_and(stmt,
                                                     _make_and(cond, deps)))
-
-            if new_prompt is not None:
-                prompt, cond_expr = new_prompt
-                stmt.prompts.append((prompt, _make_and(cond_expr, deps)))
 
     #
     # Symbol table manipulation
