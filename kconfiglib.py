@@ -1328,49 +1328,45 @@ class Config(object):
             # See comment for 'menu_dep'
             stmt.menu_dep = depends_on_expr
 
-            # Propagate 'depends on' dependencies to any new default
-            # expressions, prompts, and selections. ("New" since a symbol might
-            # be defined in multiple places and the dependencies should only
-            # apply to the local definition.)
+            # Propagate dependencies to prompts
 
             if new_prompt is not None:
-                # 'visible if' dependencies from enclosing menus get propagated
-                # to prompts
+                # Propagate 'visible if' dependencies from enclosing menus
                 prompt, cond_expr = new_prompt
                 cond_expr = _make_and(cond_expr, visible_if_deps)
+                # Propagate 'depends on' dependencies
                 new_prompt = (prompt, _make_and(cond_expr, depends_on_expr))
-
-            new_def_exprs = [(val_expr, _make_and(cond_expr, depends_on_expr))
-                             for val_expr, cond_expr in new_def_exprs]
-
-            new_selects = [(target, _make_and(cond_expr, depends_on_expr))
-                           for target, cond_expr in new_selects]
-
-            # Save the original expressions before any menu/if conditions have
-            # been propagated so they can be retrieved later
-
-            if new_prompt is not None:
+                # Save original
                 stmt.orig_prompts.append(new_prompt)
-
-            stmt.orig_def_exprs.extend(new_def_exprs)
-
-            if isinstance(stmt, Symbol):
-                # Only symbols can select
-                stmt.orig_selects.extend(new_selects)
-
-            # Propagate menu/if dependencies to finalize the dependencies
-
-            if new_prompt is not None:
+                # Finalize with dependencies from enclosing menus and ifs
                 stmt.prompts.append((new_prompt[0],
                                     _make_and(new_prompt[1], deps)))
 
+            # Propagate dependencies to defaults
+
+            # Propagate 'depends on' dependencies
+            new_def_exprs = [(val_expr, _make_and(cond_expr, depends_on_expr))
+                             for val_expr, cond_expr in new_def_exprs]
+            # Save original
+            stmt.orig_def_exprs.extend(new_def_exprs)
+            # Finalize with dependencies from enclosing menus and ifs
             stmt.def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
                                    for val_expr, cond_expr in new_def_exprs])
 
-            for target, cond in new_selects:
-                target.rev_dep = _make_or(target.rev_dep,
-                                          _make_and(stmt,
-                                                    _make_and(cond, deps)))
+            # Propagate dependencies to selects
+
+            # Only symbols can select
+            if isinstance(stmt, Symbol):
+                # Propagate 'depends on' dependencies
+                new_selects = [(target, _make_and(cond_expr, depends_on_expr))
+                               for target, cond_expr in new_selects]
+                # Save original
+                stmt.orig_selects.extend(new_selects)
+                # Finalize with dependencies from enclosing menus and ifs
+                for target, cond in new_selects:
+                    target.rev_dep = _make_or(target.rev_dep,
+                                              _make_and(stmt,
+                                                        _make_and(cond, deps)))
 
     #
     # Symbol table manipulation
