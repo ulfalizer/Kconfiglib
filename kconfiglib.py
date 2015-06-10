@@ -44,9 +44,9 @@ object 'c' created, run
 
  $ make iscriptconfig [ARCH=<architecture>]
 
-Kconfiglib currently uses Python 2. For (i)scriptconfig, the Python interpreter
-to use can be passed in PYTHONCMD. It defaults to 'python', but PyPy works too
-and might be faster for long-running jobs.
+Kconfiglib supports both Python 2 and Python 3. For (i)scriptconfig, the Python
+interpreter to use can be passed in PYTHONCMD, which defaults to 'python'. PyPy
+works well too, and might give a nice speedup for long-running jobs.
 
 The examples/ directory contains short example scripts, which can be run with
 e.g.
