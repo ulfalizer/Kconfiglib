@@ -835,11 +835,9 @@ class Config(object):
     def _parse_factor(self, feed):
         if feed.check(T_OPEN_PAREN):
             expr_parse = self._parse_expr_2(feed)
-
             if not feed.check(T_CLOSE_PAREN):
                 _parse_error(self._line, "missing end parenthesis.",
                              self._filename, self._linenr)
-
             return expr_parse
 
         if feed.check(T_NOT):
@@ -960,7 +958,6 @@ class Config(object):
                 kconfig_file = tokens.get_next()
                 exp_kconfig_file = self._expand_sym_refs(kconfig_file)
                 f = os.path.join(self.base_dir, exp_kconfig_file)
-
                 if not os.path.exists(f):
                     raise IOError('{0}:{1}: sourced file "{2}" (expands to '
                                   '"{3}") not found. Perhaps base_dir '
