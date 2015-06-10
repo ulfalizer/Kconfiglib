@@ -214,11 +214,11 @@ class Config(object):
         self.end_line_tokens = None
 
         # See the comment in _parse_expr().
-        self.parse_expr_cur_sym_or_choice = None
-        self.parse_expr_line = None
-        self.parse_expr_filename = None
-        self.parse_expr_linenr = None
-        self.parse_expr_transform_m = None
+        self._cur_sym_or_choice = None
+        self._line = None
+        self._filename = None
+        self._linenr = None
+        self._transform_m = None
 
         # Parse the Kconfig files
         self.top_block = self._parse_file(filename, None, None, None)
@@ -810,11 +810,11 @@ class Config(object):
         # through the top-down parser in _parse_expr_2(), which is tedious and
         # obfuscates the code. A profiler run shows no noticeable performance
         # difference.
-        self.parse_expr_cur_sym_or_choice = cur_sym_or_choice
-        self.parse_expr_line = line
-        self.parse_expr_filename = filename
-        self.parse_expr_linenr = linenr
-        self.parse_expr_transform_m = transform_m
+        self._cur_sym_or_choice = cur_sym_or_choice
+        self._transform_m = transform_m
+        self._line = line
+        self._filename = filename
+        self._linenr = linenr
 
         return self._parse_expr_2(feed)
 
@@ -837,10 +837,8 @@ class Config(object):
             expr_parse = self._parse_expr_2(feed)
 
             if not feed.check(T_CLOSE_PAREN):
-                _parse_error(self.parse_expr_line,
-                             "missing end parenthesis.",
-                             self.parse_expr_filename,
-                             self.parse_expr_linenr)
+                _parse_error(self._line, "missing end parenthesis.",
+                             self._filename, self._linenr)
 
             return expr_parse
 
@@ -850,31 +848,29 @@ class Config(object):
         sym_or_string = feed.get_next()
 
         if not isinstance(sym_or_string, (Symbol, str)):
-            _parse_error(self.parse_expr_line,
-                         "malformed expression.",
-                         self.parse_expr_filename,
-                         self.parse_expr_linenr)
+            _parse_error(self._line, "malformed expression.", self._filename,
+                         self._linenr)
 
-        if self.parse_expr_cur_sym_or_choice is not None and \
+        if self._cur_sym_or_choice is not None and \
            isinstance(sym_or_string, Symbol):
-            self.parse_expr_cur_sym_or_choice.referenced_syms.add(sym_or_string)
+            self._cur_sym_or_choice.referenced_syms.add(sym_or_string)
 
         next_token = feed.peek_next()
 
         # For conditional expressions ('depends on <expr>', '... if <expr>',
         # etc.), "m" and m are rewritten to "m" && MODULES.
         if next_token != T_EQUAL and next_token != T_UNEQUAL:
-            if self.parse_expr_transform_m and (sym_or_string is self.m or
-                                                sym_or_string == "m"):
+            if self._transform_m and (sym_or_string is self.m or
+                                      sym_or_string == "m"):
                 return (AND, ["m", self._sym_lookup("MODULES")])
             return sym_or_string
 
         relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
         sym_or_string_2 = feed.get_next()
 
-        if self.parse_expr_cur_sym_or_choice is not None and \
+        if self._cur_sym_or_choice is not None and \
            isinstance(sym_or_string_2, Symbol):
-            self.parse_expr_cur_sym_or_choice.referenced_syms.add(sym_or_string_2)
+            self._cur_sym_or_choice.referenced_syms.add(sym_or_string_2)
 
         if sym_or_string is self.m:
             sym_or_string = "m"
