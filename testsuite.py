@@ -494,7 +494,7 @@ def run_selftests():
        (no selects)
       Reverse (select-related) dependencies:
        (no reverse dependencies)
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Locations: Kconfiglib/tests/Ktext:1""")
 
@@ -523,7 +523,7 @@ def run_selftests():
        SELECTED_2 if !(DUMMY || BASIC) (value: "y")
       Reverse (select-related) dependencies:
        SELECTING_1 && BASIC || SELECTING_2 && !BASIC (value: "n")
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        !BASIC && !BASIC (value: "y")
       Locations: Kconfiglib/tests/Ktext:6 Kconfiglib/tests/Ktext:13""")
 
@@ -549,7 +549,7 @@ def run_selftests():
        (no selects)
       Reverse (select-related) dependencies:
        (no reverse dependencies)
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Locations: Kconfiglib/tests/Ktext:29""")
 
@@ -570,7 +570,7 @@ def run_selftests():
        (no default values)
       Choice symbols:
        CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Locations: Kconfiglib/tests/Ktext:35""")
 
@@ -591,7 +591,7 @@ def run_selftests():
        (no default values)
       Choice symbols:
        CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Locations: Kconfiglib/tests/Ktext:35""")
 
@@ -602,7 +602,7 @@ def run_selftests():
       Title                     : simple menu
       'depends on' dependencies : (no dependencies)
       'visible if' dependencies : (no dependencies)
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Location: Kconfiglib/tests/Ktext:47""")
 
@@ -611,7 +611,7 @@ def run_selftests():
       Title                     : advanced menu
       'depends on' dependencies : !BASIC (value: "y")
       'visible if' dependencies : !DUMMY (value: "y")
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        !DUMMY (value: "y")
       Location: Kconfiglib/tests/Ktext:51""")
 
@@ -621,7 +621,7 @@ def run_selftests():
       Comment
       Text: simple comment
       Dependencies: (no dependencies)
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Location: Kconfiglib/tests/Ktext:57""")
 
@@ -629,7 +629,7 @@ def run_selftests():
       Comment
       Text: advanced comment
       Dependencies: !BASIC (value: "y")
-      Additional dependencies from enclosing menus and if's:
+      Additional dependencies from enclosing menus and ifs:
        !DUMMY (value: "y")
       Location: Kconfiglib/tests/Ktext:60""")
 

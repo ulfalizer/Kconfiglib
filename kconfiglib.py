@@ -895,12 +895,12 @@ class Config(object):
         menu, or choice statement. Returns a list with the Items in the block.
 
         end_marker -- The token that ends the block, e.g. T_ENDIF ("endif") for
-                      if's. None for files.
+                      ifs. None for files.
 
         parent -- The enclosing menu, choice or if, or None if we're at the top
                   level.
 
-        deps -- Dependencies from enclosing menus, choices and if's.
+        deps -- Dependencies from enclosing menus, choices and ifs.
 
         visible_if_deps (default: None) -- 'visible if' dependencies from
                         enclosing menus.
@@ -1309,7 +1309,7 @@ class Config(object):
                 self.end_line_tokens = tokens
                 break
 
-        # Propagate dependencies from enclosing menus and if's.
+        # Propagate dependencies from enclosing menus and ifs.
 
         # For menus and comments..
         if isinstance(stmt, (Menu, Comment)):
@@ -1359,15 +1359,15 @@ class Config(object):
             if isinstance(stmt, Symbol):
                 stmt.orig_selects.extend(new_selects)
 
-            # Save dependencies from enclosing menus and if's
+            # Save dependencies from enclosing menus and ifs
             stmt.deps_from_containing = deps
 
             # The set of symbols referenced directly by the symbol/choice plus
-            # all symbols referenced by enclosing menus and if's.
+            # all symbols referenced by enclosing menus and ifs.
             stmt.all_referenced_syms = \
               stmt.referenced_syms | _get_expr_syms(deps)
 
-            # Propagate dependencies from enclosing menus and if's
+            # Propagate dependencies from enclosing menus and ifs
 
             stmt.def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
                                    for val_expr, cond_expr in new_def_exprs])
@@ -1615,7 +1615,7 @@ class Config(object):
             locations_str = " ".join(["{0}:{1}".format(filename, linenr) for
                                       (filename, linenr) in sc.def_locations])
 
-        # Build additional-dependencies-from-menus-and-if's string
+        # Build additional-dependencies-from-menus-and-ifs string
         additional_deps_str = " " + self._expr_val_str(sc.deps_from_containing,
                                                        "(no additional dependencies)")
 
@@ -1684,7 +1684,7 @@ class Config(object):
                               "Reverse (select-related) dependencies:",
                               " (no reverse dependencies)" if sc.rev_dep == "n"
                                 else " " + self._expr_val_str(sc.rev_dep),
-                              "Additional dependencies from enclosing menus and if's:",
+                              "Additional dependencies from enclosing menus and ifs:",
                               additional_deps_str,
                               "Locations: " + locations_str)
 
@@ -1730,7 +1730,7 @@ class Config(object):
                           defaults_str,
                           "Choice symbols:",
                           " " + syms_string,
-                          "Additional dependencies from enclosing menus and if's:",
+                          "Additional dependencies from enclosing menus and ifs:",
                           additional_deps_str,
                           "Locations: " + locations_str)
 
@@ -2182,7 +2182,7 @@ class Symbol(Item):
         references the symbols A through G.
 
         refs_from_enclosing (default: False) -- If True, the symbols
-                            referenced by enclosing menus and if's will be
+                            referenced by enclosing menus and ifs will be
                             included in the result."""
         return self.all_referenced_syms if refs_from_enclosing else self.referenced_syms
 
@@ -2323,13 +2323,13 @@ class Symbol(Item):
         self.rev_dep = "n"
 
         # The prompt, default value and select conditions without any
-        # dependencies from menus or if's propagated to them
+        # dependencies from menus or ifs propagated to them
 
         self.orig_prompts = []
         self.orig_def_exprs = []
         self.orig_selects = []
 
-        # Dependencies inherited from containing menus and if's
+        # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
 
         self.help = None
@@ -2343,7 +2343,7 @@ class Symbol(Item):
         self.selected_syms = set()
 
         # Like 'referenced_syms', but includes symbols from
-        # dependencies inherited from enclosing menus and if's
+        # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = set()
 
         # This is set to True for "actual" choice symbols. See
@@ -2644,7 +2644,7 @@ class Menu(Item):
                           "Title                     : " + self.title,
                           "'depends on' dependencies : " + depends_on_str,
                           "'visible if' dependencies : " + visible_if_str,
-                          "Additional dependencies from enclosing menus and if's:",
+                          "Additional dependencies from enclosing menus and ifs:",
                           additional_deps_str,
                           "Location: {0}:{1}".format(self.filename, self.linenr))
 
@@ -2664,10 +2664,10 @@ class Menu(Item):
         self.dep_expr = None
 
         # Dependency expression without dependencies from enclosing menus and
-        # if's propagated
+        # ifs propagated
         self.orig_deps = None
 
-        # Dependencies inherited from containing menus and if's
+        # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
 
         # The 'visible if' expression
@@ -2678,7 +2678,7 @@ class Menu(Item):
         self.referenced_syms = set()
 
         # Like 'referenced_syms', but includes symbols from
-        # dependencies inherited from enclosing menus and if's
+        # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = None
 
         self.filename = None
@@ -2891,12 +2891,12 @@ class Choice(Item):
         self.block = None
 
         # The prompts and default values without any dependencies from
-        # enclosing menus or if's propagated
+        # enclosing menus or ifs propagated
 
         self.orig_prompts = []
         self.orig_def_exprs = []
 
-        # Dependencies inherited from containing menus and if's
+        # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
 
         # We need to filter out symbols that appear within the choice block but
@@ -2910,7 +2910,7 @@ class Choice(Item):
         self.referenced_syms = set()
 
         # Like 'referenced_syms', but includes symbols from
-        # dependencies inherited from enclosing menus and if's
+        # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = set()
 
         # See Choice.get_def_locations()
@@ -3031,7 +3031,7 @@ class Comment(Item):
         return _sep_lines("Comment",
                           "Text: "         + str(self.text),
                           "Dependencies: " + dep_str,
-                          "Additional dependencies from enclosing menus and if's:",
+                          "Additional dependencies from enclosing menus and ifs:",
                           additional_deps_str,
                           "Location: {0}:{1}".format(self.filename, self.linenr))
 
@@ -3050,10 +3050,10 @@ class Comment(Item):
         self.dep_expr = None
 
         # Dependency expression without dependencies from enclosing menus and
-        # if's propagated
+        # ifs propagated
         self.orig_deps = None
 
-        # Dependencies inherited from containing menus and if's
+        # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
 
         # The set of symbols referenced by this comment (see
@@ -3061,7 +3061,7 @@ class Comment(Item):
         self.referenced_syms = set()
 
         # Like 'referenced_syms', but includes symbols from
-        # dependencies inherited from enclosing menus and if's
+        # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = None
 
         self.filename = None
