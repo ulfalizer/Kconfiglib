@@ -3448,7 +3448,7 @@ def _internal_error(msg):
  T_BOOL, T_TRISTATE, T_HEX, T_INT, T_STRING,
  T_DEF_BOOL, T_DEF_TRISTATE,
  T_SELECT, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
- T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(0, 39)
+ T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(39)
 
 # The leading underscore before the function assignments below prevent pydoc
 # from listing them. The constants could be hidden too, but they're fairly
@@ -3512,7 +3512,7 @@ _unset_re_match = re.compile(r"# CONFIG_(\w+) is not set").match
 _sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 
 # Integers representing symbol types
-UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(0, 6)
+UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(6)
 
 # Strings to use for types
 typename = { UNKNOWN : "unknown", BOOL : "bool", TRISTATE : "tristate",
@@ -3530,7 +3530,7 @@ default_value = { BOOL : "n", TRISTATE : "n", STRING : "", INT : "", HEX : "" }
 NO_SELECTION = 0
 
 # Integers representing expression types
-AND, OR, NOT, EQUAL, UNEQUAL = range(0, 5)
+AND, OR, NOT, EQUAL, UNEQUAL = range(5)
 
 # Map from tristate values to integers
 tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
