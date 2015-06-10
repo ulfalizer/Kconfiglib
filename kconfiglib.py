@@ -1770,7 +1770,7 @@ class Config(object):
             left, right = right, left
         if not isinstance(left, Symbol):
             return None
-        if (relation == EQUAL   and (right == "m" or right == "y")) or \
+        if (relation == EQUAL and (right == "y" or right == "m")) or \
            (relation == UNEQUAL and right == "n"):
             return left
         return None
@@ -2445,9 +2445,9 @@ class Symbol(Item):
             return
 
         # Check if the value is valid for our type
-        if not ((self.type == BOOL     and (v == "n" or v == "y")   ) or
-                (self.type == TRISTATE and (v == "n" or v == "m" or
-                                            v == "y")               ) or
+        if not ((self.type == BOOL     and (v == "y" or v == "n")   ) or
+                (self.type == TRISTATE and (v == "y" or v == "m" or
+                                            v == "n")               ) or
                 (self.type == STRING                                ) or
                 (self.type == INT      and _is_base_n(v, 10)        ) or
                 (self.type == HEX      and _is_base_n(v, 16)        )):
