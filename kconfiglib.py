@@ -3464,9 +3464,9 @@ def _parse_error(s, msg, filename, linenr):
 
 def _internal_error(msg):
     raise Internal_Error(msg +
-      "\nSorry! You may want to send an email to ulfalizer a.t Google's " \
-      "email service to tell me about this. Include the message above " \
-      "and the stack trace and describe what you were doing.")
+      "\nSorry! You may want to send an email to ulfalizer a.t Google's "
+      "email service to tell me about this. Include the message above and the "
+      "stack trace and describe what you were doing.")
 
 #
 # Internal global constants
