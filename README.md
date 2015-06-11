@@ -61,7 +61,7 @@ language has some dark corners.
 
  * The [examples/](examples/) directory contains simple example scripts. See the documentation for how to run them.
 
- * [gen-manual-lists.py](http://git.buildroot.net/buildroot/tree/support/scripts/gen-manual-lists.py) from [Buildroot](http://buildroot.uclibc.org/) generates listings for the [appendix of the manual](http://buildroot.uclibc.org/downloads/manual/manual.html#_appendix). Due to an oversight, there were no APIs for fetching prompts from symbols and choices when it was written. Those have been added.
+ * [gen-manual-lists.py](http://git.buildroot.net/buildroot/tree/support/scripts/gen-manual-lists.py) from [Buildroot](http://buildroot.uclibc.org/) generates listings for the [appendix of the manual](http://buildroot.uclibc.org/downloads/manual/manual.html#_appendix).
 
  * [genboardscfg.py](http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD) from [Das U-Boot](http://www.denx.de/wiki/U-Boot) generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
 
