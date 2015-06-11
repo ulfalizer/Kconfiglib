@@ -95,8 +95,8 @@ class Config(object):
     # Public interface
     #
 
-    def __init__(self, filename = "Kconfig", base_dir = None,
-                 print_warnings = True, print_undef_assign = False):
+    def __init__(self, filename="Kconfig", base_dir=None, print_warnings=True,
+                 print_undef_assign=False):
         """Creates a new Config object, representing a Kconfig configuration.
         Raises Kconfig_Syntax_Error on syntax errors.
 
@@ -175,7 +175,7 @@ class Config(object):
         self.defconfig_sym = None
 
         # See Symbol.get_(src)arch()
-        self.arch    = os.environ.get("ARCH")
+        self.arch = os.environ.get("ARCH")
         self.srcarch = os.environ.get("SRCARCH")
 
         # See Config.__init__(). We need this for get_defconfig_filename().
@@ -228,7 +228,7 @@ class Config(object):
         # Build Symbol.dep for all symbols
         self._build_dep()
 
-    def load_config(self, filename, replace = True):
+    def load_config(self, filename, replace=True):
         """Loads symbol values from a file in the familiar .config format.
         Equivalent to calling Symbol.set_user_value() to set each of the
         values.
@@ -350,7 +350,7 @@ class Config(object):
 
                         sym._set_user_value_no_invalidate("n", True)
 
-    def write_config(self, filename, header = None):
+    def write_config(self, filename, header=None):
         """Writes out symbol values in the familiar .config format.
 
         Kconfiglib makes sure the format matches what the C implementation
@@ -471,7 +471,7 @@ class Config(object):
         same order as within the configuration."""
         return self.top_block
 
-    def get_symbols(self, all_symbols = True):
+    def get_symbols(self, all_symbols=True):
         """Returns a list of symbols from the configuration. An alternative for
         iterating over all defined symbols (in the order of definition) is
 
@@ -618,7 +618,7 @@ class Config(object):
         for sym in self.syms_iter():
             sym._invalidate()
 
-    def _tokenize(self, s, for_eval = False, filename = None, linenr = None):
+    def _tokenize(self, s, for_eval=False, filename=None, linenr=None):
         """Returns a _Feed instance containing tokens derived from the string
         's'. Registers any new symbols encountered (via _sym_lookup()).
 
@@ -795,8 +795,8 @@ class Config(object):
     #           <expr> '&&' <expr>
     #           <expr> '||' <expr>
 
-    def _parse_expr(self, feed, cur_sym_or_choice, line, filename = None,
-                    linenr = None, transform_m = True):
+    def _parse_expr(self, feed, cur_sym_or_choice, line, filename=None,
+                    linenr=None, transform_m=True):
         """Parse an expression from the tokens in 'feed' using a simple
         top-down approach. The result has the form (<operator>, <list
         containing parsed operands>).
@@ -887,14 +887,14 @@ class Config(object):
 
         return (relation, sym_or_string, sym_or_string_2)
 
-    def _parse_file(self, filename, parent, deps, visible_if_deps, res = None):
+    def _parse_file(self, filename, parent, deps, visible_if_deps, res=None):
         """Parses the Kconfig file 'filename'. Returns a list with the Items in
         the file. See _parse_block() for the meaning of the parameters."""
         return self._parse_block(_FileFeed(filename), None, parent, deps,
                                  visible_if_deps, res)
 
     def _parse_block(self, line_feeder, end_marker, parent, deps,
-                     visible_if_deps = None, res = None):
+                     visible_if_deps=None, res=None):
         """Parses a block, which is the contents of either a file or an if,
         menu, or choice statement. Returns a list with the Items in the block.
 
@@ -1391,7 +1391,7 @@ class Config(object):
     # Symbol table manipulation
     #
 
-    def _sym_lookup(self, name, add_sym_if_not_exists = True):
+    def _sym_lookup(self, name, add_sym_if_not_exists=True):
         """Fetches the symbol 'name' from the symbol table, optionally adding
         it if it does not exist (this is usually what we want)."""
         if name in self.syms:
@@ -1554,8 +1554,8 @@ class Config(object):
                 for _, e in choice.def_exprs:
                     add_expr_deps(e, sym)
 
-    def _expr_val_str(self, expr, no_value_str = "(none)",
-                      get_val_instead_of_eval = False):
+    def _expr_val_str(self, expr, no_value_str="(none)",
+                      get_val_instead_of_eval=False):
         # Since values are valid expressions, _expr_to_str() will get a nice
         # string representation for those as well.
 
@@ -1778,7 +1778,7 @@ class Config(object):
         """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
         or sym != n, returns sym. For other (in)equalities, returns None."""
         relation, left, right = eq
-        left  = self._transform_n_m_y(left)
+        left = self._transform_n_m_y(left)
         right = self._transform_n_m_y(right)
 
         # Make sure the symbol (if any) appears to the left
@@ -1802,7 +1802,7 @@ class Config(object):
             return "y"
         return item
 
-    def _warn(self, msg, filename = None, linenr = None):
+    def _warn(self, msg, filename=None, linenr=None):
         """For printing warnings to stderr."""
         if self.print_warnings:
             _stderr_msg("warning: " + msg, filename, linenr)
@@ -2189,7 +2189,7 @@ class Symbol(Item):
         representation."""
         return self.parent
 
-    def get_referenced_symbols(self, refs_from_enclosing = False):
+    def get_referenced_symbols(self, refs_from_enclosing=False):
         """Returns the set() of all symbols referenced by this symbol. For
         example, the symbol defined by
 
@@ -2603,7 +2603,7 @@ class Menu(Item):
         condition. "y" if the menu has no 'visible if' condition."""
         return self.config._eval_expr(self.visible_if_expr)
 
-    def get_items(self, recursive = False):
+    def get_items(self, recursive=False):
         """Returns a list containing the items (symbols, menus, choice
         statements and comments) in in the menu, in the same order that the
         items appear within the menu.
@@ -2624,7 +2624,7 @@ class Menu(Item):
                 res.extend(item.get_items())
         return res
 
-    def get_symbols(self, recursive = False):
+    def get_symbols(self, recursive=False):
         """Returns a list containing the symbols in the menu, in the same order
         that they appear within the menu.
 
@@ -2646,7 +2646,7 @@ class Menu(Item):
         representation."""
         return self.parent
 
-    def get_referenced_symbols(self, refs_from_enclosing = False):
+    def get_referenced_symbols(self, refs_from_enclosing=False):
         """See Symbol.get_referenced_symbols()."""
         return self.all_referenced_syms if refs_from_enclosing else \
                self.referenced_syms
@@ -2855,7 +2855,7 @@ class Choice(Item):
         representation."""
         return self.parent
 
-    def get_referenced_symbols(self, refs_from_enclosing = False):
+    def get_referenced_symbols(self, refs_from_enclosing=False):
         """See Symbol.get_referenced_symbols()."""
         return self.all_referenced_syms if refs_from_enclosing else \
                self.referenced_syms
@@ -3041,7 +3041,7 @@ class Comment(Item):
         representation."""
         return self.parent
 
-    def get_referenced_symbols(self, refs_from_enclosing = False):
+    def get_referenced_symbols(self, refs_from_enclosing=False):
         """See Symbol.get_referenced_symbols()."""
         return self.all_referenced_syms if refs_from_enclosing else \
                self.referenced_syms
