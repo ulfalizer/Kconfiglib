@@ -278,7 +278,7 @@ class Config(object):
         def warn_override(filename, linenr, name, old_user_val, new_user_val):
             self._warn('overriding the value of {0}. '
                        'Old value: "{1}", new value: "{2}".'
-                        .format(name, old_user_val, new_user_val),
+                       .format(name, old_user_val, new_user_val),
                        filename, linenr)
 
         # Invalidate everything to keep things simple. It might be possible to
