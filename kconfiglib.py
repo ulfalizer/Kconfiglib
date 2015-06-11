@@ -78,7 +78,7 @@ import sys
 # Internal functions
 # Internal global constants
 
-# Line length: 80 columns
+# Line length: 79 columns
 
 #
 # Public classes
