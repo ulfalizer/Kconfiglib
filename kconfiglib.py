@@ -534,7 +534,7 @@ class Config(object):
         """Returns the (uncommented) textual header of the .config file most
         recently loaded with load_config(). Returns None if no .config file has
         been loaded or if the most recently loaded .config file has no header.
-        The header comprises all lines up to but not including the first line
+        The header consists of all lines up to but not including the first line
         that either
 
         1. Does not start with "#"
@@ -588,27 +588,27 @@ class Config(object):
 
     def __str__(self):
         """Returns a string containing various information about the Config."""
-        return _sep_lines("Configuration",
-                          "File                                   : " +
-                            self.filename,
-                          "Base directory                         : " +
-                            self.base_dir,
-                          "Value of $ARCH at creation time        : " +
-                            ("(not set)" if self.arch is None else self.arch),
-                          "Value of $SRCARCH at creation time     : " +
-                            ("(not set)" if self.srcarch is None else
-                                            self.srcarch),
-                          "Source tree (derived from $srctree;",
-                          "defaults to '.' if $srctree isn't set) : " +
-                            self.srctree,
-                          "Most recently loaded .config           : " +
-                            ("(no .config loaded)"
-                              if self.config_filename is None else
-                                 self.config_filename),
-                          "Print warnings                         : " +
-                            bool_str[self.print_warnings],
-                          "Print assignments to undefined symbols : " +
-                            bool_str[self.print_undef_assign])
+        return _lines("Configuration",
+                      "File                                   : " +
+                        self.filename,
+                      "Base directory                         : " +
+                        self.base_dir,
+                      "Value of $ARCH at creation time        : " +
+                        ("(not set)" if self.arch is None else self.arch),
+                      "Value of $SRCARCH at creation time     : " +
+                        ("(not set)" if self.srcarch is None else
+                                        self.srcarch),
+                      "Source tree (derived from $srctree;",
+                      "defaults to '.' if $srctree isn't set) : " +
+                        self.srctree,
+                      "Most recently loaded .config           : " +
+                        ("(no .config loaded)"
+                          if self.config_filename is None else
+                             self.config_filename),
+                      "Print warnings                         : " +
+                        bool_str[self.print_warnings],
+                      "Print assignments to undefined symbols : " +
+                        bool_str[self.print_undef_assign])
 
     #
     # Private methods
@@ -1676,34 +1676,32 @@ class Config(object):
                                                 self._expr_val_str(cond_expr))
                 selects_str = "\n".join(selects_str_rows)
 
-            res = _sep_lines("Symbol " +
-                               ("(no name)" if sc.name is None else sc.name),
-                             "Type           : " + typename[sc.type],
-                             "Value          : " + s(sc.get_value()),
-                             "User value     : " + user_val_str,
-                             "Visibility     : " + s(sc.get_visibility()),
-                             "Is choice item : " +
-                               bool_str[sc.is_choice_symbol_],
-                             "Is defined     : " + bool_str[sc.is_defined_],
-                             "Is from env.   : " + bool_str[sc.is_from_env],
-                             "Is special     : " +
-                               bool_str[sc.is_special_] + "\n")
+            res = _lines("Symbol " +
+                           ("(no name)" if sc.name is None else sc.name),
+                         "Type           : " + typename[sc.type],
+                         "Value          : " + s(sc.get_value()),
+                         "User value     : " + user_val_str,
+                         "Visibility     : " + s(sc.get_visibility()),
+                         "Is choice item : " + bool_str[sc.is_choice_symbol_],
+                         "Is defined     : " + bool_str[sc.is_defined_],
+                         "Is from env.   : " + bool_str[sc.is_from_env],
+                         "Is special     : " + bool_str[sc.is_special_] + "\n")
             if sc.ranges != []:
-                res += _sep_lines("Ranges:",
+                res += _lines("Ranges:",
                                   ranges_str + "\n")
-            res += _sep_lines("Prompts:",
-                              prompts_str,
-                              "Default values:",
-                              defaults_str,
-                              "Selects:",
-                              selects_str,
-                              "Reverse (select-related) dependencies:",
-                              " (no reverse dependencies)" if sc.rev_dep == "n"
-                                else " " + self._expr_val_str(sc.rev_dep),
-                              "Additional dependencies from enclosing menus "
-                                "and ifs:",
-                              additional_deps_str,
-                              "Locations: " + locations_str)
+            res += _lines("Prompts:",
+                          prompts_str,
+                          "Default values:",
+                          defaults_str,
+                          "Selects:",
+                          selects_str,
+                          "Reverse (select-related) dependencies:",
+                          " (no reverse dependencies)" if sc.rev_dep == "n"
+                            else " " + self._expr_val_str(sc.rev_dep),
+                          "Additional dependencies from enclosing menus "
+                            "and ifs:",
+                          additional_deps_str,
+                          "Locations: " + locations_str)
 
             return res
 
@@ -1732,25 +1730,25 @@ class Config(object):
         names = [sym.name for sym in sc.get_symbols()]
         syms_string = "(empty)" if names == [] else " ".join(names)
 
-        return _sep_lines("Choice",
-                          "Name (for named choices): " +
-                            ("(no name)" if sc.name is None else sc.name),
-                          "Type            : " + typename[sc.type],
-                          "Selected symbol : " + sel_str,
-                          "User value      : " + user_val_str,
-                          "Mode            : " + s(sc.get_mode()),
-                          "Visibility      : " + s(sc.get_visibility()),
-                          "Optional        : " + bool_str[sc.optional],
-                          "Prompts:",
-                          prompts_str,
-                          "Defaults:",
-                          defaults_str,
-                          "Choice symbols:",
-                          " " + syms_string,
-                          "Additional dependencies from enclosing menus and "
-                            "ifs:",
-                          additional_deps_str,
-                          "Locations: " + locations_str)
+        return _lines("Choice",
+                      "Name (for named choices): " +
+                        ("(no name)" if sc.name is None else sc.name),
+                      "Type            : " + typename[sc.type],
+                      "Selected symbol : " + sel_str,
+                      "User value      : " + user_val_str,
+                      "Mode            : " + s(sc.get_mode()),
+                      "Visibility      : " + s(sc.get_visibility()),
+                      "Optional        : " + bool_str[sc.optional],
+                      "Prompts:",
+                      prompts_str,
+                      "Defaults:",
+                      defaults_str,
+                      "Choice symbols:",
+                      " " + syms_string,
+                      "Additional dependencies from enclosing menus and "
+                        "ifs:",
+                      additional_deps_str,
+                      "Locations: " + locations_str)
 
     def _expr_depends_on(self, expr, sym):
         """Reimplementation of expr_depends_symbol() from mconf.c. Used to
@@ -2669,15 +2667,14 @@ class Menu(Item):
           self.config._expr_val_str(self.deps_from_containing,
                                     "(no additional dependencies)")
 
-        return _sep_lines("Menu",
-                          "Title                     : " + self.title,
-                          "'depends on' dependencies : " + depends_on_str,
-                          "'visible if' dependencies : " + visible_if_str,
-                          "Additional dependencies from enclosing menus and "
-                            "ifs:",
-                          additional_deps_str,
-                          "Location: {0}:{1}".format(self.filename,
-                                                     self.linenr))
+        return _lines("Menu",
+                      "Title                     : " + self.title,
+                      "'depends on' dependencies : " + depends_on_str,
+                      "'visible if' dependencies : " + visible_if_str,
+                      "Additional dependencies from enclosing menus and "
+                        "ifs:",
+                      additional_deps_str,
+                      "Location: {0}:{1}".format(self.filename, self.linenr))
 
     #
     # Private methods
@@ -3063,14 +3060,13 @@ class Comment(Item):
           self.config._expr_val_str(self.deps_from_containing,
                                     "(no additional dependencies)")
 
-        return _sep_lines("Comment",
-                          "Text: "         + str(self.text),
-                          "Dependencies: " + dep_str,
-                          "Additional dependencies from enclosing menus and "
-                            "ifs:",
-                          additional_deps_str,
-                          "Location: {0}:{1}".format(self.filename,
-                                                     self.linenr))
+        return _lines("Comment",
+                      "Text: "         + str(self.text),
+                      "Dependencies: " + dep_str,
+                      "Additional dependencies from enclosing menus and "
+                        "ifs:",
+                      additional_deps_str,
+                      "Location: {0}:{1}".format(self.filename, self.linenr))
 
     #
     # Private methods
@@ -3416,8 +3412,8 @@ def _is_base_n(s, n):
     except ValueError:
         return False
 
-def _sep_lines(*args):
-    """Returns a string comprised of all arguments, with newlines inserted
+def _lines(*args):
+    """Returns a string consisting of all arguments, with newlines inserted
     between them."""
     return "\n".join(args)
 
