@@ -1850,8 +1850,6 @@ class Symbol(Item):
         if self.cached_val is not None:
             return self.cached_val
 
-        self.write_to_conf = False
-
         # As a quirk of Kconfig, undefined symbols get their name as their
         # value. This is why things like "FOO = bar" work for seeing if FOO has
         # the value "bar".
@@ -1860,8 +1858,10 @@ class Symbol(Item):
             return self.name
 
         new_val = default_value[self.type]
-
         vis = _get_visibility(self)
+
+        # This is easiest to calculate together with the value
+        self.write_to_conf = False
 
         if self.type == BOOL or self.type == TRISTATE:
             # The visibility and mode (modules-only or single-selection) of
