@@ -309,7 +309,7 @@ class Config(object):
                                      line_feeder.get_filename(),
                                      line_feeder.get_linenr())
                     # Strip quotes and remove escapings. The unescaping
-                    # producedure should be safe since " can only appear as \"
+                    # procedure should be safe since " can only appear as \"
                     # inside the string.
                     val = val[1:-1].replace('\\"', '"').replace("\\\\", "\\")
 
