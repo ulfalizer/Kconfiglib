@@ -2520,18 +2520,17 @@ class Symbol(Item):
                 return ["CONFIG_{0}={1}".format(self.name, val)]
             return ["# CONFIG_{0} is not set".format(self.name)]
 
-        elif self.type == INT or self.type == HEX:
+        if self.type == INT or self.type == HEX:
             return ["CONFIG_{0}={1}".format(self.name, val)]
 
-        elif self.type == STRING:
+        if self.type == STRING:
             # Escape \ and "
             return ['CONFIG_{0}="{1}"'
                     .format(self.name,
                             val.replace("\\", "\\\\").replace('"', '\\"'))]
 
-        else:
-            _internal_error("Internal error while creating .config: unknown "
-                            'type "{0}".'.format(self.type))
+        _internal_error("Internal error while creating .config: unknown "
+                        'type "{0}".'.format(self.type))
 
     def _get_dependent(self):
         """Returns the set of symbols that should be invalidated if the value
