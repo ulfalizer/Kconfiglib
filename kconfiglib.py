@@ -878,11 +878,6 @@ class Config(object):
            isinstance(sym_or_string_2, Symbol):
             self._cur_sym_or_choice.referenced_syms.add(sym_or_string_2)
 
-        if sym_or_string is self.m:
-            sym_or_string = "m"
-        if sym_or_string_2 is self.m:
-            sym_or_string_2 = "m"
-
         return (relation, sym_or_string, sym_or_string_2)
 
     def _parse_file(self, filename, parent, deps, visible_if_deps, res=None):
