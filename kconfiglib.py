@@ -2516,18 +2516,18 @@ class Symbol(Item):
             return []
 
         if self.type == BOOL or self.type == TRISTATE:
-            if val == "m" or val == "y":
+            if val == "y" or val == "m":
                 return ["CONFIG_{0}={1}".format(self.name, val)]
             return ["# CONFIG_{0} is not set".format(self.name)]
+
+        elif self.type == INT or self.type == HEX:
+            return ["CONFIG_{0}={1}".format(self.name, val)]
 
         elif self.type == STRING:
             # Escape \ and "
             return ['CONFIG_{0}="{1}"'
                     .format(self.name,
                             val.replace("\\", "\\\\").replace('"', '\\"'))]
-
-        elif self.type == INT or self.type == HEX:
-            return ["CONFIG_{0}={1}".format(self.name, val)]
 
         else:
             _internal_error("Internal error while creating .config: unknown "
