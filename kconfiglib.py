@@ -843,42 +843,42 @@ class Config(object):
         return and_terms[0] if len(and_terms) == 1 else (AND, and_terms)
 
     def _parse_factor(self, feed):
-        if feed.check(T_OPEN_PAREN):
+        token = feed.get_next()
+
+        if isinstance(token, (Symbol, str)):
+            if self._cur_sym_or_choice is not None and \
+               isinstance(token, Symbol):
+                self._cur_sym_or_choice.referenced_syms.add(token)
+
+            next_token = feed.peek_next()
+            # For conditional expressions ('depends on <expr>', '... if <expr>',
+            # etc.), "m" and m are rewritten to "m" && MODULES.
+            if next_token != T_EQUAL and next_token != T_UNEQUAL:
+                if self._transform_m and (token is self.m or token == "m"):
+                    return (AND, ["m", self._sym_lookup("MODULES")])
+                return token
+
+            relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
+            token_2 = feed.get_next()
+
+            if self._cur_sym_or_choice is not None and \
+               isinstance(token_2, Symbol):
+                self._cur_sym_or_choice.referenced_syms.add(token_2)
+
+            return (relation, token, token_2)
+
+        if token == T_NOT:
+            return (NOT, self._parse_factor(feed))
+
+        if token == T_OPEN_PAREN:
             expr_parse = self._parse_expr_2(feed)
             if not feed.check(T_CLOSE_PAREN):
                 _parse_error(self._line, "missing end parenthesis.",
                              self._filename, self._linenr)
             return expr_parse
 
-        if feed.check(T_NOT):
-            return (NOT, self._parse_factor(feed))
-
-        sym_or_string = feed.get_next()
-        if not isinstance(sym_or_string, (Symbol, str)):
-            _parse_error(self._line, "malformed expression.", self._filename,
-                         self._linenr)
-
-        if self._cur_sym_or_choice is not None and \
-           isinstance(sym_or_string, Symbol):
-            self._cur_sym_or_choice.referenced_syms.add(sym_or_string)
-
-        next_token = feed.peek_next()
-        # For conditional expressions ('depends on <expr>', '... if <expr>',
-        # etc.), "m" and m are rewritten to "m" && MODULES.
-        if next_token != T_EQUAL and next_token != T_UNEQUAL:
-            if self._transform_m and (sym_or_string is self.m or
-                                      sym_or_string == "m"):
-                return (AND, ["m", self._sym_lookup("MODULES")])
-            return sym_or_string
-
-        relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
-        sym_or_string_2 = feed.get_next()
-
-        if self._cur_sym_or_choice is not None and \
-           isinstance(sym_or_string_2, Symbol):
-            self._cur_sym_or_choice.referenced_syms.add(sym_or_string_2)
-
-        return (relation, sym_or_string, sym_or_string_2)
+        _parse_error(self._line, "malformed expression.", self._filename,
+                     self._linenr)
 
     def _parse_file(self, filename, parent, deps, visible_if_deps, res=None):
         """Parses the Kconfig file 'filename'. Returns a list with the Items in
