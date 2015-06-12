@@ -983,10 +983,10 @@ class Config(object):
                 dep_expr = self._parse_expr(tokens, None, line,
                                             line_feeder.get_filename(),
                                             line_feeder.get_linenr())
+                # Add items to the same block
                 self._parse_block(line_feeder, T_ENDIF, parent,
                                   _make_and(dep_expr, deps),
-                                  visible_if_deps,
-                                  block) # Add items to the same block
+                                  visible_if_deps, block)
 
             elif t0 == T_COMMENT:
                 comment = Comment()
