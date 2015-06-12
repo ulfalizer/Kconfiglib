@@ -105,6 +105,10 @@ Patches are welcome too of course. ;)
      For example, a list of symbols where all symbols depend on the first symbol
      might create such a menu rooted at the first symbol. Recreating such "cosmetic"
      menus might be awkward.
+     
+     (There is already basic support internally though, because it's needed to get
+     obscure choice behavior right -- see `_determine_actual_symbols()` and its
+     helper `_has_auto_menu_dep_on()`.)
 
  * [fpemud](https://github.com/fpemud) has put together [Python
 bindings](https://github.com/fpemud/pylkc) to internal functions in the C
