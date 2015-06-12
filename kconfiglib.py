@@ -850,8 +850,9 @@ class Config(object):
                 self._cur_item.referenced_syms.add(token)
 
             next_token = feed.peek_next()
-            # For conditional expressions ('depends on <expr>', '... if <expr>',
-            # etc.), "m" and m are rewritten to "m" && MODULES.
+            # For conditional expressions ('depends on <expr>',
+            # '... if <expr>', # etc.), "m" and m are rewritten to
+            # "m" && MODULES.
             if next_token != T_EQUAL and next_token != T_UNEQUAL:
                 if self._transform_m and (token is self.m or token == "m"):
                     return (AND, ["m", self._sym_lookup("MODULES")])
@@ -982,9 +983,7 @@ class Config(object):
                 dep_expr = self._parse_expr(tokens, None, line,
                                             line_feeder.get_filename(),
                                             line_feeder.get_linenr())
-                self._parse_block(line_feeder,
-                                  T_ENDIF,
-                                  parent,
+                self._parse_block(line_feeder, T_ENDIF, parent,
                                   _make_and(dep_expr, deps),
                                   visible_if_deps,
                                   block) # Add items to the same block
@@ -1017,10 +1016,9 @@ class Config(object):
                 block.append(menu)
 
                 # Parse properties and contents
-                self._parse_properties(line_feeder, menu, deps, visible_if_deps)
-                menu.block = self._parse_block(line_feeder,
-                                               T_ENDMENU,
-                                               menu,
+                self._parse_properties(line_feeder, menu, deps,
+                                       visible_if_deps)
+                menu.block = self._parse_block(line_feeder, T_ENDMENU, menu,
                                                menu.dep_expr,
                                                _make_and(visible_if_deps,
                                                          menu.visible_if_expr))
@@ -1048,11 +1046,8 @@ class Config(object):
                 # Parse properties and contents
                 self._parse_properties(line_feeder, choice, deps,
                                        visible_if_deps)
-                choice.block = self._parse_block(line_feeder,
-                                                 T_ENDCHOICE,
-                                                 choice,
-                                                 deps,
-                                                 visible_if_deps)
+                choice.block = self._parse_block(line_feeder, T_ENDCHOICE,
+                                                 choice, deps, visible_if_deps)
 
                 choice._determine_actual_symbols()
 
@@ -1073,14 +1068,12 @@ class Config(object):
 
             elif t0 == T_MAINMENU:
                 text = tokens.get_next()
-
                 if self.mainmenu_text is not None:
                     self._warn("overriding 'mainmenu' text. "
                                'Old value: "{0}", new value: "{1}".'
                                .format(self.mainmenu_text, text),
                                line_feeder.get_filename(),
                                line_feeder.get_linenr())
-
                 self.mainmenu_text = text
 
             else:
@@ -1659,8 +1652,9 @@ class Config(object):
                     if cond_expr is None:
                         selects_str_rows.append(" {0}".format(target.name))
                     else:
-                        selects_str_rows.append(" {0} if ".format(target.name) +
-                                                self._expr_val_str(cond_expr))
+                        selects_str_rows.append(
+                          " {0} if {1}".format(target.name,
+                                               self._expr_val_str(cond_expr)))
                 selects_str = "\n".join(selects_str_rows)
 
             res = _lines("Symbol " +
@@ -1880,7 +1874,8 @@ class Symbol(Item):
                         cond_eval = self.config._eval_expr(cond_expr)
                         if cond_eval != "n":
                             self.write_to_conf = True
-                            new_val = self.config._eval_min(val_expr, cond_eval)
+                            new_val = self.config._eval_min(val_expr,
+                                                            cond_eval)
                             break
 
                 # Reverse (select-related) dependencies take precedence
