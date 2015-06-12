@@ -1687,8 +1687,7 @@ class Config(object):
                          "Is from env.   : " + bool_str[sc.is_from_env],
                          "Is special     : " + bool_str[sc.is_special_] + "\n")
             if sc.ranges != []:
-                res += _lines("Ranges:",
-                                  ranges_str + "\n")
+                res += _lines("Ranges:", ranges_str + "\n")
             res += _lines("Prompts:",
                           prompts_str,
                           "Default values:",
