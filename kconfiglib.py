@@ -859,12 +859,11 @@ class Config(object):
                 return token
 
             relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
-            token_2 = feed.get_next()
 
+            token_2 = feed.get_next()
             if self._cur_sym_or_choice is not None and \
                isinstance(token_2, Symbol):
                 self._cur_sym_or_choice.referenced_syms.add(token_2)
-
             return (relation, token, token_2)
 
         if token == T_NOT:
