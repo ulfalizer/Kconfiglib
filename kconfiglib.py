@@ -854,7 +854,6 @@ class Config(object):
             return (NOT, self._parse_factor(feed))
 
         sym_or_string = feed.get_next()
-
         if not isinstance(sym_or_string, (Symbol, str)):
             _parse_error(self._line, "malformed expression.", self._filename,
                          self._linenr)
@@ -864,7 +863,6 @@ class Config(object):
             self._cur_sym_or_choice.referenced_syms.add(sym_or_string)
 
         next_token = feed.peek_next()
-
         # For conditional expressions ('depends on <expr>', '... if <expr>',
         # etc.), "m" and m are rewritten to "m" && MODULES.
         if next_token != T_EQUAL and next_token != T_UNEQUAL:
