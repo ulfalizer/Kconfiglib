@@ -869,11 +869,11 @@ class Config(object):
         if token == T_OPEN_PAREN:
             expr_parse = self._parse_expr_2(feed)
             if not feed.check(T_CLOSE_PAREN):
-                _parse_error(self._line, "missing end parenthesis.",
+                _parse_error(self._line, "missing end parenthesis",
                              self._filename, self._linenr)
             return expr_parse
 
-        _parse_error(self._line, "malformed expression.", self._filename,
+        _parse_error(self._line, "malformed expression", self._filename,
                      self._linenr)
 
     def _parse_file(self, filename, parent, deps, visible_if_deps, res=None):
@@ -1084,7 +1084,7 @@ class Config(object):
                 self.mainmenu_text = text
 
             else:
-                _parse_error(line, "unrecognized construct.",
+                _parse_error(line, "unrecognized construct",
                              line_feeder.get_filename(),
                              line_feeder.get_linenr())
 
@@ -1132,7 +1132,7 @@ class Config(object):
 
             if t0 == T_DEPENDS:
                 if not tokens.check(T_ON):
-                    _parse_error(line, 'expected "on" after "depends".',
+                    _parse_error(line, 'expected "on" after "depends"',
                                  filename, linenr)
 
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename,
@@ -1280,24 +1280,22 @@ class Config(object):
                     if not isinstance(stmt, Symbol):
                         _parse_error(line,
                                      "the 'allnoconfig_y' option is only "
-                                     "valid for symbols.",
+                                     "valid for symbols",
                                      filename,
                                      linenr)
                     stmt.allnoconfig_y = True
 
                 else:
-                    _parse_error(line, "unrecognized option.", filename,
-                                 linenr)
+                    _parse_error(line, "unrecognized option", filename, linenr)
 
             elif t0 == T_VISIBLE:
                 if not tokens.check(T_IF):
-                    _parse_error(line, 'expected "if" after "visible".',
+                    _parse_error(line, 'expected "if" after "visible"',
                                  filename, linenr)
                 if not isinstance(stmt, Menu):
                     _parse_error(line,
-                                 "'visible if' is only valid for menus.",
-                                 filename,
-                                 linenr)
+                                 "'visible if' is only valid for menus",
+                                 filename, linenr)
 
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename,
                                                linenr)
@@ -1307,7 +1305,7 @@ class Config(object):
             elif t0 == T_OPTIONAL:
                 if not isinstance(stmt, Choice):
                     _parse_error(line,
-                                 '"optional" is only valid for choices.',
+                                 '"optional" is only valid for choices',
                                  filename,
                                  linenr)
                 stmt.optional = True
