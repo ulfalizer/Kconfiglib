@@ -1604,7 +1604,7 @@ class Config(object):
                        s(sc.user_val)
 
         # Build prompts string
-        if sc.prompts == []:
+        if not sc.prompts:
             prompts_str = " (no prompts)"
         else:
             prompts_str_rows = []
@@ -1618,7 +1618,7 @@ class Config(object):
             prompts_str = "\n".join(prompts_str_rows)
 
         # Build locations string
-        if sc.def_locations == []:
+        if not sc.def_locations:
             locations_str = "(no locations)"
         else:
             locations_str = " ".join(["{0}:{1}".format(filename, linenr) for
@@ -1636,7 +1636,7 @@ class Config(object):
         if isinstance(sc, Symbol):
             # Build ranges string
             if isinstance(sc, Symbol):
-                if sc.ranges == []:
+                if not sc.ranges:
                     ranges_str = " (no ranges)"
                 else:
                     ranges_str_rows = []
@@ -1651,7 +1651,7 @@ class Config(object):
                     ranges_str = "\n".join(ranges_str_rows)
 
             # Build default values string
-            if sc.def_exprs == []:
+            if not sc.def_exprs:
                 defaults_str = " (no default values)"
             else:
                 defaults_str_rows = []
@@ -1664,7 +1664,7 @@ class Config(object):
                 defaults_str = "\n".join(defaults_str_rows)
 
             # Build selects string
-            if sc.orig_selects == []:
+            if not sc.orig_selects:
                 selects_str = " (no selects)"
             else:
                 selects_str_rows = []
@@ -1686,7 +1686,7 @@ class Config(object):
                          "Is defined     : " + bool_str[sc.is_defined_],
                          "Is from env.   : " + bool_str[sc.is_from_env],
                          "Is special     : " + bool_str[sc.is_special_] + "\n")
-            if sc.ranges != []:
+            if sc.ranges:
                 res += _lines("Ranges:", ranges_str + "\n")
             res += _lines("Prompts:",
                           prompts_str,
@@ -1713,7 +1713,7 @@ class Config(object):
         sel_str = "(no selection)" if sel is None else sel.name
 
         # Build default values string
-        if sc.def_exprs == []:
+        if not sc.def_exprs:
             defaults_str = " (no default values)"
         else:
             defaults_str_rows = []
@@ -1727,7 +1727,7 @@ class Config(object):
 
         # Build contained symbols string
         names = [sym.name for sym in sc.get_symbols()]
-        syms_string = "(empty)" if names == [] else " ".join(names)
+        syms_string = " ".join(names) if names else "(empty)"
 
         return _lines("Choice",
                       "Name (for named choices): " +
@@ -2301,7 +2301,7 @@ class Symbol(Item):
     def has_ranges(self):
         """Returns True if the symbol is of type INT or HEX and has ranges that
         limit what values it can take on."""
-        return self.ranges != []
+        return bool(self.ranges)
 
     def is_choice_symbol(self):
         """Returns True if the symbol is in a choice statement and is an actual
@@ -2478,7 +2478,7 @@ class Symbol(Item):
                               .format(v, self.name, typename[self.type]))
             return
 
-        if self.prompts == [] and not suppress_load_warnings:
+        if not self.prompts and not suppress_load_warnings:
             self.config._warn('assigning "{0}" to the symbol {1} which '
                               'lacks prompts and thus has visibility "n". '
                               'The assignment will have no effect.'
@@ -2567,7 +2567,7 @@ class Symbol(Item):
             _internal_error("Attempt to determine auto menu dependency for "
                             "symbol ouside of choice.")
 
-        if self.prompts == []:
+        if not self.prompts:
             # If we have no prompt, use the menu dependencies instead (what was
             # specified with 'depends on')
             return self.menu_dep is not None and \
@@ -2768,7 +2768,7 @@ class Choice(Item):
         """Like Choice.get_selection(), but acts as if no symbol has been
         selected by the user and no 'optional' flag is in effect."""
 
-        if self.actual_symbols == []:
+        if not self.actual_symbols:
             return None
 
         for symbol, cond_expr in self.def_exprs:
@@ -2975,7 +2975,7 @@ class Choice(Item):
                 stack = []
                 continue
 
-            while stack != []:
+            while stack:
                 if item._has_auto_menu_dep_on(stack[-1]):
                     # The item should not be viewed as a choice item, so don't
                     # set item.is_choice_symbol_.
@@ -3335,7 +3335,7 @@ def _intersperse(lst, op):
     """_expr_to_str() helper. Gets the string representation of each expression
     in lst and produces a list where op has been inserted between the
     elements."""
-    if lst == []:
+    if not lst:
         return ""
 
     res = []
