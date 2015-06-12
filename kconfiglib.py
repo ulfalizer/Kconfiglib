@@ -1736,6 +1736,30 @@ class Config(object):
                       additional_deps_str,
                       "Locations: " + locations_str)
 
+    def _eq_to_sym(self, eq):
+        """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
+        or sym != n, returns sym. For other (in)equalities, returns None."""
+        relation, left, right = eq
+
+        def transform_y_m_n(item):
+            if item is self.y: return "y"
+            if item is self.m: return "m"
+            if item is self.n: return "n"
+            return item
+
+        left = transform_y_m_n(left)
+        right = transform_y_m_n(right)
+
+        # Make sure the symbol (if any) appears to the left
+        if not isinstance(left, Symbol):
+            left, right = right, left
+        if not isinstance(left, Symbol):
+            return None
+        if (relation == EQUAL and (right == "y" or right == "m")) or \
+           (relation == UNEQUAL and right == "n"):
+            return left
+        return None
+
     def _expr_depends_on(self, expr, sym):
         """Reimplementation of expr_depends_symbol() from mconf.c. Used to
         determine if a submenu should be implicitly created, which influences
@@ -1759,34 +1783,6 @@ class Config(object):
             return False
 
         return rec(expr)
-
-    def _eq_to_sym(self, eq):
-        """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
-        or sym != n, returns sym. For other (in)equalities, returns None."""
-        relation, left, right = eq
-        left = self._transform_n_m_y(left)
-        right = self._transform_n_m_y(right)
-
-        # Make sure the symbol (if any) appears to the left
-        if not isinstance(left, Symbol):
-            left, right = right, left
-        if not isinstance(left, Symbol):
-            return None
-        if (relation == EQUAL and (right == "y" or right == "m")) or \
-           (relation == UNEQUAL and right == "n"):
-            return left
-        return None
-
-    def _transform_n_m_y(self, item):
-        """_eq_to_sym() helper. Translates the symbols n, m, and y to their
-        string equivalents."""
-        if item is self.n:
-            return "n"
-        if item is self.m:
-            return "m"
-        if item is self.y:
-            return "y"
-        return item
 
     def _warn(self, msg, filename=None, linenr=None):
         """For printing warnings to stderr."""
