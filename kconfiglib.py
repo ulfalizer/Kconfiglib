@@ -216,7 +216,7 @@ class Config(object):
         self.end_line_tokens = None
 
         # See the comment in _parse_expr().
-        self._cur_sym_or_choice = None
+        self._cur_item = None
         self._line = None
         self._filename = None
         self._linenr = None
@@ -795,17 +795,17 @@ class Config(object):
     #           <expr> '&&' <expr>
     #           <expr> '||' <expr>
 
-    def _parse_expr(self, feed, cur_sym_or_choice, line, filename=None,
-                    linenr=None, transform_m=True):
+    def _parse_expr(self, feed, cur_item, line, filename=None, linenr=None,
+                    transform_m=True):
         """Parse an expression from the tokens in 'feed' using a simple
         top-down approach. The result has the form (<operator>, <list
         containing parsed operands>).
 
         feed -- _Feed instance containing the tokens for the expression.
 
-        cur_sym_or_choice -- The symbol or choice currently being parsed, or
-                             None if we're not parsing a symbol or choice.
-                             Used for recording references to symbols.
+        cur_item -- The item (Symbol, Choice, Menu, or Comment) currently being
+                    parsed, or None if we're not parsing an item. Used for
+                    recording references to symbols.
 
         line -- The line containing the expression being parsed.
 
@@ -820,7 +820,7 @@ class Config(object):
         # through the top-down parser in _parse_expr_2(), which is tedious and
         # obfuscates the code. A profiler run shows no noticeable performance
         # difference.
-        self._cur_sym_or_choice = cur_sym_or_choice
+        self._cur_item = cur_item
         self._transform_m = transform_m
         self._line = line
         self._filename = filename
@@ -846,9 +846,8 @@ class Config(object):
         token = feed.get_next()
 
         if isinstance(token, (Symbol, str)):
-            if self._cur_sym_or_choice is not None and \
-               isinstance(token, Symbol):
-                self._cur_sym_or_choice.referenced_syms.add(token)
+            if self._cur_item is not None and isinstance(token, Symbol):
+                self._cur_item.referenced_syms.add(token)
 
             next_token = feed.peek_next()
             # For conditional expressions ('depends on <expr>', '... if <expr>',
@@ -861,9 +860,8 @@ class Config(object):
             relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
 
             token_2 = feed.get_next()
-            if self._cur_sym_or_choice is not None and \
-               isinstance(token_2, Symbol):
-                self._cur_sym_or_choice.referenced_syms.add(token_2)
+            if self._cur_item is not None and isinstance(token_2, Symbol):
+                self._cur_item.referenced_syms.add(token_2)
             return (relation, token, token_2)
 
         if token == T_NOT:
