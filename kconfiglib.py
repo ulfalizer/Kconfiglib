@@ -2053,9 +2053,9 @@ class Symbol(Item):
         if self.type != BOOL and self.type != TRISTATE:
             return None
         rev_dep = self.config._eval_expr(self.rev_dep)
-        # A bool selected to "m" gets promoted to "y"
+        # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep == "m" and self.type == BOOL:
-            rev_dep = "y"
+            return None
         vis = _get_visibility(self)
         if tri_to_int[vis] > tri_to_int[rev_dep]:
             return vis
@@ -2076,9 +2076,9 @@ class Symbol(Item):
         if self.type != BOOL and self.type != TRISTATE:
             return None
         rev_dep = self.config._eval_expr(self.rev_dep)
-        # A bool selected to "m" gets promoted to "y"
+        # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep == "m" and self.type == BOOL:
-            rev_dep = "y"
+            return None
         if tri_to_int[_get_visibility(self)] > tri_to_int[rev_dep]:
             return rev_dep
         return None
@@ -2099,9 +2099,9 @@ class Symbol(Item):
         if self.type != BOOL and self.type != TRISTATE:
             return []
         rev_dep = self.config._eval_expr(self.rev_dep)
-        # A bool selected to "m" gets promoted to "y"
+        # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep == "m" and self.type == BOOL:
-            rev_dep = "y"
+            return []
         res = ["n", "m", "y"][tri_to_int[rev_dep] :
                               tri_to_int[_get_visibility(self)] + 1]
         return res if len(res) > 1 else []
@@ -2255,9 +2255,9 @@ class Symbol(Item):
             return False
         if self.type == BOOL or self.type == TRISTATE:
             rev_dep = self.config._eval_expr(self.rev_dep)
-            # A bool selected to "m" gets promoted to "y"
+            # A bool selected to "m" gets promoted to "y", pinning it
             if rev_dep == "m" and self.type == BOOL:
-                rev_dep = "y"
+                return False
             return tri_to_int[_get_visibility(self)] > tri_to_int[rev_dep]
         return _get_visibility(self) != "n"
 
