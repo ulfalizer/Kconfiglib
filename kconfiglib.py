@@ -1054,13 +1054,13 @@ class Config(object):
                 # If no type is set for the choice, its type is that of the
                 # first choice item
                 if choice.type == UNKNOWN:
-                    for item in choice.get_symbols():
+                    for item in choice.actual_symbols:
                         if item.type != UNKNOWN:
                             choice.type = item.type
                             break
 
                 # Each choice item of UNKNOWN type gets the type of the choice
-                for item in choice.get_symbols():
+                for item in choice.actual_symbols:
                     if item.type == UNKNOWN:
                         item.type = choice.type
 
