@@ -362,9 +362,6 @@ class Config(object):
                beginning of the file, with each line commented out
                automatically. None means no header."""
 
-        # already_written is set when _make_conf() is called on a symbol, so
-        # that symbols defined in multiple locations only get one entry in the
-        # .config. We need to reset it prior to writing out a new .config.
         for sym in self.syms_iter():
             sym.already_written = False
 
@@ -2361,14 +2358,6 @@ class Symbol(Item):
 
         self.user_val = None
 
-        # Flags
-
-        # Should the symbol get an entry in .config?
-        self.write_to_conf = False
-
-        # Caches the calculated value
-        self.cached_val = None
-
         # Populated in Config._build_dep() after parsing. Links the symbol to
         # the symbols that immediately depend on it (in a caching/invalidation
         # sense). The total set of dependent symbols for the symbol (the
@@ -2376,9 +2365,22 @@ class Symbol(Item):
         # _get_dependent().
         self.dep = set()
 
+        # Cached values and flags
+
+        # Caches the calculated value
+        self.cached_val = None
+
         # Caches the total list of dependent symbols. Calculated in
         # _get_dependent().
         self.cached_deps = None
+
+        # Should the symbol get an entry in .config?
+        self.write_to_conf = False
+
+        # Set to true when _make_conf() is called on a symbol, so that symbols
+        # defined in multiple locations only get one .config entry. We need to
+        # reset it prior to writing out a new .config.
+        self.already_written = False
 
         # Does the symbol have an entry in the Kconfig file? The trailing
         # underscore avoids a collision with is_defined().
