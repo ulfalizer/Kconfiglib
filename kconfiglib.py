@@ -1207,17 +1207,17 @@ class Config(object):
                 new_prompt = parse_val_and_cond(tokens, line, filename, linenr)
 
             elif t0 == T_RANGE:
-                lower = tokens.get_next()
-                upper = tokens.get_next()
-                stmt.referenced_syms.add(lower)
-                stmt.referenced_syms.add(upper)
+                low = tokens.get_next()
+                high = tokens.get_next()
+                stmt.referenced_syms.add(low)
+                stmt.referenced_syms.add(high)
 
                 if tokens.check(T_IF):
-                    stmt.ranges.append((lower, upper,
+                    stmt.ranges.append((low, high,
                                         self._parse_expr(tokens, stmt, line,
                                                          filename, linenr)))
                 else:
-                    stmt.ranges.append((lower, upper, None))
+                    stmt.ranges.append((low, high, None))
 
             elif t0 == T_DEF_TRISTATE:
                 stmt.type = TRISTATE
