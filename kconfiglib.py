@@ -1888,7 +1888,7 @@ class Symbol(Item):
             if new_val == "m" and self.type == BOOL:
                 new_val = "y"
 
-        elif self.type == HEX or self.type == INT:
+        elif self.type == INT or self.type == HEX:
             has_active_range = False
             low = None
             high = None
