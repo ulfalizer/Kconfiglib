@@ -2057,7 +2057,7 @@ class Symbol(Item):
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
         vis = _get_visibility(self)
-        if (tri_to_int[vis] - tri_to_int[rev_dep]) > 0:
+        if tri_to_int[vis] > tri_to_int[rev_dep]:
             return vis
         return None
 
@@ -2079,7 +2079,7 @@ class Symbol(Item):
         # A bool selected to "m" gets promoted to "y"
         if self.type == BOOL and rev_dep == "m":
             rev_dep = "y"
-        if (tri_to_int[_get_visibility(self)] - tri_to_int[rev_dep]) > 0:
+        if tri_to_int[_get_visibility(self)] > tri_to_int[rev_dep]:
             return rev_dep
         return None
 
@@ -2258,8 +2258,7 @@ class Symbol(Item):
             # A bool selected to "m" gets promoted to "y"
             if self.type == BOOL and rev_dep == "m":
                 rev_dep = "y"
-            return (tri_to_int[_get_visibility(self)] -
-                    tri_to_int[rev_dep]) > 0
+            return tri_to_int[_get_visibility(self)] > tri_to_int[rev_dep]
         return _get_visibility(self) != "n"
 
     def is_defined(self):
