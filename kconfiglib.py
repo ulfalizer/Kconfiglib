@@ -3468,42 +3468,21 @@ def _internal_error(msg):
 
 # Keyword to token map. Note that the get() method is assigned directly as a
 # small optimization.
-_get_keyword = { "mainmenu"       : T_MAINMENU,
-                 "menu"           : T_MENU,
-                 "endmenu"        : T_ENDMENU,
-                 "endif"          : T_ENDIF,
-                 "endchoice"      : T_ENDCHOICE,
-                 "source"         : T_SOURCE,
-                 "choice"         : T_CHOICE,
-                 "config"         : T_CONFIG,
-                 "comment"        : T_COMMENT,
-                 "menuconfig"     : T_MENUCONFIG,
-                 "help"           : T_HELP,
-                 "if"             : T_IF,
-                 "depends"        : T_DEPENDS,
-                 "on"             : T_ON,
-                 "optional"       : T_OPTIONAL,
-                 "prompt"         : T_PROMPT,
-                 "default"        : T_DEFAULT,
-                 "bool"           : T_BOOL,
-                 "boolean"        : T_BOOL,
-                 "tristate"       : T_TRISTATE,
-                 "int"            : T_INT,
-                 "hex"            : T_HEX,
-                 "def_bool"       : T_DEF_BOOL,
-                 "def_tristate"   : T_DEF_TRISTATE,
-                 "string"         : T_STRING,
-                 "select"         : T_SELECT,
-                 "range"          : T_RANGE,
-                 "option"         : T_OPTION,
-                 "allnoconfig_y"  : T_ALLNOCONFIG_Y,
-                 "env"            : T_ENV,
-                 "defconfig_list" : T_DEFCONFIG_LIST,
-                 "modules"        : T_MODULES,
-                 "visible"        : T_VISIBLE }.get
+_get_keyword = \
+  {"mainmenu": T_MAINMENU, "menu": T_MENU, "endmenu": T_ENDMENU,
+   "endif": T_ENDIF, "endchoice": T_ENDCHOICE, "source": T_SOURCE,
+   "choice": T_CHOICE, "config": T_CONFIG, "comment": T_COMMENT,
+   "menuconfig": T_MENUCONFIG, "help": T_HELP, "if": T_IF,
+   "depends": T_DEPENDS, "on": T_ON, "optional": T_OPTIONAL,
+   "prompt": T_PROMPT, "default": T_DEFAULT, "bool": T_BOOL, "boolean": T_BOOL,
+   "tristate": T_TRISTATE, "int": T_INT, "hex": T_HEX, "def_bool": T_DEF_BOOL,
+   "def_tristate": T_DEF_TRISTATE, "string": T_STRING, "select": T_SELECT,
+   "range": T_RANGE, "option": T_OPTION, "allnoconfig_y": T_ALLNOCONFIG_Y,
+   "env": T_ENV, "defconfig_list": T_DEFCONFIG_LIST, "modules": T_MODULES,
+   "visible": T_VISIBLE}.get
 
 # Strings to use for True and False
-bool_str = { False : "false", True : "true" }
+bool_str = {False: "false", True: "true"}
 
 # Tokens after which identifier-like lexemes are treated as strings. T_CHOICE
 # is included to avoid symbols being registered for named choices.
@@ -3517,7 +3496,7 @@ _initial_token_re_match = re.compile(r"[^\w]*(\w+)").match
 _id_keyword_re_match = re.compile(r"\s*([\w./-]+)").match
 
 # Regular expressions for parsing .config files
-_set_re_match   = re.compile(r"CONFIG_(\w+)=(.*)").match
+_set_re_match = re.compile(r"CONFIG_(\w+)=(.*)").match
 _unset_re_match = re.compile(r"# CONFIG_(\w+) is not set").match
 
 # Regular expression for finding $-references to symbols in strings
@@ -3527,16 +3506,16 @@ _sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(6)
 
 # Strings to use for types
-typename = { UNKNOWN : "unknown", BOOL : "bool", TRISTATE : "tristate",
-             STRING : "string", HEX : "hex", INT : "int" }
+typename = {UNKNOWN: "unknown", BOOL: "bool", TRISTATE: "tristate",
+            STRING: "string", HEX: "hex", INT: "int"}
 
 # Token to type mapping
-token_to_type = { T_BOOL : BOOL, T_TRISTATE : TRISTATE, T_STRING : STRING,
-                  T_INT : INT, T_HEX : HEX }
+token_to_type = {T_BOOL: BOOL, T_TRISTATE: TRISTATE, T_STRING: STRING,
+                 T_INT: INT, T_HEX: HEX}
 
 # Default values for symbols of different types (the value the symbol gets if
 # it is not assigned a user value and none of its 'default' clauses kick in)
-default_value = { BOOL : "n", TRISTATE : "n", STRING : "", INT : "", HEX : "" }
+default_value = {BOOL: "n", TRISTATE: "n", STRING: "", INT: "", HEX: ""}
 
 # Indicates that no item is selected in a choice statement
 NO_SELECTION = 0
@@ -3545,9 +3524,9 @@ NO_SELECTION = 0
 AND, OR, NOT, EQUAL, UNEQUAL = range(5)
 
 # Map from tristate values to integers
-tri_to_int = { "n" : 0, "m" : 1, "y" : 2 }
+tri_to_int = {"n": 0, "m": 1, "y": 2}
 
 # Printing-related stuff
 
-op_to_str = { AND : " && ", OR : " || ", EQUAL : " = ", UNEQUAL : " != " }
-precedence = { OR : 0, AND : 1, NOT : 2 }
+op_to_str = {AND: " && ", OR: " || ", EQUAL: " = ", UNEQUAL: " != "}
+precedence = {OR: 0, AND: 1, NOT: 2}
