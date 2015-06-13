@@ -3030,7 +3030,8 @@ class Comment(Item):
     def __str__(self):
         """Returns a string containing various information about the
         comment."""
-        dep_str = self.config._expr_val_str(self.orig_deps, "(no dependencies)")
+        dep_str = self.config._expr_val_str(self.orig_deps,
+                                            "(no dependencies)")
 
         additional_deps_str = " " + \
           self.config._expr_val_str(self.deps_from_containing,
