@@ -1888,22 +1888,6 @@ class Symbol(Item):
             if new_val == "m" and self.type == BOOL:
                 new_val = "y"
 
-        elif self.type == STRING:
-            use_defaults = True
-
-            if vis != "n":
-                self.write_to_conf = True
-                if self.user_val is not None:
-                    new_val = self.user_val
-                    use_defaults = False
-
-            if use_defaults:
-                for val_expr, cond_expr in self.def_exprs:
-                    if self.config._eval_expr(cond_expr) != "n":
-                        self.write_to_conf = True
-                        new_val = _str_val(val_expr)
-                        break
-
         elif self.type == HEX or self.type == INT:
             has_active_range = False
             low = None
@@ -1973,6 +1957,22 @@ class Symbol(Item):
                     # provided it's > 0, with "0x" prepended as appropriate.
                     if has_active_range and low > 0:
                         new_val = (hex(low) if self.type == HEX else str(low))
+
+        elif self.type == STRING:
+            use_defaults = True
+
+            if vis != "n":
+                self.write_to_conf = True
+                if self.user_val is not None:
+                    new_val = self.user_val
+                    use_defaults = False
+
+            if use_defaults:
+                for val_expr, cond_expr in self.def_exprs:
+                    if self.config._eval_expr(cond_expr) != "n":
+                        self.write_to_conf = True
+                        new_val = _str_val(val_expr)
+                        break
 
         self.cached_val = new_val
         return new_val
