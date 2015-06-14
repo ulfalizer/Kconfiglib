@@ -1271,8 +1271,7 @@ class Config(object):
                         _parse_error(line,
                                      "the 'allnoconfig_y' option is only "
                                      "valid for symbols",
-                                     filename,
-                                     linenr)
+                                     filename, linenr)
                     stmt.allnoconfig_y = True
 
                 else:
