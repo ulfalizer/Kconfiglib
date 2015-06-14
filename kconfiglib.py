@@ -1688,8 +1688,8 @@ class Config(object):
                 if cond_expr is None:
                     defaults_str_rows.append(" {0}".format(sym.name))
                 else:
-                    defaults_str_rows.append(" {0} if ".format(sym.name) +
-                                             self._expr_val_str(cond_expr))
+                    defaults_str_rows.append(" {0} if {1}".format(sym.name,
+                                                self._expr_val_str(cond_expr)))
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
