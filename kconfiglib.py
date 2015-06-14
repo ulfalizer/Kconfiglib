@@ -100,37 +100,33 @@ class Config(object):
         """Creates a new Config object, representing a Kconfig configuration.
         Raises Kconfig_Syntax_Error on syntax errors.
 
-        filename (default: "Kconfig") -- The base Kconfig file of the
-                 configuration. For the Linux kernel, you'll probably want
-                 "Kconfig" from the top-level directory, as environment
-                 variables will make sure the right Kconfig is included from
-                 there (arch/<architecture>/Kconfig). If you are using
-                 kconfiglib via 'make scriptconfig', the filename of the base
-                 base Kconfig file will be in sys.argv[1].
+        filename (default: "Kconfig"): The base Kconfig file of the
+           configuration. For the Linux kernel, you'll probably want "Kconfig"
+           from the top-level directory, as environment variables will make
+           sure the right Kconfig is included from there
+           (arch/<architecture>/Kconfig). If you are using kconfiglib via 'make
+           scriptconfig', the filename of the base base Kconfig file will be in
+           sys.argv[1].
 
-        base_dir (default: None) -- The base directory relative to which
-                 'source' statements within Kconfig files will work. For the
-                 Linux kernel this should be the top-level directory of the
-                 kernel tree. $-references to existing environment variables
-                 will be expanded.
+        base_dir (default: None): The base directory relative to which 'source'
+           statements within Kconfig files will work. For the Linux kernel this
+           should be the top-level directory of the kernel tree. $-references
+           to existing environment variables will be expanded.
 
-                 If None (the default), the environment variable 'srctree' will
-                 be used if set, and the current directory otherwise. 'srctree'
-                 is set by the Linux makefiles to the top-level kernel
-                 directory. A default of "." would not work with an alternative
-                 build directory.
+           If None (the default), the environment variable 'srctree' will be
+           used if set, and the current directory otherwise. 'srctree' is set
+           by the Linux makefiles to the top-level kernel directory. A default
+           of "." would not work with an alternative build directory.
 
-        print_warnings (default: True) -- Set to True if warnings related to
-                       this configuration should be printed to stderr. This can
-                       be changed later with Config.set_print_warnings(). It is
-                       provided as a constructor argument since warnings might
-                       be generated during parsing.
+        print_warnings (default: True): Set to True if warnings related to this
+           configuration should be printed to stderr. This can be changed later
+           with Config.set_print_warnings(). It is provided as a constructor
+           argument since warnings might be generated during parsing.
 
-        print_undef_assign (default: False) -- Set to True if informational
-                           messages related to assignments to undefined symbols
-                           should be printed to stderr for this configuration.
-                           Can be changed later with
-                           Config.set_print_undef_assign()."""
+        print_undef_assign (default: False): Set to True if informational
+           messages related to assignments to undefined symbols should be
+           printed to stderr for this configuration. Can be changed later with
+           Config.set_print_undef_assign()."""
 
         # The set of all symbols, indexed by name (a string)
         self.syms = {}
@@ -233,14 +229,13 @@ class Config(object):
         and sets the user value of FOO to 'n'. The C implementation works the
         same way.
 
-        filename -- The .config file to load. $-references to environment
-                    variables will be expanded. For scripts to work even when
-                    an alternative build directory is used with the Linux
-                    kernel, you need to refer to the top-level kernel directory
-                    with "$srctree".
+        filename: The .config file to load. $-references to environment
+           variables will be expanded. For scripts to work even when an
+           alternative build directory is used with the Linux kernel, you need
+           to refer to the top-level kernel directory with "$srctree".
 
-        replace (default: True) -- True if the configuration should replace
-                the old configuration; False if it should add to it."""
+        replace (default: True): True if the configuration should replace the
+           old configuration; False if it should add to it."""
 
         # Put this first so that a missing file doesn't screw up our state
         filename = os.path.expandvars(filename)
@@ -352,11 +347,11 @@ class Config(object):
         Kconfiglib makes sure the format matches what the C implementation
         would generate, down to whitespace. This eases testing.
 
-        filename -- The filename under which to save the configuration.
+        filename: The filename under which to save the configuration.
 
-        header (default: None) -- A textual header that will appear at the
-               beginning of the file, with each line commented out
-               automatically. None means no header."""
+        header (default: None): A textual header that will appear at the
+           beginning of the file, with each line commented out automatically.
+           None means no header."""
 
         for sym in self.syms_iter():
             sym.already_written = False
@@ -476,13 +471,12 @@ class Config(object):
         for sym in config.get_symbols(False):
             ...
 
-        all_symbols (default: True) -- If True, all symbols -- including
-                    special and undefined symbols -- will be included in the
-                    result, in an undefined order. If False, only symbols
-                    actually defined and not merely referred to in the
-                    configuration will be included in the result, and will
-                    appear in the order that they are defined within the
-                    Kconfig configuration files."""
+        all_symbols (default: True): If True, all symbols -- including special
+           and undefined symbols -- will be included in the result, in an
+           undefined order. If False, only symbols actually defined and not
+           merely referred to in the configuration will be included in the
+           result, and will appear in the order that they are defined within
+           the Kconfig configuration files."""
         return self.syms.values() if all_symbols else self.kconfig_syms
 
     def get_choices(self):
@@ -545,20 +539,20 @@ class Config(object):
         things like attempting to assign illegal values to symbols with
         Symbol.set_user_value()) should be printed to stderr.
 
-        print_warnings -- True if warnings should be printed."""
+        print_warnings: True if warnings should be printed."""
         self.print_warnings = print_warnings
 
     def set_print_undef_assign(self, print_undef_assign):
         """Determines whether informational messages related to assignments to
         undefined symbols should be printed to stderr for this configuration.
 
-        print_undef_assign -- If True, such messages will be printed."""
+        print_undef_assign: If True, such messages will be printed."""
         self.print_undef_assign = print_undef_assign
 
-    def __getitem__(self, key):
+    def __getitem__(self, name):
         """Returns the symbol with name 'name'. Raises KeyError if the symbol
         does not appear in the configuration."""
-        return self.syms[key]
+        return self.syms[name]
 
     def __iter__(self):
         """Convenience function for iterating over the set of all defined
@@ -618,9 +612,9 @@ class Config(object):
         (I experimented with a pure regular expression implementation, but it
         came out slower, less readable, and wouldn't have been as flexible.)
 
-        for_eval -- True when parsing an expression for a call to
-                    Config.eval(), in which case we should not treat the first
-                    token specially nor register new symbols."""
+        for_eval: True when parsing an expression for a call to Config.eval(),
+           in which case we should not treat the first token specially nor
+           register new symbols."""
 
         # lstrip() would work here too, but removing the '\n' at the end leads
         # to earlier termination in the 'while' loop below, saving lots of
@@ -794,20 +788,20 @@ class Config(object):
         top-down approach. The result has the form (<operator>, <list
         containing parsed operands>).
 
-        feed -- _Feed instance containing the tokens for the expression.
+        feed: _Feed instance containing the tokens for the expression.
 
-        cur_item -- The item (Symbol, Choice, Menu, or Comment) currently being
-                    parsed, or None if we're not parsing an item. Used for
-                    recording references to symbols.
+        cur_item: The item (Symbol, Choice, Menu, or Comment) currently being
+           parsed, or None if we're not parsing an item. Used for recording
+           references to symbols.
 
-        line -- The line containing the expression being parsed.
+        line: The line containing the expression being parsed.
 
-        filename (default: None) -- The file containing the expression.
+        filename (default: None): The file containing the expression.
 
-        linenr (default: None) -- The line number containing the expression.
+        linenr (default: None): The line number containing the expression.
 
-        transform_m (default: False) -- Determines if 'm' should be rewritten
-                    to 'm && MODULES' -- see parse_val_and_cond()."""
+        transform_m (default: False): Determines if 'm' should be rewritten to
+           'm && MODULES' -- see parse_val_and_cond()."""
 
         # Use instance variables to avoid having to pass these as arguments
         # through the top-down parser in _parse_expr_2(), which is tedious and
@@ -881,19 +875,19 @@ class Config(object):
         """Parses a block, which is the contents of either a file or an if,
         menu, or choice statement. Returns a list with the Items in the block.
 
-        end_marker -- The token that ends the block, e.g. T_ENDIF ("endif") for
-                      ifs. None for files.
+        end_marker: The token that ends the block, e.g. T_ENDIF ("endif") for
+           ifs. None for files.
 
-        parent -- The enclosing menu, choice or if, or None if we're at the top
-                  level.
+        parent: The enclosing menu, choice or if, or None if we're at the top
+           level.
 
-        deps -- Dependencies from enclosing menus, choices and ifs.
+        deps: Dependencies from enclosing menus, choices and ifs.
 
-        visible_if_deps (default: None) -- 'visible if' dependencies from
-                        enclosing menus.
+        visible_if_deps (default: None): 'visible if' dependencies from
+           enclosing menus.
 
-        res (default: None) -- The list to add items to. If None, a new list is
-            created to hold the items."""
+        res (default: None): The list to add items to. If None, a new list is
+           created to hold the items."""
 
         block = [] if res is None else res
 
@@ -1991,7 +1985,7 @@ class Symbol(Item):
         Any symbols dependent on the symbol are (recursively) invalidated, so
         things will just work with regards to dependencies.
 
-        v -- The user value to give to the symbol."""
+        v: The user value to give to the symbol."""
         self._set_user_value_no_invalidate(v, False)
 
         # There might be something more efficient you could do here, but play
@@ -2171,9 +2165,8 @@ class Symbol(Item):
 
         references the symbols A through G.
 
-        refs_from_enclosing (default: False) -- If True, the symbols
-                            referenced by enclosing menus and ifs will be
-                            included in the result."""
+        refs_from_enclosing (default: False): If True, the symbols referenced
+           by enclosing menus and ifs will be included in the result."""
         return self.all_referenced_syms if refs_from_enclosing else \
                self.referenced_syms
 
@@ -2399,12 +2392,11 @@ class Symbol(Item):
     def _set_user_value_no_invalidate(self, v, suppress_load_warnings):
         """Like set_user_value(), but does not invalidate any symbols.
 
-        suppress_load_warnings --
-          some warnings are annoying when loading a .config that can be helpful
-          when manually invoking set_user_value(). This flag is set to True to
-          suppress such warnings.
+        suppress_load_warnings: some warnings are annoying when loading a
+           .config that can be helpful when manually invoking set_user_value().
+           This flag is set to True to suppress such warnings.
 
-          Perhaps this could be made optional for load_config() instead."""
+           Perhaps this could be made optional for load_config() instead."""
 
         if self.is_special_:
             if self.is_from_env:
@@ -2567,9 +2559,8 @@ class Menu(Item):
         statements and comments) in in the menu, in the same order that the
         items appear within the menu.
 
-        recursive (default: False) -- True if items contained in items within
-                                      the menu should be included
-                                      recursively (preorder)."""
+        recursive (default: False): True if items contained in items within the
+           menu should be included recursively (preorder)."""
 
         if not recursive:
             return self.block
@@ -2587,9 +2578,8 @@ class Menu(Item):
         """Returns a list containing the symbols in the menu, in the same order
         that they appear within the menu.
 
-        recursive (default: False) -- True if symbols contained in items within
-                                      the menu should be included
-                                      recursively."""
+        recursive (default: False): True if symbols contained in items within
+           the menu should be included recursively."""
 
         return [item for item in self.get_items(recursive) if
                 isinstance(item, Symbol)]
