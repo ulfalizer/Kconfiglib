@@ -2881,7 +2881,6 @@ class Choice(Item):
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
-
         self.orig_prompts = []
         self.orig_def_exprs = []
 
