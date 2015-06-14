@@ -1699,7 +1699,7 @@ class Config(object):
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
-        names = [sym.name for sym in sc.get_symbols()]
+        names = [sym.name for sym in sc.actual_symbols]
         syms_string = " ".join(names) if names else "(empty)"
 
         return _lines("Choice",
@@ -2505,7 +2505,7 @@ class Symbol(Item):
 
         self._add_dependent_ignore_siblings(res)
         if self.is_choice_symbol_:
-            for s in self.parent.get_symbols():
+            for s in self.parent.actual_symbols:
                 if s is not self:
                     res.add(s)
                     s._add_dependent_ignore_siblings(res)
