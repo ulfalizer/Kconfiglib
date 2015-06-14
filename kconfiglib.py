@@ -954,7 +954,6 @@ class Config(object):
                                           line_feeder.get_linenr(),
                                           kconfig_file, exp_kconfig_file,
                                           self.base_dir))
-
                 # Add items to the same block
                 self._parse_file(f, parent, deps, visible_if_deps, block)
 
