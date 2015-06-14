@@ -1331,7 +1331,7 @@ class Config(object):
                 stmt.orig_prompts.append(new_prompt)
                 # Finalize with dependencies from enclosing menus and ifs
                 stmt.prompts.append((new_prompt[0],
-                                    _make_and(new_prompt[1], deps)))
+                                     _make_and(new_prompt[1], deps)))
 
             # Propagate dependencies to defaults
 
