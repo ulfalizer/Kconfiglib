@@ -2391,7 +2391,6 @@ class Symbol(Item):
 
         self.cached_val = None
         self.cached_visibility = None
-        self.write_to_conf = False
 
     def _invalidate_dependent(self):
         for sym in self._get_dependent():
