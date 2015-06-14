@@ -3187,8 +3187,6 @@ def _make_and(e1, e2):
         return e2
     if e2 is None or e2 == "y":
         return e1
-    if e1 == "n" or e2 == "n":
-        return "n"
 
     # Prefer to merge/update argument list if possible instead of creating
     # a new AND node
@@ -3214,8 +3212,6 @@ def _make_or(e1, e2):
         return "y"
     if e1 == "n":
         return e2
-    if e2 == "n":
-        return e1
 
     # Prefer to merge/update argument list if possible instead of creating
     # a new OR node
