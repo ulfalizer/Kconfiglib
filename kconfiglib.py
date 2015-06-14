@@ -603,9 +603,9 @@ class Config(object):
                           if self.config_filename is None else
                              self.config_filename),
                       "Print warnings                         : " +
-                        bool_str[self.print_warnings],
+                        BOOL_STR[self.print_warnings],
                       "Print assignments to undefined symbols : " +
-                        bool_str[self.print_undef_assign])
+                        BOOL_STR[self.print_undef_assign])
 
     #
     # Private methods
@@ -685,7 +685,7 @@ class Config(object):
                     append(keyword)
                 # What would ordinarily be considered a name is treated as a
                 # string after certain tokens.
-                elif previous in string_lex:
+                elif previous in STRING_LEX:
                     append(name)
                 else:
                     # We're dealing with a symbol. _sym_lookup() will take care
@@ -1181,7 +1181,7 @@ class Config(object):
                     new_selects.append((target, None))
 
             elif t0 in (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING):
-                stmt.type = token_to_type[t0]
+                stmt.type = TOKEN_TO_TYPE[t0]
                 if len(tokens) > 1:
                     new_prompt = parse_val_and_cond(tokens, line, filename,
                                                     linenr)
@@ -1656,14 +1656,14 @@ class Config(object):
 
             res = _lines("Symbol " +
                            ("(no name)" if sc.name is None else sc.name),
-                         "Type           : " + typename[sc.type],
+                         "Type           : " + TYPENAME[sc.type],
                          "Value          : " + s(sc.get_value()),
                          "User value     : " + user_val_str,
                          "Visibility     : " + s(sc.get_visibility()),
-                         "Is choice item : " + bool_str[sc.is_choice_symbol_],
-                         "Is defined     : " + bool_str[sc.is_defined_],
-                         "Is from env.   : " + bool_str[sc.is_from_env],
-                         "Is special     : " + bool_str[sc.is_special_] + "\n")
+                         "Is choice item : " + BOOL_STR[sc.is_choice_symbol_],
+                         "Is defined     : " + BOOL_STR[sc.is_defined_],
+                         "Is from env.   : " + BOOL_STR[sc.is_from_env],
+                         "Is special     : " + BOOL_STR[sc.is_special_] + "\n")
             if sc.ranges:
                 res += _lines("Ranges:", ranges_str + "\n")
             res += _lines("Prompts:",
@@ -1710,12 +1710,12 @@ class Config(object):
         return _lines("Choice",
                       "Name (for named choices): " +
                         ("(no name)" if sc.name is None else sc.name),
-                      "Type            : " + typename[sc.type],
+                      "Type            : " + TYPENAME[sc.type],
                       "Selected symbol : " + sel_str,
                       "User value      : " + user_val_str,
                       "Mode            : " + s(sc.get_mode()),
                       "Visibility      : " + s(sc.get_visibility()),
-                      "Optional        : " + bool_str[sc.optional],
+                      "Optional        : " + BOOL_STR[sc.optional],
                       "Prompts:",
                       prompts_str,
                       "Defaults:",
@@ -1830,7 +1830,7 @@ class Symbol(Item):
             self.cached_val = self.name
             return self.name
 
-        new_val = default_value[self.type]
+        new_val = DEFAULT_VALUE[self.type]
         vis = _get_visibility(self)
 
         # This is easiest to calculate together with the value
@@ -2054,7 +2054,7 @@ class Symbol(Item):
         if rev_dep == "m" and self.type == BOOL:
             return None
         vis = _get_visibility(self)
-        if tri_to_int[vis] > tri_to_int[rev_dep]:
+        if TRI_TO_INT[vis] > TRI_TO_INT[rev_dep]:
             return vis
         return None
 
@@ -2076,7 +2076,7 @@ class Symbol(Item):
         # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep == "m" and self.type == BOOL:
             return None
-        if tri_to_int[_get_visibility(self)] > tri_to_int[rev_dep]:
+        if TRI_TO_INT[_get_visibility(self)] > TRI_TO_INT[rev_dep]:
             return rev_dep
         return None
 
@@ -2099,8 +2099,8 @@ class Symbol(Item):
         # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep == "m" and self.type == BOOL:
             return []
-        res = ["n", "m", "y"][tri_to_int[rev_dep] :
-                              tri_to_int[_get_visibility(self)] + 1]
+        res = ["n", "m", "y"][TRI_TO_INT[rev_dep] :
+                              TRI_TO_INT[_get_visibility(self)] + 1]
         return res if len(res) > 1 else []
 
     def get_type(self):
@@ -2255,7 +2255,7 @@ class Symbol(Item):
             # A bool selected to "m" gets promoted to "y", pinning it
             if rev_dep == "m" and self.type == BOOL:
                 return False
-            return tri_to_int[_get_visibility(self)] > tri_to_int[rev_dep]
+            return TRI_TO_INT[_get_visibility(self)] > TRI_TO_INT[rev_dep]
         return _get_visibility(self) != "n"
 
     def is_defined(self):
@@ -2454,7 +2454,7 @@ class Symbol(Item):
                 (self.type == HEX      and _is_base_n(v, 16)        )):
             self.config._warn('the value "{0}" is invalid for {1}, which has '
                               "type {2}. Assignment ignored."
-                              .format(v, self.name, typename[self.type]))
+                              .format(v, self.name, TYPENAME[self.type]))
             return
 
         if not self.prompts and not suppress_load_warnings:
@@ -3098,22 +3098,22 @@ class Internal_Error(Exception):
 def tri_less(v1, v2):
     """Returns True if the tristate v1 is less than the tristate v2, where "n",
     "m" and "y" are ordered from lowest to highest."""
-    return tri_to_int[v1] < tri_to_int[v2]
+    return TRI_TO_INT[v1] < TRI_TO_INT[v2]
 
 def tri_less_eq(v1, v2):
     """Returns True if the tristate v1 is less than or equal to the tristate
     v2, where "n", "m" and "y" are ordered from lowest to highest."""
-    return tri_to_int[v1] <= tri_to_int[v2]
+    return TRI_TO_INT[v1] <= TRI_TO_INT[v2]
 
 def tri_greater(v1, v2):
     """Returns True if the tristate v1 is greater than the tristate v2, where
     "n", "m" and "y" are ordered from lowest to highest."""
-    return tri_to_int[v1] > tri_to_int[v2]
+    return TRI_TO_INT[v1] > TRI_TO_INT[v2]
 
 def tri_greater_eq(v1, v2):
     """Returns True if the tristate v1 is greater than or equal to the tristate
     v2, where "n", "m" and "y" are ordered from lowest to highest."""
-    return tri_to_int[v1] >= tri_to_int[v2]
+    return TRI_TO_INT[v1] >= TRI_TO_INT[v2]
 
 #
 # Internal classes
@@ -3323,14 +3323,14 @@ def _intersperse(lst, op):
     def handle_sub_expr(expr):
         no_parens = isinstance(expr, (str, Symbol)) or \
                     expr[0] in (EQUAL, UNEQUAL) or \
-                    precedence[op] <= precedence[expr[0]]
+                    PRECEDENCE[op] <= PRECEDENCE[expr[0]]
         if not no_parens:
             res.append("(")
         res.extend(_expr_to_str_rec(expr))
         if not no_parens:
             res.append(")")
 
-    op_str = op_to_str[op]
+    op_str = OP_TO_STR[op]
 
     handle_sub_expr(lst[0])
     for expr in lst[1:]:
@@ -3364,7 +3364,7 @@ def _expr_to_str_rec(expr):
 
     if e0 == EQUAL or e0 == UNEQUAL:
         return [_sym_str_string(expr[1]),
-                op_to_str[expr[0]],
+                OP_TO_STR[expr[0]],
                 _sym_str_string(expr[2])]
 
 def _expr_to_str(expr):
@@ -3484,11 +3484,11 @@ _get_keyword = \
    "visible": T_VISIBLE}.get
 
 # Strings to use for True and False
-bool_str = {False: "false", True: "true"}
+BOOL_STR = {False: "false", True: "true"}
 
 # Tokens after which identifier-like lexemes are treated as strings. T_CHOICE
 # is included to avoid symbols being registered for named choices.
-string_lex = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
+STRING_LEX = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
                         T_PROMPT, T_MENU, T_COMMENT, T_SOURCE, T_MAINMENU))
 
 # Matches the initial token on a line; see _tokenize().
@@ -3508,16 +3508,16 @@ _sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
 UNKNOWN, BOOL, TRISTATE, STRING, HEX, INT = range(6)
 
 # Strings to use for types
-typename = {UNKNOWN: "unknown", BOOL: "bool", TRISTATE: "tristate",
+TYPENAME = {UNKNOWN: "unknown", BOOL: "bool", TRISTATE: "tristate",
             STRING: "string", HEX: "hex", INT: "int"}
 
 # Token to type mapping
-token_to_type = {T_BOOL: BOOL, T_TRISTATE: TRISTATE, T_STRING: STRING,
+TOKEN_TO_TYPE = {T_BOOL: BOOL, T_TRISTATE: TRISTATE, T_STRING: STRING,
                  T_INT: INT, T_HEX: HEX}
 
 # Default values for symbols of different types (the value the symbol gets if
 # it is not assigned a user value and none of its 'default' clauses kick in)
-default_value = {BOOL: "n", TRISTATE: "n", STRING: "", INT: "", HEX: ""}
+DEFAULT_VALUE = {BOOL: "n", TRISTATE: "n", STRING: "", INT: "", HEX: ""}
 
 # Indicates that no item is selected in a choice statement
 NO_SELECTION = 0
@@ -3526,9 +3526,9 @@ NO_SELECTION = 0
 AND, OR, NOT, EQUAL, UNEQUAL = range(5)
 
 # Map from tristate values to integers
-tri_to_int = {"n": 0, "m": 1, "y": 2}
+TRI_TO_INT = {"n": 0, "m": 1, "y": 2}
 
 # Printing-related stuff
 
-op_to_str = {AND: " && ", OR: " || ", EQUAL: " = ", UNEQUAL: " != "}
-precedence = {OR: 0, AND: 1, NOT: 2}
+OP_TO_STR = {AND: " && ", OR: " || ", EQUAL: " = ", UNEQUAL: " != "}
+PRECEDENCE = {OR: 0, AND: 1, NOT: 2}
