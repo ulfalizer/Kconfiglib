@@ -134,7 +134,6 @@ class Config(object):
 
         # The set of all symbols, indexed by name (a string)
         self.syms = {}
-
         # Python 2/3 compatibility hack. This is the only one needed.
         if sys.version_info[0] >= 3:
             self.syms_iter = self.syms.values
@@ -149,6 +148,11 @@ class Config(object):
         # The set of all named choices (yes, choices can have names), indexed
         # by name (a string)
         self.named_choices = {}
+
+        # Lists containing all choices, menus and comments in the configuration
+        self.choices = []
+        self.menus = []
+        self.comments = []
 
         def register_special_symbol(type_, name, val):
             sym = Symbol()
@@ -166,7 +170,6 @@ class Config(object):
         self.n = register_special_symbol(TRISTATE, "n", "n")
         self.m = register_special_symbol(TRISTATE, "m", "m")
         self.y = register_special_symbol(TRISTATE, "y", "y")
-
         # DEFCONFIG_LIST uses this
         register_special_symbol(STRING, "UNAME_RELEASE", os.uname()[2])
 
@@ -194,18 +197,11 @@ class Config(object):
 
         # The filename of the most recently loaded .config file
         self.config_filename = None
-
         # The textual header of the most recently loaded .config, uncommented
         self.config_header = None
 
         self.print_warnings = print_warnings
         self.print_undef_assign = print_undef_assign
-
-        # Lists containing all choices, menus and comments in the configuration
-
-        self.choices = []
-        self.menus = []
-        self.comments = []
 
         # For parsing routines that stop when finding a line belonging to a
         # different construct, these holds that line and the tokenized version
@@ -2304,47 +2300,35 @@ class Symbol(Item):
         """Symbol constructor -- not intended to be called directly by
         kconfiglib clients."""
 
-        self.prompts = []
-        self.cached_visibility = None
-
-        self.config = None
-
-        self.parent = None
         self.name = None
         self.type = UNKNOWN
+        self.prompts = []
+        self.def_exprs = [] # 'default' properties
+        self.ranges = [] # 'range' properties (for int and hex)
+        self.help = None # Help text
+        self.rev_dep = "n" # Reverse (select-related) dependencies
+        self.config = None
+        self.parent = None
 
-        self.def_exprs = []
-        self.ranges = []
-        self.rev_dep = "n"
+        self.user_val = None # Value set by user
 
         # The prompt, default value and select conditions without any
-        # dependencies from menus or ifs propagated to them
-
+        # dependencies from menus and ifs propagated to them
         self.orig_prompts = []
         self.orig_def_exprs = []
         self.orig_selects = []
 
         # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
-
-        self.help = None
-
         # The set of symbols referenced by this symbol (see
         # get_referenced_symbols())
         self.referenced_syms = set()
-
         # The set of symbols selected by this symbol (see
         # get_selected_symbols())
         self.selected_syms = set()
-
         # Like 'referenced_syms', but includes symbols from
         # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = set()
-
-        # This is set to True for "actual" choice symbols. See
-        # Choice._determine_actual_symbols(). The trailing underscore avoids a
-        # collision with is_choice_symbol().
-        self.is_choice_symbol_ = False
 
         # This records only dependencies specified with 'depends on'. Needed
         # when determining actual choice items (hrrrr...). See also
@@ -2355,8 +2339,6 @@ class Symbol(Item):
         self.def_locations = []
         self.ref_locations = []
 
-        self.user_val = None
-
         # Populated in Config._build_dep() after parsing. Links the symbol to
         # the symbols that immediately depend on it (in a caching/invalidation
         # sense). The total set of dependent symbols for the symbol (the
@@ -2364,37 +2346,39 @@ class Symbol(Item):
         # _get_dependent().
         self.dep = set()
 
-        # Cached values and flags
+        # Cached values
 
         # Caches the calculated value
         self.cached_val = None
-
+        # Caches the visibility, which acts as an upper bound on the value
+        self.cached_visibility = None
         # Caches the total list of dependent symbols. Calculated in
         # _get_dependent().
         self.cached_deps = None
 
-        # Should the symbol get an entry in .config?
-        self.write_to_conf = False
-
-        # Set to true when _make_conf() is called on a symbol, so that symbols
-        # defined in multiple locations only get one .config entry. We need to
-        # reset it prior to writing out a new .config.
-        self.already_written = False
+        # Flags
 
         # Does the symbol have an entry in the Kconfig file? The trailing
         # underscore avoids a collision with is_defined().
         self.is_defined_ = False
-
+        # Should the symbol get an entry in .config?
+        self.write_to_conf = False
+        # Set to true when _make_conf() is called on a symbol, so that symbols
+        # defined in multiple locations only get one .config entry. We need to
+        # reset it prior to writing out a new .config.
+        self.already_written = False
+        # This is set to True for "actual" choice symbols. See
+        # Choice._determine_actual_symbols(). The trailing underscore avoids a
+        # collision with is_choice_symbol().
+        self.is_choice_symbol_ = False
         # Does the symbol get its value in some special way, e.g. from the
         # environment or by being one of the special symbols n, m, and y? If
         # so, the value is stored in self.cached_val, which is never
         # invalidated. The trailing underscore avoids a collision with
         # is_special().
         self.is_special_ = False
-
         # Does the symbol get its value from the environment?
         self.is_from_env = False
-
         # Does the symbol have the 'allnoconfig_y' option set?
         self.allnoconfig_y = False
 
@@ -2660,12 +2644,12 @@ class Menu(Item):
         """Menu constructor -- not intended to be called directly by
         kconfiglib clients."""
 
-        self.config = None
-
-        self.parent = None
         self.title = None
-        self.block = None
         self.dep_expr = None
+        self.visible_if_expr = None
+        self.block = None
+        self.config = None
+        self.parent = None
 
         # Dependency expression without dependencies from enclosing menus and
         # ifs propagated
@@ -2673,14 +2657,9 @@ class Menu(Item):
 
         # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
-
-        # The 'visible if' expression
-        self.visible_if_expr = None
-
         # The set of symbols referenced by this menu (see
         # get_referenced_symbols())
         self.referenced_syms = set()
-
         # Like 'referenced_syms', but includes symbols from
         # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = None
@@ -2882,27 +2861,17 @@ class Choice(Item):
         """Choice constructor -- not intended to be called directly by
         kconfiglib clients."""
 
-        self.prompts = []
-        self.cached_visibility = None
-
-        self.config = None
-
-        self.parent = None
         self.name = None # Yes, choices can be named
         self.type = UNKNOWN
-        self.def_exprs = []
-        self.help = None
-        self.optional = False
-        self.block = None
+        self.prompts = []
+        self.def_exprs = [] # 'default' properties
+        self.help = None # Help text
+        self.block = None # List of contained items
+        self.config = None
+        self.parent = None
 
-        # The prompts and default values without any dependencies from
-        # enclosing menus or ifs propagated
-
-        self.orig_prompts = []
-        self.orig_def_exprs = []
-
-        # Dependencies inherited from containing menus and ifs
-        self.deps_from_containing = None
+        self.user_val = None
+        self.user_mode = None
 
         # We need to filter out symbols that appear within the choice block but
         # are not considered choice items (see
@@ -2910,10 +2879,17 @@ class Choice(Item):
         # choice items.
         self.actual_symbols = []
 
+        # The prompts and default values without any dependencies from
+        # enclosing menus and ifs propagated
+
+        self.orig_prompts = []
+        self.orig_def_exprs = []
+
+        # Dependencies inherited from containing menus and ifs
+        self.deps_from_containing = None
         # The set of symbols referenced by this choice (see
         # get_referenced_symbols())
         self.referenced_syms = set()
-
         # Like 'referenced_syms', but includes symbols from
         # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = set()
@@ -2921,10 +2897,11 @@ class Choice(Item):
         # See Choice.get_def_locations()
         self.def_locations = []
 
-        self.user_val = None
-        self.user_mode = None
-
+        # Cached values
         self.cached_selection = None
+        self.cached_visibility = None
+
+        self.optional = False
 
     def _determine_actual_symbols(self):
         """If a symbol's visibility depends on the preceding symbol within a
@@ -3053,11 +3030,10 @@ class Comment(Item):
         """Comment constructor -- not intended to be called directly by
         kconfiglib clients."""
 
-        self.config = None
-
-        self.parent = None
         self.text = None
         self.dep_expr = None
+        self.config = None
+        self.parent = None
 
         # Dependency expression without dependencies from enclosing menus and
         # ifs propagated
@@ -3065,11 +3041,9 @@ class Comment(Item):
 
         # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
-
         # The set of symbols referenced by this comment (see
         # get_referenced_symbols())
         self.referenced_syms = set()
-
         # Like 'referenced_syms', but includes symbols from
         # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = None
