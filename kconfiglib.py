@@ -1387,7 +1387,6 @@ class Config(object):
             return "y"
 
         res = self._eval_expr_2(expr)
-
         if res == "m":
             # Promote "m" to "y" if we're running without modules.
             #
