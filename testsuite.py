@@ -1910,8 +1910,7 @@ def test_all_no(conf):
     """
     Test if our examples/allnoconfig.py script generates the same .config as
     'make allnoconfig' for each architecture. Runs the script via
-    'make scriptconfig' and needs to reparse the configurations, so kinda slow
-    even in speedy mode."""
+    'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py")
@@ -1925,8 +1924,7 @@ def test_all_no_simpler(conf):
     """
     Test if our examples/allnoconfig_simpler.py script generates the same
     .config as 'make allnoconfig' for each architecture. Runs the script via
-    'make scriptconfig' and needs to reparse the configurations, so kinda slow
-    even in speedy mode."""
+    'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py")
@@ -1940,8 +1938,7 @@ def test_all_yes(conf):
     """
     Test if our examples/allyesconfig.py script generates the same .config as
     'make allyesconfig' for each architecture. Runs the script via
-    'make scriptconfig' and needs to reparse the configurations, so kinda slow
-    even in speedy mode."""
+    'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py")
