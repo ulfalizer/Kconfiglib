@@ -1406,9 +1406,9 @@ class Config(object):
         if isinstance(expr, str):
             return expr if (expr == "y" or expr == "m") else "n"
 
-        first_expr = expr[0]
+        # Ordered by frequency
 
-        if first_expr == AND:
+        if expr[0] == AND:
             res = "y"
             for subexpr in expr[1]:
                 ev = self._eval_expr_2(subexpr)
@@ -1421,7 +1421,13 @@ class Config(object):
             # short-circuiting "n" case in the loop.
             return res
 
-        if first_expr == OR:
+        if expr[0] == NOT:
+            ev = self._eval_expr_2(expr[1])
+            if ev == "y":
+                return "n"
+            return "y" if (ev == "n") else "m"
+
+        if expr[0] == OR:
             res = "n"
             for subexpr in expr[1]:
                 ev = self._eval_expr_2(subexpr)
@@ -1434,20 +1440,14 @@ class Config(object):
             # short-circuiting "y" case in the loop.
             return res
 
-        if first_expr == NOT:
-            ev = self._eval_expr_2(expr[1])
-            if ev == "y":
-                return "n"
-            return "y" if (ev == "n") else "m"
-
-        if first_expr == EQUAL:
+        if expr[0] == EQUAL:
             return "y" if (_str_val(expr[1]) == _str_val(expr[2])) else "n"
 
-        if first_expr == UNEQUAL:
+        if expr[0] == UNEQUAL:
             return "y" if (_str_val(expr[1]) != _str_val(expr[2])) else "n"
 
         _internal_error("Internal error while evaluating expression: "
-                        "unknown operation {0}.".format(first_expr))
+                        "unknown operation {0}.".format(expr[0]))
 
     def _eval_min(self, e1, e2):
         """Returns the minimum value of the two expressions. Equates None with
