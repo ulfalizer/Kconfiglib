@@ -1379,8 +1379,7 @@ class Config(object):
     #
 
     def _eval_expr(self, expr):
-        """Evaluates an expression and returns one of the tristate values "n",
-        "m" or "y"."""
+        """Evaluates an expression to "n", "m", or "y"."""
 
         # Handles e.g. an "x if y" condition where the "if y" part is missing.
         if expr is None:
