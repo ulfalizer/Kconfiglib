@@ -898,7 +898,7 @@ class Config(object):
             if self.end_line is not None:
                 line = self.end_line
                 tokens = self.end_line_tokens
-                tokens.go_to_start()
+                tokens.unget_all()
 
                 self.end_line = None
                 self.end_line_tokens = None
@@ -1137,7 +1137,7 @@ class Config(object):
                     # If the first non-empty lines has zero indent, there is no
                     # help text
                     stmt.help = ""
-                    line_feeder.go_back()
+                    line_feeder.unget()
                     break
 
                 # The help text goes on till the first non-empty line with less
@@ -1154,7 +1154,7 @@ class Config(object):
                 if line is None:
                     break
 
-                line_feeder.go_back()
+                line_feeder.unget()
 
             elif t0 == T_SELECT:
                 target = tokens.get_next()
@@ -3092,7 +3092,6 @@ class _Feed(object):
     def get_next(self):
         if self.i >= self.length:
             return None
-
         item = self.items[self.i]
         self.i += 1
         return item
@@ -3108,13 +3107,13 @@ class _Feed(object):
             return True
         return False
 
-    def go_back(self):
+    def unget(self):
         if self.i <= 0:
             _internal_error("Attempt to move back in Feed while already at "
                             "the beginning.")
         self.i -= 1
 
-    def go_to_start(self):
+    def unget_all(self):
         self.i = 0
 
     def __len__(self):
