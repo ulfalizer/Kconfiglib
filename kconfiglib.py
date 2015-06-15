@@ -1381,6 +1381,11 @@ class Config(object):
     def _eval_expr(self, expr):
         """Evaluates an expression and returns one of the tristate values "n",
         "m" or "y"."""
+
+        # Handles e.g. an "x if y" condition where the "if y" part is missing.
+        if expr is None:
+            return "y"
+
         res = self._eval_expr_2(expr)
 
         if res == "m":
@@ -1395,9 +1400,6 @@ class Config(object):
         return res
 
     def _eval_expr_2(self, expr):
-        if expr is None:
-            return "y"
-
         if isinstance(expr, Symbol):
             # Non-bool/tristate symbols are always "n" in a tristate sense,
             # regardless of their value
