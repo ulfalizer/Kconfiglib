@@ -906,9 +906,8 @@ class Config(object):
                 line = line_feeder.get_next()
                 if line is None:
                     if end_marker is not None:
-                        raise Kconfig_Syntax_Error(
-                                "Unexpected end of file {0}."
-                                .format(line_feeder.get_filename()))
+                        raise Kconfig_Syntax_Error("Unexpected end of file {0}"
+                                           .format(line_feeder.get_filename()))
                     return block
 
                 tokens = self._tokenize(line, False,
