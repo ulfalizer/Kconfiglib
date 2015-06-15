@@ -1375,7 +1375,7 @@ class Config(object):
         return new_sym
 
     #
-    # Evaluation of symbols and expressions
+    # Evaluation of expressions
     #
 
     def _eval_expr(self, expr):
