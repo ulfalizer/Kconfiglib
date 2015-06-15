@@ -1751,10 +1751,9 @@ class Config(object):
             if isinstance(expr, Symbol):
                 return expr is sym
 
-            e0 = expr[0]
-            if e0 == EQUAL or e0 == UNEQUAL:
+            if expr[0] in (EQUAL, UNEQUAL):
                 return self._eq_to_sym(expr) is sym
-            if e0 == AND:
+            if expr[0] == AND:
                 for and_expr in expr[1]:
                     if rec(and_expr):
                         return True
@@ -3225,13 +3224,12 @@ def _get_expr_syms(expr):
         if isinstance(expr, str):
             return
 
-        e0 = expr[0]
-        if e0 == AND or e0 == OR:
+        if expr[0] == AND or expr[0] == OR:
             for term in expr[1]:
                 rec(term)
-        elif e0 == NOT:
+        elif expr[0] == NOT:
             rec(expr[1])
-        elif e0 == EQUAL or e0 == UNEQUAL:
+        elif expr[0] == EQUAL or expr[0] == UNEQUAL:
             _, v1, v2 = expr
             if isinstance(v1, Symbol):
                 res.add(v1)
@@ -3300,12 +3298,10 @@ def _expr_to_str_rec(expr):
     if isinstance(expr, (Symbol, str)):
         return [_sym_str_string(expr)]
 
-    e0 = expr[0]
-
-    if e0 == AND or e0 == OR:
+    if expr[0] in (AND, OR):
         return _intersperse(expr[1], expr[0])
 
-    if e0 == NOT:
+    if expr[0] == NOT:
         need_parens = not isinstance(expr[1], (str, Symbol))
 
         res = ["!"]
@@ -3316,7 +3312,7 @@ def _expr_to_str_rec(expr):
             res.append(")")
         return res
 
-    if e0 == EQUAL or e0 == UNEQUAL:
+    if expr[0] in (EQUAL, UNEQUAL):
         return [_sym_str_string(expr[1]),
                 OP_TO_STR[expr[0]],
                 _sym_str_string(expr[2])]
