@@ -3099,38 +3099,68 @@ class _Feed(object):
             return True
         return False
 
-    def unget(self):
-        if self.i <= 0:
-            _internal_error("Attempt to move back in Feed while already at "
-                            "the beginning.")
-        self.i -= 1
-
     def unget_all(self):
         self.i = 0
 
     def __len__(self):
         return self.length
 
-class _FileFeed(_Feed):
+class _FileFeed(object):
 
-    """_Feed subclass that feeds lines from a file. Joins any line ending in
-    \\ with the following line. Keeps track of the filename and current line
-    number."""
+    """Feeds lines from a file. Keeps track of the filename and current line
+    number. Joins any line ending in \\ with the following line. We need to be
+    careful to get the line number right in the presence of continuation
+    lines."""
 
     def __init__(self, filename):
         self.filename = _clean_up_path(filename)
-        _Feed.__init__(self, _get_lines(filename))
+        with open(filename, "r") as f:
+            # No interleaving of I/O and processing yet. Don't know if it would
+            # help.
+            self.lines = f.readlines()
+        self.length = len(self.lines)
+        self.linenr = 0
+
+    def get_next(self):
+        if self.linenr >= self.length:
+            return None
+        line = self.lines[self.linenr]
+        self.linenr += 1
+        while line.endswith("\\\n"):
+            line = line[:-2] + self.lines[self.linenr]
+            self.linenr += 1
+        return line
+
+    def peek_next(self):
+        linenr = self.linenr
+        if linenr >= self.length:
+            return None
+        line = self.lines[linenr]
+        while line.endswith("\\\n"):
+            linenr += 1
+            line = res[:-2] + self.lines[linenr]
+        return line
+
+    def unget(self):
+        self.linenr -= 1
+        while self.lines[self.linenr].endswith("\\\n"):
+            self.linenr -= 1
 
     def remove_blank(self):
         """Removes lines until the first non-blank (not all-space) line."""
-        while self.i < self.length and self.items[self.i].isspace():
-            self.i += 1
+        while 1:
+            line = self.get_next()
+            if line is None:
+                break
+            if not line.isspace():
+                self.unget()
+                break
 
     def get_filename(self):
         return self.filename
 
     def get_linenr(self):
-        return self.i
+        return self.linenr
 
 #
 # Internal functions
@@ -3347,20 +3377,6 @@ def _comment(s):
     if s.endswith("\n"):
         return res + "#"
     return res
-
-def _get_lines(filename):
-    """Returns a list of lines from 'filename', joining any line ending in \\
-    with the following line."""
-    with open(filename, "r") as f:
-        lines = []
-        accum = ""
-        for line in f:
-            if line.endswith("\\\n"):
-                accum += line[:-2]
-            else:
-                lines.append(accum + line)
-                accum = ""
-        return lines
 
 def _clean_up_path(path):
     """Strips an initial "./" and any trailing slashes from 'path'."""

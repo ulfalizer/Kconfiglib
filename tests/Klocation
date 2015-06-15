@@ -1,10 +1,15 @@
+# Include some line continuations to make sure they don't mess up line numbers
+
 # Defined and referenced in multiple locations
 config A
     bool
 
+# Throw in some line continuations too to make sure it doesn't mess up the line
+# numbers
 menu "menu 1"
     depends on A
-    visible if A && NOT_DEFINED
+    visible if A && \
+      NOT_DEFINED
 
 # Also defined in Klocation_included
 choice B
@@ -15,6 +20,8 @@ config C
 
 config D
     bool "d"
+
+\
 
 endchoice
 
@@ -29,16 +36,29 @@ config E
 
 endmenu
 
-config FOO
+config \
+ FOO
     string
-    option env="FOO"
+    option \
+    env\
+    =\
+    "FOO"
+
+\
+\
 
 config BAR
     string
-    default "_included"
+    default \
+      "_included"
 
 # Expands to "tests/Klocation_included"
-source "$FOO/Klocation$BAR"
+source \
+"$FOO/Klocation$BAR"
+
+\
+\
+\
 
 config I
     int

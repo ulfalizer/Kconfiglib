@@ -710,12 +710,12 @@ def run_selftests():
     verify_def_locations("y")
 
     verify_def_locations("A",
-      ("Kconfiglib/tests/Klocation", 2),
-      ("Kconfiglib/tests/Klocation", 21),
+      ("Kconfiglib/tests/Klocation", 4),
+      ("Kconfiglib/tests/Klocation", 28),
       ("Kconfiglib/tests/Klocation_included", 1),
       ("Kconfiglib/tests/Klocation_included", 3))
     verify_def_locations("C",
-      ("Kconfiglib/tests/Klocation", 13))
+      ("Kconfiglib/tests/Klocation", 18))
     verify_def_locations("M",
       ("Kconfiglib/tests/Klocation_included", 6))
     verify_def_locations("N",
@@ -738,11 +738,11 @@ def run_selftests():
     c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib")
 
     verify_ref_locations("A",
-      ("Kconfiglib/tests/Klocation", 6),
-      ("Kconfiglib/tests/Klocation", 7),
-      ("Kconfiglib/tests/Klocation", 11),
-      ("Kconfiglib/tests/Klocation", 27),
-      ("Kconfiglib/tests/Klocation", 28),
+      ("Kconfiglib/tests/Klocation", 10),
+      ("Kconfiglib/tests/Klocation", 12),
+      ("Kconfiglib/tests/Klocation", 16),
+      ("Kconfiglib/tests/Klocation", 34),
+      ("Kconfiglib/tests/Klocation", 35),
       ("Kconfiglib/tests/Klocation_included", 7),
       ("Kconfiglib/tests/Klocation_included", 8),
       ("Kconfiglib/tests/Klocation_included", 9),
@@ -750,13 +750,13 @@ def run_selftests():
       ("Kconfiglib/tests/Klocation_included", 13),
       ("Kconfiglib/tests/Klocation_included", 33),
       ("Kconfiglib/tests/Klocation_included", 38),
-      ("Kconfiglib/tests/Klocation", 45),
-      ("Kconfiglib/tests/Klocation", 46),
-      ("Kconfiglib/tests/Klocation", 47))
+      ("Kconfiglib/tests/Klocation", 65),
+      ("Kconfiglib/tests/Klocation", 66),
+      ("Kconfiglib/tests/Klocation", 67))
     verify_ref_locations("C")
     verify_ref_locations("NOT_DEFINED",
-      ("Kconfiglib/tests/Klocation", 7),
-      ("Kconfiglib/tests/Klocation", 22),
+      ("Kconfiglib/tests/Klocation", 12),
+      ("Kconfiglib/tests/Klocation", 29),
       ("Kconfiglib/tests/Klocation_included", 12),
       ("Kconfiglib/tests/Klocation_included", 33),
       ("Kconfiglib/tests/Klocation_included", 39))
@@ -781,7 +781,7 @@ def run_selftests():
            "The second choice should have no name")
 
     verify_choice_locations(choice_1,
-      ("Kconfiglib/tests/Klocation", 10),
+      ("Kconfiglib/tests/Klocation", 15),
       ("Kconfiglib/tests/Klocation_included", 22))
     verify_choice_locations(choice_2,
       ("Kconfiglib/tests/Klocation_included", 15))
@@ -802,9 +802,9 @@ def run_selftests():
     menu_1, menu_2 = c.get_menus()[:-1]
     comment_1, comment_2 = c.get_comments()
 
-    verify_location(menu_1, ("Kconfiglib/tests/Klocation", 5))
+    verify_location(menu_1, ("Kconfiglib/tests/Klocation", 9))
     verify_location(menu_2, ("Kconfiglib/tests/Klocation_included", 5))
-    verify_location(comment_1, ("Kconfiglib/tests/Klocation", 24))
+    verify_location(comment_1, ("Kconfiglib/tests/Klocation", 31))
     verify_location(comment_2, ("Kconfiglib/tests/Klocation_included", 34))
 
     #
