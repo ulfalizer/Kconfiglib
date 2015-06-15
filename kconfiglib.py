@@ -1383,13 +1383,15 @@ class Config(object):
         "m" or "y"."""
         res = self._eval_expr_2(expr)
 
-        # Promote "m" to "y" if we're running without modules. Internally, "m"
-        # is often rewritten to "m" && MODULES by both the C implementation and
-        # kconfiglib, which takes care of cases where "m" should be false if
-        # we're running without modules.
-        if res == "m" and not self._has_modules():
-            return "y"
-
+        if res == "m":
+            # Promote "m" to "y" if we're running without modules.
+            #
+            # Internally, "m" is often rewritten to "m" && MODULES by both the
+            # C implementation and Kconfiglib, which takes care of cases where
+            # "m" should be demoted to "n" instead.
+            modules_sym = self.syms.get("MODULES")
+            if modules_sym is None or modules_sym.get_value() != "y":
+                return "y"
         return res
 
     def _eval_expr_2(self, expr):
@@ -1462,14 +1464,6 @@ class Config(object):
         e1_eval = self._eval_expr(e1)
         e2_eval = self._eval_expr(e2)
         return e1_eval if tri_greater(e1_eval, e2_eval) else e2_eval
-
-    #
-    # Methods related to the MODULES symbol
-    #
-
-    def _has_modules(self):
-        modules_sym = self.syms.get("MODULES")
-        return (modules_sym is not None) and (modules_sym.get_value() == "y")
 
     #
     # Dependency tracking
