@@ -1125,12 +1125,10 @@ class Config(object):
                 # Find first non-blank (not all-space) line and get its
                 # indentation
 
-                line_feeder.remove_blank()
-                line = line_feeder.get_next()
+                line = line_feeder.next_nonblank()
                 if line is None:
                     stmt.help = ""
                     break
-
                 indent = _indentation(line)
                 if indent == 0:
                     # If the first non-empty lines has zero indent, there is no
@@ -3146,15 +3144,15 @@ class _FileFeed(object):
         while self.lines[self.linenr].endswith("\\\n"):
             self.linenr -= 1
 
-    def remove_blank(self):
-        """Removes lines until the first non-blank (not all-space) line."""
+    def next_nonblank(self):
+        """Removes lines up to and including the next non-blank
+        (not all-space) line and returns it."""
         while 1:
             line = self.get_next()
             if line is None:
-                break
+                return None
             if not line.isspace():
-                self.unget()
-                break
+                return line
 
     def get_filename(self):
         return self.filename
