@@ -1,10 +1,10 @@
 # Kconfiglib #
 
-A Python library for doing stuff with Kconfig-based configuration systems. Can
-extract information, query and set symbol values, and read and write
-<i>.config</i> files. Highly compatible with the <i>scripts/kconfig/\*conf</i>
-utilities in the kernel, usually invoked via make targets such as
-<i>menuconfig</i> and <i>defconfig</i>.
+A Python library for doing stuff with [Kconfig](https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt)-based
+configuration systems. Can extract information, query and set symbol values,
+and read and write <i>.config</i> files. Highly compatible with the
+<i>scripts/kconfig/\*conf</i> utilities in the kernel, usually invoked via make
+targets such as <i>menuconfig</i> and <i>defconfig</i>.
 
 Supports both Python 2 and Python 3 without modification.
 
