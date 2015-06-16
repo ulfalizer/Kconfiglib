@@ -1036,8 +1036,8 @@ class Config(object):
 
                 choice._determine_actual_symbols()
 
-                # If no type is set for the choice, its type is that of the
-                # first choice item
+                # If no type is specified for the choice, its type is that of
+                # the first choice item with a specified type
                 if choice.type == UNKNOWN:
                     for item in choice.actual_symbols:
                         if item.type != UNKNOWN:
