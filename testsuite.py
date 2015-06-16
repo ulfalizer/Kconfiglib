@@ -1909,8 +1909,8 @@ def get_arch_configs():
 def test_all_no(conf):
     """
     Verify that our examples/allnoconfig.py script generates the same .config
-    as 'make allnoconfig', for each architecture. Runs the script via 'make
-    scriptconfig', so kinda slow even in speedy mode."""
+    as 'make allnoconfig', for each architecture. Runs the script via
+    'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py "
