@@ -1913,7 +1913,8 @@ def test_all_no(conf):
     'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
-    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py")
+    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py "
+          "PYTHONCMD='{0}'".format(sys.executable))
     shell("mv .config ._config")
     if speedy_mode:
         shell("scripts/kconfig/conf --allnoconfig Kconfig")
@@ -1927,7 +1928,8 @@ def test_all_no_simpler(conf):
     'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
-    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py")
+    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py "
+          "PYTHONCMD='{0}'".format(sys.executable))
     shell("mv .config ._config")
     if speedy_mode:
         shell("scripts/kconfig/conf --allnoconfig Kconfig")
@@ -1941,7 +1943,8 @@ def test_all_yes(conf):
     'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
-    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py")
+    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py "
+          "PYTHONCMD='{0}'".format(sys.executable))
     shell("mv .config ._config")
     if speedy_mode:
         shell("scripts/kconfig/conf --allyesconfig Kconfig")
