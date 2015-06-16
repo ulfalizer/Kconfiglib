@@ -1124,7 +1124,6 @@ class Config(object):
             elif t0 == T_HELP:
                 # Find first non-blank (not all-space) line and get its
                 # indentation
-
                 line = line_feeder.next_nonblank()
                 if line is None:
                     stmt.help = ""
