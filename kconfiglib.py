@@ -3144,13 +3144,12 @@ class _FileFeed(object):
             self.linenr -= 1
 
     def next_nonblank(self):
-        """Removes lines up to and including the next non-blank
-        (not all-space) line and returns it."""
+        """Removes lines up to and including the next non-blank (not all-space)
+        line and returns it. Returns None if there are no more non-blank
+        lines."""
         while 1:
             line = self.get_next()
-            if line is None:
-                return None
-            if not line.isspace():
+            if line is None or not line.isspace():
                 return line
 
     def get_filename(self):
