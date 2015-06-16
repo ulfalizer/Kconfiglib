@@ -1908,9 +1908,9 @@ def get_arch_configs():
 # docstring ourselves
 def test_all_no(conf):
     """
-    Test if our examples/allnoconfig.py script generates the same .config as
-    'make allnoconfig' for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode."""
+    Verify that our examples/allnoconfig.py script generates the same .config
+    as 'make allnoconfig', for each architecture. Runs the script via 'make
+    scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py "
@@ -1923,8 +1923,8 @@ def test_all_no(conf):
 
 def test_all_no_simpler(conf):
     """
-    Test if our examples/allnoconfig_simpler.py script generates the same
-    .config as 'make allnoconfig' for each architecture. Runs the script via
+    Verify that our examples/allnoconfig_simpler.py script generates the same
+    .config as 'make allnoconfig', for each architecture. Runs the script via
     'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
@@ -1938,8 +1938,8 @@ def test_all_no_simpler(conf):
 
 def test_all_yes(conf):
     """
-    Test if our examples/allyesconfig.py script generates the same .config as
-    'make allyesconfig' for each architecture. Runs the script via
+    Verify that our examples/allyesconfig.py script generates the same .config
+    as 'make allyesconfig', for each architecture. Runs the script via
     'make scriptconfig', so kinda slow even in speedy mode."""
 
     # TODO: Support speedy mode for running the script
@@ -1953,10 +1953,10 @@ def test_all_yes(conf):
 
 def test_call_all(conf):
     """
-    Call all public methods on all symbols, menus, choices and comments (nearly
-    all public methods: some are hard to test like this, but are exercised by
-    other tests) for all architectures to make sure we never crash or hang.
-    Also do misc. sanity checks."""
+    Call all public methods on all symbols, menus, choices and comments for all
+    architectures to make sure we never crash or hang. (Nearly all public
+    methods: some are hard to test like this, but are exercised by other
+    tests.) Also do misc. sanity checks."""
     print("  For {0}...".format(conf.get_arch()))
 
     conf.__str__()
@@ -2087,7 +2087,7 @@ def test_call_all(conf):
 
 def test_config_absent(conf):
     """
-    Test if Kconfiglib generates the same configuration as 'make alldefconfig'
+    Verify that Kconfiglib generates the same .config as 'make alldefconfig',
     for each architecture."""
     conf.write_config("._config")
     if speedy_mode:
@@ -2097,8 +2097,8 @@ def test_config_absent(conf):
 
 def test_defconfig(conf):
     """
-    Test if Kconfiglib generates the same .config as scripts/kconfig/conf for
-    each architecture/defconfig pair. In obsessive mode, this test includes
+    Verify that Kconfiglib generates the same .config as scripts/kconfig/conf,
+    for each architecture/defconfig pair. In obsessive mode, this test includes
     nonsensical groupings of arches with defconfigs from other arches (every
     arch/defconfig combination) and takes an order of magnitude longer time to
     run.
