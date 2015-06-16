@@ -3194,8 +3194,7 @@ def _make_and(e1, e2):
     if e2 is None or e2 == "y":
         return e1
 
-    # Prefer to merge/update argument list if possible instead of creating
-    # a new AND node
+    # Prefer to merge argument lists if possible to reduce the number of nodes
 
     if isinstance(e1, tuple) and e1[0] == AND:
         if isinstance(e2, tuple) and e2[0] == AND:
@@ -3219,8 +3218,7 @@ def _make_or(e1, e2):
     if e1 == "n":
         return e2
 
-    # Prefer to merge/update argument list if possible instead of creating
-    # a new OR node
+    # Prefer to merge argument lists if possible to reduce the number of nodes
 
     if isinstance(e1, tuple) and e1[0] == OR:
         if isinstance(e2, tuple) and e2[0] == OR:
