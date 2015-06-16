@@ -696,14 +696,14 @@ class Config(object):
                     append(sym)
 
             else:
-                # This restrips whitespace that could have been stripped in the
-                # regex above, but it's worth it since identifiers/keywords are
-                # more common
-                s = s[i:].lstrip()
-                if s == "":
+                # Not an identifier/keyword
+
+                while i < strlen and s[i].isspace():
+                    i += 1
+                if i == strlen:
                     break
-                c = s[0]
-                i = 1
+                c = s[i]
+                i += 1
 
                 # String literal (constant symbol)
                 if c == '"' or c == "'":
@@ -3446,11 +3446,13 @@ BOOL_STR = {False: "false", True: "true"}
 STRING_LEX = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
                         T_PROMPT, T_MENU, T_COMMENT, T_SOURCE, T_MAINMENU))
 
-# Matches the initial token on a line; see _tokenize().
-_initial_token_re_match = re.compile(r"[^\w]*(\w+)").match
+# Matches the initial token on a line; see _tokenize(). Also eats trailing
+# whitespace as an optimization.
+_initial_token_re_match = re.compile(r"[^\w]*(\w+)\s*").match
 
-# Matches an identifier/keyword optionally preceded by whitespace
-_id_keyword_re_match = re.compile(r"\s*([\w./-]+)").match
+# Matches an identifier/keyword optionally preceded by whitespace. Also eats
+# trailing whitespace as an optimization.
+_id_keyword_re_match = re.compile(r"\s*([\w./-]+)\s*").match
 
 # Regular expressions for parsing .config files
 _set_re_match = re.compile(r"CONFIG_(\w+)=(.*)").match
