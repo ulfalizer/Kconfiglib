@@ -14,7 +14,7 @@
 #    'make' targets. Makes things a lot faster, but could break if Kconfig
 #    files start depending on additional environment variables besides ARCH and
 #    SRCARCH. (These would be set in the Makefiles in that case.) Safe as of
-#    Linux 3.7.0-rc8.
+#    Linux 4.1.0-rc8.
 #
 #  - obsessive:
 #    By default, only valid arch/defconfig pairs will be tested. With this
