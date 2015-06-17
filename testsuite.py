@@ -1953,8 +1953,8 @@ def test_all_yes(conf):
 
 def test_call_all(conf):
     """
-    Call all public methods on all symbols, menus, choices and comments for all
-    architectures to make sure we never crash or hang. (Nearly all public
+    Call all public methods on all symbols, menus, choices, and comments for
+    all architectures to make sure we never crash or hang. (Nearly all public
     methods: some are hard to test like this, but are exercised by other
     tests.) Also do misc. sanity checks."""
     print("  For {0}...".format(conf.get_arch()))
