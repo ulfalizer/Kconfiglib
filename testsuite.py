@@ -1826,11 +1826,15 @@ def run_compatibility_tests():
             os.environ.pop(var, None)
         shell("make allnoconfig")
 
+    first_arch_test = True
+
     for (test_fn, compare_configs) in all_arch_tests:
-        print("\nUnsetting user values on all architecture Config instances "
-              "prior to next test...")
-        for arch in arch_configs:
-            arch.unset_user_values()
+        if not first_arch_test:
+            print("\nUnsetting user values on all architecture Config "
+                  "instances prior to the next test...")
+            for arch in arch_configs:
+                arch.unset_user_values()
+        first_arch_test = False
 
         # The test description is taken from the docstring of the corresponding
         # function
