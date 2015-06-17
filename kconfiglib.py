@@ -678,7 +678,7 @@ class Config(object):
                     # It's a symbol name. _sym_lookup() will take care of
                     # allocating a new Symbol instance if it's the first time
                     # we see it.
-                    sym = self._sym_lookup(name, not for_eval)
+                    sym = self._sym_lookup(name, for_eval)
 
                     if previous == T_CONFIG or previous == T_MENUCONFIG:
                         # If the previous token is T_(MENU)CONFIG
@@ -1349,23 +1349,20 @@ class Config(object):
     # Symbol table manipulation
     #
 
-    def _sym_lookup(self, name, add_sym_if_not_exists=True):
-        """Fetches the symbol 'name' from the symbol table, optionally adding
-        it if it does not exist (this is usually what we want)."""
+    def _sym_lookup(self, name, for_eval=False):
+        """Fetches the symbol 'name' from the symbol table. If 'for_eval' is
+        True, the symbol won't be added to the symbol if it does not exist --
+        this is for Config.eval()."""
         if name in self.syms:
             return self.syms[name]
 
         new_sym = Symbol()
         new_sym.config = self
         new_sym.name = name
-
-        if add_sym_if_not_exists:
-            self.syms[name] = new_sym
-        else:
-            # This warning is generated while evaluating an expression
-            # containing undefined symbols using Config.eval()
+        if for_eval:
             self._warn("no symbol {0} in configuration".format(name))
-
+        else:
+            self.syms[name] = new_sym
         return new_sym
 
     #
