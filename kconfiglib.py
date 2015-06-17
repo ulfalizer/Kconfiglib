@@ -636,13 +636,13 @@ class Config(object):
             if initial_token_match is None:
                 return _Feed([])
             keyword = _get_keyword(initial_token_match.group(1))
-            if keyword is None:
-                # We expect a keyword as the first token
-                _tokenization_error(s, filename, linenr)
             if keyword == T_HELP:
                 # Avoid junk after "help", e.g. "---", being registered as a
                 # symbol
                 return _Feed([T_HELP])
+            if keyword is None:
+                # We expect a keyword as the first token
+                _tokenization_error(s, filename, linenr)
 
             previous = keyword
             tokens = [keyword]
