@@ -16,7 +16,7 @@
 #    SRCARCH. (These would be set in the Makefiles in that case.) Safe as of
 #    Linux 4.1.0-rc8.
 #
-#    NOTE: speedy mode requires scripts/kconfig/conf to have been built. Run
+#    NOTE: Speedy mode requires scripts/kconfig/conf to have been built. Run
 #    e.g. 'make defconfig' first to generate it in a fresh kernel tree.
 #
 #  - obsessive:
