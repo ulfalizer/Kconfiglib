@@ -16,9 +16,6 @@
 #    SRCARCH. (These would be set in the Makefiles in that case.) Safe as of
 #    Linux 4.1.0-rc8.
 #
-#    NOTE: Speedy mode requires scripts/kconfig/conf to have been built. Run
-#    e.g. 'make defconfig' first to generate it in a fresh kernel tree.
-#
 #  - obsessive:
 #    By default, only valid arch/defconfig pairs will be tested. With this
 #    enabled, every arch will be tested with every defconfig, which increases
@@ -1821,6 +1818,13 @@ def run_compatibility_tests():
 
     print("Loading Config instances for all architectures...")
     arch_configs = get_arch_configs()
+
+    if speedy_mode and not os.path.exists("scripts/kconfig/conf"):
+        print("\nscripts/kconfig/conf does not exist -- running "
+              "'make allnoconfig' to build it...")
+        for var in ("ARCH", "SRCARCH", "srctree"):
+            os.environ.pop(var, None)
+        shell("make allnoconfig")
 
     for (test_fn, compare_configs) in all_arch_tests:
         print("\nUnsetting user values on all architecture Config instances "
