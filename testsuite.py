@@ -432,10 +432,8 @@ def run_selftests():
     def verify_print(o, s):
         verify_equals(str(o), textwrap.dedent(s[1:]))
 
-    try:
-        del os.environ["ARCH"], os.environ["SRCARCH"], os.environ["srctree"]
-    except:
-        pass
+    for var in ("ARCH", "SRCARCH", "srctree"):
+        os.environ.pop(var, None)
 
     # The tests below aren't meant to imply that the format is set in stone.
     # It's just to verify that the strings do not change unexpectedly.
