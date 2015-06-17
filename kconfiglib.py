@@ -1350,9 +1350,10 @@ class Config(object):
     #
 
     def _sym_lookup(self, name, for_eval=False):
-        """Fetches the symbol 'name' from the symbol table. If 'for_eval' is
-        True, the symbol won't be added to the symbol if it does not exist --
-        this is for Config.eval()."""
+        """Fetches the symbol 'name' from the symbol table, creating and
+        registering it if it does not exist. If 'for_eval' is True, the symbol
+        won't be added to the symbol table if it does not exist -- this is for
+        Config.eval()."""
         if name in self.syms:
             return self.syms[name]
 
