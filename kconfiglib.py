@@ -671,7 +671,7 @@ class Config(object):
                     # It's a keyword
                     append(keyword)
                 elif previous in STRING_LEX:
-                    # What would ordinarily be considered a symbol name is
+                    # What would ordinarily be considered an identifier is
                     # treated as a string after certain tokens
                     append(name)
                 else:
