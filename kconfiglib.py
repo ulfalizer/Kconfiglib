@@ -621,9 +621,10 @@ class Config(object):
             return _Feed([])
 
         if for_eval:
-            i = 0 # The current index in the string being tokenized
             previous = None # The previous token seen
             tokens = []
+            i = 0 # The current index in the string being tokenized
+
         else:
             # The initial word on a line is parsed specially. Let
             # command_chars = [A-Za-z0-9_]. Then
@@ -631,13 +632,9 @@ class Config(object):
             #  - the first token consists the following one or more
             #    command_chars characters.
             # This is why things like "----help--" are accepted.
-
             initial_token_match = _initial_token_re_match(s)
             if initial_token_match is None:
                 return _Feed([])
-            # The current index in the string being tokenized
-            i = initial_token_match.end()
-
             keyword = _get_keyword(initial_token_match.group(1))
             if keyword is None:
                 # We expect a keyword as the first token
@@ -646,8 +643,11 @@ class Config(object):
                 # Avoid junk after "help", e.g. "---", being registered as a
                 # symbol
                 return _Feed([T_HELP])
-            tokens = [keyword]
+
             previous = keyword
+            tokens = [keyword]
+            # The current index in the string being tokenized
+            i = initial_token_match.end()
 
         # _tokenize() is a hotspot during parsing, and this speeds things up a
         # bit
