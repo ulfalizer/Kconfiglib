@@ -616,9 +616,6 @@ class Config(object):
            in which case we should not treat the first token specially nor
            register new symbols."""
 
-        # lstrip() would work here too, but removing the '\n' at the end leads
-        # to earlier termination in the 'while' loop below, saving lots of
-        # calls
         s = s.strip()
         if s == "" or s[0] == "#":
             return _Feed([])
