@@ -3070,6 +3070,10 @@ class _Feed(object):
     """Class for working with sequences in a stream-like fashion; handy for
     tokens."""
 
+    # This would be more helpful on the item classes, but would remove some
+    # flexibility
+    __slots__ = ['items', 'length', 'i']
+
     def __init__(self, items):
         self.items = items
         self.length = len(self.items)
@@ -3105,6 +3109,8 @@ class _FileFeed(object):
     number. Joins any line ending in \\ with the following line. We need to be
     careful to get the line number right in the presence of continuation
     lines."""
+
+    __slots__ = ['filename', 'lines', 'length', 'linenr']
 
     def __init__(self, filename):
         self.filename = _clean_up_path(filename)
