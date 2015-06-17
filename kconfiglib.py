@@ -684,7 +684,7 @@ class Config(object):
                         # If the previous token is T_(MENU)CONFIG
                         # ("(menu)config"), we're tokenizing the first line of
                         # a symbol definition, and should remember this as a
-                        # location where the symbol is defined.
+                        # location where the symbol is defined
                         sym.def_locations.append((filename, linenr))
                     else:
                         # Otherwise, it's a reference to the symbol
