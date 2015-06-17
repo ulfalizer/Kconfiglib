@@ -605,7 +605,7 @@ class Config(object):
         for sym in self.syms_iter():
             sym._invalidate()
 
-    def _tokenize(self, s, for_eval=False, filename=None, linenr=None):
+    def _tokenize(self, s, for_eval, filename=None, linenr=None):
         """Returns a _Feed instance containing tokens derived from the string
         's'. Registers any new symbols encountered (via _sym_lookup()).
 
