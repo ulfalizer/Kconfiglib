@@ -666,18 +666,18 @@ class Config(object):
                 # Jump past it
                 i = id_keyword_match.end()
 
-                # Keyword?
                 keyword = _get_keyword(name)
                 if keyword is not None:
+                    # It's a keyword
                     append(keyword)
-                # What would ordinarily be considered a name is treated as a
-                # string after certain tokens.
                 elif previous in STRING_LEX:
+                    # What would ordinarily be considered a symbol name is
+                    # treated as a string after certain tokens
                     append(name)
                 else:
-                    # We're dealing with a symbol. _sym_lookup() will take care
-                    # of allocating a new Symbol instance if it's the first
-                    # time we see it.
+                    # It's a symbol name. _sym_lookup() will take care of
+                    # allocating a new Symbol instance if it's the first time
+                    # we see it.
                     sym = self._sym_lookup(name, not for_eval)
 
                     if previous == T_CONFIG or previous == T_MENUCONFIG:
