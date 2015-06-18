@@ -104,7 +104,7 @@ class Config(object):
            configuration. For the Linux kernel, you'll probably want "Kconfig"
            from the top-level directory, as environment variables will make
            sure the right Kconfig is included from there
-           (arch/<architecture>/Kconfig). If you are using kconfiglib via 'make
+           (arch/<architecture>/Kconfig). If you are using Kconfiglib via 'make
            scriptconfig', the filename of the base base Kconfig file will be in
            sys.argv[1].
 
@@ -1215,7 +1215,7 @@ class Config(object):
                         self._warn("The symbol {0} references the "
                                    "non-existent environment variable {1} and "
                                    "will get the empty string as its value. "
-                                   "If you're using kconfiglib via "
+                                   "If you're using Kconfiglib via "
                                    "'make (i)scriptconfig', it should have "
                                    "set up the environment correctly for you. "
                                    "If you still got this message, that "
@@ -2274,7 +2274,7 @@ class Symbol(Item):
 
     def __init__(self):
         """Symbol constructor -- not intended to be called directly by
-        kconfiglib clients."""
+        Kconfiglib clients."""
 
         self.name = None
         self.type = UNKNOWN
@@ -2614,7 +2614,7 @@ class Menu(Item):
 
     def __init__(self):
         """Menu constructor -- not intended to be called directly by
-        kconfiglib clients."""
+        Kconfiglib clients."""
 
         self.title = None
         self.dep_expr = None
@@ -2831,7 +2831,7 @@ class Choice(Item):
 
     def __init__(self):
         """Choice constructor -- not intended to be called directly by
-        kconfiglib clients."""
+        Kconfiglib clients."""
 
         self.name = None # Yes, choices can be named
         self.type = UNKNOWN
@@ -2999,7 +2999,7 @@ class Comment(Item):
 
     def __init__(self):
         """Comment constructor -- not intended to be called directly by
-        kconfiglib clients."""
+        Kconfiglib clients."""
 
         self.text = None
         self.dep_expr = None
