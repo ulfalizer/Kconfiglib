@@ -3230,35 +3230,31 @@ def _make_or(e1, e2):
 
     return (OR, [e1, e2])
 
+def _get_expr_syms_rec(expr, res):
+    """_get_expr_syms() helper. Recurses through expressions."""
+    if isinstance(expr, Symbol):
+        res.add(expr)
+    elif isinstance(expr, str):
+        return
+    elif expr[0] == AND or expr[0] == OR:
+        for term in expr[1]:
+            _get_expr_syms_rec(term, res)
+    elif expr[0] == NOT:
+        _get_expr_syms_rec(expr[1], res)
+    elif expr[0] == EQUAL or expr[0] == UNEQUAL:
+        if isinstance(expr[1], Symbol):
+            res.add(expr[1])
+        if isinstance(expr[2], Symbol):
+            res.add(expr[2])
+    else:
+        _internal_error("Internal error while fetching symbols from an "
+                        "expression with token stream {0}.".format(expr))
+
 def _get_expr_syms(expr):
     """Returns the set() of symbols appearing in expr."""
     res = set()
-    if expr is None:
-        return res
-
-    def rec(expr):
-        if isinstance(expr, Symbol):
-            res.add(expr)
-            return
-        if isinstance(expr, str):
-            return
-
-        if expr[0] == AND or expr[0] == OR:
-            for term in expr[1]:
-                rec(term)
-        elif expr[0] == NOT:
-            rec(expr[1])
-        elif expr[0] == EQUAL or expr[0] == UNEQUAL:
-            _, v1, v2 = expr
-            if isinstance(v1, Symbol):
-                res.add(v1)
-            if isinstance(v2, Symbol):
-                res.add(v2)
-        else:
-            _internal_error("Internal error while fetching symbols from an "
-                            "expression with token stream {0}.".format(expr))
-
-    rec(expr)
+    if expr is not None:
+        _get_expr_syms_rec(expr, res)
     return res
 
 def _str_val(obj):
