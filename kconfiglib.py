@@ -801,18 +801,18 @@ class Config(object):
            'm && MODULES' -- see parse_val_and_cond()."""
 
         # Use instance variables to avoid having to pass these as arguments
-        # through the top-down parser in _parse_expr_2(), which is tedious and
-        # obfuscates the code. A profiler run shows no noticeable performance
-        # difference.
+        # through the top-down parser in _parse_expr_rec(), which is tedious
+        # and obfuscates the code. A profiler run shows no noticeable
+        # performance difference.
         self._cur_item = cur_item
         self._transform_m = transform_m
         self._line = line
         self._filename = filename
         self._linenr = linenr
 
-        return self._parse_expr_2(feed)
+        return self._parse_expr_rec(feed)
 
-    def _parse_expr_2(self, feed):
+    def _parse_expr_rec(self, feed):
         or_terms = [self._parse_or_term(feed)]
         # Keep parsing additional terms while the lookahead is '||'
         while feed.check(T_OR):
@@ -852,7 +852,7 @@ class Config(object):
             return (NOT, self._parse_factor(feed))
 
         if token == T_OPEN_PAREN:
-            expr_parse = self._parse_expr_2(feed)
+            expr_parse = self._parse_expr_rec(feed)
             if not feed.check(T_CLOSE_PAREN):
                 _parse_error(self._line, "missing end parenthesis",
                              self._filename, self._linenr)
@@ -1377,7 +1377,7 @@ class Config(object):
         if expr is None:
             return "y"
 
-        res = self._eval_expr_2(expr)
+        res = self._eval_expr_rec(expr)
         if res == "m":
             # Promote "m" to "y" if we're running without modules.
             #
@@ -1389,7 +1389,7 @@ class Config(object):
                 return "y"
         return res
 
-    def _eval_expr_2(self, expr):
+    def _eval_expr_rec(self, expr):
         if isinstance(expr, Symbol):
             # Non-bool/tristate symbols are always "n" in a tristate sense,
             # regardless of their value
@@ -1405,7 +1405,7 @@ class Config(object):
         if expr[0] == AND:
             res = "y"
             for subexpr in expr[1]:
-                ev = self._eval_expr_2(subexpr)
+                ev = self._eval_expr_rec(subexpr)
                 # Return immediately upon discovering an "n" term
                 if ev == "n":
                     return "n"
@@ -1416,7 +1416,7 @@ class Config(object):
             return res
 
         if expr[0] == NOT:
-            ev = self._eval_expr_2(expr[1])
+            ev = self._eval_expr_rec(expr[1])
             if ev == "y":
                 return "n"
             return "y" if (ev == "n") else "m"
@@ -1424,7 +1424,7 @@ class Config(object):
         if expr[0] == OR:
             res = "n"
             for subexpr in expr[1]:
-                ev = self._eval_expr_2(subexpr)
+                ev = self._eval_expr_rec(subexpr)
                 # Return immediately upon discovering a "y" term
                 if ev == "y":
                     return "y"
