@@ -362,14 +362,10 @@ class Config(object):
                 f.write(_comment(header))
                 f.write("\n")
 
-            # Write configuration.
-
-            # Passing a list around to all the nodes and appending to it to
-            # avoid copying was surprisingly a lot slower with PyPy, and about
-            # as fast with Python. Passing the file around was slower too. Been
-            # a while since I last measured though.
-
-            f.write("\n".join(_make_block_conf(self.top_block)))
+            # Build and write configuration
+            conf_strings = []
+            _make_block_conf(self.top_block, conf_strings.append)
+            f.write("\n".join(conf_strings))
             f.write("\n")
 
     def get_kconfig_filename(self):
@@ -2449,33 +2445,35 @@ class Symbol(Item):
         if self.is_choice_symbol_:
             self.parent._unset_user_value()
 
-    def _make_conf(self):
+    def _make_conf(self, append_fn):
         if self.already_written:
-            return []
+            return
 
         self.already_written = True
 
         # Note: write_to_conf is determined in get_value()
         val = self.get_value()
         if not self.write_to_conf:
-            return []
+            return
 
         if self.type == BOOL or self.type == TRISTATE:
             if val == "y" or val == "m":
-                return ["CONFIG_{0}={1}".format(self.name, val)]
-            return ["# CONFIG_{0} is not set".format(self.name)]
+                append_fn("CONFIG_{0}={1}".format(self.name, val))
+            else:
+                append_fn("# CONFIG_{0} is not set".format(self.name))
 
-        if self.type == INT or self.type == HEX:
-            return ["CONFIG_{0}={1}".format(self.name, val)]
+        elif self.type == INT or self.type == HEX:
+            append_fn("CONFIG_{0}={1}".format(self.name, val))
 
-        if self.type == STRING:
+        elif self.type == STRING:
             # Escape \ and "
-            return ['CONFIG_{0}="{1}"'
-                    .format(self.name,
-                            val.replace("\\", "\\\\").replace('"', '\\"'))]
+            append_fn('CONFIG_{0}="{1}"'
+                      .format(self.name,
+                              val.replace("\\", "\\\\").replace('"', '\\"')))
 
-        _internal_error("Internal error while creating .config: unknown "
-                        'type "{0}".'.format(self.type))
+        else:
+            _internal_error("Internal error while creating .config: unknown "
+                            'type "{0}".'.format(self.type))
 
     def _get_dependent(self):
         """Returns the set of symbols that should be invalidated if the value
@@ -2649,13 +2647,11 @@ class Menu(Item):
         self.filename = None
         self.linenr = None
 
-    def _make_conf(self):
-        item_conf = _make_block_conf(self.block)
-
+    def _make_conf(self, append_fn):
         if self.config._eval_expr(self.dep_expr) != "n" and \
            self.config._eval_expr(self.visible_if_expr) != "n":
-            return ["\n#\n# {0}\n#".format(self.title)] + item_conf
-        return item_conf
+            append_fn("\n#\n# {0}\n#".format(self.title))
+        _make_block_conf(self.block, append_fn)
 
 class Choice(Item):
 
@@ -2944,8 +2940,8 @@ class Choice(Item):
         self.user_val = None
         self.user_mode = None
 
-    def _make_conf(self):
-        return _make_block_conf(self.block)
+    def _make_conf(self, append_fn):
+        _make_block_conf(self.block, append_fn)
 
 class Comment(Item):
 
@@ -3032,10 +3028,9 @@ class Comment(Item):
         self.filename = None
         self.linenr = None
 
-    def _make_conf(self):
+    def _make_conf(self, append_fn):
         if self.config._eval_expr(self.dep_expr) != "n":
-            return ["\n#\n# {0}\n#".format(self.text)]
-        return []
+            append_fn("\n#\n# {0}\n#".format(self.text))
 
 class Kconfig_Syntax_Error(Exception):
     """Exception raised for syntax errors."""
@@ -3269,16 +3264,14 @@ def _str_val(obj):
     symbol), it must be a Symbol."""
     return obj if isinstance(obj, str) else obj.get_value()
 
-def _make_block_conf(block):
+def _make_block_conf(block, append_fn):
     """Returns a list of .config strings for a block (list) of items."""
 
     # Collect the substrings in a list and later use join() instead of += to
     # build the final .config contents. With older Python versions, this yields
     # linear instead of quadratic complexity.
-    strings = []
     for item in block:
-        strings.extend(item._make_conf())
-    return strings
+        item._make_conf(append_fn)
 
 def _sym_str_string(sym_or_str):
     if isinstance(sym_or_str, str):
