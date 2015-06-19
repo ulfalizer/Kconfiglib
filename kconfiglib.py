@@ -1172,7 +1172,7 @@ class Config(object):
 
             elif t0 in (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING):
                 stmt.type = TOKEN_TO_TYPE[t0]
-                if len(tokens) > 1:
+                if tokens.peek_next() is not None:
                     new_prompt = parse_val_and_cond(tokens, line, filename,
                                                     linenr)
 
@@ -1182,7 +1182,7 @@ class Config(object):
 
             elif t0 == T_DEF_BOOL:
                 stmt.type = BOOL
-                if len(tokens) > 1:
+                if tokens.peek_next() is not None:
                     new_def_exprs.append(parse_val_and_cond(tokens, line,
                                                             filename, linenr))
 
@@ -1208,7 +1208,7 @@ class Config(object):
 
             elif t0 == T_DEF_TRISTATE:
                 stmt.type = TRISTATE
-                if len(tokens) > 1:
+                if tokens.peek_next() is not None:
                     new_def_exprs.append(parse_val_and_cond(tokens, line,
                                                             filename, linenr))
 
@@ -3105,9 +3105,6 @@ class _Feed(object):
 
     def unget_all(self):
         self.i = 0
-
-    def __len__(self):
-        return self.length
 
 class _FileFeed(object):
 
