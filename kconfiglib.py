@@ -781,9 +781,11 @@ class Config(object):
 
     def _parse_expr(self, feed, cur_item, line, filename=None, linenr=None,
                     transform_m=True):
-        """Parse an expression from the tokens in 'feed' using a simple
-        top-down approach. The result has the form (<operator>, <list
-        containing parsed operands>).
+        """Parses an expression from the tokens in 'feed' using a simple
+        top-down approach. The result has the form
+        '(<operator>, [<parsed operands>])', where <operator> is e.g.
+        kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
+        the operand is returned directly. This also goes for subexpressions.
 
         feed: _Feed instance containing the tokens for the expression.
 
