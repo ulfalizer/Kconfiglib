@@ -813,18 +813,26 @@ class Config(object):
         return self._parse_expr_rec(feed)
 
     def _parse_expr_rec(self, feed):
-        or_terms = [self._parse_or_term(feed)]
-        # Keep parsing additional terms while the lookahead is '||'
+        or_term = self._parse_or_term(feed)
+        if not feed.check(T_OR):
+            # Common case -- no need for an OR node since it's just a single
+            # operand
+            return or_term
+        or_terms = [or_term, self._parse_or_term(feed)]
         while feed.check(T_OR):
             or_terms.append(self._parse_or_term(feed))
-        return or_terms[0] if len(or_terms) == 1 else (OR, or_terms)
+        return (OR, or_terms)
 
     def _parse_or_term(self, feed):
-        and_terms = [self._parse_factor(feed)]
-        # Keep parsing additional terms while the lookahead is '&&'
+        and_term = self._parse_factor(feed)
+        if not feed.check(T_AND):
+            # Common case -- no need for an AND node since it's just a single
+            # operand
+            return and_term
+        and_terms = [and_term, self._parse_factor(feed)]
         while feed.check(T_AND):
             and_terms.append(self._parse_factor(feed))
-        return and_terms[0] if len(and_terms) == 1 else (AND, and_terms)
+        return (AND, and_terms)
 
     def _parse_factor(self, feed):
         token = feed.get_next()
