@@ -1794,6 +1794,85 @@ class Symbol(Item):
     # Public interface
     #
 
+    def get_config(self):
+        """Returns the Config instance this symbol is from."""
+        return self.config
+
+    def get_name(self):
+        """Returns the name of the symbol."""
+        return self.name
+
+    def get_type(self):
+        """Returns the type of the symbol: one of UNKNOWN, BOOL, TRISTATE,
+        STRING, HEX, or INT. These are defined at the top level of the module,
+        so you'd do something like
+
+        if sym.get_type() == kconfiglib.STRING:
+            ..."""
+        return self.type
+
+    def get_prompts(self):
+        """Returns a list of prompts defined for the symbol, in the order they
+        appear in the configuration files. Returns the empty list for symbols
+        with no prompt.
+
+        This list will have a single entry for the vast majority of symbols
+        having prompts, but having multiple prompts for a single symbol is
+        possible through having multiple 'config' entries for it."""
+        return [prompt for prompt, _ in self.orig_prompts]
+
+    def get_help(self):
+        """Returns the help text of the symbol, or None if the symbol has no
+        help text."""
+        return self.help
+
+    def get_parent(self):
+        """Returns the menu or choice statement that contains the symbol, or
+        None if the symbol is at the top level. Note that if statements are
+        treated as syntactic and do not have an explicit class
+        representation."""
+        return self.parent
+
+    def get_def_locations(self):
+        """Returns a list of (filename, linenr) tuples, where filename (string)
+        and linenr (int) represent a location where the symbol is defined. For
+        the vast majority of symbols this list will only contain one element.
+        For the following Kconfig, FOO would get two entries: the lines marked
+        with *.
+
+        config FOO *
+            bool "foo prompt 1"
+
+        config FOO *
+            bool "foo prompt 2"
+        """
+        return self.def_locations
+
+    def get_ref_locations(self):
+        """Returns a list of (filename, linenr) tuples, where filename (string)
+        and linenr (int) represent a location where the symbol is referenced in
+        the configuration. For example, the lines marked by * would be included
+        for FOO below:
+
+        config A
+            bool
+            default BAR || FOO *
+
+        config B
+            tristate
+            depends on FOO *
+            default m if FOO *
+
+        if FOO *
+            config A
+                bool "A"
+        endif
+
+        config FOO (definition not included)
+            bool
+        """
+        return self.ref_locations
+
     def get_value(self):
         """Calculate and return the value of the symbol. See also
         Symbol.set_user_value()."""
@@ -1952,66 +2031,11 @@ class Symbol(Item):
         self.cached_val = new_val
         return new_val
 
-    def set_user_value(self, v):
-        """Sets the user value of the symbol.
-
-        Equal in effect to assigning the value to the symbol within a .config
-        file. Use get_lower/upper_bound() or get_assignable_values() to find
-        the range of currently assignable values for bool and tristate symbols;
-        setting values outside this range will cause the user value to differ
-        from the result of Symbol.get_value() (be truncated). Values that are
-        invalid for the type (such as a_bool.set_user_value("foo")) are
-        ignored, and a warning is emitted if an attempt is made to assign such
-        a value.
-
-        For any type of symbol, is_modifiable() can be used to check if a user
-        value will currently have any effect on the symbol, as determined by
-        its visibility and range of assignable values. Any value that is valid
-        for the type (bool, tristate, etc.) will end up being reflected in
-        get_user_value() though, and might have an effect later if conditions
-        change. To get rid of the user value, use unset_user_value().
-
-        Any symbols dependent on the symbol are (recursively) invalidated, so
-        things will just work with regards to dependencies.
-
-        v: The user value to give to the symbol."""
-        self._set_user_value_no_invalidate(v, False)
-
-        # There might be something more efficient you could do here, but play
-        # it safe.
-        if self.name == "MODULES":
-            self.config._invalidate_all()
-            return
-
-        self._invalidate()
-        self._invalidate_dependent()
-
-    def unset_user_value(self):
-        """Resets the user value of the symbol, as if the symbol had never
-        gotten a user value via Config.load_config() or
-        Symbol.set_user_value()."""
-        self._unset_user_value_no_recursive_invalidate()
-        self._invalidate_dependent()
-
     def get_user_value(self):
         """Returns the value assigned to the symbol in a .config or via
         Symbol.set_user_value() (provided the value was valid for the type of
         the symbol). Returns None in case of no user value."""
         return self.user_val
-
-    def get_name(self):
-        """Returns the name of the symbol."""
-        return self.name
-
-    def get_prompts(self):
-        """Returns a list of prompts defined for the symbol, in the order they
-        appear in the configuration files. Returns the empty list for symbols
-        with no prompt.
-
-        This list will have a single entry for the vast majority of symbols
-        having prompts, but having multiple prompts for a single symbol is
-        possible through having multiple 'config' entries for it."""
-        return [prompt for prompt, _ in self.orig_prompts]
 
     def get_upper_bound(self):
         """For string/hex/int symbols and for bool and tristate symbols that
@@ -2081,15 +2105,6 @@ class Symbol(Item):
                               TRI_TO_INT[_get_visibility(self)] + 1]
         return res if len(res) > 1 else []
 
-    def get_type(self):
-        """Returns the type of the symbol: one of UNKNOWN, BOOL, TRISTATE,
-        STRING, HEX, or INT. These are defined at the top level of the module,
-        so you'd do something like
-
-        if sym.get_type() == kconfiglib.STRING:
-            ..."""
-        return self.type
-
     def get_visibility(self):
         """Returns the visibility of the symbol: one of "n", "m" or "y". For
         bool and tristate symbols, this is an upper bound on the value users
@@ -2134,13 +2149,6 @@ class Symbol(Item):
         get_assignable_values() and is_modifiable() before using this."""
         return _get_visibility(self)
 
-    def get_parent(self):
-        """Returns the menu or choice statement that contains the symbol, or
-        None if the symbol is at the top level. Note that if statements are
-        treated as syntactic and do not have an explicit class
-        representation."""
-        return self.parent
-
     def get_referenced_symbols(self, refs_from_enclosing=False):
         """Returns the set() of all symbols referenced by this symbol. For
         example, the symbol defined by
@@ -2166,54 +2174,46 @@ class Symbol(Item):
         get_referenced_symbols()."""
         return self.selected_syms
 
-    def get_help(self):
-        """Returns the help text of the symbol, or None if the symbol has no
-        help text."""
-        return self.help
+    def set_user_value(self, v):
+        """Sets the user value of the symbol.
 
-    def get_config(self):
-        """Returns the Config instance this symbol is from."""
-        return self.config
+        Equal in effect to assigning the value to the symbol within a .config
+        file. Use get_lower/upper_bound() or get_assignable_values() to find
+        the range of currently assignable values for bool and tristate symbols;
+        setting values outside this range will cause the user value to differ
+        from the result of Symbol.get_value() (be truncated). Values that are
+        invalid for the type (such as a_bool.set_user_value("foo")) are
+        ignored, and a warning is emitted if an attempt is made to assign such
+        a value.
 
-    def get_def_locations(self):
-        """Returns a list of (filename, linenr) tuples, where filename (string)
-        and linenr (int) represent a location where the symbol is defined. For
-        the vast majority of symbols this list will only contain one element.
-        For the following Kconfig, FOO would get two entries: the lines marked
-        with *.
+        For any type of symbol, is_modifiable() can be used to check if a user
+        value will currently have any effect on the symbol, as determined by
+        its visibility and range of assignable values. Any value that is valid
+        for the type (bool, tristate, etc.) will end up being reflected in
+        get_user_value() though, and might have an effect later if conditions
+        change. To get rid of the user value, use unset_user_value().
 
-        config FOO *
-            bool "foo prompt 1"
+        Any symbols dependent on the symbol are (recursively) invalidated, so
+        things will just work with regards to dependencies.
 
-        config FOO *
-            bool "foo prompt 2"
-        """
-        return self.def_locations
+        v: The user value to give to the symbol."""
+        self._set_user_value_no_invalidate(v, False)
 
-    def get_ref_locations(self):
-        """Returns a list of (filename, linenr) tuples, where filename (string)
-        and linenr (int) represent a location where the symbol is referenced in
-        the configuration. For example, the lines marked by * would be included
-        for FOO below:
+        # There might be something more efficient you could do here, but play
+        # it safe.
+        if self.name == "MODULES":
+            self.config._invalidate_all()
+            return
 
-        config A
-            bool
-            default BAR || FOO *
+        self._invalidate()
+        self._invalidate_dependent()
 
-        config B
-            tristate
-            depends on FOO *
-            default m if FOO *
-
-        if FOO *
-            config A
-                bool "A"
-        endif
-
-        config FOO (definition not included)
-            bool
-        """
-        return self.ref_locations
+    def unset_user_value(self):
+        """Resets the user value of the symbol, as if the symbol had never
+        gotten a user value via Config.load_config() or
+        Symbol.set_user_value()."""
+        self._unset_user_value_no_recursive_invalidate()
+        self._invalidate_dependent()
 
     def is_modifiable(self):
         """Returns True if the value of the symbol could be modified by calling
