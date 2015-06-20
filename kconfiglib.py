@@ -2483,27 +2483,22 @@ class Symbol(Item):
         if self.cached_deps is not None:
             return self.cached_deps
 
-        res = set()
+        res = set(self.dep)
+        for s in self.dep:
+            res |= s._get_dependent()
 
-        self._add_dependent_ignore_siblings(res)
         if self.is_choice_symbol_:
-            for s in self.parent.actual_symbols:
-                if s is not self:
-                    res.add(s)
-                    s._add_dependent_ignore_siblings(res)
+            # Choice symbols also depend (recursively) on their siblings. The
+            # siblings are not included in 'dep' to avoid dependency loops.
+            for sibling in self.parent.actual_symbols:
+                if sibling is not self:
+                    res.add(sibling)
+                    res |= sibling.dep
+                    for s in sibling.dep:
+                        res |= s._get_dependent()
 
         self.cached_deps = res
         return res
-
-    def _add_dependent_ignore_siblings(self, to):
-        """Calculating dependencies gets a bit tricky for choice items as they
-        all depend on each other, potentially leading to infinite recursion.
-        This helper function calculates dependencies ignoring the other symbols
-        in the choice. It also works fine for symbols that are not choice
-        items."""
-        for s in self.dep:
-            to.add(s)
-            to |= s._get_dependent()
 
     def _has_auto_menu_dep_on(self, on):
         """See Choice._determine_actual_symbols()."""
