@@ -2678,6 +2678,51 @@ class Choice(Item):
     # Public interface
     #
 
+    def get_config(self):
+        """Returns the Config instance this choice is from."""
+        return self.config
+
+    def get_name(self):
+        """For named choices, returns the name. Returns None for unnamed
+        choices. No named choices appear anywhere in the kernel Kconfig files
+        as of Linux 3.7.0-rc8."""
+        return self.name
+
+    def get_type(self):
+        """Returns the type of the choice. See Symbol.get_type()."""
+        return self.type
+
+    def get_prompts(self):
+        """Returns a list of prompts defined for the choice, in the order they
+        appear in the configuration files. Returns the empty list for choices
+        with no prompt.
+
+        This list will have a single entry for the vast majority of choices
+        having prompts, but having multiple prompts for a single choice is
+        possible through having multiple 'choice' entries for it (though I'm
+        not sure if that ever happens in practice)."""
+        return [prompt for prompt, _ in self.orig_prompts]
+
+    def get_help(self):
+        """Returns the help text of the choice, or None if the choice has no
+        help text."""
+        return self.help
+
+    def get_parent(self):
+        """Returns the menu or choice statement that contains the choice, or
+        None if the choice is at the top level. Note that if statements are
+        treated as syntactic sugar and do not have an explicit class
+        representation."""
+        return self.parent
+
+    def get_def_locations(self):
+        """Returns a list of (filename, linenr) tuples, where filename (string)
+        and linenr (int) represent a location where the choice is defined. For
+        the vast majority of choices (all of them as of Linux 3.7.0-rc8) this
+        list will only contain one element, but its possible for named choices
+        to be defined in multiple locations."""
+        return self.def_locations
+
     def get_selection(self):
         """Returns the symbol selected (either by the user or through
         defaults), or None if either no symbol is selected or the mode is not
@@ -2727,36 +2772,6 @@ class Choice(Item):
         that symbol. Otherwise, returns None."""
         return self.user_val
 
-    def get_config(self):
-        """Returns the Config instance this choice is from."""
-        return self.config
-
-    def get_name(self):
-        """For named choices, returns the name. Returns None for unnamed
-        choices. No named choices appear anywhere in the kernel Kconfig files
-        as of Linux 3.7.0-rc8."""
-        return self.name
-
-    def get_prompts(self):
-        """Returns a list of prompts defined for the choice, in the order they
-        appear in the configuration files. Returns the empty list for choices
-        with no prompt.
-
-        This list will have a single entry for the vast majority of choices
-        having prompts, but having multiple prompts for a single choice is
-        possible through having multiple 'choice' entries for it (though I'm
-        not sure if that ever happens in practice)."""
-        return [prompt for prompt, _ in self.orig_prompts]
-
-    def get_help(self):
-        """Returns the help text of the choice, or None if the choice has no
-        help text."""
-        return self.help
-
-    def get_type(self):
-        """Returns the type of the choice. See Symbol.get_type()."""
-        return self.type
-
     def get_items(self):
         """Gets all items contained in the choice in the same order as within
         the configuration ("items" instead of "symbols" since choices and
@@ -2781,25 +2796,10 @@ class Choice(Item):
         in the choice, use get_items()."""
         return self.actual_symbols
 
-    def get_parent(self):
-        """Returns the menu or choice statement that contains the choice, or
-        None if the choice is at the top level. Note that if statements are
-        treated as syntactic sugar and do not have an explicit class
-        representation."""
-        return self.parent
-
     def get_referenced_symbols(self, refs_from_enclosing=False):
         """See Symbol.get_referenced_symbols()."""
         return self.all_referenced_syms if refs_from_enclosing else \
                self.referenced_syms
-
-    def get_def_locations(self):
-        """Returns a list of (filename, linenr) tuples, where filename (string)
-        and linenr (int) represent a location where the choice is defined. For
-        the vast majority of choices (all of them as of Linux 3.7.0-rc8) this
-        list will only contain one element, but its possible for named choices
-        to be defined in multiple locations."""
-        return self.def_locations
 
     def get_visibility(self):
         """Returns the visibility of the choice statement: one of "n", "m" or
