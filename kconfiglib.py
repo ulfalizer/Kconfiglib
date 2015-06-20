@@ -2535,15 +2535,21 @@ class Menu(Item):
         """Return the Config instance this menu is from."""
         return self.config
 
-    def get_visibility(self):
-        """Returns the visibility of the menu. This also affects the visibility
-        of subitems. See also Symbol.get_visibility()."""
-        return self.config._eval_expr(self.dep_expr)
+    def get_title(self):
+        """Returns the title text of the menu."""
+        return self.title
 
-    def get_visible_if_visibility(self):
-        """Returns the visibility the menu gets from its 'visible if'
-        condition. "y" if the menu has no 'visible if' condition."""
-        return self.config._eval_expr(self.visible_if_expr)
+    def get_parent(self):
+        """Returns the menu or choice statement that contains the menu, or
+        None if the menu is at the top level. Note that if statements are
+        treated as syntactic sugar and do not have an explicit class
+        representation."""
+        return self.parent
+
+    def get_location(self):
+        """Returns the location of the menu as a (filename, linenr) tuple,
+        where filename is a string and linenr an int."""
+        return (self.filename, self.linenr)
 
     def get_items(self, recursive=False):
         """Returns a list containing the items (symbols, menus, choice
@@ -2575,26 +2581,20 @@ class Menu(Item):
         return [item for item in self.get_items(recursive) if
                 isinstance(item, Symbol)]
 
-    def get_title(self):
-        """Returns the title text of the menu."""
-        return self.title
+    def get_visibility(self):
+        """Returns the visibility of the menu. This also affects the visibility
+        of subitems. See also Symbol.get_visibility()."""
+        return self.config._eval_expr(self.dep_expr)
 
-    def get_parent(self):
-        """Returns the menu or choice statement that contains the menu, or
-        None if the menu is at the top level. Note that if statements are
-        treated as syntactic sugar and do not have an explicit class
-        representation."""
-        return self.parent
+    def get_visible_if_visibility(self):
+        """Returns the visibility the menu gets from its 'visible if'
+        condition. "y" if the menu has no 'visible if' condition."""
+        return self.config._eval_expr(self.visible_if_expr)
 
     def get_referenced_symbols(self, refs_from_enclosing=False):
         """See Symbol.get_referenced_symbols()."""
         return self.all_referenced_syms if refs_from_enclosing else \
                self.referenced_syms
-
-    def get_location(self):
-        """Returns the location of the menu as a (filename, linenr) tuple,
-        where filename is a string and linenr an int."""
-        return (self.filename, self.linenr)
 
     def __str__(self):
         """Returns a string containing various information about the menu."""
