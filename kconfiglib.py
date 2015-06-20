@@ -468,7 +468,7 @@ class Config(object):
                                       line_feeder.get_linenr(),
                                       name, sym.user_val, val)
 
-                    if sym.is_choice_symbol_:
+                    if sym.is_choice_sym:
                         user_mode = sym.parent.user_mode
                         if user_mode is not None and user_mode != val:
                             self._warn("assignment to {0} changes mode of "
@@ -1495,7 +1495,7 @@ class Config(object):
                 add_expr_deps(u, sym)
                 add_expr_deps(e, sym)
 
-            if sym.is_choice_symbol_:
+            if sym.is_choice_sym:
                 choice = sym.parent
                 for _, e in choice.prompts:
                     add_expr_deps(e, sym)
@@ -1686,7 +1686,7 @@ class Config(object):
                          "Value          : " + s(sc.get_value()),
                          "User value     : " + user_val_str,
                          "Visibility     : " + s(_get_visibility(sc)),
-                         "Is choice item : " + BOOL_STR[sc.is_choice_symbol_],
+                         "Is choice item : " + BOOL_STR[sc.is_choice_sym],
                          "Is defined     : " + BOOL_STR[sc.is_defined_],
                          "Is from env.   : " + BOOL_STR[sc.is_from_env],
                          "Is special     : " + BOOL_STR[sc.is_special_] + "\n")
@@ -1896,7 +1896,7 @@ class Symbol(Item):
         if self.type == BOOL or self.type == TRISTATE:
             # The visibility and mode (modules-only or single-selection) of
             # choice items will be taken into account in _get_visibility()
-            if self.is_choice_symbol_:
+            if self.is_choice_sym:
                 if vis != "n":
                     choice = self.parent
                     mode = choice.get_mode()
@@ -2257,14 +2257,14 @@ class Symbol(Item):
     def is_choice_symbol(self):
         """Returns True if the symbol is in a choice statement and is an actual
         choice symbol (see Choice.get_symbols())."""
-        return self.is_choice_symbol_
+        return self.is_choice_sym
 
     def is_choice_selection(self):
         """Returns True if the symbol is contained in a choice statement and is
         the selected item. Equivalent to
 
         sym.is_choice_symbol() and sym.get_parent().get_selection() is sym"""
-        return self.is_choice_symbol_ and self.parent.get_selection() is self
+        return self.is_choice_sym and self.parent.get_selection() is self
 
     def is_allnoconfig_y(self):
         """Returns True if the symbol has the 'allnoconfig_y' option set."""
@@ -2349,10 +2349,9 @@ class Symbol(Item):
         # defined in multiple locations only get one .config entry. We need to
         # reset it prior to writing out a new .config.
         self.already_written = False
-        # This is set to True for "actual" choice symbols. See
-        # Choice._determine_actual_symbols(). The trailing underscore avoids a
-        # collision with is_choice_symbol().
-        self.is_choice_symbol_ = False
+        # This is set to True for "actual" choice symbols; see
+        # Choice._determine_actual_symbols().
+        self.is_choice_sym = False
         # Does the symbol get its value in some special way, e.g. from the
         # environment or by being one of the special symbols n, m, and y? If
         # so, the value is stored in self.cached_val, which is never
@@ -2368,7 +2367,7 @@ class Symbol(Item):
         if self.is_special_:
             return
 
-        if self.is_choice_symbol_:
+        if self.is_choice_sym:
             self.parent._invalidate()
 
         self.cached_val = None
@@ -2428,8 +2427,7 @@ class Symbol(Item):
 
         self.user_val = v
 
-        if self.is_choice_symbol_ and (self.type == BOOL or
-                                       self.type == TRISTATE):
+        if self.is_choice_sym and (self.type == BOOL or self.type == TRISTATE):
             choice = self.parent
             if v == "y":
                 choice.user_val = self
@@ -2442,7 +2440,7 @@ class Symbol(Item):
         self._invalidate()
         self.user_val = None
 
-        if self.is_choice_symbol_:
+        if self.is_choice_sym:
             self.parent._unset_user_value()
 
     def _make_conf(self, append_fn):
@@ -2487,7 +2485,7 @@ class Symbol(Item):
         for s in self.dep:
             res |= s._get_dependent()
 
-        if self.is_choice_symbol_:
+        if self.is_choice_sym:
             # Choice symbols also depend (recursively) on their siblings. The
             # siblings are not included in 'dep' to avoid dependency loops.
             for sibling in self.parent.actual_symbols:
@@ -2883,8 +2881,7 @@ class Choice(Item):
         choices and comments within choices, and those shouldn't be considered
         choice items either. Only drivers/usb/gadget/Kconfig seems to depend on
         any of this. This method computes the "actual" items in the choice and
-        sets the is_choice_symbol_ flag on them (retrieved via
-        is_choice_symbol()).
+        sets the is_choice_sym flag on them (retrieved via is_choice_symbol()).
 
         Don't let this scare you: an earlier version simply checked for a
         sequence of symbols where all symbols after the first appeared in the
@@ -2905,13 +2902,13 @@ class Choice(Item):
             while stack:
                 if item._has_auto_menu_dep_on(stack[-1]):
                     # The item should not be viewed as a choice item, so don't
-                    # set item.is_choice_symbol_.
+                    # set item.is_choice_sym
                     stack.append(item)
                     break
                 else:
                     stack.pop()
             else:
-                item.is_choice_symbol_ = True
+                item.is_choice_sym = True
                 self.actual_symbols.append(item)
                 stack.append(item)
 
@@ -3170,7 +3167,7 @@ def _get_visibility(sc):
         for _, cond_expr in sc.prompts:
             vis = sc.config._eval_max(vis, cond_expr)
 
-        if isinstance(sc, Symbol) and sc.is_choice_symbol_:
+        if isinstance(sc, Symbol) and sc.is_choice_sym:
             vis = sc.config._eval_min(vis, _get_visibility(sc.parent))
 
         # Promote "m" to "y" if we're dealing with a non-tristate
