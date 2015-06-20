@@ -2955,11 +2955,6 @@ class Comment(Item):
         """Returns the Config instance this comment is from."""
         return self.config
 
-    def get_visibility(self):
-        """Returns the visibility of the comment. See also
-        Symbol.get_visibility()."""
-        return self.config._eval_expr(self.dep_expr)
-
     def get_text(self):
         """Returns the text of the comment."""
         return self.text
@@ -2971,15 +2966,20 @@ class Comment(Item):
         representation."""
         return self.parent
 
-    def get_referenced_symbols(self, refs_from_enclosing=False):
-        """See Symbol.get_referenced_symbols()."""
-        return self.all_referenced_syms if refs_from_enclosing else \
-               self.referenced_syms
-
     def get_location(self):
         """Returns the location of the comment as a (filename, linenr) tuple,
         where filename is a string and linenr an int."""
         return (self.filename, self.linenr)
+
+    def get_visibility(self):
+        """Returns the visibility of the comment. See also
+        Symbol.get_visibility()."""
+        return self.config._eval_expr(self.dep_expr)
+
+    def get_referenced_symbols(self, refs_from_enclosing=False):
+        """See Symbol.get_referenced_symbols()."""
+        return self.all_referenced_syms if refs_from_enclosing else \
+               self.referenced_syms
 
     def __str__(self):
         """Returns a string containing various information about the
