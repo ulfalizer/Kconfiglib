@@ -612,6 +612,9 @@ class Config(object):
         """Parses a block, which is the contents of either a file or an if,
         menu, or choice statement. Returns a list with the Items in the block.
 
+        line_feeder: A _FileFeed instance feeding lines from a file. The
+          Kconfig language is line-based in practice.
+
         end_marker: The token that ends the block, e.g. T_ENDIF ("endif") for
            ifs. None for files.
 
