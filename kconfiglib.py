@@ -340,7 +340,7 @@ class Config(object):
            merely referred to in the configuration will be included in the
            result, and will appear in the order that they are defined within
            the Kconfig configuration files."""
-        return self.syms.values() if all_symbols else self.kconfig_syms
+        return list(self.syms.values()) if all_symbols else self.kconfig_syms
 
     def __iter__(self):
         """Convenience function for iterating over the set of all defined
