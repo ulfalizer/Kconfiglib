@@ -220,6 +220,163 @@ class Config(object):
         # Build Symbol.dep for all symbols
         self._build_dep()
 
+    def get_arch(self):
+        """Returns the value the environment variable ARCH had at the time the
+        Config instance was created, or None if ARCH was not set. For the
+        kernel, this corresponds to the architecture being built for, with
+        values such as "i386" or "mips"."""
+        return self.arch
+
+    def get_srcarch(self):
+        """Returns the value the environment variable SRCARCH had at the time
+        the Config instance was created, or None if SRCARCH was not set. For
+        the kernel, this corresponds to the particular arch/ subdirectory
+        containing architecture-specific code."""
+        return self.srcarch
+
+    def get_srctree(self):
+        """Returns the value the environment variable srctree had at the time
+        the Config instance was created, or None if srctree was not defined.
+        This variable points to the source directory and is used when building
+        in a separate directory."""
+        return self.srctree
+
+    def get_base_dir(self):
+        """Returns the base directory relative to which 'source' statements
+        will work, passed as an argument to Config.__init__()."""
+        return self.base_dir
+
+    def get_kconfig_filename(self):
+        """Returns the name of the (base) kconfig file this configuration was
+        loaded from."""
+        return self.filename
+
+    def get_config_filename(self):
+        """Returns the filename of the most recently loaded configuration file,
+        or None if no configuration has been loaded."""
+        return self.config_filename
+
+    def get_config_header(self):
+        """Returns the (uncommented) textual header of the .config file most
+        recently loaded with load_config(). Returns None if no .config file has
+        been loaded or if the most recently loaded .config file has no header.
+        The header consists of all lines up to but not including the first line
+        that either
+
+        1. Does not start with "#"
+        2. Has the form "# CONFIG_FOO is not set."
+        """
+        return self.config_header
+
+    def get_mainmenu_text(self):
+        """Returns the text of the 'mainmenu' statement (with $-references to
+        symbols replaced by symbol values), or None if the configuration has no
+        'mainmenu' statement."""
+        return None if self.mainmenu_text is None else \
+          self._expand_sym_refs(self.mainmenu_text)
+
+    def get_defconfig_filename(self):
+        """Returns the name of the defconfig file, which is the first existing
+        file in the list given in a symbol having 'option defconfig_list' set.
+        $-references to symbols will be expanded ("$FOO bar" -> "foo bar" if
+        FOO has the value "foo"). Returns None in case of no defconfig file.
+        Setting 'option defconfig_list' on multiple symbols currently results
+        in undefined behavior.
+
+        If the environment variable 'srctree' was set when the Config was
+        created, get_defconfig_filename() will first look relative to that
+        directory before looking in the current directory; see
+        Config.__init__().
+
+        WARNING: A wart here is that scripts/kconfig/Makefile sometimes uses
+        the --defconfig=<defconfig> option when calling the C implementation of
+        e.g. 'make defconfig'. This option overrides the 'option
+        defconfig_list' symbol, meaning the result from
+        get_defconfig_filename() might not match what 'make defconfig' would
+        use. That probably ought to be worked around somehow, so that this
+        function always gives the "expected" result."""
+        if self.defconfig_sym is None:
+            return None
+        for filename, cond_expr in self.defconfig_sym.def_exprs:
+            if self._eval_expr(cond_expr) == "y":
+                filename = self._expand_sym_refs(filename)
+                # We first look in $srctree. os.path.join() won't work here as
+                # an absolute path in filename would override $srctree.
+                srctree_filename = os.path.normpath(self.srctree + "/" +
+                                                    filename)
+                if os.path.exists(srctree_filename):
+                    return srctree_filename
+                if os.path.exists(filename):
+                    return filename
+        return None
+
+    def get_symbol(self, name):
+        """Returns the symbol with name 'name', or None if no such symbol
+        appears in the configuration. An alternative shorthand is conf[name],
+        where conf is a Config instance, though that will instead raise
+        KeyError if the symbol does not exist."""
+        return self.syms.get(name)
+
+    def __getitem__(self, name):
+        """Returns the symbol with name 'name'. Raises KeyError if the symbol
+        does not appear in the configuration."""
+        return self.syms[name]
+
+    def get_symbols(self, all_symbols=True):
+        """Returns a list of symbols from the configuration. An alternative for
+        iterating over all defined symbols (in the order of definition) is
+
+        for sym in config:
+            ...
+
+        which relies on Config implementing __iter__() and is equivalent to
+
+        for sym in config.get_symbols(False):
+            ...
+
+        all_symbols (default: True): If True, all symbols -- including special
+           and undefined symbols -- will be included in the result, in an
+           undefined order. If False, only symbols actually defined and not
+           merely referred to in the configuration will be included in the
+           result, and will appear in the order that they are defined within
+           the Kconfig configuration files."""
+        return self.syms.values() if all_symbols else self.kconfig_syms
+
+    def __iter__(self):
+        """Convenience function for iterating over the set of all defined
+        symbols in the configuration, used like
+
+        for sym in conf:
+            ...
+
+        The iteration happens in the order of definition within the Kconfig
+        configuration files. Symbols only referred to but not defined will not
+        be included, nor will the special symbols n, m, and y. If you want to
+        include such symbols as well, see config.get_symbols()."""
+        return iter(self.kconfig_syms)
+
+    def get_choices(self):
+        """Returns a list containing all choice statements in the
+        configuration, in the order they appear in the Kconfig files."""
+        return self.choices
+
+    def get_menus(self):
+        """Returns a list containing all menus in the configuration, in the
+        order they appear in the Kconfig files."""
+        return self.menus
+
+    def get_comments(self):
+        """Returns a list containing all comments in the configuration, in the
+        order they appear in the Kconfig files."""
+        return self.comments
+
+    def get_top_level_items(self):
+        """Returns a list containing the items (symbols, menus, choices, and
+        comments) at the top level of the configuration -- that is, all items
+        that do not appear within a menu or choice. The items appear in the
+        same order as within the configuration."""
+        return self.top_block
+
     def load_config(self, filename, replace=True):
         """Loads symbol values from a file in the familiar .config format.
         Equivalent to calling Symbol.set_user_value() to set each of the
@@ -368,128 +525,6 @@ class Config(object):
             f.write("\n".join(conf_strings))
             f.write("\n")
 
-    def get_kconfig_filename(self):
-        """Returns the name of the (base) kconfig file this configuration was
-        loaded from."""
-        return self.filename
-
-    def get_arch(self):
-        """Returns the value the environment variable ARCH had at the time the
-        Config instance was created, or None if ARCH was not set. For the
-        kernel, this corresponds to the architecture being built for, with
-        values such as "i386" or "mips"."""
-        return self.arch
-
-    def get_srcarch(self):
-        """Returns the value the environment variable SRCARCH had at the time
-        the Config instance was created, or None if SRCARCH was not set. For
-        the kernel, this corresponds to the particular arch/ subdirectory
-        containing architecture-specific code."""
-        return self.srcarch
-
-    def get_srctree(self):
-        """Returns the value the environment variable srctree had at the time
-        the Config instance was created, or None if srctree was not defined.
-        This variable points to the source directory and is used when building
-        in a separate directory."""
-        return self.srctree
-
-    def get_config_filename(self):
-        """Returns the filename of the most recently loaded configuration file,
-        or None if no configuration has been loaded."""
-        return self.config_filename
-
-    def get_mainmenu_text(self):
-        """Returns the text of the 'mainmenu' statement (with $-references to
-        symbols replaced by symbol values), or None if the configuration has no
-        'mainmenu' statement."""
-        return None if self.mainmenu_text is None else \
-          self._expand_sym_refs(self.mainmenu_text)
-
-    def get_defconfig_filename(self):
-        """Returns the name of the defconfig file, which is the first existing
-        file in the list given in a symbol having 'option defconfig_list' set.
-        $-references to symbols will be expanded ("$FOO bar" -> "foo bar" if
-        FOO has the value "foo"). Returns None in case of no defconfig file.
-        Setting 'option defconfig_list' on multiple symbols currently results
-        in undefined behavior.
-
-        If the environment variable 'srctree' was set when the Config was
-        created, get_defconfig_filename() will first look relative to that
-        directory before looking in the current directory; see
-        Config.__init__().
-
-        WARNING: A wart here is that scripts/kconfig/Makefile sometimes uses
-        the --defconfig=<defconfig> option when calling the C implementation of
-        e.g. 'make defconfig'. This option overrides the 'option
-        defconfig_list' symbol, meaning the result from
-        get_defconfig_filename() might not match what 'make defconfig' would
-        use. That probably ought to be worked around somehow, so that this
-        function always gives the "expected" result."""
-        if self.defconfig_sym is None:
-            return None
-        for filename, cond_expr in self.defconfig_sym.def_exprs:
-            if self._eval_expr(cond_expr) == "y":
-                filename = self._expand_sym_refs(filename)
-                # We first look in $srctree. os.path.join() won't work here as
-                # an absolute path in filename would override $srctree.
-                srctree_filename = os.path.normpath(self.srctree + "/" +
-                                                    filename)
-                if os.path.exists(srctree_filename):
-                    return srctree_filename
-                if os.path.exists(filename):
-                    return filename
-        return None
-
-    def get_symbol(self, name):
-        """Returns the symbol with name 'name', or None if no such symbol
-        appears in the configuration. An alternative shorthand is conf[name],
-        where conf is a Config instance, though that will instead raise
-        KeyError if the symbol does not exist."""
-        return self.syms.get(name)
-
-    def get_top_level_items(self):
-        """Returns a list containing the items (symbols, menus, choices, and
-        comments) at the top level of the configuration -- that is, all items
-        that do not appear within a menu or choice. The items appear in the
-        same order as within the configuration."""
-        return self.top_block
-
-    def get_symbols(self, all_symbols=True):
-        """Returns a list of symbols from the configuration. An alternative for
-        iterating over all defined symbols (in the order of definition) is
-
-        for sym in config:
-            ...
-
-        which relies on Config implementing __iter__() and is equivalent to
-
-        for sym in config.get_symbols(False):
-            ...
-
-        all_symbols (default: True): If True, all symbols -- including special
-           and undefined symbols -- will be included in the result, in an
-           undefined order. If False, only symbols actually defined and not
-           merely referred to in the configuration will be included in the
-           result, and will appear in the order that they are defined within
-           the Kconfig configuration files."""
-        return self.syms.values() if all_symbols else self.kconfig_syms
-
-    def get_choices(self):
-        """Returns a list containing all choice statements in the
-        configuration, in the order they appear in the Kconfig files."""
-        return self.choices
-
-    def get_menus(self):
-        """Returns a list containing all menus in the configuration, in the
-        order they appear in the Kconfig files."""
-        return self.menus
-
-    def get_comments(self):
-        """Returns a list containing all comments in the configuration, in the
-        order they appear in the Kconfig files."""
-        return self.comments
-
     def eval(self, s):
         """Returns the value of the expression 's' -- where 's' is represented
         as a string -- in the context of the configuration. Raises
@@ -513,22 +548,11 @@ class Config(object):
                                                 None, # Current symbol/choice
                                                 s))   # line
 
-    def get_config_header(self):
-        """Returns the (uncommented) textual header of the .config file most
-        recently loaded with load_config(). Returns None if no .config file has
-        been loaded or if the most recently loaded .config file has no header.
-        The header consists of all lines up to but not including the first line
-        that either
-
-        1. Does not start with "#"
-        2. Has the form "# CONFIG_FOO is not set."
-        """
-        return self.config_header
-
-    def get_base_dir(self):
-        """Returns the base directory relative to which 'source' statements
-        will work, passed as an argument to Config.__init__()."""
-        return self.base_dir
+    def unset_user_values(self):
+        """Resets the values of all symbols, as if Config.load_config() or
+        Symbol.set_user_value() had never been called."""
+        for sym in self.syms_iter():
+            sym._unset_user_value_no_recursive_invalidate()
 
     def set_print_warnings(self, print_warnings):
         """Determines whether warnings related to this configuration (for
@@ -544,30 +568,6 @@ class Config(object):
 
         print_undef_assign: If True, such messages will be printed."""
         self.print_undef_assign = print_undef_assign
-
-    def __getitem__(self, name):
-        """Returns the symbol with name 'name'. Raises KeyError if the symbol
-        does not appear in the configuration."""
-        return self.syms[name]
-
-    def __iter__(self):
-        """Convenience function for iterating over the set of all defined
-        symbols in the configuration, used like
-
-        for sym in conf:
-            ...
-
-        The iteration happens in the order of definition within the Kconfig
-        configuration files. Symbols only referred to but not defined will not
-        be included, nor will the special symbols n, m, and y. If you want to
-        include such symbols as well, see config.get_symbols()."""
-        return iter(self.kconfig_syms)
-
-    def unset_user_values(self):
-        """Resets the values of all symbols, as if Config.load_config() or
-        Symbol.set_user_value() had never been called."""
-        for sym in self.syms_iter():
-            sym._unset_user_value_no_recursive_invalidate()
 
     def __str__(self):
         """Returns a string containing various information about the Config."""
@@ -597,275 +597,9 @@ class Config(object):
     # Private methods
     #
 
-    def _invalidate_all(self):
-        for sym in self.syms_iter():
-            sym._invalidate()
-
-    def _tokenize(self, s, for_eval, filename=None, linenr=None):
-        """Returns a _Feed instance containing tokens derived from the string
-        's'. Registers any new symbols encountered (via _sym_lookup()).
-
-        (I experimented with a pure regular expression implementation, but it
-        came out slower, less readable, and wouldn't have been as flexible.)
-
-        for_eval: True when parsing an expression for a call to Config.eval(),
-           in which case we should not treat the first token specially nor
-           register new symbols."""
-
-        s = s.strip()
-        if s == "" or s[0] == "#":
-            return _Feed([])
-
-        if for_eval:
-            previous = None # The previous token seen
-            tokens = []
-            i = 0 # The current index in the string being tokenized
-
-        else:
-            # The initial word on a line is parsed specially. Let
-            # command_chars = [A-Za-z0-9_]. Then
-            #  - leading non-command_chars characters are ignored, and
-            #  - the first token consists the following one or more
-            #    command_chars characters.
-            # This is why things like "----help--" are accepted.
-            initial_token_match = _initial_token_re_match(s)
-            if initial_token_match is None:
-                return _Feed([])
-            keyword = _get_keyword(initial_token_match.group(1))
-            if keyword == T_HELP:
-                # Avoid junk after "help", e.g. "---", being registered as a
-                # symbol
-                return _Feed([T_HELP])
-            if keyword is None:
-                # We expect a keyword as the first token
-                _tokenization_error(s, filename, linenr)
-
-            previous = keyword
-            tokens = [keyword]
-            # The current index in the string being tokenized
-            i = initial_token_match.end()
-
-        # _tokenize() is a hotspot during parsing, and this speeds things up a
-        # bit
-        strlen = len(s)
-        append = tokens.append
-
-        # Main tokenization loop. (Handles tokens past the first one.)
-        while i < strlen:
-            # Test for an identifier/keyword preceded by whitespace first; this
-            # is the most common case.
-            id_keyword_match = _id_keyword_re_match(s, i)
-            if id_keyword_match:
-                # We have an identifier or keyword. The above also stripped any
-                # whitespace for us.
-                name = id_keyword_match.group(1)
-                # Jump past it
-                i = id_keyword_match.end()
-
-                keyword = _get_keyword(name)
-                if keyword is not None:
-                    # It's a keyword
-                    append(keyword)
-                elif previous in STRING_LEX:
-                    # What would ordinarily be considered an identifier is
-                    # treated as a string after certain tokens
-                    append(name)
-                else:
-                    # It's a symbol name. _sym_lookup() will take care of
-                    # allocating a new Symbol instance if it's the first time
-                    # we see it.
-                    sym = self._sym_lookup(name, for_eval)
-
-                    if previous == T_CONFIG or previous == T_MENUCONFIG:
-                        # If the previous token is T_(MENU)CONFIG
-                        # ("(menu)config"), we're tokenizing the first line of
-                        # a symbol definition, and should remember this as a
-                        # location where the symbol is defined
-                        sym.def_locations.append((filename, linenr))
-                    else:
-                        # Otherwise, it's a reference to the symbol
-                        sym.ref_locations.append((filename, linenr))
-
-                    append(sym)
-
-            else:
-                # Not an identifier/keyword
-
-                while i < strlen and s[i].isspace():
-                    i += 1
-                if i == strlen:
-                    break
-                c = s[i]
-                i += 1
-
-                # String literal (constant symbol)
-                if c == '"' or c == "'":
-                    if "\\" in s:
-                        # Slow path: This could probably be sped up, but it's a
-                        # very unusual case anyway.
-                        quote = c
-                        val = ""
-                        while 1:
-                            if i >= len(s):
-                                _tokenization_error(s, filename, linenr)
-                            c = s[i]
-                            if c == quote:
-                                break
-                            if c == "\\":
-                                if i + 1 >= len(s):
-                                    _tokenization_error(s, filename, linenr)
-                                val += s[i + 1]
-                                i += 2
-                            else:
-                                val += c
-                                i += 1
-                        i += 1
-                        append(val)
-                    else:
-                        # Fast path: If the string contains no backslashes
-                        # (almost always) we can simply look for the matching
-                        # quote.
-                        end = s.find(c, i)
-                        if end == -1:
-                            _tokenization_error(s, filename, linenr)
-                        append(s[i:end])
-                        i = end + 1
-
-                elif c == "&":
-                    # Invalid characters are ignored
-                    if i >= len(s) or s[i] != "&": continue
-                    append(T_AND)
-                    i += 1
-
-                elif c == "|":
-                    # Invalid characters are ignored
-                    if i >= len(s) or s[i] != "|": continue
-                    append(T_OR)
-                    i += 1
-
-                elif c == "!":
-                    if i < len(s) and s[i] == "=":
-                        append(T_UNEQUAL)
-                        i += 1
-                    else:
-                        append(T_NOT)
-
-                elif c == "=": append(T_EQUAL)
-                elif c == "(": append(T_OPEN_PAREN)
-                elif c == ")": append(T_CLOSE_PAREN)
-                elif c == "#": break # Comment
-
-                else: continue # Invalid characters are ignored
-
-            previous = tokens[-1]
-
-        return _Feed(tokens)
-
     #
-    # Parsing
+    # Kconfig parsing
     #
-
-    # Expression grammar:
-    #
-    # <expr> -> <symbol>
-    #           <symbol> '=' <symbol>
-    #           <symbol> '!=' <symbol>
-    #           '(' <expr> ')'
-    #           '!' <expr>
-    #           <expr> '&&' <expr>
-    #           <expr> '||' <expr>
-
-    def _parse_expr(self, feed, cur_item, line, filename=None, linenr=None,
-                    transform_m=True):
-        """Parses an expression from the tokens in 'feed' using a simple
-        top-down approach. The result has the form
-        '(<operator>, [<parsed operands>])', where <operator> is e.g.
-        kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
-        the operand is returned directly. This also goes for subexpressions.
-
-        feed: _Feed instance containing the tokens for the expression.
-
-        cur_item: The item (Symbol, Choice, Menu, or Comment) currently being
-           parsed, or None if we're not parsing an item. Used for recording
-           references to symbols.
-
-        line: The line containing the expression being parsed.
-
-        filename (default: None): The file containing the expression.
-
-        linenr (default: None): The line number containing the expression.
-
-        transform_m (default: False): Determines if 'm' should be rewritten to
-           'm && MODULES' -- see parse_val_and_cond()."""
-
-        # Use instance variables to avoid having to pass these as arguments
-        # through the top-down parser in _parse_expr_rec(), which is tedious
-        # and obfuscates the code. A profiler run shows no noticeable
-        # performance difference.
-        self._cur_item = cur_item
-        self._transform_m = transform_m
-        self._line = line
-        self._filename = filename
-        self._linenr = linenr
-
-        return self._parse_expr_rec(feed)
-
-    def _parse_expr_rec(self, feed):
-        or_term = self._parse_or_term(feed)
-        if not feed.check(T_OR):
-            # Common case -- no need for an OR node since it's just a single
-            # operand
-            return or_term
-        or_terms = [or_term, self._parse_or_term(feed)]
-        while feed.check(T_OR):
-            or_terms.append(self._parse_or_term(feed))
-        return (OR, or_terms)
-
-    def _parse_or_term(self, feed):
-        and_term = self._parse_factor(feed)
-        if not feed.check(T_AND):
-            # Common case -- no need for an AND node since it's just a single
-            # operand
-            return and_term
-        and_terms = [and_term, self._parse_factor(feed)]
-        while feed.check(T_AND):
-            and_terms.append(self._parse_factor(feed))
-        return (AND, and_terms)
-
-    def _parse_factor(self, feed):
-        token = feed.get_next()
-
-        if isinstance(token, (Symbol, str)):
-            if self._cur_item is not None and isinstance(token, Symbol):
-                self._cur_item.referenced_syms.add(token)
-
-            next_token = feed.peek_next()
-            # For conditional expressions ('depends on <expr>',
-            # '... if <expr>', # etc.), "m" and m are rewritten to
-            # "m" && MODULES.
-            if next_token != T_EQUAL and next_token != T_UNEQUAL:
-                if self._transform_m and (token is self.m or token == "m"):
-                    return (AND, ["m", self._sym_lookup("MODULES")])
-                return token
-
-            relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
-            token_2 = feed.get_next()
-            if self._cur_item is not None and isinstance(token_2, Symbol):
-                self._cur_item.referenced_syms.add(token_2)
-            return (relation, token, token_2)
-
-        if token == T_NOT:
-            return (NOT, self._parse_factor(feed))
-
-        if token == T_OPEN_PAREN:
-            expr_parse = self._parse_expr_rec(feed)
-            if not feed.check(T_CLOSE_PAREN):
-                _parse_error(self._line, "missing end parenthesis",
-                             self._filename, self._linenr)
-            return expr_parse
-
-        _parse_error(self._line, "malformed expression", self._filename,
-                     self._linenr)
 
     def _parse_file(self, filename, parent, deps, visible_if_deps, res=None):
         """Parses the Kconfig file 'filename'. Returns a list with the Items in
@@ -1351,9 +1085,267 @@ class Config(object):
                                               _make_and(stmt,
                                                         _make_and(cond, deps)))
 
-    #
-    # Symbol table manipulation
-    #
+    def _parse_expr(self, feed, cur_item, line, filename=None, linenr=None,
+                    transform_m=True):
+        """Parses an expression from the tokens in 'feed' using a simple
+        top-down approach. The result has the form
+        '(<operator>, [<parsed operands>])', where <operator> is e.g.
+        kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
+        the operand is returned directly. This also goes for subexpressions.
+
+        feed: _Feed instance containing the tokens for the expression.
+
+        cur_item: The item (Symbol, Choice, Menu, or Comment) currently being
+           parsed, or None if we're not parsing an item. Used for recording
+           references to symbols.
+
+        line: The line containing the expression being parsed.
+
+        filename (default: None): The file containing the expression.
+
+        linenr (default: None): The line number containing the expression.
+
+        transform_m (default: False): Determines if 'm' should be rewritten to
+           'm && MODULES' -- see parse_val_and_cond().
+
+        Expression grammar, in decreasing order of precedence:
+
+        <expr> -> <symbol>
+                  <symbol> '=' <symbol>
+                  <symbol> '!=' <symbol>
+                  '(' <expr> ')'
+                  '!' <expr>
+                  <expr> '&&' <expr>
+                  <expr> '||' <expr>"""
+
+        # Use instance variables to avoid having to pass these as arguments
+        # through the top-down parser in _parse_expr_rec(), which is tedious
+        # and obfuscates the code. A profiler run shows no noticeable
+        # performance difference.
+        self._cur_item = cur_item
+        self._transform_m = transform_m
+        self._line = line
+        self._filename = filename
+        self._linenr = linenr
+
+        return self._parse_expr_rec(feed)
+
+    def _parse_expr_rec(self, feed):
+        or_term = self._parse_or_term(feed)
+        if not feed.check(T_OR):
+            # Common case -- no need for an OR node since it's just a single
+            # operand
+            return or_term
+        or_terms = [or_term, self._parse_or_term(feed)]
+        while feed.check(T_OR):
+            or_terms.append(self._parse_or_term(feed))
+        return (OR, or_terms)
+
+    def _parse_or_term(self, feed):
+        and_term = self._parse_factor(feed)
+        if not feed.check(T_AND):
+            # Common case -- no need for an AND node since it's just a single
+            # operand
+            return and_term
+        and_terms = [and_term, self._parse_factor(feed)]
+        while feed.check(T_AND):
+            and_terms.append(self._parse_factor(feed))
+        return (AND, and_terms)
+
+    def _parse_factor(self, feed):
+        token = feed.get_next()
+
+        if isinstance(token, (Symbol, str)):
+            if self._cur_item is not None and isinstance(token, Symbol):
+                self._cur_item.referenced_syms.add(token)
+
+            next_token = feed.peek_next()
+            # For conditional expressions ('depends on <expr>',
+            # '... if <expr>', # etc.), "m" and m are rewritten to
+            # "m" && MODULES.
+            if next_token != T_EQUAL and next_token != T_UNEQUAL:
+                if self._transform_m and (token is self.m or token == "m"):
+                    return (AND, ["m", self._sym_lookup("MODULES")])
+                return token
+
+            relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
+            token_2 = feed.get_next()
+            if self._cur_item is not None and isinstance(token_2, Symbol):
+                self._cur_item.referenced_syms.add(token_2)
+            return (relation, token, token_2)
+
+        if token == T_NOT:
+            return (NOT, self._parse_factor(feed))
+
+        if token == T_OPEN_PAREN:
+            expr_parse = self._parse_expr_rec(feed)
+            if not feed.check(T_CLOSE_PAREN):
+                _parse_error(self._line, "missing end parenthesis",
+                             self._filename, self._linenr)
+            return expr_parse
+
+        _parse_error(self._line, "malformed expression", self._filename,
+                     self._linenr)
+
+    def _tokenize(self, s, for_eval, filename=None, linenr=None):
+        """Returns a _Feed instance containing tokens derived from the string
+        's'. Registers any new symbols encountered (via _sym_lookup()).
+
+        (I experimented with a pure regular expression implementation, but it
+        came out slower, less readable, and wouldn't have been as flexible.)
+
+        for_eval: True when parsing an expression for a call to Config.eval(),
+           in which case we should not treat the first token specially nor
+           register new symbols."""
+
+        s = s.strip()
+        if s == "" or s[0] == "#":
+            return _Feed([])
+
+        if for_eval:
+            previous = None # The previous token seen
+            tokens = []
+            i = 0 # The current index in the string being tokenized
+
+        else:
+            # The initial word on a line is parsed specially. Let
+            # command_chars = [A-Za-z0-9_]. Then
+            #  - leading non-command_chars characters are ignored, and
+            #  - the first token consists the following one or more
+            #    command_chars characters.
+            # This is why things like "----help--" are accepted.
+            initial_token_match = _initial_token_re_match(s)
+            if initial_token_match is None:
+                return _Feed([])
+            keyword = _get_keyword(initial_token_match.group(1))
+            if keyword == T_HELP:
+                # Avoid junk after "help", e.g. "---", being registered as a
+                # symbol
+                return _Feed([T_HELP])
+            if keyword is None:
+                # We expect a keyword as the first token
+                _tokenization_error(s, filename, linenr)
+
+            previous = keyword
+            tokens = [keyword]
+            # The current index in the string being tokenized
+            i = initial_token_match.end()
+
+        # _tokenize() is a hotspot during parsing, and this speeds things up a
+        # bit
+        strlen = len(s)
+        append = tokens.append
+
+        # Main tokenization loop. (Handles tokens past the first one.)
+        while i < strlen:
+            # Test for an identifier/keyword preceded by whitespace first; this
+            # is the most common case.
+            id_keyword_match = _id_keyword_re_match(s, i)
+            if id_keyword_match:
+                # We have an identifier or keyword. The above also stripped any
+                # whitespace for us.
+                name = id_keyword_match.group(1)
+                # Jump past it
+                i = id_keyword_match.end()
+
+                keyword = _get_keyword(name)
+                if keyword is not None:
+                    # It's a keyword
+                    append(keyword)
+                elif previous in STRING_LEX:
+                    # What would ordinarily be considered an identifier is
+                    # treated as a string after certain tokens
+                    append(name)
+                else:
+                    # It's a symbol name. _sym_lookup() will take care of
+                    # allocating a new Symbol instance if it's the first time
+                    # we see it.
+                    sym = self._sym_lookup(name, for_eval)
+
+                    if previous == T_CONFIG or previous == T_MENUCONFIG:
+                        # If the previous token is T_(MENU)CONFIG
+                        # ("(menu)config"), we're tokenizing the first line of
+                        # a symbol definition, and should remember this as a
+                        # location where the symbol is defined
+                        sym.def_locations.append((filename, linenr))
+                    else:
+                        # Otherwise, it's a reference to the symbol
+                        sym.ref_locations.append((filename, linenr))
+
+                    append(sym)
+
+            else:
+                # Not an identifier/keyword
+
+                while i < strlen and s[i].isspace():
+                    i += 1
+                if i == strlen:
+                    break
+                c = s[i]
+                i += 1
+
+                # String literal (constant symbol)
+                if c == '"' or c == "'":
+                    if "\\" in s:
+                        # Slow path: This could probably be sped up, but it's a
+                        # very unusual case anyway.
+                        quote = c
+                        val = ""
+                        while 1:
+                            if i >= len(s):
+                                _tokenization_error(s, filename, linenr)
+                            c = s[i]
+                            if c == quote:
+                                break
+                            if c == "\\":
+                                if i + 1 >= len(s):
+                                    _tokenization_error(s, filename, linenr)
+                                val += s[i + 1]
+                                i += 2
+                            else:
+                                val += c
+                                i += 1
+                        i += 1
+                        append(val)
+                    else:
+                        # Fast path: If the string contains no backslashes
+                        # (almost always) we can simply look for the matching
+                        # quote.
+                        end = s.find(c, i)
+                        if end == -1:
+                            _tokenization_error(s, filename, linenr)
+                        append(s[i:end])
+                        i = end + 1
+
+                elif c == "&":
+                    # Invalid characters are ignored
+                    if i >= len(s) or s[i] != "&": continue
+                    append(T_AND)
+                    i += 1
+
+                elif c == "|":
+                    # Invalid characters are ignored
+                    if i >= len(s) or s[i] != "|": continue
+                    append(T_OR)
+                    i += 1
+
+                elif c == "!":
+                    if i < len(s) and s[i] == "=":
+                        append(T_UNEQUAL)
+                        i += 1
+                    else:
+                        append(T_NOT)
+
+                elif c == "=": append(T_EQUAL)
+                elif c == "(": append(T_OPEN_PAREN)
+                elif c == ")": append(T_CLOSE_PAREN)
+                elif c == "#": break # Comment
+
+                else: continue # Invalid characters are ignored
+
+            previous = tokens[-1]
+
+        return _Feed(tokens)
 
     def _sym_lookup(self, name, for_eval=False):
         """Fetches the symbol 'name' from the symbol table, creating and
@@ -1373,7 +1365,7 @@ class Config(object):
         return new_sym
 
     #
-    # Evaluation of expressions
+    # Expression evaluation
     #
 
     def _eval_expr(self, expr):
@@ -1464,7 +1456,7 @@ class Config(object):
         return e1_eval if tri_greater(e1_eval, e2_eval) else e2_eval
 
     #
-    # Dependency tracking
+    # Dependency tracking (for caching and invalidation)
     #
 
     def _build_dep(self):
@@ -1510,22 +1502,60 @@ class Config(object):
                 for _, e in choice.def_exprs:
                     add_expr_deps(e, sym)
 
-    def _expr_val_str(self, expr, no_value_str="(none)",
-                      get_val_instead_of_eval=False):
-        # Since values are valid expressions, _expr_to_str() will get a nice
-        # string representation for those as well.
+    def _eq_to_sym(self, eq):
+        """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
+        or sym != n, returns sym. For other (in)equalities, returns None."""
+        relation, left, right = eq
 
+        def transform_y_m_n(item):
+            if item is self.y: return "y"
+            if item is self.m: return "m"
+            if item is self.n: return "n"
+            return item
+
+        left = transform_y_m_n(left)
+        right = transform_y_m_n(right)
+
+        # Make sure the symbol (if any) appears to the left
+        if not isinstance(left, Symbol):
+            left, right = right, left
+        if not isinstance(left, Symbol):
+            return None
+        if (relation == EQUAL and (right == "y" or right == "m")) or \
+           (relation == UNEQUAL and right == "n"):
+            return left
+        return None
+
+    def _expr_depends_on(self, expr, sym):
+        """Reimplementation of expr_depends_symbol() from mconf.c. Used to
+        determine if a submenu should be implicitly created, which influences
+        what items inside choice statements are considered choice items."""
         if expr is None:
-            return no_value_str
+            return False
 
-        if get_val_instead_of_eval:
+        def rec(expr):
             if isinstance(expr, str):
-                return _expr_to_str(expr)
-            val = expr.get_value()
-        else:
-            val = self._eval_expr(expr)
+                return False
+            if isinstance(expr, Symbol):
+                return expr is sym
 
-        return "{0} (value: {1})".format(_expr_to_str(expr), _expr_to_str(val))
+            if expr[0] in (EQUAL, UNEQUAL):
+                return self._eq_to_sym(expr) is sym
+            if expr[0] == AND:
+                for and_expr in expr[1]:
+                    if rec(and_expr):
+                        return True
+            return False
+
+        return rec(expr)
+
+    def _invalidate_all(self):
+        for sym in self.syms_iter():
+            sym._invalidate()
+
+    #
+    # Printing and misc.
+    #
 
     def _expand_sym_refs(self, s):
         """Expands $-references to symbols in 's' to symbol values, or to the
@@ -1543,6 +1573,23 @@ class Config(object):
             s = s[:sym_ref_match.start()] + \
                 expansion + \
                 s[sym_ref_match.end():]
+
+    def _expr_val_str(self, expr, no_value_str="(none)",
+                      get_val_instead_of_eval=False):
+        # Since values are valid expressions, _expr_to_str() will get a nice
+        # string representation for those as well.
+
+        if expr is None:
+            return no_value_str
+
+        if get_val_instead_of_eval:
+            if isinstance(expr, str):
+                return _expr_to_str(expr)
+            val = expr.get_value()
+        else:
+            val = self._eval_expr(expr)
+
+        return "{0} (value: {1})".format(_expr_to_str(expr), _expr_to_str(val))
 
     def _get_sym_or_choice_str(self, sc):
         """Symbols and choices have many properties in common, so we factor out
@@ -1705,53 +1752,6 @@ class Config(object):
                         "ifs:",
                       additional_deps_str,
                       "Locations: " + locations_str)
-
-    def _eq_to_sym(self, eq):
-        """_expr_depends_on() helper. For (in)equalities of the form sym = y/m
-        or sym != n, returns sym. For other (in)equalities, returns None."""
-        relation, left, right = eq
-
-        def transform_y_m_n(item):
-            if item is self.y: return "y"
-            if item is self.m: return "m"
-            if item is self.n: return "n"
-            return item
-
-        left = transform_y_m_n(left)
-        right = transform_y_m_n(right)
-
-        # Make sure the symbol (if any) appears to the left
-        if not isinstance(left, Symbol):
-            left, right = right, left
-        if not isinstance(left, Symbol):
-            return None
-        if (relation == EQUAL and (right == "y" or right == "m")) or \
-           (relation == UNEQUAL and right == "n"):
-            return left
-        return None
-
-    def _expr_depends_on(self, expr, sym):
-        """Reimplementation of expr_depends_symbol() from mconf.c. Used to
-        determine if a submenu should be implicitly created, which influences
-        what items inside choice statements are considered choice items."""
-        if expr is None:
-            return False
-
-        def rec(expr):
-            if isinstance(expr, str):
-                return False
-            if isinstance(expr, Symbol):
-                return expr is sym
-
-            if expr[0] in (EQUAL, UNEQUAL):
-                return self._eq_to_sym(expr) is sym
-            if expr[0] == AND:
-                for and_expr in expr[1]:
-                    if rec(and_expr):
-                        return True
-            return False
-
-        return rec(expr)
 
     def _warn(self, msg, filename=None, linenr=None):
         """For printing warnings to stderr."""
