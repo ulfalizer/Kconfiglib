@@ -5,4 +5,4 @@ import kconfiglib
 import sys
 
 conf = kconfiglib.Config(sys.argv[1])
-print conf.eval("(TRACE_IRQFLAGS_SUPPORT || PPC32) && STACKTRACE_SUPPORT")
+print(conf.eval("(TRACE_IRQFLAGS_SUPPORT || PPC32) && STACKTRACE_SUPPORT"))

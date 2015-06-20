@@ -15,4 +15,4 @@ conf.load_config("$srctree/arch/x86/configs/i386_defconfig")
 
 # Print some information about a symbol. (The Config class implements
 # __getitem__() to provide a handy syntax for getting symbols.)
-print conf["SERIAL_UARTLITE_CONSOLE"]
+print(conf["SERIAL_UARTLITE_CONSOLE"])

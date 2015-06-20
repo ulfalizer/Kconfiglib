@@ -4,7 +4,7 @@ import kconfiglib
 import sys
 
 def print_with_indent(s, indent):
-    print (" " * indent) + s
+    print((" " * indent) + s)
 
 def print_items(items, indent):
     for item in items:

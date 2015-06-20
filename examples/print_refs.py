@@ -10,4 +10,4 @@ conf = kconfiglib.Config(sys.argv[1])
 x86 = conf["X86"]
 for sym in conf:
     if x86 in sym.get_referenced_symbols():
-        print sym.get_name()
+        print(sym.get_name())

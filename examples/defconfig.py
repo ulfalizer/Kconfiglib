@@ -11,7 +11,7 @@ if os.path.exists(".config"):
 else:
     defconfig = conf.get_defconfig_filename()
     if defconfig is not None:
-        print "Using " + defconfig
+        print("Using" + defconfig)
         conf.load_config(defconfig)
 
 conf.write_config(".config")

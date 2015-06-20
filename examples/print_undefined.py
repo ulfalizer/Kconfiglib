@@ -10,6 +10,6 @@ conf = kconfiglib.Config(sys.argv[1])
 
 for sym in conf.get_symbols():
     if not sym.is_defined():
-        print sym.get_name()
+        print(sym.get_name())
         for (filename, linenr) in sym.get_ref_locations():
-            print "  {0}:{1}".format(filename, linenr)
+            print("  {0}:{1}".format(filename, linenr))

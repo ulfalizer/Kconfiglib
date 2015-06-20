@@ -8,13 +8,13 @@ import kconfiglib
 import sys
 
 if len(sys.argv) < 3:
-    print 'Pass search string with SCRIPT_ARG="search string"'
+    print('Pass search string with SCRIPT_ARG="search string"')
     sys.exit(1)
 search_string = sys.argv[2].lower()
 
 conf = kconfiglib.Config(sys.argv[1])
 
-for item in conf.get_symbols() +\
+for item in conf.get_symbols() + \
             conf.get_choices() + conf.get_menus() + conf.get_comments():
     if item.is_symbol() or item.is_choice():
         text = item.get_help()
@@ -34,19 +34,16 @@ for item in conf.get_symbols() +\
             # keep things simple
             fname, linenr = item.get_def_locations()[0]
             if item.is_symbol():
-                print "config {0} at {1}:{2}:\n{3}".\
-                      format(item.get_name(), fname, linenr, text)
+                print("config {0} at {1}:{2}:\n{3}"
+                      .format(item.get_name(), fname, linenr, text))
             elif item.is_choice():
-                print "choice at {0}:{1}:\n{2}".\
-                      format(fname, linenr, text)
+                print("choice at {0}:{1}:\n{2}".format(fname, linenr, text))
 
         else:
             # Menu or comment
             fname, linenr = item.get_location()
             if item.is_menu():
-                print 'menu "{0}" at {1}:{2}'.\
-                      format(text, fname, linenr)
+                print('menu "{0}" at {1}:{2}'.format(text, fname, linenr))
             else:
                 # Comment
-                print 'comment "{0}" at {1}:{2}'.\
-                      format(text, fname, linenr)
+                print('comment "{0}" at {1}:{2}'.format(text, fname, linenr))
