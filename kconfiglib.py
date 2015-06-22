@@ -454,8 +454,7 @@ class Config(object):
                 if val.startswith(('"', "'")):
                     if len(val) < 2 or val[-1] != val[0]:
                         _parse_error(line, "malformed string literal",
-                                     line_feeder.get_filename(),
-                                     line_feeder.get_linenr())
+                                     line_feeder.filename, line_feeder.linenr)
                     # Strip quotes and remove escapings. The unescaping
                     # procedure should be safe since " can only appear as \"
                     # inside the string.
@@ -464,8 +463,7 @@ class Config(object):
                 if name in self.syms:
                     sym = self.syms[name]
                     if sym.user_val is not None:
-                        warn_override(line_feeder.get_filename(),
-                                      line_feeder.get_linenr(),
+                        warn_override(line_feeder.filename, line_feeder.linenr,
                                       name, sym.user_val, val)
 
                     if sym.is_choice_sym:
@@ -474,8 +472,8 @@ class Config(object):
                             self._warn("assignment to {0} changes mode of "
                                        'containing choice from "{1}" to "{2}".'
                                        .format(name, val, user_mode),
-                                       line_feeder.get_filename(),
-                                       line_feeder.get_linenr())
+                                       line_feeder.filename,
+                                       line_feeder.linenr)
 
                     sym._set_user_value_no_invalidate(val, True)
                 else:
@@ -483,8 +481,7 @@ class Config(object):
                         _stderr_msg('note: attempt to assign the value "{0}" '
                                     "to the undefined symbol {1}."
                                     .format(val, name),
-                                    line_feeder.get_filename(),
-                                    line_feeder.get_linenr())
+                                    line_feeder.filename, line_feeder.linenr)
             else:
                 unset_match = _unset_re_match(line)
                 if unset_match:
@@ -492,8 +489,8 @@ class Config(object):
                     if name in self.syms:
                         sym = self.syms[name]
                         if sym.user_val is not None:
-                            warn_override(line_feeder.get_filename(),
-                                          line_feeder.get_linenr(),
+                            warn_override(line_feeder.filename,
+                                          line_feeder.linenr,
                                           name, sym.user_val, "n")
 
                         sym._set_user_value_no_invalidate("n", True)
@@ -647,12 +644,11 @@ class Config(object):
                 if line is None:
                     if end_marker is not None:
                         raise Kconfig_Syntax_Error("Unexpected end of file {0}"
-                                           .format(line_feeder.get_filename()))
+                                                 .format(line_feeder.filename))
                     return block
 
-                tokens = self._tokenize(line, False,
-                                        line_feeder.get_filename(),
-                                        line_feeder.get_linenr())
+                tokens = self._tokenize(line, False, line_feeder.filename,
+                                        line_feeder.linenr)
 
             t0 = tokens.get_next()
             if t0 is None:
@@ -689,8 +685,8 @@ class Config(object):
                                   '"{3}") not found. Perhaps base_dir '
                                   '(argument to Config.__init__(), currently '
                                   '"{4}") is set to the wrong value.'
-                                  .format(line_feeder.get_filename(),
-                                          line_feeder.get_linenr(),
+                                  .format(line_feeder.filename,
+                                          line_feeder.linenr,
                                           kconfig_file, exp_kconfig_file,
                                           self.base_dir))
                 # Add items to the same block
@@ -706,8 +702,8 @@ class Config(object):
                 # object representation.
 
                 dep_expr = self._parse_expr(tokens, None, line,
-                                            line_feeder.get_filename(),
-                                            line_feeder.get_linenr())
+                                            line_feeder.filename,
+                                            line_feeder.linenr)
                 # Add items to the same block
                 self._parse_block(line_feeder, T_ENDIF, parent,
                                   _make_and(dep_expr, deps),
@@ -718,8 +714,8 @@ class Config(object):
 
                 comment.config = self
                 comment.parent = parent
-                comment.filename = line_feeder.get_filename()
-                comment.linenr = line_feeder.get_linenr()
+                comment.filename = line_feeder.filename
+                comment.linenr = line_feeder.linenr
                 comment.text = tokens.get_next()
 
                 self.comments.append(comment)
@@ -733,8 +729,8 @@ class Config(object):
 
                 menu.config = self
                 menu.parent = parent
-                menu.filename = line_feeder.get_filename()
-                menu.linenr = line_feeder.get_linenr()
+                menu.filename = line_feeder.filename
+                menu.linenr = line_feeder.linenr
                 menu.title = tokens.get_next()
 
                 self.menus.append(menu)
@@ -765,8 +761,8 @@ class Config(object):
                 choice.config = self
                 choice.parent = parent
 
-                choice.def_locations.append((line_feeder.get_filename(),
-                                             line_feeder.get_linenr()))
+                choice.def_locations.append((line_feeder.filename,
+                                             line_feeder.linenr))
 
                 # Parse properties and contents
                 self._parse_properties(line_feeder, choice, deps,
@@ -797,14 +793,12 @@ class Config(object):
                     self._warn("overriding 'mainmenu' text. "
                                'Old value: "{0}", new value: "{1}".'
                                .format(self.mainmenu_text, text),
-                               line_feeder.get_filename(),
-                               line_feeder.get_linenr())
+                               line_feeder.filename, line_feeder.linenr)
                 self.mainmenu_text = text
 
             else:
                 _parse_error(line, "unrecognized construct",
-                             line_feeder.get_filename(),
-                             line_feeder.get_linenr())
+                             line_feeder.filename, line_feeder.linenr)
 
     def _parse_properties(self, line_feeder, stmt, deps, visible_if_deps):
         """Parsing of properties for symbols, menus, choices, and comments.
@@ -836,8 +830,8 @@ class Config(object):
             if line is None:
                 break
 
-            filename = line_feeder.get_filename()
-            linenr = line_feeder.get_linenr()
+            filename = line_feeder.filename
+            linenr = line_feeder.linenr
 
             tokens = self._tokenize(line, False, filename, linenr)
 
@@ -3149,12 +3143,6 @@ class _FileFeed(object):
             line = self.get_next()
             if line is None or not line.isspace():
                 return line
-
-    def get_filename(self):
-        return self.filename
-
-    def get_linenr(self):
-        return self.linenr
 
 #
 # Internal functions
