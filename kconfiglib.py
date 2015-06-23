@@ -1573,8 +1573,13 @@ class Config(object):
 
     def _expr_val_str(self, expr, no_value_str="(none)",
                       get_val_instead_of_eval=False):
-        # Since values are valid expressions, _expr_to_str() will get a nice
-        # string representation for those as well.
+        """Printing helper. Returns a string with 'expr' and its value.
+
+        no_value_str: String to return when 'expr' is missing (None).
+
+        get_val_instead_of_eval: Assume 'expr' is a symbol or string (constant
+          symbol) and get its value directly instead of evaluating it to a
+          tristate value."""
 
         if expr is None:
             return no_value_str
