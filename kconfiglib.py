@@ -451,7 +451,7 @@ class Config(object):
             if set_match:
                 name, val = set_match.groups()
 
-                if val[0] == '"':
+                if val.startswith('"'):
                     if len(val) < 2 or val[-1] != '"':
                         _parse_error(line, "malformed string literal",
                                      line_feeder.filename, line_feeder.linenr)
