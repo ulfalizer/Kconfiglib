@@ -386,10 +386,10 @@ class Config(object):
         and sets the user value of FOO to 'n'. The C implementation works the
         same way.
 
-        filename: The .config file to load. $-references to environment
-           variables will be expanded. For scripts to work even when an
-           alternative build directory is used with the Linux kernel, you need
-           to refer to the top-level kernel directory with "$srctree".
+        filename: The .config file to load. $-references to existing
+          environment variables will be expanded. For scripts to work even when
+          an alternative build directory is used with the Linux kernel, you
+          need to refer to the top-level kernel directory with "$srctree".
 
         replace (default: True): True if the configuration should replace the
            old configuration; False if it should add to it."""
