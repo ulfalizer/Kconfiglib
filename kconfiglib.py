@@ -451,8 +451,8 @@ class Config(object):
             if set_match:
                 name, val = set_match.groups()
 
-                if val.startswith(('"', "'")):
-                    if len(val) < 2 or val[-1] != val[0]:
+                if val[0] == '"':
+                    if len(val) < 2 or val[-1] != '"':
                         _parse_error(line, "malformed string literal",
                                      line_feeder.filename, line_feeder.linenr)
                     # Strip quotes and remove escapings. The unescaping
