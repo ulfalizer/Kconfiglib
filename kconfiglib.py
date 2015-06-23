@@ -605,7 +605,7 @@ class Config(object):
                                  visible_if_deps, res)
 
     def _parse_block(self, line_feeder, end_marker, parent, deps,
-                     visible_if_deps=None, res=None):
+                     visible_if_deps, res=None):
         """Parses a block, which is the contents of either a file or an if,
         menu, or choice statement. Returns a list with the Items in the block.
 
