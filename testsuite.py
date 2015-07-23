@@ -1457,10 +1457,9 @@ def run_selftests():
 
     def verify_header(config_name, header):
         c.load_config(config_name)
-        read_header = c.get_config_header()
-        verify(read_header == header,
+        verify(c.get_config_header() == header,
                "Expected the header '{0}' from '{1}', got the header '{2}'.".
-               format(header, config_name, read_header))
+               format(header, config_name, c.get_config_header()))
 
     def write_and_verify_header(header):
         c.write_config(config_test_file, header)
@@ -1495,10 +1494,9 @@ def run_selftests():
 
     # Reading and writing of .config headers
 
-    read_header = c.get_config_header()
-    verify(read_header is None,
+    verify(c.get_config_header() is None,
            "Expected no header before .config loaded, got '{0}'".
-           format(read_header))
+           format(c.get_config_header()))
 
     write_and_verify_header("")
     write_and_verify_header(" ")
@@ -1512,16 +1510,14 @@ def run_selftests():
     write_and_verify_header("foo\nbar baz\n\n\n qaz#")
 
     c.load_config("Kconfiglib/tests/empty")
-    read_header = c.get_config_header()
     verify(c.get_config_header() is None,
            "Expected no header in empty .config, got '{0}'".
-           format(read_header))
+           format(c.get_config_header()))
 
     c.load_config("Kconfiglib/tests/config_hash")
-    read_header = c.get_config_header()
     verify(c.get_config_header() == "",
            "Expected empty header in file with just '#', got '{0}'".
-           format(read_header))
+           format(c.get_config_header()))
 
     # Appending values from a .config
 
