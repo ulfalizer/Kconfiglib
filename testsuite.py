@@ -1519,6 +1519,19 @@ def run_selftests():
            "Expected empty header in file with just '#', got '{0}'".
            format(c.get_config_header()))
 
+    # TODO: Line joining (which stems from _FileFeed reuse) probably doesn't
+    # make sense within .config files. (The C implementation has no notion of
+    # continuation lines within .config files.) It's harmless except for fairly
+    # obscure cases though.
+    #
+    # Add a test for now just to get test coverage for _FileFeed.peek_next(),
+    # which is only used while reading .config files as of writing.
+
+    c.load_config("Kconfiglib/tests/config_continuation")
+    verify(c.get_config_header() ==
+           " Foo # Bar\n Baz # Foo # Bar\n Baz\n Foo",
+           "Continuation line handling within .config headers is broken")
+
     # Appending values from a .config
 
     c = kconfiglib.Config("Kconfiglib/tests/Kappend")
