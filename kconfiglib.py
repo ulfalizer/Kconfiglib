@@ -3132,7 +3132,7 @@ class _FileFeed(object):
         line = self.lines[linenr]
         while line.endswith("\\\n"):
             linenr += 1
-            line = res[:-2] + self.lines[linenr]
+            line = line[:-2] + self.lines[linenr]
         return line
 
     def unget(self):
