@@ -1952,7 +1952,7 @@ class Symbol(Item):
 
             base = 16 if self.type == HEX else 10
 
-            for(l, h, cond_expr) in self.ranges:
+            for l, h, cond_expr in self.ranges:
                 if self.config._eval_expr(cond_expr) != "n":
                     has_active_range = True
 
