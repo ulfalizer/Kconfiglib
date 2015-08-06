@@ -615,7 +615,7 @@ class Config(object):
         end_marker: The token that ends the block, e.g. T_ENDIF ("endif") for
            ifs. None for files.
 
-        parent: The enclosing menu, choice or if, or None if we're at the top
+        parent: The enclosing menu or choice, or None if we're at the top
            level.
 
         deps: Dependencies from enclosing menus, choices and ifs.
