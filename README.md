@@ -65,6 +65,8 @@ language has some dark corners.
 
  * [genboardscfg.py](http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD) from [Das U-Boot](http://www.denx.de/wiki/U-Boot) generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
 
+ * [SConf](https://github.com/CoryXie/SConf) builds an interactive configuration interface (like *menuconfig*, etc.) on top of Kconfiglib, for use e.g. with SCons.
+
  * [kconfig-diff.py](https://gist.github.com/dubiousjim/5638961) -- a script by [dubiousjim](https://github.com/dubiousjim) that compares kernel configurations.
 
  * Originally, Kconfiglib was used in chapter 4 of my [master's thesis](http://liu.diva-portal.org/smash/get/diva2:473038/FULLTEXT01.pdf) to automatically generate a "minimal" kernel for a given system. Parts of it bother me a bit now, but that's how it goes with old work.
@@ -107,7 +109,8 @@ speedup over CPython when batch processing a large number of configurations,
 as well as when running the test suite.
 
  * At least two things make it a bit awkward to replicate a 'menuconfig'-like
-   interface in Kconfiglib at the moment. APIs could be added if needed.
+   interface in Kconfiglib at the moment (but see [SConf](https://github.com/CoryXie/SConf),
+   as mentioned above). APIs could be added if needed.
 
    * There are no good APIs for figuring out what other symbols change in value
      when the value of some symbol is changed, to allow for "live" updates
