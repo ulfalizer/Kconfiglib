@@ -1888,10 +1888,8 @@ class Symbol(Item):
                     self.write_to_conf = (mode != "n")
 
                     if mode == "y":
-                        if choice.get_selection() is self:
-                            new_val = "y"
-                        else:
-                            new_val = "n"
+                        new_val = "y" if choice.get_selection() is self \
+                                  else "n"
                     elif mode == "m":
                         if self.user_val == "m" or self.user_val == "y":
                             new_val = "m"
