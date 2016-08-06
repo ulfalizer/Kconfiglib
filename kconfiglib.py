@@ -804,11 +804,10 @@ class Config(object):
             """Parses '<expr1> if <expr2>' constructs, where the 'if' part is
             optional. Returns a tuple containing the parsed expressions, with
             None as the second element if the 'if' part is missing."""
-            val = self._parse_expr(tokens, stmt, line, filename, linenr, False)
-            if tokens.check(T_IF):
-                return (val, self._parse_expr(tokens, stmt, line, filename,
-                                              linenr))
-            return (val, None)
+            return (self._parse_expr(tokens, stmt, line, filename, linenr,
+                                     False),
+                    self._parse_expr(tokens, stmt, line, filename, linenr)
+                    if tokens.check(T_IF) else None)
 
         # In case the symbol is defined in multiple locations, we need to
         # remember what prompts, defaults, and selects are new for this
