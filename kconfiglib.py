@@ -131,10 +131,8 @@ class Config(object):
         # The set of all symbols, indexed by name (a string)
         self.syms = {}
         # Python 2/3 compatibility hack. This is the only one needed.
-        if sys.version_info[0] >= 3:
-            self.syms_iter = self.syms.values
-        else:
-            self.syms_iter = self.syms.itervalues
+        self.syms_iter = self.syms.values if sys.version_info[0] >= 3 else \
+                         self.syms.itervalues
 
         # The set of all defined symbols in the configuration in the order they
         # appear in the Kconfig files. This excludes the special symbols n, m,
@@ -183,10 +181,8 @@ class Config(object):
             self.srctree = "."
 
         self.filename = filename
-        if base_dir is None:
-            self.base_dir = self.srctree
-        else:
-            self.base_dir = os.path.expandvars(base_dir)
+        self.base_dir = self.srctree if base_dir is None else \
+                        os.path.expandvars(base_dir)
 
         # The 'mainmenu' text
         self.mainmenu_text = None
@@ -892,12 +888,10 @@ class Config(object):
                 stmt.referenced_syms.add(target)
                 stmt.selected_syms.add(target)
 
-                if tokens.check(T_IF):
-                    new_selects.append((target,
-                                        self._parse_expr(tokens, stmt, line,
-                                                         filename, linenr)))
-                else:
-                    new_selects.append((target, None))
+                new_selects.append(
+                    (target,
+                     self._parse_expr(tokens, stmt, line, filename, linenr)
+                     if tokens.check(T_IF) else None))
 
             elif t0 in (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING):
                 stmt.type = TOKEN_TO_TYPE[t0]
@@ -928,12 +922,10 @@ class Config(object):
                 stmt.referenced_syms.add(low)
                 stmt.referenced_syms.add(high)
 
-                if tokens.check(T_IF):
-                    stmt.ranges.append((low, high,
-                                        self._parse_expr(tokens, stmt, line,
-                                                         filename, linenr)))
-                else:
-                    stmt.ranges.append((low, high, None))
+                stmt.ranges.append(
+                    (low, high,
+                     self._parse_expr(tokens, stmt, line, filename, linenr)
+                     if tokens.check(T_IF) else None))
 
             elif t0 == T_DEF_TRISTATE:
                 stmt.type = TRISTATE
@@ -1614,20 +1606,16 @@ class Config(object):
         else:
             prompts_str_rows = []
             for prompt, cond_expr in sc.orig_prompts:
-                if cond_expr is None:
-                    prompts_str_rows.append(' "{0}"'.format(prompt))
-                else:
-                    prompts_str_rows.append(
-                      ' "{0}" if {1}'.format(prompt,
-                                             self._expr_val_str(cond_expr)))
+                prompts_str_rows.append(
+                    ' "{0}"'.format(prompt) if cond_expr is None else
+                    ' "{0}" if {1}'.format(prompt,
+                                           self._expr_val_str(cond_expr)))
             prompts_str = "\n".join(prompts_str_rows)
 
         # Build locations string
-        if not sc.def_locations:
-            locations_str = "(no locations)"
-        else:
-            locations_str = " ".join(["{0}:{1}".format(filename, linenr) for
-                                      (filename, linenr) in sc.def_locations])
+        locations_str = "(no locations)" if not sc.def_locations else \
+                        " ".join(["{0}:{1}".format(filename, linenr) for
+                                  filename, linenr in sc.def_locations])
 
         # Build additional-dependencies-from-menus-and-ifs string
         additional_deps_str = " " + \
@@ -1646,13 +1634,11 @@ class Config(object):
                 else:
                     ranges_str_rows = []
                     for l, u, cond_expr in sc.ranges:
-                        if cond_expr is None:
-                            ranges_str_rows.append(" [{0}, {1}]".format(s(l),
-                                                                        s(u)))
-                        else:
-                            ranges_str_rows.append(" [{0}, {1}] if {2}"
-                              .format(s(l), s(u),
-                                      self._expr_val_str(cond_expr)))
+                        ranges_str_rows.append(
+                            " [{0}, {1}]".format(s(l), s(u))
+                            if cond_expr is None else
+                            " [{0}, {1}] if {2}"
+                            .format(s(l), s(u), self._expr_val_str(cond_expr)))
                     ranges_str = "\n".join(ranges_str_rows)
 
             # Build default values string
@@ -1674,12 +1660,10 @@ class Config(object):
             else:
                 selects_str_rows = []
                 for target, cond_expr in sc.orig_selects:
-                    if cond_expr is None:
-                        selects_str_rows.append(" {0}".format(target.name))
-                    else:
-                        selects_str_rows.append(
-                          " {0} if {1}".format(target.name,
-                                               self._expr_val_str(cond_expr)))
+                    selects_str_rows.append(
+                        " {0}".format(target.name) if cond_expr is None else
+                        " {0} if {1}".format(target.name,
+                                             self._expr_val_str(cond_expr)))
                 selects_str = "\n".join(selects_str_rows)
 
             res = _lines("Symbol " +
@@ -1724,11 +1708,10 @@ class Config(object):
         else:
             defaults_str_rows = []
             for sym, cond_expr in sc.orig_def_exprs:
-                if cond_expr is None:
-                    defaults_str_rows.append(" {0}".format(sym.name))
-                else:
-                    defaults_str_rows.append(" {0} if {1}".format(sym.name,
-                                                self._expr_val_str(cond_expr)))
+                defaults_str_rows.append(
+                    " {0}".format(sym.name) if cond_expr is None else
+                    " {0} if {1}".format(sym.name,
+                                         self._expr_val_str(cond_expr)))
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
@@ -2457,10 +2440,9 @@ class Symbol(Item):
             return
 
         if self.type == BOOL or self.type == TRISTATE:
-            if val == "y" or val == "m":
-                append_fn("CONFIG_{0}={1}".format(self.name, val))
-            else:
-                append_fn("# CONFIG_{0} is not set".format(self.name))
+            append_fn("CONFIG_{0}={1}".format(self.name, val)
+                      if val == "y" or val == "m" else
+                      "# CONFIG_{0} is not set".format(self.name))
 
         elif self.type == INT or self.type == HEX:
             append_fn("CONFIG_{0}={1}".format(self.name, val))
