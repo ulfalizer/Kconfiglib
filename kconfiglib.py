@@ -175,6 +175,12 @@ class Config(object):
         self.arch = os.environ.get("ARCH")
         self.srcarch = os.environ.get("SRCARCH")
 
+        # If you set CONFIG_ in the environment, Kconfig will prefix all symbols
+        # with its value when saving the configuration, instead of using the default, "CONFIG_".
+        self.config_prefix = os.environ.get("CONFIG_")
+        if self.config_prefix is None:
+            self.config_prefix = "CONFIG_"
+
         # See Config.__init__(). We need this for get_defconfig_filename().
         self.srctree = os.environ.get("srctree")
         if self.srctree is None:
@@ -389,6 +395,10 @@ class Config(object):
 
         replace (default: True): True if the configuration should replace the
            old configuration; False if it should add to it."""
+
+        # Regular expressions for parsing .config files
+        _set_re_match = re.compile(r"{}(\w+)=(.*)".format(self.config_prefix)).match
+        _unset_re_match = re.compile(r"# {}(\w+) is not set".format(self.config_prefix)).match
 
         # Put this first so that a missing file doesn't screw up our state
         filename = os.path.expandvars(filename)
@@ -2437,17 +2447,17 @@ class Symbol(Item):
             return
 
         if self.type == BOOL or self.type == TRISTATE:
-            append_fn("CONFIG_{0}={1}".format(self.name, val)
+            append_fn("{0}{1}={2}".format(self.config.config_prefix, self.name, val)
                       if val == "y" or val == "m" else
-                      "# CONFIG_{0} is not set".format(self.name))
+                      "# {0}{1} is not set".format(self.config.config_prefix, self.name))
 
         elif self.type == INT or self.type == HEX:
-            append_fn("CONFIG_{0}={1}".format(self.name, val))
+            append_fn("{0}{1}={2}".format(self.config.config_prefix, self.name, val))
 
         elif self.type == STRING:
             # Escape \ and "
-            append_fn('CONFIG_{0}="{1}"'
-                      .format(self.name,
+            append_fn('{0}{1}="{2}"'
+                      .format(self.config.config_prefix, self.name,
                               val.replace("\\", "\\\\").replace('"', '\\"')))
 
         else:
@@ -3416,10 +3426,6 @@ _initial_token_re_match = re.compile(r"[^\w]*(\w+)\s*").match
 # Matches an identifier/keyword optionally preceded by whitespace. Also eats
 # trailing whitespace as an optimization.
 _id_keyword_re_match = re.compile(r"\s*([\w./-]+)\s*").match
-
-# Regular expressions for parsing .config files
-_set_re_match = re.compile(r"CONFIG_(\w+)=(.*)").match
-_unset_re_match = re.compile(r"# CONFIG_(\w+) is not set").match
 
 # Regular expression for finding $-references to symbols in strings
 _sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
