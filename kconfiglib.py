@@ -69,6 +69,7 @@ might add it in a safe way as a client API instead."""
 import os
 import re
 import sys
+import glob
 
 # File layout:
 #
@@ -682,21 +683,23 @@ class Config(object):
 
                 self._parse_properties(line_feeder, sym, deps, visible_if_deps)
 
-            elif t0 == T_SOURCE:
+            elif t0 == T_SOURCE or t0 == T_MINUS_SOURCE:
                 kconfig_file = tokens.get_next()
                 exp_kconfig_file = self._expand_sym_refs(kconfig_file)
-                f = os.path.join(self.base_dir, exp_kconfig_file)
-                if not os.path.exists(f):
-                    raise IOError('{0}:{1}: sourced file "{2}" (expands to '
-                                  '"{3}") not found. Perhaps base_dir '
-                                  '(argument to Config.__init__(), currently '
-                                  '"{4}") is set to the wrong value.'
-                                  .format(line_feeder.filename,
-                                          line_feeder.linenr,
-                                          kconfig_file, exp_kconfig_file,
-                                          self.base_dir))
-                # Add items to the same block
-                self._parse_file(f, parent, deps, visible_if_deps, block)
+                g = glob.glob(os.path.join(self.base_dir,exp_kconfig_file))
+                for f in g:
+                    if os.path.exists(f):
+                        # Add items to the same block
+                        self._parse_file(f, parent, deps, visible_if_deps, block)
+                    elif t0 == T_SOURCE:
+                        raise IOError('{0}:{1}: sourced file "{2}" (expands to '
+                                      '"{3}") not found. Perhaps base_dir '
+                                      '(argument to Config.__init__(), currently '
+                                      '"{4}") is set to the wrong value.'
+                                     .format(line_feeder.filename,
+                                              line_feeder.linenr,
+                                              kconfig_file, exp_kconfig_file,
+                                             self.base_dir))
 
             elif t0 == end_marker:
                 # We have reached the end of the block
@@ -3383,14 +3386,14 @@ def _internal_error(msg):
  T_OPEN_PAREN, T_CLOSE_PAREN,
  T_EQUAL, T_UNEQUAL,
  T_MAINMENU, T_MENU, T_ENDMENU,
- T_SOURCE, T_CHOICE, T_ENDCHOICE,
+ T_SOURCE, T_MINUS_SOURCE, T_CHOICE, T_ENDCHOICE,
  T_COMMENT, T_CONFIG, T_MENUCONFIG,
  T_HELP, T_IF, T_ENDIF, T_DEPENDS, T_ON,
  T_OPTIONAL, T_PROMPT, T_DEFAULT,
  T_BOOL, T_TRISTATE, T_HEX, T_INT, T_STRING,
  T_DEF_BOOL, T_DEF_TRISTATE,
  T_SELECT, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
- T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(39)
+ T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(40)
 
 # The leading underscore before the function assignments below prevent pydoc
 # from listing them. The constants could be hidden too, but they're fairly
@@ -3409,7 +3412,7 @@ _get_keyword = \
    "def_tristate": T_DEF_TRISTATE, "string": T_STRING, "select": T_SELECT,
    "range": T_RANGE, "option": T_OPTION, "allnoconfig_y": T_ALLNOCONFIG_Y,
    "env": T_ENV, "defconfig_list": T_DEFCONFIG_LIST, "modules": T_MODULES,
-   "visible": T_VISIBLE}.get
+   "visible": T_VISIBLE, "-source" : T_MINUS_SOURCE}.get
 
 # Strings to use for True and False
 BOOL_STR = {False: "false", True: "true"}
@@ -3421,7 +3424,7 @@ STRING_LEX = frozenset((T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING, T_CHOICE,
 
 # Matches the initial token on a line; see _tokenize(). Also eats trailing
 # whitespace as an optimization.
-_initial_token_re_match = re.compile(r"[^\w]*(\w+)\s*").match
+_initial_token_re_match = re.compile(r"[^\w-]*(-?\w+)\s*").match
 
 # Matches an identifier/keyword optionally preceded by whitespace. Also eats
 # trailing whitespace as an optimization.
