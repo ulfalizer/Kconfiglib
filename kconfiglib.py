@@ -67,6 +67,7 @@ email service. Don't wrestle with internal APIs. Tell me what you need and I
 might add it in a safe way as a client API instead."""
 
 import os
+import platform
 import re
 import sys
 
@@ -165,7 +166,7 @@ class Config(object):
         self.m = register_special_symbol(TRISTATE, "m", "m")
         self.y = register_special_symbol(TRISTATE, "y", "y")
         # DEFCONFIG_LIST uses this
-        register_special_symbol(STRING, "UNAME_RELEASE", os.uname()[2])
+        register_special_symbol(STRING, "UNAME_RELEASE", platform.uname()[2])
 
         # The symbol with "option defconfig_list" set, containing a list of
         # default .config files
