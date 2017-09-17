@@ -18,6 +18,8 @@ config MANY_REF
     depends on H
     select I if J = K || L != M
     select N if (A || !(B && (C = O)))
+    imply P if Q = R || S != T
+    imply U if (A || !(B && (C = V)))
 
 endif
 

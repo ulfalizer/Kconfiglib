@@ -7,6 +7,8 @@ config ADVANCED
     tristate "advanced prompt 1" if y || (BASIC && BASIC)
     select SELECTED_1 if BASIC && DUMMY
     select SELECTED_2 if !(DUMMY || BASIC)
+    imply IMPLIED_1 if BASIC || DUMMY
+    imply IMPLIED_2 if !(DUMMY && BASIC)
     default y if BASIC && !BASIC
     default n if BASIC = DUMMY
 
@@ -21,6 +23,10 @@ config SELECTING_1
     select ADVANCED if BASIC
 config SELECTING_2
     select ADVANCED if !BASIC
+config IMPLYING_1
+    imply ADVANCED if DUMMY
+config IMPLYING_2
+    imply ADVANCED if !DUMMY
 
 config INT
     int

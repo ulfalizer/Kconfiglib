@@ -304,6 +304,12 @@ def run_selftests():
     verify_bounds("Y_SELECTED_TRISTATE", None, None)
     verify_bounds("M_SELECTED_TRISTATE", "m", "y")
     verify_bounds("M_SELECTED_M_VISIBLE_TRISTATE", None, None)
+    verify_bounds("N_IMPLIED_BOOL", "n", "y")
+    verify_bounds("N_IMPLIED_TRISTATE", "n", "y")
+    verify_bounds("M_IMPLIED_BOOL", "n", "y")
+    verify_bounds("M_IMPLIED_TRISTATE", "n", "y")
+    verify_bounds("Y_IMPLIED_BOOL", "n", "y")
+    verify_bounds("Y_IMPLIED_TRISTATE", "n", "y")
     verify_bounds("STRING", None, None)
     verify_bounds("INT", None, None)
     verify_bounds("HEX", None, None)
@@ -490,8 +496,12 @@ def run_selftests():
        (no default values)
       Selects:
        (no selects)
+      Implies:
+       (no implies)
       Reverse (select-related) dependencies:
        (no reverse dependencies)
+      Weak reverse (imply-related) dependencies:
+       (no weak reverse dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
       Locations: Kconfiglib/tests/Ktext:1""")
@@ -519,11 +529,16 @@ def run_selftests():
       Selects:
        SELECTED_1 if BASIC && DUMMY (value: "n")
        SELECTED_2 if !(DUMMY || BASIC) (value: "y")
+      Implies:
+       IMPLIED_1 if BASIC || DUMMY (value: "n")
+       IMPLIED_2 if !(DUMMY && BASIC) (value: "y")
       Reverse (select-related) dependencies:
        SELECTING_1 && BASIC || SELECTING_2 && !BASIC (value: "n")
+      Weak reverse (imply-related) dependencies:
+       IMPLYING_1 && DUMMY || IMPLYING_2 && !DUMMY (value: "n")
       Additional dependencies from enclosing menus and ifs:
        !BASIC && !BASIC (value: "y")
-      Locations: Kconfiglib/tests/Ktext:6 Kconfiglib/tests/Ktext:13""")
+      Locations: Kconfiglib/tests/Ktext:6 Kconfiglib/tests/Ktext:15""")
 
     verify_print(c["HAS_RANGES"], """
       Symbol HAS_RANGES
@@ -545,11 +560,15 @@ def run_selftests():
        (no default values)
       Selects:
        (no selects)
+      Implies:
+       (no implies)
       Reverse (select-related) dependencies:
        (no reverse dependencies)
+      Weak reverse (imply-related) dependencies:
+       (no weak reverse dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Locations: Kconfiglib/tests/Ktext:29""")
+      Locations: Kconfiglib/tests/Ktext:35""")
 
     # Printing of Choice
 
@@ -570,7 +589,7 @@ def run_selftests():
        CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Locations: Kconfiglib/tests/Ktext:35""")
+      Locations: Kconfiglib/tests/Ktext:41""")
 
     c["CHOICE_ITEM_2"].set_user_value("y")
 
@@ -591,7 +610,7 @@ def run_selftests():
        CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Locations: Kconfiglib/tests/Ktext:35""")
+      Locations: Kconfiglib/tests/Ktext:41""")
 
     # Printing of Menu
 
@@ -602,7 +621,7 @@ def run_selftests():
       'visible if' dependencies : (no dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Location: Kconfiglib/tests/Ktext:47""")
+      Location: Kconfiglib/tests/Ktext:53""")
 
     verify_print(c.get_menus()[1], """
       Menu
@@ -611,7 +630,7 @@ def run_selftests():
       'visible if' dependencies : !DUMMY (value: "y")
       Additional dependencies from enclosing menus and ifs:
        !DUMMY (value: "y")
-      Location: Kconfiglib/tests/Ktext:51""")
+      Location: Kconfiglib/tests/Ktext:57""")
 
     # Printing of Comment
 
@@ -621,7 +640,7 @@ def run_selftests():
       Dependencies: (no dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Location: Kconfiglib/tests/Ktext:57""")
+      Location: Kconfiglib/tests/Ktext:63""")
 
     verify_print(c.get_comments()[1], """
       Comment
@@ -629,7 +648,7 @@ def run_selftests():
       Dependencies: !BASIC (value: "y")
       Additional dependencies from enclosing menus and ifs:
        !DUMMY (value: "y")
-      Location: Kconfiglib/tests/Ktext:60""")
+      Location: Kconfiglib/tests/Ktext:66""")
 
     verify_equals(c["NO_HELP"].get_help(), None)
     verify_equals(c["EMPTY_HELP"].get_help(), "")
@@ -717,9 +736,9 @@ def run_selftests():
     verify_def_locations("M",
       ("Kconfiglib/tests/Klocation_included", 6))
     verify_def_locations("N",
-      ("Kconfiglib/tests/Klocation_included", 17))
-    verify_def_locations("O",
       ("Kconfiglib/tests/Klocation_included", 19))
+    verify_def_locations("O",
+      ("Kconfiglib/tests/Klocation_included", 21))
     verify_def_locations("NOT_DEFINED") # No locations
 
     def verify_ref_locations(sym_name, *locs):
@@ -746,8 +765,10 @@ def run_selftests():
       ("Kconfiglib/tests/Klocation_included", 9),
       ("Kconfiglib/tests/Klocation_included", 12),
       ("Kconfiglib/tests/Klocation_included", 13),
-      ("Kconfiglib/tests/Klocation_included", 33),
-      ("Kconfiglib/tests/Klocation_included", 38),
+      ("Kconfiglib/tests/Klocation_included", 14),
+      ("Kconfiglib/tests/Klocation_included", 15),
+      ("Kconfiglib/tests/Klocation_included", 35),
+      ("Kconfiglib/tests/Klocation_included", 40),
       ("Kconfiglib/tests/Klocation", 65),
       ("Kconfiglib/tests/Klocation", 66),
       ("Kconfiglib/tests/Klocation", 67))
@@ -756,8 +777,8 @@ def run_selftests():
       ("Kconfiglib/tests/Klocation", 12),
       ("Kconfiglib/tests/Klocation", 29),
       ("Kconfiglib/tests/Klocation_included", 12),
-      ("Kconfiglib/tests/Klocation_included", 33),
-      ("Kconfiglib/tests/Klocation_included", 39))
+      ("Kconfiglib/tests/Klocation_included", 35),
+      ("Kconfiglib/tests/Klocation_included", 41))
 
     # Location queries for choices
 
@@ -780,9 +801,9 @@ def run_selftests():
 
     verify_choice_locations(choice_1,
       ("Kconfiglib/tests/Klocation", 15),
-      ("Kconfiglib/tests/Klocation_included", 22))
+      ("Kconfiglib/tests/Klocation_included", 24))
     verify_choice_locations(choice_2,
-      ("Kconfiglib/tests/Klocation_included", 15))
+      ("Kconfiglib/tests/Klocation_included", 17))
 
     # Location queries for menus and comments
 
@@ -803,7 +824,7 @@ def run_selftests():
     verify_location(menu_1, ("Kconfiglib/tests/Klocation", 9))
     verify_location(menu_2, ("Kconfiglib/tests/Klocation_included", 5))
     verify_location(comment_1, ("Kconfiglib/tests/Klocation", 31))
-    verify_location(comment_2, ("Kconfiglib/tests/Klocation_included", 34))
+    verify_location(comment_2, ("Kconfiglib/tests/Klocation_included", 36))
 
     #
     # Visibility queries
@@ -1218,7 +1239,7 @@ def run_selftests():
     verify_sym_refs("NO_REF", [], [])
     verify_sym_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
-                "M", "N", "O"]
+                "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"]
     verify_sym_refs("MANY_REF",
       own_refs,
       own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
@@ -1266,6 +1287,28 @@ def run_selftests():
 
     verify_selects("NO_REF", [])
     verify_selects("MANY_REF", ["I", "N"])
+
+    #
+    # get_implied_symbols() (same test file)
+    #
+
+    def verify_implies(sym_name, imply_names):
+        sym = c[sym_name]
+        sym_implies = sym.get_implied_symbols()
+        verify(len(sym_implies) == len(imply_names),
+               "Wrong number of implies for {0}".format(sym_name))
+        for imply_name in imply_names:
+            implied_sym = c[imply_name]
+            verify(implied_sym in sym_implies,
+                   "{0} should be implied by {1}".format(imply_name, sym_name))
+
+    verify_implies("n", [])
+    verify_implies("m", [])
+    verify_implies("y", [])
+    verify_implies("UNAME_RELEASE", [])
+
+    verify_implies("NO_REF", [])
+    verify_implies("MANY_REF", ["P", "U"])
 
     #
     # get_defconfig_filename()
@@ -1785,7 +1828,7 @@ def run_selftests():
 
     # Test twice to cover dependency caching
     for i in range(0, 2):
-        n_deps = 28
+        n_deps = 32
         # Verify that D1, D2, .., D<n_deps> are dependent on D
         verify_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
         # Choices
@@ -1800,7 +1843,7 @@ def run_selftests():
     c = kconfiglib.Config("Kconfiglib/tests/Kchain")
 
     for i in range(0, 2):
-        verify(c["CHAIN_23"] in c["CHAIN_1"]._get_dependent(),
+        verify(c["CHAIN_25"] in c["CHAIN_1"]._get_dependent(),
                "Dependency chain broken")
 
     print("\nAll selftests passed\n" if _all_ok else
@@ -2003,6 +2046,7 @@ def test_call_all(conf):
         s.get_assignable_values()
         s.get_config()
         s.get_help()
+        s.get_implied_symbols()
         s.get_lower_bound()
         s.get_name()
         s.get_parent()

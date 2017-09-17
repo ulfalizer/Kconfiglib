@@ -11,6 +11,8 @@ config S
     bool
     select A if NOT_DEFINED = y
     select E if A
+    imply A
+    imply E if A
 endmenu
 choice
     bool "C"

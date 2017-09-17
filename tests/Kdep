@@ -1,5 +1,11 @@
 config D
    bool "D"
+   select D29
+   imply D30
+
+config DUMMY
+   select D31 if D
+   imply D32 if D
 
 # The symbols below depend on D in different ways
 
@@ -121,6 +127,18 @@ config D27
 
 config D28
     bool "D28" if n || ((n != D) || n)
+
+config D29
+    tristate "D29"
+
+config D30
+    tristate "D30"
+
+config D31
+    tristate "D31"
+
+config D32
+    tristate "D32"
 
 #
 # Choices

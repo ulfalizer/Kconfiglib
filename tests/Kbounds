@@ -39,6 +39,39 @@ config M_SELECTED_TRISTATE
 config M_SELECTED_M_VISIBLE_TRISTATE
     tristate "m-selected m-visible tristate" if m
 
+config N_IMPLIER
+    def_tristate n
+    imply N_IMPLIED_BOOL
+    imply N_IMPLIED_TRISTATE
+
+config M_IMPLIER
+    def_tristate m
+    imply M_IMPLIED_BOOL
+    imply M_IMPLIED_TRISTATE
+
+config Y_IMPLIER
+    def_tristate y
+    imply Y_IMPLIED_BOOL
+    imply Y_IMPLIED_TRISTATE
+
+config N_IMPLIED_BOOL
+    bool "n-implied bool"
+
+config N_IMPLIED_TRISTATE
+    tristate "n-implied tristate"
+
+config M_IMPLIED_BOOL
+    bool "m-implied bool"
+
+config M_IMPLIED_TRISTATE
+    tristate "m-implied tristate"
+
+config Y_IMPLIED_BOOL
+    bool "y-implied bool"
+
+config Y_IMPLIED_TRISTATE
+    tristate "y-implied tristate"
+
 config STRING
     string "string"
 

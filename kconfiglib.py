@@ -821,12 +821,13 @@ class Config(object):
                     if tokens.check(T_IF) else None)
 
         # In case the symbol is defined in multiple locations, we need to
-        # remember what prompts, defaults, and selects are new for this
-        # definition, as "depends on" should only apply to the local
+        # remember what prompts, defaults, selects, and implies are new for
+        # this definition, as "depends on" should only apply to the local
         # definition.
         new_prompt = None
         new_def_exprs = []
         new_selects = []
+        new_implies = []
 
         # Dependencies from 'depends on' statements
         depends_on_expr = None
@@ -899,6 +900,17 @@ class Config(object):
                 stmt.selected_syms.add(target)
 
                 new_selects.append(
+                    (target,
+                     self._parse_expr(tokens, stmt, line, filename, linenr)
+                     if tokens.check(T_IF) else None))
+
+            elif t0 == T_IMPLY:
+                target = tokens.get_next()
+
+                stmt.referenced_syms.add(target)
+                stmt.implied_syms.add(target)
+
+                new_implies.append(
                     (target,
                      self._parse_expr(tokens, stmt, line, filename, linenr)
                      if tokens.check(T_IF) else None))
@@ -1069,20 +1081,27 @@ class Config(object):
             stmt.def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
                                    for val_expr, cond_expr in new_def_exprs])
 
-            # Propagate dependencies to selects
+            # Propagate dependencies to selects and implies
 
-            # Only symbols can select
+            # Only symbols can select and imply
             if isinstance(stmt, Symbol):
                 # Propagate 'depends on' dependencies
                 new_selects = [(target, _make_and(cond_expr, depends_on_expr))
                                for target, cond_expr in new_selects]
+                new_implies = [(target, _make_and(cond_expr, depends_on_expr))
+                               for target, cond_expr in new_implies]
                 # Save original
                 stmt.orig_selects.extend(new_selects)
+                stmt.orig_implies.extend(new_implies)
                 # Finalize with dependencies from enclosing menus and ifs
                 for target, cond in new_selects:
-                    target.rev_dep = _make_or(target.rev_dep,
-                                              _make_and(stmt,
-                                                        _make_and(cond, deps)))
+                    target.rev_dep = \
+                        _make_or(target.rev_dep,
+                                 _make_and(stmt, _make_and(cond, deps)))
+                for target, cond in new_implies:
+                    target.weak_rev_dep = \
+                        _make_or(target.weak_rev_dep,
+                                 _make_and(stmt, _make_and(cond, deps)))
 
     def _parse_expr(self, feed, cur_item, line, filename=None, linenr=None,
                     transform_m=True):
@@ -1474,7 +1493,8 @@ class Config(object):
 
         # The directly dependent symbols of a symbol are:
         #  - Any symbols whose prompts, default values, rev_dep (select
-        #    condition), or ranges depend on the symbol
+        #    condition), weak_rev_dep (imply condition) or ranges depend on the
+        #    symbol
         #  - Any symbols that belong to the same choice statement as the symbol
         #    (these won't be included in 'dep' as that makes the dependency
         #    graph unwieldy, but Symbol._get_dependent() will include them)
@@ -1488,6 +1508,7 @@ class Config(object):
                 add_expr_deps(e, sym)
 
             add_expr_deps(sym.rev_dep, sym)
+            add_expr_deps(sym.weak_rev_dep, sym)
 
             for l, u, e in sym.ranges:
                 add_expr_deps(l, sym)
@@ -1676,6 +1697,18 @@ class Config(object):
                                              self._expr_val_str(cond_expr)))
                 selects_str = "\n".join(selects_str_rows)
 
+            # Build implies string
+            if not sc.orig_implies:
+                implies_str = " (no implies)"
+            else:
+                implies_str_rows = []
+                for target, cond_expr in sc.orig_implies:
+                    implies_str_rows.append(
+                        " {0}".format(target.name) if cond_expr is None else
+                        " {0} if {1}".format(target.name,
+                                             self._expr_val_str(cond_expr)))
+                implies_str = "\n".join(implies_str_rows)
+
             res = _lines("Symbol " +
                            ("(no name)" if sc.name is None else sc.name),
                          "Type           : " + TYPENAME[sc.type],
@@ -1694,9 +1727,16 @@ class Config(object):
                           defaults_str,
                           "Selects:",
                           selects_str,
+                          "Implies:",
+                          implies_str,
                           "Reverse (select-related) dependencies:",
-                          " (no reverse dependencies)" if sc.rev_dep == "n"
-                            else " " + self._expr_val_str(sc.rev_dep),
+                          " (no reverse dependencies)"
+                          if sc.rev_dep == "n"
+                          else " " + self._expr_val_str(sc.rev_dep),
+                          "Weak reverse (imply-related) dependencies:",
+                          " (no weak reverse dependencies)"
+                          if sc.weak_rev_dep == "n"
+                          else " " + self._expr_val_str(sc.weak_rev_dep),
                           "Additional dependencies from enclosing menus "
                             "and ifs:",
                           additional_deps_str,
@@ -1907,16 +1947,17 @@ class Symbol(Item):
 
             else:
                 # If the symbol is visible and has a user value, use that.
-                # Otherwise, look at defaults.
-                use_defaults = True
+                # Otherwise, look at defaults and weak reverse dependencies
+                # (implies).
+                use_defaults_and_weak_rev_deps = True
 
                 if vis != "n":
                     self.write_to_conf = True
                     if self.user_val is not None:
                         new_val = self.config._eval_min(self.user_val, vis)
-                        use_defaults = False
+                        use_defaults_and_weak_rev_deps = False
 
-                if use_defaults:
+                if use_defaults_and_weak_rev_deps:
                     for val_expr, cond_expr in self.def_exprs:
                         cond_eval = self.config._eval_expr(cond_expr)
                         if cond_eval != "n":
@@ -1925,14 +1966,25 @@ class Symbol(Item):
                                                             cond_eval)
                             break
 
+                    weak_rev_dep_val = \
+                        self.config._eval_expr(self.weak_rev_dep)
+                    if weak_rev_dep_val != "n":
+                        self.write_to_conf = True
+                        new_val = self.config._eval_max(new_val,
+                                                        weak_rev_dep_val)
+
                 # Reverse (select-related) dependencies take precedence
                 rev_dep_val = self.config._eval_expr(self.rev_dep)
                 if rev_dep_val != "n":
                     self.write_to_conf = True
                     new_val = self.config._eval_max(new_val, rev_dep_val)
 
-            # Promote "m" to "y" for booleans
-            if new_val == "m" and self.type == BOOL:
+            # We need to promote "m" to "y" in two circumstances:
+            #  1) If our type is boolean
+            #  2) If our weak_rev_dep (from IMPLY) is "y"
+            if new_val == "m" and \
+               (self.type == BOOL or
+                self.config._eval_expr(self.weak_rev_dep) == "y"):
                 new_val = "y"
 
         elif self.type == INT or self.type == HEX:
@@ -2167,6 +2219,13 @@ class Symbol(Item):
         get_referenced_symbols()."""
         return self.selected_syms
 
+    def get_implied_symbols(self):
+        """Returns the set() of all symbols X for which this symbol has an
+        'imply X' or 'imply X if Y' (regardless of whether Y is satisfied or
+        not). This is a subset of the symbols returned by
+        get_referenced_symbols()."""
+        return self.implied_syms
+
     def set_user_value(self, v):
         """Sets the user value of the symbol.
 
@@ -2282,16 +2341,18 @@ class Symbol(Item):
         self.ranges = [] # 'range' properties (for int and hex)
         self.help = None # Help text
         self.rev_dep = "n" # Reverse (select-related) dependencies
+        self.weak_rev_dep = "n" # Weak reverse (imply-related) dependencies
         self.config = None
         self.parent = None
 
         self.user_val = None # Value set by user
 
-        # The prompt, default value and select conditions without any
+        # The prompt, default value, select, and imply conditions without any
         # dependencies from menus and ifs propagated to them
         self.orig_prompts = []
         self.orig_def_exprs = []
         self.orig_selects = []
+        self.orig_implies = []
 
         # Dependencies inherited from containing menus and ifs
         self.deps_from_containing = None
@@ -2301,6 +2362,8 @@ class Symbol(Item):
         # The set of symbols selected by this symbol (see
         # get_selected_symbols())
         self.selected_syms = set()
+        # The set of symbols implied by this symbol (see get_implied_symbols())
+        self.implied_syms = set()
         # Like 'referenced_syms', but includes symbols from
         # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = set()
@@ -3396,8 +3459,8 @@ def _internal_error(msg):
  T_OPTIONAL, T_PROMPT, T_DEFAULT,
  T_BOOL, T_TRISTATE, T_HEX, T_INT, T_STRING,
  T_DEF_BOOL, T_DEF_TRISTATE,
- T_SELECT, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
- T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(39)
+ T_SELECT, T_IMPLY, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
+ T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(40)
 
 # The leading underscore before the function assignments below prevent pydoc
 # from listing them. The constants could be hidden too, but they're fairly
@@ -3414,8 +3477,9 @@ _get_keyword = \
    "prompt": T_PROMPT, "default": T_DEFAULT, "bool": T_BOOL, "boolean": T_BOOL,
    "tristate": T_TRISTATE, "int": T_INT, "hex": T_HEX, "def_bool": T_DEF_BOOL,
    "def_tristate": T_DEF_TRISTATE, "string": T_STRING, "select": T_SELECT,
-   "range": T_RANGE, "option": T_OPTION, "allnoconfig_y": T_ALLNOCONFIG_Y,
-   "env": T_ENV, "defconfig_list": T_DEFCONFIG_LIST, "modules": T_MODULES,
+   "imply" : T_IMPLY, "range": T_RANGE, "option": T_OPTION,
+   "allnoconfig_y": T_ALLNOCONFIG_Y, "env": T_ENV,
+   "defconfig_list": T_DEFCONFIG_LIST, "modules": T_MODULES,
    "visible": T_VISIBLE}.get
 
 # Strings to use for True and False

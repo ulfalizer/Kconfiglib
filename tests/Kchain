@@ -65,50 +65,59 @@ config CHAIN_SELECT_RELAY
 
 config CHAIN_16
     bool "chain 16"
+    imply CHAIN_17
 
-if CHAIN_16 = 0
 config CHAIN_17
-    tristate "chain 17"
+    bool "chain 17"
+
+config CHAIN_IMPLY_RELAY
+    bool "chain imply relay"
+    default y
+    imply CHAIN_18 if CHAIN_17
+
+if CHAIN_18 = 0
+config CHAIN_19
+    tristate "chain 19"
 endif
 
 menu "chain menu"
-    depends on CHAIN_17
-config CHAIN_18
-    bool "chain 18"
+    depends on CHAIN_19
+config CHAIN_20
+    bool "chain 20"
 endmenu
 
 menu "chain menu visible if"
-    visible if CHAIN_18
-config CHAIN_19
-    bool "chain 19"
+    visible if CHAIN_20
+config CHAIN_21
+    bool "chain 21"
 endmenu
 
 choice CHAIN_CHOICE_1
-    tristate "chain choice 1" if CHAIN_19
-config CHAIN_20
-    tristate "chain 20"
+    tristate "chain choice 1" if CHAIN_21
+config CHAIN_22
+    tristate "chain 22"
 config DUMMY_1
     tristate "dummy 1"
 endchoice
 
 choice CHAIN_CHOICE_2
     tristate "chain choice 2"
-    depends on CHAIN_20
+    depends on CHAIN_22
 config DUMMY_2
     tristate "dummy 2"
-config CHAIN_21
-    tristate "chain 18"
+config CHAIN_23
+    tristate "chain 23"
 endchoice
 
 choice CHAIN_CHOICE_3
     tristate "chain choice 3"
-    default DUMMY_3 if CHAIN_21
-config CHAIN_22
-    tristate "chain 22"
+    default DUMMY_3 if CHAIN_23
+config CHAIN_24
+    tristate "chain 24"
 config DUMMY_3
     tristate "dummy 3"
 endchoice
 
-config CHAIN_23
-    string "chain 19"
-    depends on CHAIN_22
+config CHAIN_25
+    string "chain 25"
+    depends on CHAIN_24
