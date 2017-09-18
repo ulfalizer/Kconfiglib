@@ -218,7 +218,8 @@ class Config(object):
         self._transform_m = None
 
         # Parse the Kconfig files
-        self.top_block = self._parse_file(filename, None, None, None)
+        self.top_block = []
+        self._parse_file(filename, None, None, None, self.top_block)
 
         # Build Symbol.dep for all symbols
         self._build_dep()
@@ -605,16 +606,18 @@ class Config(object):
     # Kconfig parsing
     #
 
-    def _parse_file(self, filename, parent, deps, visible_if_deps, res=None):
-        """Parses the Kconfig file 'filename'. Returns a list with the Items in
-        the file. See _parse_block() for the meaning of the parameters."""
-        return self._parse_block(_FileFeed(filename), None, parent, deps,
-                                 visible_if_deps, res)
+    def _parse_file(self, filename, parent, deps, visible_if_deps, block):
+        """Parses the Kconfig file 'filename'. Appends the Items in the file
+        (and any file it sources) to the list passed in the 'block' parameter.
+        See _parse_block() for the meaning of the parameters."""
+        self._parse_block(_FileFeed(filename), None, parent, deps,
+                          visible_if_deps, block)
 
     def _parse_block(self, line_feeder, end_marker, parent, deps,
-                     visible_if_deps, res=None):
+                     visible_if_deps, block):
         """Parses a block, which is the contents of either a file or an if,
-        menu, or choice statement. Returns a list with the Items in the block.
+        menu, or choice statement. Appends the Items to the list passed in the
+        'block' parameter.
 
         line_feeder: A _FileFeed instance feeding lines from a file. The
           Kconfig language is line-based in practice.
@@ -630,10 +633,7 @@ class Config(object):
         visible_if_deps (default: None): 'visible if' dependencies from
            enclosing menus.
 
-        res (default: None): The list to add items to. If None, a new list is
-           created to hold the items."""
-
-        block = [] if res is None else res
+        block: The list to add items to."""
 
         while 1:
             # Do we already have a tokenized line that we determined wasn't
@@ -652,7 +652,7 @@ class Config(object):
                     if end_marker is not None:
                         raise Kconfig_Syntax_Error("Unexpected end of file {0}"
                                                  .format(line_feeder.filename))
-                    return block
+                    return
 
                 tokens = self._tokenize(line, False, line_feeder.filename,
                                         line_feeder.linenr)
@@ -701,7 +701,7 @@ class Config(object):
 
             elif t0 == end_marker:
                 # We have reached the end of the block
-                return block
+                return
 
             elif t0 == T_IF:
                 # If statements are treated as syntactic sugar for adding
@@ -746,10 +746,10 @@ class Config(object):
                 # Parse properties and contents
                 self._parse_properties(line_feeder, menu, deps,
                                        visible_if_deps)
-                menu.block = self._parse_block(line_feeder, T_ENDMENU, menu,
-                                               menu.dep_expr,
-                                               _make_and(visible_if_deps,
-                                                         menu.visible_if_expr))
+                self._parse_block(line_feeder, T_ENDMENU, menu, menu.dep_expr,
+                                  _make_and(visible_if_deps,
+                                            menu.visible_if_expr),
+                                  menu.block)
 
             elif t0 == T_CHOICE:
                 name = tokens.get_next()
@@ -774,8 +774,8 @@ class Config(object):
                 # Parse properties and contents
                 self._parse_properties(line_feeder, choice, deps,
                                        visible_if_deps)
-                choice.block = self._parse_block(line_feeder, T_ENDCHOICE,
-                                                 choice, deps, visible_if_deps)
+                self._parse_block(line_feeder, T_ENDCHOICE, choice, deps,
+                                  visible_if_deps, choice.block)
 
                 choice._determine_actual_symbols()
 
@@ -2675,7 +2675,7 @@ class Menu(Item):
         self.title = None
         self.dep_expr = None
         self.visible_if_expr = None
-        self.block = None
+        self.block = [] # List of contained items
         self.config = None
         self.parent = None
 
@@ -2892,7 +2892,7 @@ class Choice(Item):
         self.prompts = []
         self.def_exprs = [] # 'default' properties
         self.help = None # Help text
-        self.block = None # List of contained items
+        self.block = [] # List of contained items
         self.config = None
         self.parent = None
 
