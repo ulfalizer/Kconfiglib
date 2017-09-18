@@ -42,6 +42,7 @@ from __future__ import print_function
 
 import kconfiglib
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -1479,7 +1480,7 @@ def run_selftests():
 
     print("Testing UNAME_RELEASE value...")
 
-    verify_value("UNAME_RELEASE", os.uname()[2])
+    verify_value("UNAME_RELEASE", platform.uname()[2])
 
     # Expansion of environment variables in Config.__init__'s base_dir
     # parameter. Just make sure we don't crash when Kbase_dir 'source's a file
