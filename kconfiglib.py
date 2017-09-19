@@ -675,13 +675,12 @@ class Config(object):
                 # choice statements, the choice statement takes precedence.
                 if not sym.is_defined_ or isinstance(parent, Choice):
                     sym.parent = parent
-
                 sym.is_defined_ = True
+
+                self._parse_properties(line_feeder, sym, deps, visible_if_deps)
 
                 self.kconfig_syms.append(sym)
                 block.append(sym)
-
-                self._parse_properties(line_feeder, sym, deps, visible_if_deps)
 
             elif t0 == T_SOURCE:
                 kconfig_file = tokens.get_next()
@@ -718,38 +717,39 @@ class Config(object):
 
             elif t0 == T_COMMENT:
                 comment = Comment()
-
                 comment.config = self
                 comment.parent = parent
                 comment.filename = line_feeder.filename
                 comment.linenr = line_feeder.linenr
                 comment.text = tokens.get_next()
 
-                self.comments.append(comment)
-                block.append(comment)
-
                 self._parse_properties(line_feeder, comment, deps,
                                        visible_if_deps)
 
+                self.comments.append(comment)
+                block.append(comment)
+
             elif t0 == T_MENU:
                 menu = Menu()
-
                 menu.config = self
                 menu.parent = parent
                 menu.filename = line_feeder.filename
                 menu.linenr = line_feeder.linenr
                 menu.title = tokens.get_next()
 
-                self.menus.append(menu)
-                block.append(menu)
-
-                # Parse properties and contents
                 self._parse_properties(line_feeder, menu, deps,
                                        visible_if_deps)
+
+                # This needs to go before _parse_block() so that we get the
+                # proper menu ordering in the case of nested functions
+                self.menus.append(menu)
+                # Parse contents and put Items in menu.block
                 self._parse_block(line_feeder, T_ENDMENU, menu, menu.dep_expr,
                                   _make_and(visible_if_deps,
                                             menu.visible_if_expr),
                                   menu.block)
+
+                block.append(menu)
 
             elif t0 == T_CHOICE:
                 name = tokens.get_next()
@@ -771,9 +771,10 @@ class Config(object):
                 choice.def_locations.append((line_feeder.filename,
                                              line_feeder.linenr))
 
-                # Parse properties and contents
                 self._parse_properties(line_feeder, choice, deps,
                                        visible_if_deps)
+
+                # Parse contents and put Items in choice.block
                 self._parse_block(line_feeder, T_ENDCHOICE, choice, deps,
                                   visible_if_deps, choice.block)
 
