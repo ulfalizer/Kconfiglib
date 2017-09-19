@@ -521,14 +521,12 @@ class Config(object):
         with open(filename, "w") as f:
             # Write header
             if header is not None:
-                f.write(_comment(header))
-                f.write("\n")
+                f.write(_comment(header) + "\n")
 
             # Build and write configuration
             conf_strings = []
             _make_block_conf(self.top_block, conf_strings.append)
-            f.write("\n".join(conf_strings))
-            f.write("\n")
+            f.write("\n".join(conf_strings) + "\n")
 
     def eval(self, s):
         """Returns the value of the expression 's' -- where 's' is represented
