@@ -1672,8 +1672,8 @@ def run_selftests():
     choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
       choice_bool_m, choice_tristate_m, choice_defaults, \
       choice_no_type_bool, choice_no_type_tristate, \
-      choice_missing_member_type_1, choice_missing_member_type_2 \
-      = c.get_choices()
+      choice_missing_member_type_1, choice_missing_member_type_2, \
+      choice_weird_syms = c.get_choices()
 
     for choice in (choice_bool, choice_bool_opt, choice_bool_m,
                    choice_defaults):
@@ -1804,6 +1804,29 @@ def run_selftests():
     verify((c["MMT_4"].get_type(), c["MMT_5"].get_type()) ==
              (kconfiglib.BOOL, kconfiglib.BOOL),
            "Wrong types for second choice with missing member types")
+
+    # Verify that symbols in choices that depend on the preceding symbol aren't
+    # considered choice symbols
+
+    def verify_is_normal_choice_symbol(sym):
+        verify(sym.is_choice_symbol() and
+               sym in choice_weird_syms.get_symbols() and
+               sym.get_parent() is choice_weird_syms,
+               "{} should be a normal choice symbol".format(sym.get_name()))
+
+    def verify_is_weird_choice_symbol(sym):
+        verify(not sym.is_choice_symbol() and
+               sym not in choice_weird_syms.get_symbols() and
+               sym in choice_weird_syms.get_items() and
+               sym.get_parent() is choice_weird_syms,
+               "{} should be a weird (non-)choice symbol")
+
+    verify_is_normal_choice_symbol(c["WS1"])
+    verify_is_weird_choice_symbol(c["WS2"])
+    verify_is_weird_choice_symbol(c["WS3"])
+    verify_is_weird_choice_symbol(c["WS4"])
+    verify_is_normal_choice_symbol(c["WS5"])
+    verify_is_weird_choice_symbol(c["WS6"])
 
     #
     # Object dependencies

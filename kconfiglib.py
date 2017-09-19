@@ -1055,7 +1055,7 @@ class Config(object):
             # Symbol or Choice
 
             # See comment for 'menu_dep'
-            stmt.menu_dep = depends_on_expr
+            stmt.menu_dep = _make_and(deps, depends_on_expr)
 
             # Propagate dependencies to prompts
 
@@ -2369,9 +2369,9 @@ class Symbol(Item):
         # dependencies inherited from enclosing menus and ifs
         self.all_referenced_syms = set()
 
-        # This records only dependencies specified with 'depends on'. Needed
-        # when determining actual choice items (hrrrr...). See also
-        # Choice._determine_actual_symbols().
+        # This records only dependencies from enclosing ifs and menus together
+        # with local 'depends on' dependencies. Needed when determining actual
+        # choice items (hrrrr...). See Choice._determine_actual_symbols().
         self.menu_dep = None
 
         # See Symbol.get_ref/def_locations().

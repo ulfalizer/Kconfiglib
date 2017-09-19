@@ -111,3 +111,27 @@ config MMT_4
 config MMT_5
     bool
 endchoice
+
+# Choice with symbols that shouldn't be considered choice symbols because they
+# depend on the preceding symbol. This might be a kconfig bug, but some things
+# use it, so we need to emulate it.
+
+choice WEIRD_SYMS
+    bool "weird symbols that aren't considered part of the choice"
+
+# Only WS1 is part of the choice
+config WS1
+config WS2
+    depends on WS1
+config WS3
+    depends on WS2
+config WS4
+    depends on WS1
+
+# 'if' has the same effect, so only WS5 is part of the choice
+config WS5
+if WS5
+config WS6
+endif
+
+endchoice
