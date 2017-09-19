@@ -65,3 +65,9 @@ config I
     range A 0
     range 0 A
     range 0 1 if A
+    default J if A < 0
+    default K if 0 < A
+    default L if 0 <= A
+    default M if 0 > A
+    default N if 0 >= A
+    default N if y && 0 < A

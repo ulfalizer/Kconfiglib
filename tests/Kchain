@@ -119,5 +119,9 @@ config DUMMY_3
 endchoice
 
 config CHAIN_25
-    string "chain 25"
+    int "chain 25"
     depends on CHAIN_24
+
+config CHAIN_26
+    int "chain 26"
+    default 0 if y && 0 < CHAIN_25

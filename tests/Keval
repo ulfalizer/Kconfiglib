@@ -19,10 +19,14 @@ config FOO_BAR_STRING
     string
     default "foo bar"
 
-config INT_3
+config INT_37
     int
-    default 3
+    default 37
 
-config HEX_0X3
+config HEX_0X37
     hex
-    default 0x3
+    default 0x37
+
+config HEX_37
+    hex
+    default 37

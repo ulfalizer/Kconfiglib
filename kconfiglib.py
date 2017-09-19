@@ -1179,12 +1179,12 @@ class Config(object):
             # For conditional expressions ('depends on <expr>',
             # '... if <expr>', # etc.), "m" and m are rewritten to
             # "m" && MODULES.
-            if next_token != T_EQUAL and next_token != T_UNEQUAL:
+            if next_token not in TOKEN_TO_RELATION:
                 if self._transform_m and (token is self.m or token == "m"):
                     return (AND, ["m", self._sym_lookup("MODULES")])
                 return token
 
-            relation = EQUAL if (feed.get_next() == T_EQUAL) else UNEQUAL
+            relation = TOKEN_TO_RELATION[feed.get_next()]
             token_2 = feed.get_next()
             if self._cur_item is not None and isinstance(token_2, Symbol):
                 self._cur_item.referenced_syms.add(token_2)
@@ -1356,10 +1356,32 @@ class Config(object):
                     else:
                         append(T_NOT)
 
-                elif c == "=": append(T_EQUAL)
-                elif c == "(": append(T_OPEN_PAREN)
-                elif c == ")": append(T_CLOSE_PAREN)
+                elif c == "=":
+                    append(T_EQUAL)
+
+                elif c == "(":
+                    append(T_OPEN_PAREN)
+
+                elif c == ")":
+                    append(T_CLOSE_PAREN)
+
                 elif c == "#": break # Comment
+
+                # Very rare
+                elif c == "<":
+                    if i < len(s) and s[i] == "=":
+                        append(T_LESS_EQUAL)
+                        i += 1
+                    else:
+                        append(T_LESS)
+
+                # Very rare
+                elif c == ">":
+                    if i < len(s) and s[i] == "=":
+                        append(T_GREATER_EQUAL)
+                        i += 1
+                    else:
+                        append(T_GREATER)
 
                 else: continue # Invalid characters are ignored
 
@@ -1452,11 +1474,43 @@ class Config(object):
             # short-circuiting "y" case in the loop.
             return res
 
-        if expr[0] == EQUAL:
-            return "y" if (_str_val(expr[1]) == _str_val(expr[2])) else "n"
+        if expr[0] in RELATIONS:
+            # Implements <, <=, >, >= comparisons as well. These were added to
+            # kconfig in 31847b67 (kconfig: allow use of relations other than
+            # (in)equality).
 
-        if expr[0] == UNEQUAL:
-            return "y" if (_str_val(expr[1]) != _str_val(expr[2])) else "n"
+            # This mirrors the C implementation pretty closely. Perhaps there's
+            # a more pythonic way to structure this.
+
+            oper, op1, op2 = expr
+            op1_type, op1_str = _type_and_val(op1)
+            op2_type, op2_str = _type_and_val(op2)
+
+            # If both operands are strings...
+            if op1_type == STRING and op2_type == STRING:
+                # ...then compare them lexicographically
+                comp = _strcmp(op1_str, op2_str)
+            else:
+                # Otherwise, try to compare them as numbers
+                try:
+                    comp = int(op1_str, TYPE_TO_BASE[op1_type]) - \
+                           int(op2_str, TYPE_TO_BASE[op2_type])
+                except ValueError:
+                    # They're not both valid numbers. If the comparison is
+                    # anything but = or !=, return 'n'. Otherwise, reuse
+                    # _strcmp() to check for (in)equality.
+                    if oper not in (EQUAL, UNEQUAL):
+                        return "n"
+                    comp = _strcmp(op1_str, op2_str)
+
+            if   oper == EQUAL:         res = comp == 0
+            elif oper == UNEQUAL:       res = comp != 0
+            elif oper == LESS:          res = comp < 0
+            elif oper == LESS_EQUAL:    res = comp <= 0
+            elif oper == GREATER:       res = comp > 0
+            elif oper == GREATER_EQUAL: res = comp >= 0
+
+            return "y" if res else "n"
 
         _internal_error("Internal error while evaluating expression: "
                         "unknown operation {0}.".format(expr[0]))
@@ -3292,7 +3346,7 @@ def _get_expr_syms_rec(expr, res):
             _get_expr_syms_rec(term, res)
     elif expr[0] == NOT:
         _get_expr_syms_rec(expr[1], res)
-    elif expr[0] == EQUAL or expr[0] == UNEQUAL:
+    elif expr[0] in RELATIONS:
         if isinstance(expr[1], Symbol):
             res.add(expr[1])
         if isinstance(expr[2], Symbol):
@@ -3338,7 +3392,7 @@ def _intersperse(lst, op):
 
     def handle_sub_expr(expr):
         no_parens = isinstance(expr, (str, Symbol)) or \
-                    expr[0] in (EQUAL, UNEQUAL) or \
+                    expr[0] in RELATIONS or \
                     PRECEDENCE[op] <= PRECEDENCE[expr[0]]
         if not no_parens:
             res.append("(")
@@ -3376,13 +3430,21 @@ def _expr_to_str_rec(expr):
             res.append(")")
         return res
 
-    if expr[0] in (EQUAL, UNEQUAL):
+    if expr[0] in RELATIONS:
         return [_sym_str_string(expr[1]),
                 OP_TO_STR[expr[0]],
                 _sym_str_string(expr[2])]
 
 def _expr_to_str(expr):
     return "".join(_expr_to_str_rec(expr))
+
+def _type_and_val(obj):
+    """Helper to hack around the fact that we don't represent plain strings as
+    Symbols. Takes either a plain string or a Symbol and returns a
+    (<type>, <value>) tuple."""
+    if isinstance(obj, str):
+        return (STRING, obj)
+    return (obj.type, obj.get_value())
 
 def _indentation(line):
     """Returns the length of the line's leading whitespace, treating tab stops
@@ -3403,6 +3465,10 @@ def _is_base_n(s, n):
         return True
     except ValueError:
         return False
+
+def _strcmp(s1, s2):
+    """strcmp()-alike that returns -1, 0, or 1."""
+    return (s1 > s2) - (s1 < s2)
 
 def _lines(*args):
     """Returns a string consisting of all arguments, with newlines inserted
@@ -3454,6 +3520,7 @@ def _internal_error(msg):
 (T_AND, T_OR, T_NOT,
  T_OPEN_PAREN, T_CLOSE_PAREN,
  T_EQUAL, T_UNEQUAL,
+ T_LESS, T_LESS_EQUAL, T_GREATER, T_GREATER_EQUAL,
  T_MAINMENU, T_MENU, T_ENDMENU,
  T_SOURCE, T_CHOICE, T_ENDCHOICE,
  T_COMMENT, T_CONFIG, T_MENUCONFIG,
@@ -3462,7 +3529,7 @@ def _internal_error(msg):
  T_BOOL, T_TRISTATE, T_HEX, T_INT, T_STRING,
  T_DEF_BOOL, T_DEF_TRISTATE,
  T_SELECT, T_IMPLY, T_RANGE, T_OPTION, T_ALLNOCONFIG_Y, T_ENV,
- T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(40)
+ T_DEFCONFIG_LIST, T_MODULES, T_VISIBLE) = range(44)
 
 # The leading underscore before the function assignments below prevent pydoc
 # from listing them. The constants could be hidden too, but they're fairly
@@ -3522,12 +3589,28 @@ DEFAULT_VALUE = {BOOL: "n", TRISTATE: "n", STRING: "", INT: "", HEX: ""}
 NO_SELECTION = 0
 
 # Integers representing expression types
-AND, OR, NOT, EQUAL, UNEQUAL = range(5)
+AND, OR, NOT, EQUAL, UNEQUAL, LESS, LESS_EQUAL, GREATER, \
+GREATER_EQUAL = range(9)
+
+# Token to relation (=, !=, <, ...) mapping
+TOKEN_TO_RELATION = {T_EQUAL: EQUAL, T_UNEQUAL: UNEQUAL, T_LESS: LESS,
+                     T_LESS_EQUAL: LESS_EQUAL, T_GREATER: GREATER,
+                     T_GREATER_EQUAL: GREATER_EQUAL}
+
+RELATIONS = frozenset((EQUAL, UNEQUAL, LESS, LESS_EQUAL, GREATER,
+                       GREATER_EQUAL))
+
+# Used in comparisons. 0 means the base is inferred from the format of the
+# string. The entries for BOOL and TRISTATE are a convenience - they should
+# never convert to valid numbers.
+TYPE_TO_BASE = {UNKNOWN: 0, BOOL: 0, TRISTATE: 0, STRING: 0, HEX: 16, INT: 10}
 
 # Map from tristate values to integers
 TRI_TO_INT = {"n": 0, "m": 1, "y": 2}
 
 # Printing-related stuff
 
-OP_TO_STR = {AND: " && ", OR: " || ", EQUAL: " = ", UNEQUAL: " != "}
+OP_TO_STR = {AND: " && ", OR: " || ", EQUAL: " = ", UNEQUAL: " != ",
+             LESS: " < ", LESS_EQUAL: " <= ", GREATER: " > ",
+             GREATER_EQUAL: " >= "}
 PRECEDENCE = {OR: 0, AND: 1, NOT: 2}

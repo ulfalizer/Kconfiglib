@@ -10,7 +10,7 @@ config ADVANCED
     imply IMPLIED_1 if BASIC || DUMMY
     imply IMPLIED_2 if !(DUMMY && BASIC)
     default y if BASIC && !BASIC
-    default n if BASIC = DUMMY
+    default n if BASIC = DUMMY && X < Y && X <= Y && X > Y && X >= Y
 
 config ADVANCED
     tristate "advanced prompt 2"

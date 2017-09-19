@@ -396,10 +396,15 @@ def run_selftests():
     verify_eval("Y_STRING = 'y'", "y")
     verify_eval('FOO_BAR_STRING = "foo bar"', "y")
     verify_eval('FOO_BAR_STRING != "foo bar baz"', "y")
-    verify_eval('INT_3 = 3', "y")
-    verify_eval("INT_3 = '3'", "y")
-    verify_eval('HEX_0X3 = 0x3', "y")
-    verify_eval("HEX_0X3 = '0x3'", "y")
+    verify_eval('INT_37 = 37', "y")
+    verify_eval("INT_37 = '37'", "y")
+    verify_eval('HEX_0X37 = 0x37', "y")
+    verify_eval("HEX_0X37 = '0x37'", "y")
+
+    # These should also hold after 31847b67 (kconfig: allow use of relations
+    # other than (in)equality)
+    verify_eval("HEX_0X37 = '0x037'", "y")
+    verify_eval("HEX_0X37 = '0x0037'", "y")
 
     # Compare some constants...
     verify_eval('"foo" != "bar"', "y")
@@ -410,6 +415,88 @@ def run_selftests():
     verify_eval("'not_defined' = not_defined", "y")
     verify_eval("not_defined_2 = not_defined_2", "y")
     verify_eval("not_defined_1 != not_defined_2", "y")
+
+    # Test less than/greater than
+
+    # Basic evaluation
+    verify_eval("INT_37 < 38", "y")
+    verify_eval("38 < INT_37", "n")
+    verify_eval("INT_37 < '38'", "y")
+    verify_eval("'38' < INT_37", "n")
+    verify_eval("INT_37 < 138", "y")
+    verify_eval("138 < INT_37", "n")
+    verify_eval("INT_37 < '138'", "y")
+    verify_eval("'138' < INT_37", "n")
+    verify_eval("INT_37 < -138", "n")
+    verify_eval("-138 < INT_37", "y")
+    verify_eval("INT_37 < '-138'", "n")
+    verify_eval("'-138' < INT_37", "y")
+    verify_eval("INT_37 < 37", "n")
+    verify_eval("37 < INT_37", "n")
+    verify_eval("INT_37 < 36", "n")
+    verify_eval("36 < INT_37", "y")
+
+    # Different formats in comparison
+    verify_eval("INT_37 < 0x26", "y") # 38
+    verify_eval("INT_37 < 0x25", "n") # 37
+    verify_eval("INT_37 < 0x24", "n") # 36
+    verify_eval("HEX_0X37 < 56", "y") # 0x38
+    verify_eval("HEX_0X37 < 55", "n") # 0x37
+    verify_eval("HEX_0X37 < 54", "n") # 0x36
+
+    # Other int comparisons
+    verify_eval("INT_37 <= 38", "y")
+    verify_eval("INT_37 <= 37", "y")
+    verify_eval("INT_37 <= 36", "n")
+    verify_eval("INT_37 >  38", "n")
+    verify_eval("INT_37 >  37", "n")
+    verify_eval("INT_37 >  36", "y")
+    verify_eval("INT_37 >= 38", "n")
+    verify_eval("INT_37 >= 37", "y")
+    verify_eval("INT_37 >= 36", "y")
+
+    # Other hex comparisons
+    verify_eval("HEX_0X37 <= 0x38", "y")
+    verify_eval("HEX_0X37 <= 0x37", "y")
+    verify_eval("HEX_0X37 <= 0x36", "n")
+    verify_eval("HEX_0X37 >  0x38", "n")
+    verify_eval("HEX_0X37 >  0x37", "n")
+    verify_eval("HEX_0X37 >  0x36", "y")
+    verify_eval("HEX_0X37 >= 0x38", "n")
+    verify_eval("HEX_0X37 >= 0x37", "y")
+    verify_eval("HEX_0X37 >= 0x36", "y")
+
+    # A hex holding a value without a "0x" prefix should still be treated as
+    # hexadecimal
+    verify_eval("HEX_37 < 0x38", "y")
+    verify_eval("HEX_37 < 0x37", "n")
+    verify_eval("HEX_37 < 0x36", "n")
+
+    # Symbol comparisons
+    verify_eval("INT_37   <  HEX_0X37", "y")
+    verify_eval("INT_37   >  HEX_0X37", "n")
+    verify_eval("HEX_0X37 <  INT_37  ", "n")
+    verify_eval("HEX_0X37 >  INT_37  ", "y")
+    verify_eval("INT_37   <  INT_37  ", "n")
+    verify_eval("INT_37   <= INT_37  ", "y")
+    verify_eval("INT_37   >  INT_37  ", "n")
+    verify_eval("INT_37   <= INT_37  ", "y")
+
+    # Strings compare lexicographically
+    verify_eval("'aa' < 'ab'", "y")
+    verify_eval("'aa' > 'ab'", "n")
+    verify_eval("'ab' < 'aa'", "n")
+    verify_eval("'ab' > 'aa'", "y")
+
+    # If one operand is numeric and the other not a valid number, we get 'n'
+    verify_eval("INT_37 <  oops  ", "n")
+    verify_eval("INT_37 <= oops  ", "n")
+    verify_eval("INT_37 >  oops  ", "n")
+    verify_eval("INT_37 >= oops  ", "n")
+    verify_eval("oops   <  INT_37", "n")
+    verify_eval("oops   <= INT_37", "n")
+    verify_eval("oops   >  INT_37", "n")
+    verify_eval("oops   >= INT_37", "n")
 
     # The C implementation's parser can be pretty lax about syntax. Kconfiglib
     # sometimes needs to emulate that. Verify that some bad stuff throws
@@ -526,7 +613,7 @@ def run_selftests():
        y (value: "y")
         Condition: BASIC && !BASIC (value: "n")
        n (value: "n")
-        Condition: BASIC = DUMMY (value: "n")
+        Condition: BASIC = DUMMY && X < Y && X <= Y && X > Y && X >= Y (value: "n")
       Selects:
        SELECTED_1 if BASIC && DUMMY (value: "n")
        SELECTED_2 if !(DUMMY || BASIC) (value: "y")
@@ -772,7 +859,13 @@ def run_selftests():
       ("Kconfiglib/tests/Klocation_included", 40),
       ("Kconfiglib/tests/Klocation", 65),
       ("Kconfiglib/tests/Klocation", 66),
-      ("Kconfiglib/tests/Klocation", 67))
+      ("Kconfiglib/tests/Klocation", 67),
+      ("Kconfiglib/tests/Klocation", 68),
+      ("Kconfiglib/tests/Klocation", 69),
+      ("Kconfiglib/tests/Klocation", 70),
+      ("Kconfiglib/tests/Klocation", 71),
+      ("Kconfiglib/tests/Klocation", 72),
+      ("Kconfiglib/tests/Klocation", 73))
     verify_ref_locations("C")
     verify_ref_locations("NOT_DEFINED",
       ("Kconfiglib/tests/Klocation", 12),
@@ -1240,7 +1333,8 @@ def run_selftests():
     verify_sym_refs("NO_REF", [], [])
     verify_sym_refs("ONE_REF", ["A"], ["A"])
     own_refs = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
-                "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"]
+                "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
+                "Y", "Z", "AA"]
     verify_sym_refs("MANY_REF",
       own_refs,
       own_refs + ["IF_REF_1", "IF_REF_2", "MENU_REF_1",
@@ -1852,7 +1946,7 @@ def run_selftests():
 
     # Test twice to cover dependency caching
     for i in range(0, 2):
-        n_deps = 32
+        n_deps = 37
         # Verify that D1, D2, .., D<n_deps> are dependent on D
         verify_dependent("D", ["D{0}".format(i) for i in range(1, n_deps + 1)])
         # Choices
@@ -1867,7 +1961,7 @@ def run_selftests():
     c = kconfiglib.Config("Kconfiglib/tests/Kchain")
 
     for i in range(0, 2):
-        verify(c["CHAIN_25"] in c["CHAIN_1"]._get_dependent(),
+        verify(c["CHAIN_26"] in c["CHAIN_1"]._get_dependent(),
                "Dependency chain broken")
 
     print("\nAll selftests passed\n" if _all_ok else

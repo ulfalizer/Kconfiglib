@@ -20,7 +20,7 @@ config MANY_REF
     select N if (A || !(B && (C = O)))
     imply P if Q = R || S != T
     imply U if (A || !(B && (C = V)))
-
+    default A if A < W || X < A || A <= Y || A > Z || A >= AA
 endif
 
 endmenu

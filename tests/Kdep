@@ -140,6 +140,26 @@ config D31
 config D32
     tristate "D32"
 
+config D33
+    int "D33"
+    default 0 if D < 0
+
+config D34
+    int "D34"
+    default 0 if 0 < D
+
+config D35
+    int "D35"
+    default 0 if 0 <= D
+
+config D36
+    int "D36"
+    default 0 if 0 > D
+
+config D37
+    int "D37"
+    default 0 if 0 >= D
+
 #
 # Choices
 #
