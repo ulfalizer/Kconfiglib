@@ -1060,16 +1060,15 @@ class Config(object):
             # Propagate dependencies to prompts
 
             if new_prompt is not None:
-                # Propagate 'visible if' dependencies from enclosing menus
                 prompt, cond_expr = new_prompt
-                cond_expr = _make_and(cond_expr, visible_if_deps)
-                # Propagate 'depends on' dependencies
-                new_prompt = (prompt, _make_and(cond_expr, depends_on_expr))
+                # Propagate 'visible if' dependencies from menus and local
+                # 'depends on' dependencies
+                cond_expr = _make_and(_make_and(cond_expr, visible_if_deps),
+                                      depends_on_expr)
                 # Save original
-                stmt.orig_prompts.append(new_prompt)
+                stmt.orig_prompts.append((prompt, cond_expr))
                 # Finalize with dependencies from enclosing menus and ifs
-                stmt.prompts.append((new_prompt[0],
-                                     _make_and(new_prompt[1], deps)))
+                stmt.prompts.append((prompt, _make_and(cond_expr, deps)))
 
             # Propagate dependencies to defaults
 
