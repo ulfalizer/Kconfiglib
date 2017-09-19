@@ -1224,6 +1224,10 @@ class Config(object):
             i = 0 # The current index in the string being tokenized
 
         else:
+            # Note: This hack is no longer needed as of upstream commit c226456
+            # (kconfig: warn of unhandled characters in Kconfig commands). It
+            # is kept around for backwards compatibility.
+            #
             # The initial word on a line is parsed specially. Let
             # command_chars = [A-Za-z0-9_]. Then
             #  - leading non-command_chars characters are ignored, and
