@@ -202,11 +202,14 @@ class Config(object):
         self.print_warnings = print_warnings
         self.print_undef_assign = print_undef_assign
 
-        # For parsing routines that stop when finding a line belonging to a
-        # different construct, these holds that line and the tokenized version
-        # of that line. The purpose is to avoid having to re-tokenize the line,
-        # which is inefficient and causes problems when recording references to
-        # symbols.
+        # When parsing properties, we stop on the first (non-empty)
+        # non-property line. These variables hold that line and its tokens so
+        # that we don't have to re-tokenize the line later. This isn't just an
+        # optimization: We record references to symbols during tokenization, so
+        # tokenizing twice would cause double registration.
+        #
+        # self.end_line doubles as a flag where None means we don't have a
+        # cached tokenized line.
         self.end_line = None
         self.end_line_tokens = None
 
@@ -634,16 +637,11 @@ class Config(object):
         block: The list to add items to."""
 
         while 1:
-            # Do we already have a tokenized line that we determined wasn't
-            # part of whatever we were parsing earlier? See comment in
-            # Config.__init__().
+            # See 'end_line' description in Config.__init__()
             if self.end_line is not None:
                 line = self.end_line
                 tokens = self.end_line_tokens
-                tokens.unget_all()
-
                 self.end_line = None
-                self.end_line_tokens = None
             else:
                 line = line_feeder.get_next()
                 if line is None:
@@ -739,7 +737,7 @@ class Config(object):
                                        visible_if_deps)
 
                 # This needs to go before _parse_block() so that we get the
-                # proper menu ordering in the case of nested functions
+                # proper menu ordering in the case of nested menus
                 self.menus.append(menu)
                 # Parse contents and put Items in menu.block
                 self._parse_block(line_feeder, T_ENDMENU, menu, menu.dep_expr,
@@ -1026,9 +1024,10 @@ class Config(object):
                 stmt.optional = True
 
             else:
-                # See comment in Config.__init__()
+                # See 'end_line' description in Config.__init__()
                 self.end_line = line
                 self.end_line_tokens = tokens
+                self.end_line_tokens.unget_all()
                 break
 
         # Done parsing properties. Now propagate 'depends on' and enclosing
