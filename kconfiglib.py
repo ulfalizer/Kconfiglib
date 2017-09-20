@@ -2157,9 +2157,7 @@ class Symbol(Item):
         if rev_dep == "m" and self.type == BOOL:
             return None
         vis = _get_visibility(self)
-        if TRI_TO_INT[vis] > TRI_TO_INT[rev_dep]:
-            return vis
-        return None
+        return vis if tri_greater(vis, rev_dep) else None
 
     def get_lower_bound(self):
         """For string/hex/int symbols and for bool and tristate symbols that
@@ -2179,9 +2177,7 @@ class Symbol(Item):
         # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep == "m" and self.type == BOOL:
             return None
-        if TRI_TO_INT[_get_visibility(self)] > TRI_TO_INT[rev_dep]:
-            return rev_dep
-        return None
+        return rev_dep if tri_greater(_get_visibility(self), rev_dep) else None
 
     def get_assignable_values(self):
         """For string/hex/int symbols and for bool and tristate symbols that
@@ -2340,7 +2336,7 @@ class Symbol(Item):
             # A bool selected to "m" gets promoted to "y", pinning it
             if rev_dep == "m" and self.type == BOOL:
                 return False
-            return TRI_TO_INT[_get_visibility(self)] > TRI_TO_INT[rev_dep]
+            return tri_greater(_get_visibility(self), rev_dep)
         return _get_visibility(self) != "n"
 
     def is_defined(self):
