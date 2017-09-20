@@ -924,8 +924,8 @@ class Config(object):
                 new_def_exprs.append(parse_val_and_cond(tokens, line, filename,
                                                         linenr))
 
-            elif t0 == T_DEF_BOOL:
-                stmt.type = BOOL
+            elif t0 in (T_DEF_BOOL, T_DEF_TRISTATE):
+                stmt.type = TOKEN_TO_TYPE[t0]
                 if tokens.peek_next() is not None:
                     new_def_exprs.append(parse_val_and_cond(tokens, line,
                                                             filename, linenr))
@@ -947,12 +947,6 @@ class Config(object):
                     (low, high,
                      self._parse_expr(tokens, stmt, line, filename, linenr)
                      if tokens.check(T_IF) else None))
-
-            elif t0 == T_DEF_TRISTATE:
-                stmt.type = TRISTATE
-                if tokens.peek_next() is not None:
-                    new_def_exprs.append(parse_val_and_cond(tokens, line,
-                                                            filename, linenr))
 
             elif t0 == T_OPTION:
                 if tokens.check(T_ENV) and tokens.check(T_EQUAL):
@@ -3575,7 +3569,8 @@ TYPENAME = {UNKNOWN: "unknown", BOOL: "bool", TRISTATE: "tristate",
 
 # Token to type mapping
 TOKEN_TO_TYPE = {T_BOOL: BOOL, T_TRISTATE: TRISTATE, T_STRING: STRING,
-                 T_INT: INT, T_HEX: HEX}
+                 T_INT: INT, T_HEX: HEX, T_DEF_BOOL: BOOL,
+                 T_DEF_TRISTATE: TRISTATE}
 
 # Default values for symbols of different types (the value the symbol gets if
 # it is not assigned a user value and none of its 'default' clauses kick in)
