@@ -1026,8 +1026,8 @@ class Config(object):
             else:
                 # See 'end_line' description in Config.__init__()
                 self.end_line = line
+                tokens.unget_all()
                 self.end_line_tokens = tokens
-                self.end_line_tokens.unget_all()
                 break
 
         # Done parsing properties. Now propagate 'depends on' and enclosing
