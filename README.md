@@ -8,11 +8,6 @@ targets such as <i>menuconfig</i> and <i>defconfig</i>.
 
 Supports both Python 2 and Python 3 without modification.
 
-One feature is missing: Kconfiglib assumes the modules symbol is `MODULES`, and
-will warn if `option modules` is set on some other symbol. Let me know if this
-is a problem for you, as adding support shouldn't be that hard. I haven't seen
-modules used outside the kernel, where the name is unlikely to change.
-
 ## Installation ##
 
 ### Installation instructions for the Linux kernel ###
@@ -41,7 +36,7 @@ The entire library is contained in [kconfiglib.py](kconfiglib.py). Drop it
 somewhere and read the documentation. Make sure Kconfiglib sees environment
 variables referenced in the configuration.
 
-You can also use pip to install.
+You can also use pip to install:
 ```
 pip install https://github.com/ulfalizer/Kconfiglib/tarball/master
 ```
@@ -66,9 +61,9 @@ language has some dark corners.
 
  * The [examples/](examples/) directory contains simple example scripts. See the documentation for how to run them.
 
- * [gen-manual-lists.py](http://git.buildroot.net/buildroot/tree/support/scripts/gen-manual-lists.py) from [Buildroot](http://buildroot.uclibc.org/) generates listings for the [appendix of the manual](http://buildroot.uclibc.org/downloads/manual/manual.html#_appendix).
-
  * [genboardscfg.py](http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD) from [Das U-Boot](http://www.denx.de/wiki/U-Boot) generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
+
+ * [gen-manual-lists.py](https://git.busybox.net/buildroot/tree/support/scripts/gen-manual-lists.py?id=5676a2deea896f38123b99781da0a612865adeb0) generated listings for an appendix in the Buildroot manual. (The listing has since been removed.)
 
  * [SConf](https://github.com/CoryXie/SConf) builds an interactive configuration interface (like *menuconfig*, etc.) on top of Kconfiglib, for use e.g. with SCons.
 
@@ -103,47 +98,60 @@ to the test suite would make sense.
 
 ## Misc. notes ##
 
- * Please tell me if you miss some API. It might be possible to extract some useful
-   information from internal data structures (the expression format is pretty easy
-   to understand for example), but having an API is obviously cleaner and safer.
+ * Useful information can be extracted from internal data structures. The
+   expression format is pretty simple for example (see the
+   `Config.parse_expr()` docstring).
 
-   Pull requests are welcome too. Don't worry about getting everything right and adding
-   test cases -- I could fix things up. I know Kconfig has a lot of tricky corners.
+   It's hard to come up with good APIs for dealing with expressions given how
+   general they are, so feel free to look at them directly (modifying them is
+   dangerous though, because it breaks dependency tracking). Maybe I'll
+   officially document the expression format and add a bunch of accessors
+   later. The internal format is unlikely to change in either case, and would
+   probably be returned directly.
 
- * Using [`__slots__`](https://docs.python.org/3.1/reference/datamodel.html#slots)
-   on classes would speed things up a bit and save memory. (genboardscfg.py went
-   from 1.6 to 1.4 seconds on my system for example.) It'd remove some flexibility
-   though.
+   If you come up with some good generally-usable APIs involving expressions,
+   please tell me. Make sure they also make sense for expressions involving ||
+   (or).
 
- * Kconfiglib works well with [PyPy](http://pypy.org). It might give a nice
-speedup over CPython when batch processing a large number of configurations,
-as well as when running the test suite.
+ * Kconfiglib works well with [PyPy](http://pypy.org). It gives a nice speedup
+   over CPython when batch processing a large number of configurations (like
+   the test suite does).
 
- * At least two things make it a bit awkward to replicate a 'menuconfig'-like
-   interface in Kconfiglib at the moment (but see [SConf](https://github.com/CoryXie/SConf),
-   as mentioned above). APIs could be added if needed.
+ * Kconfiglib assumes the modules symbol is `MODULES` and will warn if
+   `option modules` is set on some other symbol. Let me know if this is a
+   problem for you. Adding proper `option modules` support should be pretty
+   easy.
+
+ * At least two things make it awkward to replicate a 'menuconfig'-like
+   interface in Kconfiglib at the moment (but see
+   [SConf](https://github.com/CoryXie/SConf), as mentioned above).
 
    * There are no good APIs for figuring out what other symbols change in value
      when the value of some symbol is changed, to allow for "live" updates
      in the configuration interface. The simplest workaround is to refetch the
-     value of each currently visible symbol every time a symbol value is changed.
+     value of each currently visible symbol every time a symbol value is
+     changed.
 
-   * 'menuconfig' sometimes creates menus implicitly by looking at dependencies.
-     For example, a list of symbols where all symbols depend on the first symbol
-     might create such a menu rooted at the first symbol. Recreating such "cosmetic"
-     menus might be awkward.
+   * 'menuconfig' sometimes creates cosmetic menus implicitly by looking at
+     dependencies. For example, a list of symbols where all symbols depend on
+     the first symbol creates a cosmetic menu rooted at the first symbol.
+     Recreating such menus is awkward.
      
-     (There is already basic support internally though, because it's needed to get
-     obscure choice behavior right -- see `_determine_actual_symbols()` and its
-     helper `_has_auto_menu_dep_on()`.)
+     There is already basic support internally though, because it's needed to
+     get obscure choice behavior right. See `_determine_actual_symbols()` and
+     its helper `_has_auto_menu_dep_on()`.
 
- * [fpemud](https://github.com/fpemud) has put together [Python
-bindings](https://github.com/fpemud/pylkc) to internal functions in the C
-implementation. This is an alternative to Kconfiglib's all-Python approach.
+ * Using [`__slots__`](https://docs.python.org/3.1/reference/datamodel.html#slots)
+   on classes would speed things up a bit and save memory. It'd remove some
+   flexibility though.
+
+ * [fpemud](https://github.com/fpemud) has put together
+   [Python bindings](https://github.com/fpemud/pylkc) to internal functions in the C
+   implementation. This is an alternative to Kconfiglib's all-Python approach.
 
  * The test suite failures (should be the only ones) for the following Blackfin
-defconfigs on e.g. Linux 3.7.0-rc8 are due to
-[a bug in the C implementation](https://lkml.org/lkml/2012/12/5/458):
+   defconfigs on e.g. Linux 3.7.0-rc8 are due to
+   [a bug in the C implementation](https://lkml.org/lkml/2012/12/5/458):
 
    * arch/blackfin/configs/CM-BF537U\_defconfig  
    * arch/blackfin/configs/BF548-EZKIT\_defconfig  
