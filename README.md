@@ -98,20 +98,20 @@ to the test suite would make sense.
 
 ## Misc. notes ##
 
- * Useful information can be extracted from internal data structures. The
+ * **Useful information can be extracted from internal data structures.** The
    expression format is pretty simple for example (see the
-   `Config.parse_expr()` docstring).
+   `Config._parse_expr()` docstring).
 
    It's hard to come up with good APIs for dealing with expressions given how
-   general they are, so feel free to look at them directly (modifying them is
-   dangerous though, because it breaks dependency tracking). Maybe I'll
-   officially document the expression format and add a bunch of accessors
-   later. The internal format is unlikely to change in either case, and would
-   probably be returned directly.
+   general they are, so feel free to look at them directly if none of the
+   exposed APIs will suffice (modifying them is dangerous though, because it
+   breaks dependency tracking). Maybe I'll officially document the expression
+   format and add a bunch of accessors later. The internal format is unlikely
+   to change in either case, and would probably be returned directly.
 
    If you come up with some good generally-usable APIs involving expressions,
-   please tell me. Make sure they also make sense for expressions involving ||
-   (or).
+   please tell me. Make sure they also make sense for expressions involving `||`
+   (or) and `!` (not).
 
  * Kconfiglib works well with [PyPy](http://pypy.org). It gives a nice speedup
    over CPython when batch processing a large number of configurations (like
