@@ -435,8 +435,8 @@ class Config(object):
         #
 
         def warn_override(filename, linenr, name, old_user_val, new_user_val):
-            self._warn('overriding the value of {0}. '
-                       'Old value: "{1}", new value: "{2}".'
+            self._warn('overriding the value of {}. '
+                       'Old value: "{}", new value: "{}".'
                        .format(name, old_user_val, new_user_val),
                        filename, linenr)
 
@@ -480,8 +480,8 @@ class Config(object):
                     if sym.is_choice_sym:
                         user_mode = sym.parent.user_mode
                         if user_mode is not None and user_mode != val:
-                            self._warn("assignment to {0} changes mode of "
-                                       'containing choice from "{1}" to "{2}".'
+                            self._warn("assignment to {} changes mode of "
+                                       'containing choice from "{}" to "{}".'
                                        .format(name, val, user_mode),
                                        line_feeder.filename,
                                        line_feeder.linenr)
@@ -489,8 +489,8 @@ class Config(object):
                     sym._set_user_value_no_invalidate(val, True)
                 else:
                     if self.print_undef_assign:
-                        _stderr_msg('note: attempt to assign the value "{0}" '
-                                    "to the undefined symbol {1}."
+                        _stderr_msg('note: attempt to assign the value "{}" '
+                                    "to the undefined symbol {}."
                                     .format(val, name),
                                     line_feeder.filename, line_feeder.linenr)
             else:
@@ -646,8 +646,8 @@ class Config(object):
                 line = line_feeder.get_next()
                 if line is None:
                     if end_marker is not None:
-                        raise Kconfig_Syntax_Error("Unexpected end of file {0}"
-                                                 .format(line_feeder.filename))
+                        raise Kconfig_Syntax_Error("Unexpected end of file " +
+                                                   line_feeder.filename)
                     return
 
                 tokens = self._tokenize(line, False, line_feeder.filename,
@@ -683,10 +683,10 @@ class Config(object):
                 exp_kconfig_file = self._expand_sym_refs(kconfig_file)
                 f = os.path.join(self.base_dir, exp_kconfig_file)
                 if not os.path.exists(f):
-                    raise IOError('{0}:{1}: sourced file "{2}" (expands to '
-                                  '"{3}") not found. Perhaps base_dir '
-                                  '(argument to Config.__init__(), currently '
-                                  '"{4}") is set to the wrong value.'
+                    raise IOError('{}:{}: sourced file "{}" (expands to "{}") '
+                                  "not found. Perhaps base_dir (argument to "
+                                  'Config.__init__(), currently "{}") is set '
+                                  'to the wrong value.'
                                   .format(line_feeder.filename,
                                           line_feeder.linenr,
                                           kconfig_file, exp_kconfig_file,
@@ -795,7 +795,7 @@ class Config(object):
                 text = tokens.get_next()
                 if self.mainmenu_text is not None:
                     self._warn("overriding 'mainmenu' text. "
-                               'Old value: "{0}", new value: "{1}".'
+                               'Old value: "{}", new value: "{}".'
                                .format(self.mainmenu_text, text),
                                line_feeder.filename, line_feeder.linenr)
                 self.mainmenu_text = text
@@ -954,10 +954,10 @@ class Config(object):
                     stmt.is_from_env = True
 
                     if env_var not in os.environ:
-                        self._warn("The symbol {0} references the "
-                                   "non-existent environment variable {1} and "
-                                   "will get the empty string as its value. "
-                                   "If you're using Kconfiglib via "
+                        self._warn("The symbol {} references the non-existent "
+                                   "environment variable {} and will get the "
+                                   "empty string as its value. If you're "
+                                   "using Kconfiglib via "
                                    "'make (i)scriptconfig', it should have "
                                    "set up the environment correctly for you. "
                                    "If you still got this message, that "
@@ -1394,7 +1394,7 @@ class Config(object):
         new_sym.config = self
         new_sym.name = name
         if for_eval:
-            self._warn("no symbol {0} in configuration".format(name))
+            self._warn("no symbol {} in configuration".format(name))
         else:
             self.syms[name] = new_sym
         return new_sym
@@ -1506,7 +1506,7 @@ class Config(object):
             return "y" if res else "n"
 
         _internal_error("Internal error while evaluating expression: "
-                        "unknown operation {0}.".format(expr[0]))
+                        "unknown operation {}.".format(expr[0]))
 
     def _eval_min(self, e1, e2):
         """Returns the minimum value of the two expressions. Equates None with
@@ -1663,7 +1663,7 @@ class Config(object):
         else:
             val = self._eval_expr(expr)
 
-        return "{0} (value: {1})".format(_expr_to_str(expr), _expr_to_str(val))
+        return "{} (value: {})".format(_expr_to_str(expr), _expr_to_str(val))
 
     def _get_sym_or_choice_str(self, sc):
         """Symbols and choices have many properties in common, so we factor out
@@ -1687,15 +1687,17 @@ class Config(object):
             prompts_str_rows = []
             for prompt, cond_expr in sc.orig_prompts:
                 prompts_str_rows.append(
-                    ' "{0}"'.format(prompt) if cond_expr is None else
-                    ' "{0}" if {1}'.format(prompt,
-                                           self._expr_val_str(cond_expr)))
+                    ' "{}"'.format(prompt)
+                    if cond_expr is None else
+                    ' "{}" if {}'.format(prompt,
+                                         self._expr_val_str(cond_expr)))
             prompts_str = "\n".join(prompts_str_rows)
 
         # Build locations string
-        locations_str = "(no locations)" if not sc.def_locations else \
-                        " ".join(["{0}:{1}".format(filename, linenr) for
-                                  filename, linenr in sc.def_locations])
+        locations_str = "(no locations)" \
+                        if not sc.def_locations else \
+                        " ".join(["{}:{}".format(filename, linenr)
+                                  for filename, linenr in sc.def_locations])
 
         # Build additional-dependencies-from-menus-and-ifs string
         additional_deps_str = " " + \
@@ -1715,9 +1717,9 @@ class Config(object):
                     ranges_str_rows = []
                     for l, u, cond_expr in sc.ranges:
                         ranges_str_rows.append(
-                            " [{0}, {1}]".format(s(l), s(u))
+                            " [{}, {}]".format(s(l), s(u))
                             if cond_expr is None else
-                            " [{0}, {1}] if {2}"
+                            " [{}, {}] if {}"
                             .format(s(l), s(u), self._expr_val_str(cond_expr)))
                     ranges_str = "\n".join(ranges_str_rows)
 
@@ -1741,9 +1743,10 @@ class Config(object):
                 selects_str_rows = []
                 for target, cond_expr in sc.orig_selects:
                     selects_str_rows.append(
-                        " {0}".format(target.name) if cond_expr is None else
-                        " {0} if {1}".format(target.name,
-                                             self._expr_val_str(cond_expr)))
+                        " " + target.name
+                        if cond_expr is None else
+                        " {} if {}".format(target.name,
+                                           self._expr_val_str(cond_expr)))
                 selects_str = "\n".join(selects_str_rows)
 
             # Build implies string
@@ -1753,9 +1756,10 @@ class Config(object):
                 implies_str_rows = []
                 for target, cond_expr in sc.orig_implies:
                     implies_str_rows.append(
-                        " {0}".format(target.name) if cond_expr is None else
-                        " {0} if {1}".format(target.name,
-                                             self._expr_val_str(cond_expr)))
+                        " " + target.name
+                        if cond_expr is None else
+                        " {} if {}".format(target.name,
+                                           self._expr_val_str(cond_expr)))
                 implies_str = "\n".join(implies_str_rows)
 
             res = _lines("Symbol " +
@@ -1808,9 +1812,10 @@ class Config(object):
             defaults_str_rows = []
             for sym, cond_expr in sc.orig_def_exprs:
                 defaults_str_rows.append(
-                    " {0}".format(sym.name) if cond_expr is None else
-                    " {0} if {1}".format(sym.name,
-                                         self._expr_val_str(cond_expr)))
+                    " " + sym.name
+                    if cond_expr is None else
+                    " {} if {}".format(sym.name,
+                                       self._expr_val_str(cond_expr)))
             defaults_str = "\n".join(defaults_str_rows)
 
         # Build contained symbols string
@@ -2489,22 +2494,22 @@ class Symbol(Item):
 
         if self.is_special_:
             if self.is_from_env:
-                self.config._warn('attempt to assign the value "{0}" to the '
-                                  'symbol {1}, which gets its value from the '
+                self.config._warn('attempt to assign the value "{}" to the '
+                                  'symbol {}, which gets its value from the '
                                   'environment. Assignment ignored.'
                                   .format(v, self.name))
             else:
-                self.config._warn('attempt to assign the value "{0}" to the '
-                                  'special symbol {1}. Assignment ignored.'
+                self.config._warn('attempt to assign the value "{}" to the '
+                                  'special symbol {}. Assignment ignored.'
                                   .format(v, self.name))
             return
 
         if not self.is_defined_:
             filename, linenr = self.ref_locations[0]
             if self.config.print_undef_assign:
-                _stderr_msg('note: attempt to assign the value "{0}" to {1}, '
-                            "which is referenced at {2}:{3} but never "
-                            "defined. Assignment ignored."
+                _stderr_msg('note: attempt to assign the value "{}" to {}, '
+                            "which is referenced at {}:{} but never defined. "
+                            "Assignment ignored."
                             .format(v, self.name, filename, linenr))
             return
 
@@ -2515,15 +2520,15 @@ class Symbol(Item):
                 (self.type == STRING                                ) or
                 (self.type == INT      and _is_base_n(v, 10)        ) or
                 (self.type == HEX      and _is_base_n(v, 16)        )):
-            self.config._warn('the value "{0}" is invalid for {1}, which has '
-                              "type {2}. Assignment ignored."
+            self.config._warn('the value "{}" is invalid for {}, which has '
+                              "type {}. Assignment ignored."
                               .format(v, self.name, TYPENAME[self.type]))
             return
 
         if not self.prompts and not suppress_load_warnings:
-            self.config._warn('assigning "{0}" to the symbol {1} which '
-                              'lacks prompts and thus has visibility "n". '
-                              'The assignment will have no effect.'
+            self.config._warn('assigning "{}" to the symbol {} which lacks '
+                              'prompts and thus has visibility "n". The '
+                              'assignment will have no effect.'
                               .format(v, self.name))
 
         self.user_val = v
@@ -2556,22 +2561,22 @@ class Symbol(Item):
             return
 
         if self.type == BOOL or self.type == TRISTATE:
-            append_fn("{0}{1}={2}".format(self.config.config_prefix, self.name, val)
+            append_fn("{}{}={}".format(self.config.config_prefix, self.name, val)
                       if val == "y" or val == "m" else
-                      "# {0}{1} is not set".format(self.config.config_prefix, self.name))
+                      "# {}{} is not set".format(self.config.config_prefix, self.name))
 
         elif self.type == INT or self.type == HEX:
-            append_fn("{0}{1}={2}".format(self.config.config_prefix, self.name, val))
+            append_fn("{}{}={}".format(self.config.config_prefix, self.name, val))
 
         elif self.type == STRING:
             # Escape \ and "
-            append_fn('{0}{1}="{2}"'
+            append_fn('{}{}="{}"'
                       .format(self.config.config_prefix, self.name,
                               val.replace("\\", "\\\\").replace('"', '\\"')))
 
         else:
             _internal_error("Internal error while creating .config: unknown "
-                            'type "{0}".'.format(self.type))
+                            'type "{}".'.format(self.type))
 
     def _get_dependent(self):
         """Returns the set of symbols that should be invalidated if the value
@@ -2707,7 +2712,7 @@ class Menu(Item):
                       "Additional dependencies from enclosing menus and "
                         "ifs:",
                       additional_deps_str,
-                      "Location: {0}:{1}".format(self.filename, self.linenr))
+                      "Location: {}:{}".format(self.filename, self.linenr))
 
     #
     # Private methods
@@ -2743,7 +2748,7 @@ class Menu(Item):
     def _make_conf(self, append_fn):
         if self.config._eval_expr(self.dep_expr) != "n" and \
            self.config._eval_expr(self.visible_if_expr) != "n":
-            append_fn("\n#\n# {0}\n#".format(self.title))
+            append_fn("\n#\n# {}\n#".format(self.title))
         _make_block_conf(self.block, append_fn)
 
 class Choice(Item):
@@ -3089,7 +3094,7 @@ class Comment(Item):
                       "Additional dependencies from enclosing menus and "
                         "ifs:",
                       additional_deps_str,
-                      "Location: {0}:{1}".format(self.filename, self.linenr))
+                      "Location: {}:{}".format(self.filename, self.linenr))
 
     #
     # Private methods
@@ -3122,7 +3127,7 @@ class Comment(Item):
 
     def _make_conf(self, append_fn):
         if self.config._eval_expr(self.dep_expr) != "n":
-            append_fn("\n#\n# {0}\n#".format(self.text))
+            append_fn("\n#\n# {}\n#".format(self.text))
 
 class Kconfig_Syntax_Error(Exception):
     """Exception raised for syntax errors."""
@@ -3342,7 +3347,7 @@ def _get_expr_syms_rec(expr, res):
             res.add(expr[2])
     else:
         _internal_error("Internal error while fetching symbols from an "
-                        "expression with token stream {0}.".format(expr))
+                        "expression with token stream {}.".format(expr))
 
 def _get_expr_syms(expr):
     """Returns the set() of symbols appearing in expr."""
@@ -3358,10 +3363,6 @@ def _str_val(obj):
 
 def _make_block_conf(block, append_fn):
     """Returns a list of .config strings for a block (list) of items."""
-
-    # Collect the substrings in a list and later use join() instead of += to
-    # build the final .config contents. With older Python versions, this yields
-    # linear instead of quadratic complexity.
     for item in block:
         item._make_conf(append_fn)
 
@@ -3481,17 +3482,17 @@ def _clean_up_path(path):
 
 def _stderr_msg(msg, filename, linenr):
     if filename is not None:
-        sys.stderr.write("{0}:{1}: ".format(_clean_up_path(filename), linenr))
+        sys.stderr.write("{}:{}: ".format(_clean_up_path(filename), linenr))
     sys.stderr.write(msg + "\n")
 
 def _tokenization_error(s, filename, linenr):
-    loc = "" if filename is None else "{0}:{1}: ".format(filename, linenr)
-    raise Kconfig_Syntax_Error("{0}Couldn't tokenize '{1}'"
+    loc = "" if filename is None else "{}:{}: ".format(filename, linenr)
+    raise Kconfig_Syntax_Error("{}Couldn't tokenize '{}'"
                                .format(loc, s.strip()))
 
 def _parse_error(s, msg, filename, linenr):
-    loc = "" if filename is None else "{0}:{1}: ".format(filename, linenr)
-    raise Kconfig_Syntax_Error("{0}Couldn't parse '{1}'{2}"
+    loc = "" if filename is None else "{}:{}: ".format(filename, linenr)
+    raise Kconfig_Syntax_Error("{}Couldn't parse '{}'{}"
                                .format(loc, s.strip(),
                                        "." if msg is None else ": " + msg))
 
