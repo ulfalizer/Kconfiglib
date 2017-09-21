@@ -6,7 +6,8 @@ and read and write <i>.config</i> files. Highly compatible with the
 <i>scripts/kconfig/\*conf</i> utilities in the kernel, usually invoked via make
 targets such as <i>menuconfig</i> and <i>defconfig</i>.
 
-Supports both Python 2 and Python 3 without modification.
+Supports both Python 2 and Python 3 without modification, and should also run
+on non-\*nix platforms
 
 ## Installation ##
 
