@@ -109,9 +109,9 @@ to the test suite would make sense.
    format and add a bunch of accessors later. The internal format is unlikely
    to change in either case, and would probably be returned directly.
 
-   If you come up with some good generally-usable APIs involving expressions,
-   please tell me. Make sure they also make sense for expressions involving
-   `||` (or) and `!` (not).
+   If you come up with some good generally-usable APIs involving
+   expressions, please tell me. Make sure they also make sense for expressions
+   involving `||` (or) and `!` (not).
 
  * Kconfiglib works well with [PyPy](http://pypy.org). It gives a nice speedup
    over CPython when batch processing a large number of configurations (like
