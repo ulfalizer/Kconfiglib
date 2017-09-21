@@ -123,7 +123,7 @@ to the test suite would make sense.
    problem for you. Adding proper `option modules` support should be pretty
    easy.
 
- * At least two things make it awkward to replicate a 'menuconfig'-like
+ * At least two things make it awkward to replicate a `menuconfig`-like
    interface in Kconfiglib at the moment (but see
    [SConf](https://github.com/CoryXie/SConf), as mentioned above).
 
