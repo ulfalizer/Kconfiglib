@@ -1098,9 +1098,13 @@ class Config(object):
                     transform_m=True):
         """Parses an expression from the tokens in 'feed' using a simple
         top-down approach. The result has the form
-        '(<operator>, [<parsed operands>])', where <operator> is e.g.
+        '(<operator> <operand 1> <operand 2>)' where <operator> is e.g.
         kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
         the operand is returned directly. This also goes for subexpressions.
+
+        As an example, A && B && (!C || D == 3) is represented as
+        (AND A (AND B (OR (NOT C) (EQUAL D 3)))), with the Symbol objects
+        stored directly in the expression.
 
         feed: _Feed instance containing the tokens for the expression.
 
@@ -1141,25 +1145,15 @@ class Config(object):
 
     def _parse_expr_rec(self, feed):
         or_term = self._parse_or_term(feed)
-        if not feed.check(T_OR):
-            # Common case -- no need for an OR node since it's just a single
-            # operand
-            return or_term
-        or_terms = [or_term, self._parse_or_term(feed)]
-        while feed.check(T_OR):
-            or_terms.append(self._parse_or_term(feed))
-        return (OR, or_terms)
+        return or_term \
+               if not feed.check(T_OR) else \
+               (OR, or_term, self._parse_expr_rec(feed))
 
     def _parse_or_term(self, feed):
         and_term = self._parse_factor(feed)
-        if not feed.check(T_AND):
-            # Common case -- no need for an AND node since it's just a single
-            # operand
-            return and_term
-        and_terms = [and_term, self._parse_factor(feed)]
-        while feed.check(T_AND):
-            and_terms.append(self._parse_factor(feed))
-        return (AND, and_terms)
+        return and_term \
+               if not feed.check(T_AND) else \
+               (AND, and_term, self._parse_or_term(feed))
 
     def _parse_factor(self, feed):
         token = feed.get_next()
@@ -1174,7 +1168,7 @@ class Config(object):
             # "m" && MODULES.
             if next_token not in TOKEN_TO_RELATION:
                 if self._transform_m and (token is self.m or token == "m"):
-                    return (AND, ["m", self._sym_lookup("MODULES")])
+                    return (AND, "m", self._sym_lookup("MODULES"))
                 return token
 
             relation = TOKEN_TO_RELATION[feed.get_next()]
@@ -1433,39 +1427,29 @@ class Config(object):
         if isinstance(expr, str):
             return expr if (expr == "y" or expr == "m") else "n"
 
-        # Ordered by frequency
-
         if expr[0] == AND:
-            res = "y"
-            for subexpr in expr[1]:
-                ev = self._eval_expr_rec(subexpr)
-                # Return immediately upon discovering an "n" term
-                if ev == "n":
-                    return "n"
-                if ev == "m":
-                    res = "m"
-            # 'res' is either "m" or "y" here; we already handled the
-            # short-circuiting "n" case in the loop.
-            return res
+            ev1 = self._eval_expr_rec(expr[1])
+            if ev1 == "n":
+                return "n"
+            ev2 = self._eval_expr_rec(expr[2])
+            return ev2 if ev1 == "y" else \
+                   "m" if ev2 != "n" else \
+                   "n"
 
         if expr[0] == NOT:
             ev = self._eval_expr_rec(expr[1])
-            if ev == "y":
-                return "n"
-            return "y" if (ev == "n") else "m"
+            return "n" if ev == "y" else \
+                   "y" if ev == "n" else \
+                   "m"
 
         if expr[0] == OR:
-            res = "n"
-            for subexpr in expr[1]:
-                ev = self._eval_expr_rec(subexpr)
-                # Return immediately upon discovering a "y" term
-                if ev == "y":
-                    return "y"
-                if ev == "m":
-                    res = "m"
-            # 'res' is either "n" or "m" here; we already handled the
-            # short-circuiting "y" case in the loop.
-            return res
+            ev1 = self._eval_expr_rec(expr[1])
+            if ev1 == "y":
+                return "y"
+            ev2 = self._eval_expr_rec(expr[2])
+            return ev2 if ev1 == "n" else \
+                   "y" if ev2 == "y" else \
+                   "m"
 
         if expr[0] in RELATIONS:
             # Implements <, <=, >, >= comparisons as well. These were added to
@@ -1611,9 +1595,7 @@ class Config(object):
             if expr[0] in (EQUAL, UNEQUAL):
                 return self._eq_to_sym(expr) is sym
             if expr[0] == AND:
-                for and_expr in expr[1]:
-                    if rec(and_expr):
-                        return True
+                return rec(expr[1]) or rec(expr[2])
             return False
 
         return rec(expr)
@@ -3292,18 +3274,7 @@ def _make_and(e1, e2):
         return e2
     if e2 is None or e2 == "y":
         return e1
-
-    # Prefer to merge argument lists if possible to reduce the number of nodes
-
-    if isinstance(e1, tuple) and e1[0] == AND:
-        if isinstance(e2, tuple) and e2[0] == AND:
-            return (AND, e1[1] + e2[1])
-        return (AND, e1[1] + [e2])
-
-    if isinstance(e2, tuple) and e2[0] == AND:
-        return (AND, e2[1] + [e1])
-
-    return (AND, [e1, e2])
+    return (AND, e1, e2)
 
 def _make_or(e1, e2):
     """Constructs an OR (||) expression. Performs trivial simplification and
@@ -3316,18 +3287,7 @@ def _make_or(e1, e2):
         return "y"
     if e1 == "n":
         return e2
-
-    # Prefer to merge argument lists if possible to reduce the number of nodes
-
-    if isinstance(e1, tuple) and e1[0] == OR:
-        if isinstance(e2, tuple) and e2[0] == OR:
-            return (OR, e1[1] + e2[1])
-        return (OR, e1[1] + [e2])
-
-    if isinstance(e2, tuple) and e2[0] == OR:
-        return (OR, e2[1] + [e1])
-
-    return (OR, [e1, e2])
+    return (OR, e1, e2)
 
 def _get_expr_syms_rec(expr, res):
     """_get_expr_syms() helper. Recurses through expressions."""
@@ -3336,8 +3296,8 @@ def _get_expr_syms_rec(expr, res):
     elif isinstance(expr, str):
         return
     elif expr[0] == AND or expr[0] == OR:
-        for term in expr[1]:
-            _get_expr_syms_rec(term, res)
+        _get_expr_syms_rec(expr[1], res)
+        _get_expr_syms_rec(expr[2], res)
     elif expr[0] == NOT:
         _get_expr_syms_rec(expr[1], res)
     elif expr[0] in RELATIONS:
@@ -3371,62 +3331,39 @@ def _sym_str_string(sym_or_str):
         return '"' + sym_or_str + '"'
     return sym_or_str.name
 
-def _intersperse(lst, op):
-    """_expr_to_str() helper. Gets the string representation of each expression
-    in lst and produces a list where op has been inserted between the
-    elements."""
-    if not lst:
-        return ""
-
-    res = []
-
-    def handle_sub_expr(expr):
-        no_parens = isinstance(expr, (str, Symbol)) or \
-                    expr[0] in RELATIONS or \
-                    PRECEDENCE[op] <= PRECEDENCE[expr[0]]
-        if not no_parens:
-            res.append("(")
-        res.extend(_expr_to_str_rec(expr))
-        if not no_parens:
-            res.append(")")
-
-    op_str = OP_TO_STR[op]
-
-    handle_sub_expr(lst[0])
-    for expr in lst[1:]:
-        res.append(op_str)
-        handle_sub_expr(expr)
-
-    return res
-
-def _expr_to_str_rec(expr):
-    if expr is None:
-        return [""]
-
-    if isinstance(expr, (Symbol, str)):
-        return [_sym_str_string(expr)]
-
-    if expr[0] in (AND, OR):
-        return _intersperse(expr[1], expr[0])
-
-    if expr[0] == NOT:
-        need_parens = not isinstance(expr[1], (str, Symbol))
-
-        res = ["!"]
-        if need_parens:
-            res.append("(")
-        res.extend(_expr_to_str_rec(expr[1]))
-        if need_parens:
-            res.append(")")
-        return res
-
-    if expr[0] in RELATIONS:
-        return [_sym_str_string(expr[1]),
-                OP_TO_STR[expr[0]],
-                _sym_str_string(expr[2])]
+def _format_and_op(expr):
+    """_expr_to_str() helper. Returns the string representation of 'expr',
+    which is assumed to be an operand to AND, with parentheses added if
+    needed."""
+    if isinstance(expr, tuple) and expr[0] == OR:
+        return "({})".format(_expr_to_str(expr))
+    return _expr_to_str(expr)
 
 def _expr_to_str(expr):
-    return "".join(_expr_to_str_rec(expr))
+    if expr is None:
+        return ""
+
+    if isinstance(expr, (Symbol, str)):
+        return _sym_str_string(expr)
+
+    if expr[0] == NOT:
+        op1_str = _expr_to_str(expr[1])
+        if isinstance(expr[1], (str, Symbol)):
+             return "!" + op1_str
+        return "!({})".format(op1_str)
+
+    if expr[0] == AND:
+        return "{} && {}".format(_format_and_op(expr[1]),
+                                 _format_and_op(expr[2]))
+
+    if expr[0] == OR:
+        return "{} || {}".format(_expr_to_str(expr[1]),
+                                 _expr_to_str(expr[2]))
+
+    # Relation
+    return "{} {} {}".format(_expr_to_str(expr[1]),
+                             RELATION_TO_STR[expr[0]],
+                             _expr_to_str(expr[2]))
 
 def _type_and_val(obj):
     """Helper to hack around the fact that we don't represent plain strings as
@@ -3583,14 +3520,6 @@ NO_SELECTION = 0
 AND, OR, NOT, EQUAL, UNEQUAL, LESS, LESS_EQUAL, GREATER, \
 GREATER_EQUAL = range(9)
 
-# Token to relation (=, !=, <, ...) mapping
-TOKEN_TO_RELATION = {T_EQUAL: EQUAL, T_UNEQUAL: UNEQUAL, T_LESS: LESS,
-                     T_LESS_EQUAL: LESS_EQUAL, T_GREATER: GREATER,
-                     T_GREATER_EQUAL: GREATER_EQUAL}
-
-RELATIONS = frozenset((EQUAL, UNEQUAL, LESS, LESS_EQUAL, GREATER,
-                       GREATER_EQUAL))
-
 # Used in comparisons. 0 means the base is inferred from the format of the
 # string. The entries for BOOL and TRISTATE are a convenience - they should
 # never convert to valid numbers.
@@ -3599,9 +3528,13 @@ TYPE_TO_BASE = {UNKNOWN: 0, BOOL: 0, TRISTATE: 0, STRING: 0, HEX: 16, INT: 10}
 # Map from tristate values to integers
 TRI_TO_INT = {"n": 0, "m": 1, "y": 2}
 
-# Printing-related stuff
+RELATIONS = frozenset((EQUAL, UNEQUAL, LESS, LESS_EQUAL, GREATER,
+                       GREATER_EQUAL))
 
-OP_TO_STR = {AND: " && ", OR: " || ", EQUAL: " = ", UNEQUAL: " != ",
-             LESS: " < ", LESS_EQUAL: " <= ", GREATER: " > ",
-             GREATER_EQUAL: " >= "}
-PRECEDENCE = {OR: 0, AND: 1, NOT: 2}
+# Token to relation (=, !=, <, ...) mapping
+TOKEN_TO_RELATION = {T_EQUAL: EQUAL, T_UNEQUAL: UNEQUAL, T_LESS: LESS,
+                     T_LESS_EQUAL: LESS_EQUAL, T_GREATER: GREATER,
+                     T_GREATER_EQUAL: GREATER_EQUAL}
+
+RELATION_TO_STR = {EQUAL: "=", UNEQUAL: "!=", LESS: "<", LESS_EQUAL: "<=",
+                   GREATER: ">", GREATER_EQUAL: ">="}

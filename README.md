@@ -100,7 +100,8 @@ to the test suite would make sense.
 ## Misc. notes ##
 
  * **Useful information can be extracted from internal data structures.** The
-   expression format is pretty simple for example (see the
+   expression format is pretty simple for example: `A && B && (!C || D == 3)` is
+   represented as (AND A (AND B (OR (NOT C) (EQUAL D 3)))); see the
    `Config._parse_expr()` docstring).
 
    It's hard to come up with good APIs for dealing with expressions given how
