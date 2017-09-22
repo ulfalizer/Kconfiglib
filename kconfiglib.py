@@ -3326,11 +3326,6 @@ def _make_block_conf(block, append_fn):
     for item in block:
         item._make_conf(append_fn)
 
-def _sym_str_string(sym_or_str):
-    if isinstance(sym_or_str, str):
-        return '"' + sym_or_str + '"'
-    return sym_or_str.name
-
 def _format_and_op(expr):
     """_expr_to_str() helper. Returns the string representation of 'expr',
     which is assumed to be an operand to AND, with parentheses added if
@@ -3340,17 +3335,16 @@ def _format_and_op(expr):
     return _expr_to_str(expr)
 
 def _expr_to_str(expr):
-    if expr is None:
-        return ""
+    if isinstance(expr, str):
+        return '"{}"'.format(expr)
 
-    if isinstance(expr, (Symbol, str)):
-        return _sym_str_string(expr)
+    if isinstance(expr, Symbol):
+        return expr.name
 
     if expr[0] == NOT:
-        op1_str = _expr_to_str(expr[1])
         if isinstance(expr[1], (str, Symbol)):
-             return "!" + op1_str
-        return "!({})".format(op1_str)
+             return "!" + _expr_to_str(expr[1])
+        return "!({})".format(_expr_to_str(expr[1]))
 
     if expr[0] == AND:
         return "{} && {}".format(_format_and_op(expr[1]),

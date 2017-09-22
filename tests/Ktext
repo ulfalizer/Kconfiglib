@@ -15,6 +15,16 @@ config ADVANCED
 config ADVANCED
     tristate "advanced prompt 2"
 
+config STRING
+    string
+    default "foo"
+    default "bar" if BAR
+    default STRING2 if BAZ
+
+config STRING2
+    string
+    default "baz"
+
 endif
 
 config SELECTED_1

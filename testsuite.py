@@ -628,6 +628,37 @@ def run_selftests():
        !BASIC && !BASIC (value: "y")
       Locations: Kconfiglib/tests/Ktext:6 Kconfiglib/tests/Ktext:15""")
 
+    verify_print(c["STRING"], """
+      Symbol STRING
+      Type           : string
+      Value          : "foo"
+      User value     : (no user value)
+      Visibility     : "n"
+      Is choice item : false
+      Is defined     : true
+      Is from env.   : false
+      Is special     : false
+      Prompts:
+       (no prompts)
+      Default values:
+       "foo"
+        Condition: (none)
+       "bar"
+        Condition: BAR (value: "n")
+       STRING2 (value: "baz")
+        Condition: BAZ (value: "n")
+      Selects:
+       (no selects)
+      Implies:
+       (no implies)
+      Reverse (select-related) dependencies:
+       (no reverse dependencies)
+      Weak reverse (imply-related) dependencies:
+       (no weak reverse dependencies)
+      Additional dependencies from enclosing menus and ifs:
+       !BASIC && !BASIC (value: "y")
+      Locations: Kconfiglib/tests/Ktext:18""")
+
     verify_print(c["HAS_RANGES"], """
       Symbol HAS_RANGES
       Type           : int
@@ -656,7 +687,7 @@ def run_selftests():
        (no weak reverse dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Locations: Kconfiglib/tests/Ktext:35""")
+      Locations: Kconfiglib/tests/Ktext:45""")
 
     # Printing of Choice
 
@@ -677,7 +708,7 @@ def run_selftests():
        CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Locations: Kconfiglib/tests/Ktext:41""")
+      Locations: Kconfiglib/tests/Ktext:51""")
 
     c["CHOICE_ITEM_2"].set_user_value("y")
 
@@ -698,7 +729,7 @@ def run_selftests():
        CHOICE_ITEM_1 CHOICE_ITEM_2 CHOICE_ITEM_3
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Locations: Kconfiglib/tests/Ktext:41""")
+      Locations: Kconfiglib/tests/Ktext:51""")
 
     # Printing of Menu
 
@@ -709,7 +740,7 @@ def run_selftests():
       'visible if' dependencies : (no dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Location: Kconfiglib/tests/Ktext:53""")
+      Location: Kconfiglib/tests/Ktext:63""")
 
     verify_print(c.get_menus()[1], """
       Menu
@@ -718,7 +749,7 @@ def run_selftests():
       'visible if' dependencies : !DUMMY (value: "y")
       Additional dependencies from enclosing menus and ifs:
        !DUMMY (value: "y")
-      Location: Kconfiglib/tests/Ktext:57""")
+      Location: Kconfiglib/tests/Ktext:67""")
 
     # Printing of Comment
 
@@ -728,7 +759,7 @@ def run_selftests():
       Dependencies: (no dependencies)
       Additional dependencies from enclosing menus and ifs:
        (no additional dependencies)
-      Location: Kconfiglib/tests/Ktext:63""")
+      Location: Kconfiglib/tests/Ktext:73""")
 
     verify_print(c.get_comments()[1], """
       Comment
@@ -736,7 +767,7 @@ def run_selftests():
       Dependencies: !BASIC (value: "y")
       Additional dependencies from enclosing menus and ifs:
        !DUMMY (value: "y")
-      Location: Kconfiglib/tests/Ktext:66""")
+      Location: Kconfiglib/tests/Ktext:76""")
 
     verify_equals(c["NO_HELP"].get_help(), None)
     verify_equals(c["EMPTY_HELP"].get_help(), "")
