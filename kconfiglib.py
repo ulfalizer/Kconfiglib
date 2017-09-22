@@ -3269,7 +3269,8 @@ def _make_and(e1, e2):
     """Constructs an AND (&&) expression. Performs trivial simplification.
     Nones equate to 'y'.
 
-    Note: returns None if e1 == e2 == None."""
+    Returns None if e1 == e2 == None, so that ANDing two nonexistent
+    expressions gives a nonexistent expression."""
     if e1 is None or e1 == "y":
         return e2
     if e2 is None or e2 == "y":
