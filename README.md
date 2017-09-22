@@ -103,7 +103,7 @@ to the test suite would make sense.
    expression format is pretty simple for example: `A && B && (!C || D == 3)` is
    represented as the tuple structure
    `(AND, A, (AND, B, (OR, (NOT, C), (EQUAL, D, 3))))`; see the
-   `Config._parse_expr()` docstring).
+   `Config._parse_expr()` docstring.
 
    It's hard to come up with good APIs for dealing with expressions given how
    general they are, so feel free to look at them directly if none of the
