@@ -1102,9 +1102,9 @@ class Config(object):
         kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
         the operand is returned directly. This also goes for subexpressions.
 
-        As an example, A && B && (!C || D == 3) is represented as
-        (AND A (AND B (OR (NOT C) (EQUAL D 3)))), with the Symbol objects
-        stored directly in the expression.
+        As an example, A && B && (!C || D == 3) is represented as the tuple
+        structure (AND, A, (AND, B, (OR, (NOT, C), (EQUAL, D, 3)))), with the
+        Symbol objects stored directly in the expression.
 
         feed: _Feed instance containing the tokens for the expression.
 
