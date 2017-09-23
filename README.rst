@@ -19,7 +19,7 @@ Installation
 Installation with pip
 ~~~~~~~~~~~~~~~~~~~~~
 
-Kconfiglib is available on `PyPI <https://pypi.python.org/pypi>`_ and can be
+Kconfiglib is available on `PyPI <https://pypi.python.org/pypi/kconfiglib/>`_ and can be
 installed with
 
 .. code::
