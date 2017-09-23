@@ -95,7 +95,7 @@ Test suite
 
 The test suite is run with
 
-.. code:: sh
+.. code::
 
     $ python(3) Kconfiglib/testsuite.py
 
