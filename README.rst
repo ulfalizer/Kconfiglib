@@ -113,7 +113,7 @@ The test suite is run with
 
     $ python(3) Kconfiglib/testsuite.py
 
-It must be run from the top-level kernel directory, and require that the git repository has
+It must be run from the top-level kernel directory, and requires that the git repository has
 been cloned into it and ``makefile.patch`` applied.
 
 **NOTE: Some tests currently overwrite .config in the kernel root, so make sure to back it up.**
