@@ -804,18 +804,22 @@ class Config(object):
                 _parse_error(line, "unrecognized construct",
                              line_feeder.filename, line_feeder.linenr)
 
+    def _parse_cond(self, tokens, stmt, line, filename, linenr):
+        """Parses an optional 'if <expr>' construct and returns the parsed
+        <expr>, or None if the next token is not T_IF."""
+        return self._parse_expr(tokens, stmt, line, filename, linenr) \
+               if tokens.check(T_IF) else None
+
+    def _parse_val_and_cond(self, tokens, stmt, line, filename, linenr):
+        """Parses '<expr1> if <expr2>' constructs, where the 'if' part is
+        optional. Returns a tuple containing the parsed expressions, with
+        None as the second element if the 'if' part is missing."""
+        return (self._parse_expr(tokens, stmt, line, filename, linenr, False),
+                self._parse_cond(tokens, stmt, line, filename, linenr))
+
     def _parse_properties(self, line_feeder, stmt, deps, visible_if_deps):
         """Parsing of properties for symbols, menus, choices, and comments.
         Takes care of propagating dependencies from enclosing menus and ifs."""
-
-        def parse_val_and_cond(tokens, line, filename, linenr):
-            """Parses '<expr1> if <expr2>' constructs, where the 'if' part is
-            optional. Returns a tuple containing the parsed expressions, with
-            None as the second element if the 'if' part is missing."""
-            return (self._parse_expr(tokens, stmt, line, filename, linenr,
-                                     False),
-                    self._parse_expr(tokens, stmt, line, filename, linenr)
-                    if tokens.check(T_IF) else None)
 
         # In case the symbol is defined in multiple locations, we need to
         # remember what prompts, defaults, selects, and implies are new for
@@ -897,9 +901,8 @@ class Config(object):
                 stmt.selected_syms.add(target)
 
                 new_selects.append(
-                    (target,
-                     self._parse_expr(tokens, stmt, line, filename, linenr)
-                     if tokens.check(T_IF) else None))
+                    (target, self._parse_cond(tokens, stmt, line, filename,
+                                              linenr)))
 
             elif t0 == T_IMPLY:
                 target = tokens.get_next()
@@ -908,43 +911,44 @@ class Config(object):
                 stmt.implied_syms.add(target)
 
                 new_implies.append(
-                    (target,
-                     self._parse_expr(tokens, stmt, line, filename, linenr)
-                     if tokens.check(T_IF) else None))
+                    (target, self._parse_cond(tokens, stmt, line, filename,
+                                              linenr)))
 
             elif t0 in (T_BOOL, T_TRISTATE, T_INT, T_HEX, T_STRING):
                 stmt.type = TOKEN_TO_TYPE[t0]
                 if tokens.peek_next() is not None:
-                    new_prompt = parse_val_and_cond(tokens, line, filename,
-                                                    linenr)
+                    new_prompt = self._parse_val_and_cond(tokens, stmt, line,
+                                                          filename, linenr)
 
             elif t0 == T_DEFAULT:
-                new_def_exprs.append(parse_val_and_cond(tokens, line, filename,
-                                                        linenr))
+                new_def_exprs.append(self._parse_val_and_cond(
+                                         tokens, stmt, line, filename, linenr))
 
             elif t0 in (T_DEF_BOOL, T_DEF_TRISTATE):
                 stmt.type = TOKEN_TO_TYPE[t0]
                 if tokens.peek_next() is not None:
-                    new_def_exprs.append(parse_val_and_cond(tokens, line,
-                                                            filename, linenr))
+                    new_def_exprs.append(self._parse_val_and_cond(
+                                             tokens, stmt, line, filename,
+                                             linenr))
 
             elif t0 == T_PROMPT:
                 # 'prompt' properties override each other within a single
                 # definition of a symbol, but additional prompts can be added
                 # by defining the symbol multiple times; hence 'new_prompt'
                 # instead of 'prompt'.
-                new_prompt = parse_val_and_cond(tokens, line, filename, linenr)
+                new_prompt = self._parse_val_and_cond(tokens, stmt, line,
+                                                      filename, linenr)
 
             elif t0 == T_RANGE:
                 low = tokens.get_next()
                 high = tokens.get_next()
+
                 stmt.referenced_syms.add(low)
                 stmt.referenced_syms.add(high)
 
                 stmt.ranges.append(
-                    (low, high,
-                     self._parse_expr(tokens, stmt, line, filename, linenr)
-                     if tokens.check(T_IF) else None))
+                    (low, high, self._parse_cond(tokens, stmt, line, filename,
+                                                 linenr)))
 
             elif t0 == T_OPTION:
                 if tokens.check(T_ENV) and tokens.check(T_EQUAL):
@@ -1119,7 +1123,7 @@ class Config(object):
         linenr (default: None): The line number containing the expression.
 
         transform_m (default: False): Determines if 'm' should be rewritten to
-           'm && MODULES' -- see parse_val_and_cond().
+           'm && MODULES' -- see _parse_val_and_cond().
 
         Expression grammar, in decreasing order of precedence:
 
