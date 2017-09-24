@@ -8,13 +8,14 @@ with open(os.path.join(here_dir, "README.rst")) as f:
 setuptools.setup(
     name="kconfiglib",
     # MAJOR.MINOR.MAINTENANCE per http://semver.org
-    version="1.0.1",
+    version="1.0.2",
     description="A flexible Python Kconfig parser",
     long_description=long_description,
     url="https://github.com/ulfalizer/Kconfiglib",
     author='Ulf "Ulfalizer" Magnusson',
     author_email="ulfalizer@gmail.com",
     keywords="kconfig, kbuild",
+    license="ISC",
     py_modules=["kconfiglib"],
     # This python_requires should be correct, but my setuptools is too old to
     # test it, so play it safe and leave it out for now. It's unlikely that
