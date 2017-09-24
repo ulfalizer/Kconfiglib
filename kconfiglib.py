@@ -182,14 +182,15 @@ class Config(object):
         if self.config_prefix is None:
             self.config_prefix = "CONFIG_"
 
+        self.filename = filename
+
         # See Config.__init__(). We need this for get_defconfig_filename().
         self.srctree = os.environ.get("srctree")
-        if self.srctree is None:
-            self.srctree = "."
 
-        self.filename = filename
-        self.base_dir = self.srctree if base_dir is None else \
-                        os.path.expandvars(base_dir)
+        if base_dir is None:
+            self.base_dir = "." if self.srctree is None else self.srctree
+        else:
+            self.base_dir = os.path.expandvars(base_dir)
 
         # The 'mainmenu' text
         self.mainmenu_text = None
@@ -287,13 +288,14 @@ class Config(object):
         file in the list given in a symbol having 'option defconfig_list' set.
         $-references to symbols will be expanded ("$FOO bar" -> "foo bar" if
         FOO has the value "foo"). Returns None in case of no defconfig file.
-        Setting 'option defconfig_list' on multiple symbols currently results
-        in undefined behavior.
+        Setting 'option defconfig_list' on multiple symbols ignores the symbols
+        past the first one (and prints a warning).
 
         If the environment variable 'srctree' was set when the Config was
-        created, get_defconfig_filename() will first look relative to that
-        directory before looking in the current directory; see
-        Config.__init__().
+        created, each defconfig specified with an absolute path will be
+        searched for in $srcdir if it is not found at the specified path (i.e.,
+        if /foo/defconfig is not found, $srctree/foo/defconfig will be looked
+        up).
 
         WARNING: A wart here is that scripts/kconfig/Makefile sometimes uses
         the --defconfig=<defconfig> option when calling the C implementation of
@@ -305,16 +307,22 @@ class Config(object):
         if self.defconfig_sym is None:
             return None
         for filename, cond_expr in self.defconfig_sym.def_exprs:
-            if self._eval_expr(cond_expr) == "y":
+            if self._eval_expr(cond_expr) != "n":
                 filename = self._expand_sym_refs(filename)
-                # We first look in $srctree. os.path.join() won't work here as
-                # an absolute path in filename would override $srctree.
-                srctree_filename = os.path.normpath(self.srctree + "/" +
-                                                    filename)
-                if os.path.exists(srctree_filename):
-                    return srctree_filename
                 if os.path.exists(filename):
                     return filename
+                # defconfig not found. If the path is an absolute path and
+                # $srctree is set, we also look in $srctree.
+                if os.path.isabs(filename) and self.srctree is not None:
+                    # The os.path.relpath() de-absolutizes the path, e.g.
+                    # /foo/bar/baz -> foo/bar/baz. os.path.join() ignores the
+                    # first argument if the second argument is an absolute
+                    # path.
+                    filename = os.path.join(self.srctree,
+                                            os.path.relpath(filename, os.sep))
+                    if os.path.exists(filename):
+                        return filename
+
         return None
 
     def get_symbol(self, name):
@@ -587,9 +595,9 @@ class Config(object):
                       "Value of $SRCARCH at creation time     : " +
                         ("(not set)" if self.srcarch is None else
                                         self.srcarch),
-                      "Source tree (derived from $srctree;",
-                      "defaults to '.' if $srctree isn't set) : " +
-                        self.srctree,
+                      "Value of $srctree at creation time     : " +
+                        ("(not set)" if self.srctree is None else
+                                        self.srctree),
                       "Most recently loaded .config           : " +
                         ("(no .config loaded)"
                           if self.config_filename is None else
@@ -975,7 +983,13 @@ class Config(object):
                         stmt.cached_val = os.environ[env_var]
 
                 elif tokens.check(T_DEFCONFIG_LIST):
-                    self.defconfig_sym = stmt
+                    if self.defconfig_sym is None:
+                        self.defconfig_sym = stmt
+                    else:
+                        self._warn("'option defconfig_list' set on multiple "
+                                   "symbols ({0} and {1}). Only {0} will be "
+                                   "used."
+                                   .format(self.defconfig_sym.name, stmt.name))
 
                 elif tokens.check(T_MODULES):
                     # To reduce warning spam, only warn if 'option modules' is

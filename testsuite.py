@@ -539,8 +539,7 @@ def run_selftests():
       Base directory                         : .
       Value of $ARCH at creation time        : (not set)
       Value of $SRCARCH at creation time     : (not set)
-      Source tree (derived from $srctree;
-      defaults to '.' if $srctree isn't set) : .
+      Value of $srctree at creation time     : (not set)
       Most recently loaded .config           : (no .config loaded)
       Print warnings                         : true
       Print assignments to undefined symbols : false""")
@@ -560,8 +559,7 @@ def run_selftests():
       Base directory                         : foobar
       Value of $ARCH at creation time        : foo
       Value of $SRCARCH at creation time     : bar
-      Source tree (derived from $srctree;
-      defaults to '.' if $srctree isn't set) : baz
+      Value of $srctree at creation time     : baz
       Most recently loaded .config           : Kconfiglib/tests/empty
       Print warnings                         : false
       Print assignments to undefined symbols : true""")
@@ -1465,6 +1463,20 @@ def run_selftests():
            "get_defconfig_filename() should return the existent file "
            "Kconfiglib/tests/defconfig_2")
 
+    # Should also look relative to $srctree if the defconfig is an absolute
+    # path and not found
+
+    del os.environ["srctree"]
+    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_srctree")
+    verify(c.get_defconfig_filename() == "Kconfiglib/tests/defconfig_2",
+           "get_defconfig_filename() returned wrong file with $srctree unset")
+
+    os.environ["srctree"] = "Kconfiglib/tests"
+    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_srctree")
+    verify(c.get_defconfig_filename() ==
+               "Kconfiglib/tests/sub/defconfig_in_sub",
+           "get_defconfig_filename() returned wrong file with $srctree set")
+
     #
     # get_mainmenu_text()
     #
@@ -1757,6 +1769,18 @@ def run_selftests():
     #
     # get_arch/srcarch/srctree/kconfig_filename()
     #
+
+    del os.environ["ARCH"]
+    del os.environ["SRCARCH"]
+    del os.environ["srctree"]
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kmisc", print_warnings = False)
+    arch = c.get_arch()
+    verify(arch is None, "Expected None arch, got '{}'".format(arch))
+    srcarch = c.get_srcarch()
+    verify(srcarch is None, "Expected None srcarch, got '{}'".format(srcarch))
+    srctree = c.get_srctree()
+    verify(srctree is None, "Expected None srctree, got '{}'".format(srctree))
 
     os.environ["ARCH"] = "ARCH value"
     os.environ["SRCARCH"] = "SRCARCH value"
