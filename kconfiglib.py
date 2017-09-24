@@ -309,13 +309,13 @@ class Config(object):
         for filename, cond_expr in self.defconfig_sym.def_exprs:
             if self._eval_expr(cond_expr) != "n":
                 filename = self._expand_sym_refs(filename)
-                if os.path.exists(filename):
+                if os.access(filename, os.R_OK):
                     return filename
                 # defconfig not found. If the path is a relative path and
                 # $srctree is set, we also look in $srctree.
                 if not os.path.isabs(filename) and self.srctree is not None:
                     filename = os.path.join(self.srctree, filename)
-                    if os.path.exists(filename):
+                    if os.access(filename, os.R_OK):
                         return filename
 
         return None
