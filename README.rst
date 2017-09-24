@@ -140,7 +140,7 @@ Notes
 * **Useful information can be extracted from internal data structures.** The
   expression format is pretty simple for example: ``A && B && (!C || D == 3)`` is
   represented as the tuple structure
-  ``(AND, A, (AND, B, (OR, (NOT, C), (EQUAL, D, 3))))``; see the
+  ``(_AND, A, (_AND, B, (_OR, (_NOT, C), (_EQUAL, D, 3))))``; see the
   ``Config._parse_expr()`` docstring.
 
   It's hard to come up with good APIs for dealing with expressions given how
