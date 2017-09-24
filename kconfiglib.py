@@ -3211,7 +3211,7 @@ class _FileFeed(object):
 
     def __init__(self, filename):
         self.filename = _clean_up_path(filename)
-        with open(filename, "r") as f:
+        with open(filename) as f:
             # No interleaving of I/O and processing yet. Don't know if it would
             # help.
             self.lines = f.readlines()
