@@ -179,7 +179,7 @@ Notes
     Recreating such menus is awkward.
 
     There is already basic support internally though, because it's needed to
-    get obscure choice behavior right. See ``_determine_actual_symbols()`` and
+    get obscure ``choice`` behavior right. See ``_determine_actual_symbols()`` and
     its helper ``_has_auto_menu_dep_on()``.
 
 * Using `__slots__ <https://docs.python.org/3.1/reference/datamodel.html#slots>`_
