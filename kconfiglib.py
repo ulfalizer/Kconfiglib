@@ -292,9 +292,9 @@ class Config(object):
         past the first one (and prints a warning).
 
         If the environment variable 'srctree' was set when the Config was
-        created, each defconfig specified with an absolute path will be
+        created, each defconfig specified with a relative path will be
         searched for in $srcdir if it is not found at the specified path (i.e.,
-        if /foo/defconfig is not found, $srctree/foo/defconfig will be looked
+        if foo/defconfig is not found, $srctree/foo/defconfig will be looked
         up).
 
         WARNING: A wart here is that scripts/kconfig/Makefile sometimes uses
@@ -311,15 +311,10 @@ class Config(object):
                 filename = self._expand_sym_refs(filename)
                 if os.path.exists(filename):
                     return filename
-                # defconfig not found. If the path is an absolute path and
+                # defconfig not found. If the path is a relative path and
                 # $srctree is set, we also look in $srctree.
-                if os.path.isabs(filename) and self.srctree is not None:
-                    # The os.path.relpath() de-absolutizes the path, e.g.
-                    # /foo/bar/baz -> foo/bar/baz. os.path.join() ignores the
-                    # first argument if the second argument is an absolute
-                    # path.
-                    filename = os.path.join(self.srctree,
-                                            os.path.relpath(filename, os.sep))
+                if not os.path.isabs(filename) and self.srctree is not None:
+                    filename = os.path.join(self.srctree, filename)
                     if os.path.exists(filename):
                         return filename
 
