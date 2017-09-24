@@ -20,11 +20,11 @@ Installation with pip
 ~~~~~~~~~~~~~~~~~~~~~
 
 Kconfiglib is available on `PyPI <https://pypi.python.org/pypi/kconfiglib/>`_ and can be
-installed with
+installed with e.g.
 
 .. code::
 
-    $ pip(3) install kconfiglib
+    $ pip(3) install kconfiglib --user
 
 All releases have a corresponding tag in the git repository, e.g. ``v1.0.1``.
 `Semantic versioning <http://semver.org/>`_ is used.
