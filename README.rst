@@ -26,7 +26,7 @@ installed with
 
     $ pip(3) install kconfiglib
 
-All releases have a corresponding tag in the git repository, e.g. ``v1.0.0``.
+All releases have a corresponding tag in the git repository, e.g. ``v1.0.1``.
 `Semantic versioning <http://semver.org/>`_ is used.
 
 Installation for the Linux kernel
