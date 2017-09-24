@@ -689,8 +689,17 @@ class Config(object):
             elif t0 == T_SOURCE:
                 kconfig_file = tokens.get_next()
                 exp_kconfig_file = self._expand_sym_refs(kconfig_file)
-                f = os.path.join(self.base_dir, exp_kconfig_file)
-                if not os.path.exists(f):
+
+                # Hack: Avoid passing on a "./" prefix in the common case of
+                # 'base_dir' defaulting to ".", just to give less awkward
+                # results from e.g. get_def/ref_locations(). Maybe this could
+                # be handled in a nicer way.
+                if self.base_dir == ".":
+                    filename = exp_kconfig_file
+                else:
+                    filename = os.path.join(self.base_dir, exp_kconfig_file)
+
+                if not os.path.exists(filename):
                     raise IOError('{}:{}: sourced file "{}" (expands to "{}") '
                                   "not found. Perhaps base_dir (argument to "
                                   'Config.__init__(), currently "{}") is set '
@@ -700,7 +709,8 @@ class Config(object):
                                           kconfig_file, exp_kconfig_file,
                                           self.base_dir))
                 # Add items to the same block
-                self._parse_file(f, parent, deps, visible_if_deps, block)
+                self._parse_file(filename, parent, deps, visible_if_deps,
+                                 block)
 
             elif t0 == end_marker:
                 # We have reached the end of the block
@@ -3210,7 +3220,7 @@ class _FileFeed(object):
     __slots__ = ['filename', 'lines', 'length', 'linenr']
 
     def __init__(self, filename):
-        self.filename = _clean_up_path(filename)
+        self.filename = filename
         with open(filename) as f:
             # No interleaving of I/O and processing yet. Don't know if it would
             # help.
@@ -3424,15 +3434,9 @@ def _comment(s):
         return res + "#"
     return res
 
-def _clean_up_path(path):
-    """Strips an initial "./" and any trailing slashes from 'path'."""
-    if path.startswith("./"):
-        path = path[2:]
-    return path.rstrip("/")
-
 def _stderr_msg(msg, filename, linenr):
     if filename is not None:
-        sys.stderr.write("{}:{}: ".format(_clean_up_path(filename), linenr))
+        sys.stderr.write("{}:{}: ".format(filename, linenr))
     sys.stderr.write(msg + "\n")
 
 def _tokenization_error(s, filename, linenr):
