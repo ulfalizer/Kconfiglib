@@ -445,13 +445,8 @@ class Config(object):
                        .format(name, old_user_val, new_user_val),
                        filename, linenr)
 
-        # Invalidate everything to keep things simple. It might be possible to
-        # improve performance for the case where multiple configurations are
-        # loaded by only invalidating a symbol (and its dependent symbols) if
-        # the new user value differs from the old. One complication would be
-        # that symbols not mentioned in the .config must lose their user value
-        # when replace = True, which is the usual case.
         if replace:
+            # This invalidates all symbols as a side effect
             self.unset_user_values()
         else:
             self._invalidate_all()
@@ -563,6 +558,8 @@ class Config(object):
         """Resets the values of all symbols, as if Config.load_config() or
         Symbol.set_user_value() had never been called."""
         for sym in self._syms_iter():
+            # We're iterating over all symbols already, so no need for symbols
+            # to invalidate their dependent symbols
             sym._unset_user_value_no_recursive_invalidate()
 
     def set_print_warnings(self, print_warnings):
@@ -2320,9 +2317,8 @@ class Symbol(Item):
         v: The user value to give to the symbol."""
         self._set_user_value_no_invalidate(v, False)
 
-        # There might be something more efficient you could do here, but play
-        # it safe.
         if self._name == "MODULES":
+            # Changing MODULES has wide-ranging effects
             self._config._invalidate_all()
             return
 
@@ -2495,6 +2491,8 @@ class Symbol(Item):
 
     def _invalidate(self):
         if self._is_special:
+            # Special symbols never change value and keep their value in
+            # _cached_val
             return
 
         if self._is_choice_sym:
@@ -2618,7 +2616,7 @@ class Symbol(Item):
 
         if self._is_choice_sym:
             # Choice symbols also depend (recursively) on their siblings. The
-            # siblings are not included in '_dep' to avoid dependency loops.
+            # siblings are not included in _dep to avoid dependency loops.
             for sibling in self._parent._actual_symbols:
                 if sibling is not self:
                     res.add(sibling)
