@@ -2472,6 +2472,10 @@ class Symbol(Item):
         # Set to true when _make_conf() is called on a symbol, so that symbols
         # defined in multiple locations only get one .config entry. We need to
         # reset it prior to writing out a new .config.
+        #
+        # The C implementation reuses _write_to_conf for this, but we cache
+        # _write_to_conf together with the value and don't invalidate cached
+        # values writing .config files, so that won't work.
         self._already_written = False
         # This is set to True for "actual" choice symbols; see
         # Choice._determine_actual_symbols().
