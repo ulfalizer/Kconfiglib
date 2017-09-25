@@ -1210,7 +1210,7 @@ class Config(object):
             # "m" && MODULES.
             if next_token not in _TOKEN_TO_RELATION:
                 if self._transform_m and (token is self._m or token == "m"):
-                    return (_AND, "m", self._sym_lookup("MODULES"))
+                    return (_AND, "m", self._lookup_sym("MODULES"))
                 return token
 
             relation = _TOKEN_TO_RELATION[feed.get_next()]
@@ -1234,7 +1234,7 @@ class Config(object):
 
     def _tokenize(self, s, for_eval, filename=None, linenr=None):
         """Returns a _Feed instance containing tokens derived from the string
-        's'. Registers any new symbols encountered (via _sym_lookup()).
+        's'. Registers any new symbols encountered (via _lookup_sym()).
 
         (I experimented with a pure regular expression implementation, but it
         came out slower, less readable, and wouldn't have been as flexible.)
@@ -1306,10 +1306,10 @@ class Config(object):
                     # treated as a string after certain tokens
                     append(name)
                 else:
-                    # It's a symbol name. _sym_lookup() will take care of
+                    # It's a symbol name. _lookup_sym() will take care of
                     # allocating a new Symbol instance if it's the first time
                     # we see it.
-                    sym = self._sym_lookup(name, for_eval)
+                    sym = self._lookup_sym(name, for_eval)
 
                     # Also handles 'menuconfig'
                     if previous == _T_CONFIG:
@@ -1419,7 +1419,7 @@ class Config(object):
 
         return _Feed(tokens)
 
-    def _sym_lookup(self, name, for_eval=False):
+    def _lookup_sym(self, name, for_eval=False):
         """Fetches the symbol 'name' from the symbol table, creating and
         registering it if it does not exist. If 'for_eval' is True, the symbol
         won't be added to the symbol table if it does not exist -- this is for
