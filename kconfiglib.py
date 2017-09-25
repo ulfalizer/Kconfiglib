@@ -672,7 +672,9 @@ class Config(object):
             # Cases are ordered roughly by frequency, which speeds things up a
             # bit
 
-            if t0 in (_T_CONFIG, _T_MENUCONFIG):
+            # This also handles 'menuconfig'. See the comment in the token
+            # definitions.
+            if t0 == _T_CONFIG:
                 # The tokenizer will automatically allocate a new Symbol object
                 # for any new names it encounters, so we don't need to worry
                 # about that here.
@@ -1305,7 +1307,8 @@ class Config(object):
                     # we see it.
                     sym = self._sym_lookup(name, for_eval)
 
-                    if previous in (_T_CONFIG, _T_MENUCONFIG):
+                    # Also handles 'menuconfig'
+                    if previous == _T_CONFIG:
                         # If the previous token is _T_(MENU)CONFIG
                         # ("(menu)config"), we're tokenizing the first line of
                         # a symbol definition, and should remember this as a
@@ -3518,7 +3521,6 @@ def _internal_error(msg):
     _T_LESS_EQUAL,
     _T_MAINMENU,
     _T_MENU,
-    _T_MENUCONFIG,
     _T_MODULES,
     _T_NOT,
     _T_ON,
@@ -3534,7 +3536,7 @@ def _internal_error(msg):
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(44)
+) = range(43)
 
 # Keyword to token map. Note that the get() method is assigned directly as a
 # small optimization.
@@ -3561,7 +3563,13 @@ _get_keyword = {
     "int":            _T_INT,
     "mainmenu":       _T_MAINMENU,
     "menu":           _T_MENU,
-    "menuconfig":     _T_MENUCONFIG,
+
+    # 'menuconfig' only deals with presentation in the configuration interface
+    # and doesn't affect evaluation semantics, so treat it the same as
+    # 'config'. Perhaps some presentation-related support could be added as
+    # well.
+    "menuconfig":     _T_CONFIG,
+
     "modules":        _T_MODULES,
     "on":             _T_ON,
     "option":         _T_OPTION,
