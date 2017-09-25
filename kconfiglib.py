@@ -2021,7 +2021,7 @@ class Symbol(Item):
                         new_val = "y" if choice.get_selection() is self \
                                   else "n"
                     elif mode == "m":
-                        if self._user_val == "m" or self._user_val == "y":
+                        if self._user_val in ("m", "y"):
                             new_val = "m"
 
             else:
