@@ -3115,7 +3115,7 @@ class Comment(Item):
                                      "(no additional dependencies)")
 
         return _lines("Comment",
-                      "Text: " + str(self._text),
+                      "Text: " + self._text,
                       "Dependencies: " + dep_str,
                       "Additional dependencies from enclosing menus and ifs:",
                       additional_deps_str,
