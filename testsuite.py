@@ -1825,9 +1825,9 @@ def run_selftests():
 
     choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
       choice_bool_m, choice_tristate_m, choice_defaults, \
-      choice_no_type_bool, choice_no_type_tristate, \
-      choice_missing_member_type_1, choice_missing_member_type_2, \
-      choice_weird_syms = c.get_choices()
+      choice_defaults_not_visible, choice_no_type_bool, \
+      choice_no_type_tristate, choice_missing_member_type_1, \
+      choice_missing_member_type_2, choice_weird_syms = c.get_choices()
 
     for choice in (choice_bool, choice_bool_opt, choice_bool_m,
                    choice_defaults):
@@ -1900,6 +1900,13 @@ def run_selftests():
            "User selection changed default selection - shouldn't have")
     verify(choice_defaults.get_selection() is c["OPT_1"],
            "User selection should override defaults")
+
+    verify(choice_defaults_not_visible.get_selection_from_defaults()
+           is c["OPT_8"] and
+           choice_defaults_not_visible.get_selection()
+           is c["OPT_8"],
+           "Non-visible choice symbols should cause the next default to be "
+           "considered")
 
     # Test "y" mode selection
 

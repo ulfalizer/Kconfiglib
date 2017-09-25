@@ -75,6 +75,26 @@ config OPT_4
     tristate "OPT_4"
 endchoice
 
+choice DEFAULTS_NOT_VISIBLE
+    bool "defaults not visible"
+    # Skipped due to condition
+    default OPT_6 if n
+    # Skipped because OPT_7 is not visible
+    default OPT_7
+    # This one should apply
+    default OPT_8
+config OPT_5
+    tristate "OPT_5"
+config OPT_6
+    tristate "OPT_6"
+config OPT_7
+    tristate "OPT_7" if n
+config OPT_8
+    tristate "OPT_8"
+config OPT_9
+    tristate "OPT_9"
+endchoice
+
 # Choices without an explicitly specified type should get the type of the first
 # symbol with a type
 

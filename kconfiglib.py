@@ -2872,23 +2872,19 @@ class Choice(Item):
         """Like Choice.get_selection(), but acts as if no symbol has been
         selected by the user and no 'optional' flag is in effect."""
 
-        if not self._actual_symbols:
-            return None
+        # Does any 'default SYM [if <cond>]' property apply?
+        for sym, cond_expr in self._def_exprs:
+            if (self._config._eval_expr(cond_expr) != "n" and
+                # Must be visible too
+                _get_visibility(sym) != "n"):
+                return sym
 
-        for symbol, cond_expr in self._def_exprs:
-            if self._config._eval_expr(cond_expr) != "n":
-                chosen_symbol = symbol
-                break
-        else:
-            chosen_symbol = self._actual_symbols[0]
-
-        # Is the chosen symbol visible?
-        if _get_visibility(chosen_symbol) != "n":
-            return chosen_symbol
         # Otherwise, pick the first visible symbol
         for sym in self._actual_symbols:
             if _get_visibility(sym) != "n":
                 return sym
+
+        # Couldn't find a default
         return None
 
     def get_user_selection(self):
