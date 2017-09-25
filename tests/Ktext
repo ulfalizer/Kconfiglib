@@ -80,10 +80,20 @@ endif
 config NO_HELP
     bool
 
+choice NO_HELP_CHOICE
+config FOO
+endchoice
+
 config EMPTY_HELP
   bool
   help
 config DUMMY
+
+choice EMPTY_HELP_CHOICE
+  bool
+  help
+config DUMMY2
+endchoice
 
 config S
     bool

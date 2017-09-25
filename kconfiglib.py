@@ -213,22 +213,15 @@ class Config(object):
         self._print_undef_assign = print_undef_assign
 
         # When parsing properties, we stop on the first (non-empty)
-        # non-property line. These variables hold that line and its tokens so
-        # that we don't have to re-tokenize the line later. This isn't just an
-        # optimization: We record references to symbols during tokenization, so
-        # tokenizing twice would cause double registration.
+        # non-property line. _end_line and _end_line_tokens hold that line and
+        # its tokens so that we don't have to re-tokenize the line later. This
+        # isn't just an optimization: We record references to symbols during
+        # tokenization, so tokenizing twice would cause double registration.
         #
         # self._end_line doubles as a flag where None means we don't have a
         # cached tokenized line.
         self._end_line = None
-        self._end_line_tokens = None
-
-        # See the comment in _parse_expr().
-        self._cur_item = None
-        self._line = None
-        self._filename = None
-        self._linenr = None
-        self._transform_m = None
+        # self.end_line_tokens is set later during parsing
 
         # Parse the Kconfig files
         self._top_block = []
@@ -2410,7 +2403,11 @@ class Symbol(Item):
         """Symbol constructor -- not intended to be called directly by
         Kconfiglib clients."""
 
-        self._name = None
+        # These attributes are always set on the instance from outside and
+        # don't need defaults:
+        #   _config
+        #   _name
+
         self._type = UNKNOWN
         self._prompts = []
         self._def_exprs = [] # 'default' properties
@@ -2418,7 +2415,6 @@ class Symbol(Item):
         self._help = None # Help text
         self._rev_dep = "n" # Reverse (select-related) dependencies
         self._weak_rev_dep = "n" # Weak reverse (imply-related) dependencies
-        self._config = None
         self._parent = None
 
         self._user_val = None # Value set by user
@@ -2751,28 +2747,30 @@ class Menu(Item):
         """Menu constructor -- not intended to be called directly by
         Kconfiglib clients."""
 
-        self._title = None
-        self._dep_expr = None
+        # These attributes are always set on the instance from outside and
+        # don't need defaults:
+        #   _config
+        #   _parent
+        #   _filename
+        #   _linenr
+        #   _title
+        #   _all_referenced_syms
+        #   _deps_from_containing
+        #   _dep_expr
+
+        # Dependencies specified with 'visible_if'
         self._visible_if_expr = None
-        self._block = [] # List of contained items
-        self._config = None
-        self._parent = None
 
         # Dependency expression without dependencies from enclosing menus and
         # ifs propagated
         self._orig_deps = None
 
-        # Dependencies inherited from containing menus and ifs
-        self._deps_from_containing = None
         # The set of symbols referenced by this menu (see
         # get_referenced_symbols())
         self._referenced_syms = set()
-        # Like _referenced_syms, but includes symbols from
-        # dependencies inherited from enclosing menus and ifs
-        self._all_referenced_syms = None
 
-        self._filename = None
-        self._linenr = None
+        # Contained items
+        self._block = []
 
     def _make_conf(self, append_fn):
         if self._config._eval_expr(self._dep_expr) != "n" and \
@@ -2967,37 +2965,31 @@ class Choice(Item):
         """Choice constructor -- not intended to be called directly by
         Kconfiglib clients."""
 
+        # These attributes are always set on the instance from outside and
+        # don't need defaults:
+        #   _config
+        #   _parent
+        #   _deps_from_containing
+        #   _all_referenced_syms
+        #   _actual_symbols (set in _determine_actual_symbols())
+
         self._name = None # Yes, choices can be named
         self._type = UNKNOWN
         self._prompts = []
         self._def_exprs = [] # 'default' properties
         self._help = None # Help text
-        self._block = [] # List of contained items
-        self._config = None
-        self._parent = None
 
         self._user_val = None
         self._user_mode = None
-
-        # We need to filter out symbols that appear within the choice block but
-        # are not considered choice items (see
-        # Choice._determine_actual_symbols()) This list holds the "actual"
-        # choice items.
-        self._actual_symbols = []
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
         self._orig_prompts = []
         self._orig_def_exprs = []
 
-        # Dependencies inherited from containing menus and ifs
-        self._deps_from_containing = None
         # The set of symbols referenced by this choice (see
         # get_referenced_symbols())
         self._referenced_syms = set()
-        # Like _referenced_syms, but includes symbols from
-        # dependencies inherited from enclosing menus and ifs
-        self._all_referenced_syms = set()
 
         # See Choice.get_def_locations()
         self._def_locations = []
@@ -3007,6 +2999,9 @@ class Choice(Item):
         self._cached_visibility = None
 
         self._optional = False
+
+        # Contained items
+        self._block = []
 
     def _determine_actual_symbols(self):
         """If a symbol's visibility depends on the preceding symbol within a
@@ -3025,6 +3020,8 @@ class Choice(Item):
         complexity is to be future-proof in the event that
         drivers/usb/gadget/Kconfig turns even more sinister. It might very well
         be overkilling things (especially if that file is refactored ;)."""
+
+        self._actual_symbols = []
 
         # Items might depend on each other in a tree structure, so we need a
         # stack to keep track of the current tentative parent
@@ -3134,26 +3131,24 @@ class Comment(Item):
         """Comment constructor -- not intended to be called directly by
         Kconfiglib clients."""
 
-        self._text = None
-        self._dep_expr = None
-        self._config = None
-        self._parent = None
+        # These attributes are always set on the instance from outside and
+        # don't need defaults:
+        #   _config
+        #   _parent
+        #   _filename
+        #   _linenr
+        #   _text
+        #   _all_referenced_syms
+        #   _deps_from_containing
+        #   _dep_expr
 
         # Dependency expression without dependencies from enclosing menus and
         # ifs propagated
         self._orig_deps = None
 
-        # Dependencies inherited from containing menus and ifs
-        self._deps_from_containing = None
         # The set of symbols referenced by this comment (see
         # get_referenced_symbols())
         self._referenced_syms = set()
-        # Like _referenced_syms, but includes symbols from
-        # dependencies inherited from enclosing menus and ifs
-        self._all_referenced_syms = None
-
-        self._filename = None
-        self._linenr = None
 
     def _make_conf(self, append_fn):
         if self._config._eval_expr(self._dep_expr) != "n":

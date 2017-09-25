@@ -553,6 +553,9 @@ def run_selftests():
     c.set_print_warnings(False)
     c.set_print_undef_assign(True)
 
+    choice_print, choice_no_help, choice_empty_help, choice_help = \
+        c.get_choices()
+
     verify_print(c, """
       Configuration
       File                                   : Kconfiglib/tests/Ktext
@@ -689,7 +692,7 @@ def run_selftests():
 
     # Printing of Choice
 
-    verify_print(c.get_choices()[0], """
+    verify_print(choice_print, """
       Choice
       Name (for named choices): (no name)
       Type            : bool
@@ -710,7 +713,7 @@ def run_selftests():
 
     c["CHOICE_ITEM_2"].set_user_value("y")
 
-    verify_print(c.get_choices()[0], """
+    verify_print(choice_print, """
       Choice
       Name (for named choices): (no name)
       Type            : bool
@@ -768,12 +771,14 @@ def run_selftests():
       Location: Kconfiglib/tests/Ktext:76""")
 
     verify_equals(c["NO_HELP"].get_help(), None)
+    verify_equals(choice_no_help.get_help(), None)
     verify_equals(c["EMPTY_HELP"].get_help(), "")
+    verify_equals(choice_empty_help.get_help(), "")
     verify_equals(c["HELP_TERMINATED_BY_COMMENT"].get_help(), "a\nb\nc\n")
     verify_equals(c["TRICKY_HELP"].get_help(),
                   "a\n b\n  c\n\n d\n  e\n   f\n\n\ng\n h\n  i\n")
     verify_equals(c["S"].get_help(), "help for\nS\n")
-    verify_equals(c.get_choices()[1].get_help(), "help for\nC\n")
+    verify_equals(choice_help.get_help(), "help for\nC\n")
 
     verify_equals(c["S"].get_name(), "S")
     verify_equals(c.get_comments()[2].get_text(), "a comment")
