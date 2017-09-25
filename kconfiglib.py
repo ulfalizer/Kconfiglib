@@ -672,7 +672,7 @@ class Config(object):
             # Cases are ordered roughly by frequency, which speeds things up a
             # bit
 
-            if t0 == _T_CONFIG or t0 == _T_MENUCONFIG:
+            if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer will automatically allocate a new Symbol object
                 # for any new names it encounters, so we don't need to worry
                 # about that here.
@@ -1305,7 +1305,7 @@ class Config(object):
                     # we see it.
                     sym = self._sym_lookup(name, for_eval)
 
-                    if previous == _T_CONFIG or previous == _T_MENUCONFIG:
+                    if previous in (_T_CONFIG, _T_MENUCONFIG):
                         # If the previous token is _T_(MENU)CONFIG
                         # ("(menu)config"), we're tokenizing the first line of
                         # a symbol definition, and should remember this as a
@@ -1328,7 +1328,7 @@ class Config(object):
                 i += 1
 
                 # String literal (constant symbol)
-                if c == '"' or c == "'":
+                if c in "\"'":
                     if "\\" in s:
                         # Slow path: This could probably be sped up, but it's a
                         # very unusual case anyway.
@@ -1461,7 +1461,7 @@ class Config(object):
             return expr.get_value()
 
         if isinstance(expr, str):
-            return expr if (expr == "y" or expr == "m") else "n"
+            return expr if expr in ("m", "y") else "n"
 
         if expr[0] == _AND:
             ev1 = self._eval_expr_rec(expr[1])
@@ -1610,7 +1610,7 @@ class Config(object):
             left, right = right, left
         if not isinstance(left, Symbol):
             return None
-        if (relation == _EQUAL and (right == "y" or right == "m")) or \
+        if (relation == _EQUAL and right in ("m", "y")) or \
            (relation == _UNEQUAL and right == "n"):
             return left
         return None
@@ -2000,7 +2000,7 @@ class Symbol(Item):
         # This is easiest to calculate together with the value
         self._write_to_conf = False
 
-        if self._type == BOOL or self._type == TRISTATE:
+        if self._type in (BOOL, TRISTATE):
             # The visibility and mode (modules-only or single-selection) of
             # choice items will be taken into account in _get_visibility()
             if self._is_choice_sym:
@@ -2059,7 +2059,7 @@ class Symbol(Item):
                 self._config._eval_expr(self._weak_rev_dep) == "y"):
                 new_val = "y"
 
-        elif self._type == INT or self._type == HEX:
+        elif self._type in (INT, HEX):
             has_active_range = False
             low = None
             high = None
@@ -2348,7 +2348,7 @@ class Symbol(Item):
         Symbol.get_visibility().)"""
         if self._is_special:
             return False
-        if self._type == BOOL or self._type == TRISTATE:
+        if self._type in (BOOL, TRISTATE):
             rev_dep_val = self._config._eval_expr(self._rev_dep)
             # A bool selected to "m" gets promoted to "y", pinning it
             if rev_dep_val == "m" and self._type == BOOL:
@@ -2535,12 +2535,11 @@ class Symbol(Item):
             return
 
         # Check if the value is valid for our type
-        if not ((self._type == BOOL     and (v == "y" or v == "n")   ) or
-                (self._type == TRISTATE and (v == "y" or v == "m" or
-                                             v == "n")               ) or
-                (self._type == STRING                                ) or
-                (self._type == INT      and _is_base_n(v, 10)        ) or
-                (self._type == HEX      and _is_base_n(v, 16)        )):
+        if not ((self._type == BOOL     and v in ("n", "y")     ) or
+                (self._type == TRISTATE and v in ("n", "m", "y")) or
+                (self._type == STRING                           ) or
+                (self._type == INT      and _is_base_n(v, 10)   ) or
+                (self._type == HEX      and _is_base_n(v, 16)   )):
             self._config._warn('the value "{}" is invalid for {}, which has '
                                "type {}. Assignment ignored."
                                .format(v, self._name, _TYPENAME[self._type]))
@@ -2554,8 +2553,7 @@ class Symbol(Item):
 
         self._user_val = v
 
-        if self._is_choice_sym and (self._type == BOOL or
-                                    self._type == TRISTATE):
+        if self._is_choice_sym and self._type in (BOOL, TRISTATE):
             choice = self._parent
             if v == "y":
                 choice._user_val = self
@@ -2582,14 +2580,14 @@ class Symbol(Item):
         if not self._write_to_conf:
             return
 
-        if self._type == BOOL or self._type == TRISTATE:
+        if self._type in (BOOL, TRISTATE):
             append_fn("{}{}={}".format(self._config._config_prefix, self._name,
                                        val)
-                      if val == "y" or val == "m" else
+                      if val in "my" else
                       "# {}{} is not set".format(self._config._config_prefix,
                                                  self._name))
 
-        elif self._type == INT or self._type == HEX:
+        elif self._type in (INT, HEX):
             append_fn("{}{}={}".format(self._config._config_prefix,
                                        self._name, val))
 
@@ -3339,7 +3337,7 @@ def _get_expr_syms_rec(expr, res):
         res.add(expr)
     elif isinstance(expr, str):
         return
-    elif expr[0] == _AND or expr[0] == _OR:
+    elif expr[0] in (_AND, _OR):
         _get_expr_syms_rec(expr[1], res)
         _get_expr_syms_rec(expr[2], res)
     elif expr[0] == _NOT:
