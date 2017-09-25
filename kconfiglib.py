@@ -607,9 +607,9 @@ class Config(object):
                        if self._config_filename is None
                        else self._config_filename),
                       "Print warnings                         : " +
-                      _BOOL_STR[self._print_warnings],
+                      str(self._print_warnings),
                       "Print assignments to undefined symbols : " +
-                      _BOOL_STR[self._print_undef_assign])
+                      str(self._print_undef_assign))
 
     #
     # Private methods
@@ -1786,10 +1786,10 @@ class Config(object):
                          "Value          : " + s(sc.get_value()),
                          "User value     : " + user_val_str,
                          "Visibility     : " + s(_get_visibility(sc)),
-                         "Is choice item : " + _BOOL_STR[sc._is_choice_sym],
-                         "Is defined     : " + _BOOL_STR[sc._is_defined],
-                         "Is from env.   : " + _BOOL_STR[sc._is_from_env],
-                         "Is special     : " + _BOOL_STR[sc._is_special],
+                         "Is choice item : " + str(sc._is_choice_sym),
+                         "Is defined     : " + str(sc._is_defined),
+                         "Is from env.   : " + str(sc._is_from_env),
+                         "Is special     : " + str(sc._is_special),
                          "")
             if sc._ranges:
                 res += _lines("Ranges:", ranges_str + "\n")
@@ -1849,7 +1849,7 @@ class Config(object):
                       "User value      : " + user_val_str,
                       "Mode            : " + s(sc.get_mode()),
                       "Visibility      : " + s(_get_visibility(sc)),
-                      "Optional        : " + _BOOL_STR[sc._optional],
+                      "Optional        : " + str(sc._optional),
                       "Prompts:",
                       prompts_str,
                       "Defaults:",
@@ -3572,12 +3572,6 @@ _get_keyword = {
     "tristate":       _T_TRISTATE,
     "visible":        _T_VISIBLE,
 }.get
-
-# Strings to use for True and False
-_BOOL_STR = {
-    False: "false",
-    True: "true",
-}
 
 # Tokens after which identifier-like lexemes are treated as strings. _T_CHOICE
 # is included to avoid symbols being registered for named choices.

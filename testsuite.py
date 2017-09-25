@@ -541,8 +541,8 @@ def run_selftests():
       Value of $SRCARCH at creation time     : (not set)
       Value of $srctree at creation time     : (not set)
       Most recently loaded .config           : (no .config loaded)
-      Print warnings                         : true
-      Print assignments to undefined symbols : false""")
+      Print warnings                         : True
+      Print assignments to undefined symbols : False""")
 
     os.environ["ARCH"] = "foo"
     os.environ["SRCARCH"] = "bar"
@@ -561,8 +561,8 @@ def run_selftests():
       Value of $SRCARCH at creation time     : bar
       Value of $srctree at creation time     : baz
       Most recently loaded .config           : Kconfiglib/tests/empty
-      Print warnings                         : false
-      Print assignments to undefined symbols : true""")
+      Print warnings                         : False
+      Print assignments to undefined symbols : True""")
 
     # Printing of Symbol
 
@@ -572,10 +572,10 @@ def run_selftests():
       Value          : "n"
       User value     : (no user value)
       Visibility     : "n"
-      Is choice item : false
-      Is defined     : true
-      Is from env.   : false
-      Is special     : false
+      Is choice item : False
+      Is defined     : True
+      Is from env.   : False
+      Is special     : False
       Prompts:
        (no prompts)
       Default values:
@@ -600,10 +600,10 @@ def run_selftests():
       Value          : "y"
       User value     : "m"
       Visibility     : "y"
-      Is choice item : false
-      Is defined     : true
-      Is from env.   : false
-      Is special     : false
+      Is choice item : False
+      Is defined     : True
+      Is from env.   : False
+      Is special     : False
       Prompts:
        "advanced prompt 1" if y || BASIC && BASIC (value: "y")
        "advanced prompt 2"
@@ -632,10 +632,10 @@ def run_selftests():
       Value          : "foo"
       User value     : (no user value)
       Visibility     : "n"
-      Is choice item : false
-      Is defined     : true
-      Is from env.   : false
-      Is special     : false
+      Is choice item : False
+      Is defined     : True
+      Is from env.   : False
+      Is special     : False
       Prompts:
        (no prompts)
       Default values:
@@ -663,10 +663,10 @@ def run_selftests():
       Value          : "1"
       User value     : (no user value)
       Visibility     : "y"
-      Is choice item : false
-      Is defined     : true
-      Is from env.   : false
-      Is special     : false
+      Is choice item : False
+      Is defined     : True
+      Is from env.   : False
+      Is special     : False
       Ranges:
        [1, 2] if !DUMMY (value: "y")
        [INT, INT] if DUMMY (value: "n")
@@ -697,7 +697,7 @@ def run_selftests():
       User value      : (no user value)
       Mode            : "y"
       Visibility      : "y"
-      Optional        : false
+      Optional        : False
       Prompts:
        "choice"
       Defaults:
@@ -718,7 +718,7 @@ def run_selftests():
       User value      : CHOICE_ITEM_2
       Mode            : "y"
       Visibility      : "y"
-      Optional        : false
+      Optional        : False
       Prompts:
        "choice"
       Defaults:
