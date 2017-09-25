@@ -185,6 +185,12 @@ class Config(object):
         if self._config_prefix is None:
             self._config_prefix = "CONFIG_"
 
+        # Regular expressions for parsing .config files
+        self._set_re = re.compile(r"{}(\w+)=(.*)"
+                                  .format(self._config_prefix))
+        self._unset_re = re.compile(r"# {}(\w+) is not set"
+                                    .format(self._config_prefix))
+
         self._filename = filename
 
         # See Config.__init__(). We need this for get_defconfig_filename().
@@ -407,17 +413,15 @@ class Config(object):
         replace (default: True): True if the configuration should replace the
            old configuration; False if it should add to it."""
 
-        # Regular expressions for parsing .config files
-        _set_re_match = re.compile(r"{}(\w+)=(.*)"
-                                   .format(self._config_prefix)).match
-        _unset_re_match = re.compile(r"# {}(\w+) is not set"
-                                     .format(self._config_prefix)).match
-
         # Put this first so that a missing file doesn't screw up our state
         filename = os.path.expandvars(filename)
         line_feeder = _FileFeed(filename)
 
         self._config_filename = filename
+
+        # Small optimization
+        set_re_match = self._set_re.match
+        unset_re_match = self._unset_re.match
 
         #
         # Read header
@@ -425,7 +429,7 @@ class Config(object):
 
         def is_header_line(line):
             return line is not None and line.startswith("#") and \
-                   not _unset_re_match(line)
+                   not unset_re_match(line)
 
         self._config_header = None
 
@@ -466,7 +470,7 @@ class Config(object):
 
             line = line.rstrip()
 
-            set_match = _set_re_match(line)
+            set_match = set_re_match(line)
             if set_match:
                 name, val = set_match.groups()
 
@@ -502,7 +506,7 @@ class Config(object):
                                     .format(val, name),
                                     line_feeder.filename, line_feeder.linenr)
             else:
-                unset_match = _unset_re_match(line)
+                unset_match = unset_re_match(line)
                 if unset_match:
                     name = unset_match.group(1)
                     if name in self._syms:
