@@ -2582,11 +2582,11 @@ class Symbol(Item):
             return
 
         if self._type in (BOOL, TRISTATE):
-            append_fn("{}{}={}".format(self._config._config_prefix, self._name,
-                                       val)
-                      if val in "my" else
-                      "# {}{} is not set".format(self._config._config_prefix,
-                                                 self._name))
+            append_fn("# {}{} is not set".format(self._config._config_prefix,
+                                                 self._name)
+                      if val == "n" else
+                      "{}{}={}".format(self._config._config_prefix, self._name,
+                                       val))
 
         elif self._type in (INT, HEX):
             append_fn("{}{}={}".format(self._config._config_prefix,
