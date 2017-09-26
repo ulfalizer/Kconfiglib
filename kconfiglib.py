@@ -1226,75 +1226,61 @@ class Config(object):
         """Returns a _Feed instance containing tokens derived from the string
         's'. Registers any new symbols encountered (via _lookup_sym()).
 
-        (I experimented with a pure regular expression implementation, but it
-        came out slower, less readable, and wouldn't have been as flexible.)
+        Tries to be reasonably speedy by processing chunks of text via regexes
+        and string operations where possible. This is a hotspot during parsing.
 
         for_eval: True when parsing an expression for a call to Config.eval(),
            in which case we should not treat the first token specially nor
            register new symbols."""
 
-        s = s.strip()
-        if s == "" or s[0] == "#":
-            return _Feed([])
+        # Tricky implementation detail: While parsing a token, 'token' refers
+        # to the previous token. See _STRING_LEX for why this is needed.
 
         if for_eval:
-            previous = None # The previous token seen
+            token = None
             tokens = []
             i = 0 # The current index in the string being tokenized
 
         else:
-            # Note: This hack is no longer needed as of upstream commit c226456
-            # (kconfig: warn of unhandled characters in Kconfig commands). It
-            # is kept around for backwards compatibility.
-            #
-            # The initial word on a line is parsed specially. Let
-            # command_chars = [A-Za-z0-9_]. Then
-            #  - leading non-command_chars characters are ignored, and
-            #  - the first token consists the following one or more
-            #    command_chars characters.
-            # This is why things like "----help--" are accepted.
+            # See comment at _initial_token_re_match definition
             initial_token_match = _initial_token_re_match(s)
-            if initial_token_match is None:
-                return _Feed([])
+            if not initial_token_match:
+                return _Feed(())
             keyword = _get_keyword(initial_token_match.group(1))
             if keyword == _T_HELP:
                 # Avoid junk after "help", e.g. "---", being registered as a
                 # symbol
-                return _Feed([_T_HELP])
+                return _Feed((_T_HELP,))
             if keyword is None:
                 # We expect a keyword as the first token
                 _tokenization_error(s, filename, linenr)
 
-            previous = keyword
+            token = keyword
             tokens = [keyword]
             # The current index in the string being tokenized
             i = initial_token_match.end()
 
-        # _tokenize() is a hotspot during parsing, and this speeds things up a
-        # bit
-        strlen = len(s)
-        append = tokens.append
-
-        # Main tokenization loop. (Handles tokens past the first one.)
-        while i < strlen:
+        # Main tokenization loop (for tokens past the first one)
+        while i < len(s):
             # Test for an identifier/keyword preceded by whitespace first; this
             # is the most common case.
             id_keyword_match = _id_keyword_re_match(s, i)
             if id_keyword_match:
-                # We have an identifier or keyword. The above also stripped any
-                # whitespace for us.
-                name = id_keyword_match.group(1)
+                # We have an identifier or keyword
+
                 # Jump past it
                 i = id_keyword_match.end()
 
+                # Check what it is
+                name = id_keyword_match.group(1)
                 keyword = _get_keyword(name)
                 if keyword is not None:
                     # It's a keyword
-                    append(keyword)
-                elif previous in _STRING_LEX:
+                    token = keyword
+                elif token in _STRING_LEX:
                     # What would ordinarily be considered an identifier is
                     # treated as a string after certain tokens
-                    append(name)
+                    token = name
                 else:
                     # It's a symbol name. _lookup_sym() will take care of
                     # allocating a new Symbol instance if it's the first time
@@ -1302,7 +1288,7 @@ class Config(object):
                     sym = self._lookup_sym(name, for_eval)
 
                     # Also handles 'menuconfig'
-                    if previous == _T_CONFIG:
+                    if token == _T_CONFIG:
                         # If the previous token is _T_(MENU)CONFIG
                         # ("(menu)config"), we're tokenizing the first line of
                         # a symbol definition, and should remember this as a
@@ -1312,21 +1298,30 @@ class Config(object):
                         # Otherwise, it's a reference to the symbol
                         sym._ref_locations.append((filename, linenr))
 
-                    append(sym)
+                    token = sym
 
             else:
                 # Not an identifier/keyword
 
-                while i < strlen and s[i].isspace():
+                # Find the next non-whitespace character
+                while i < len(s) and s[i].isspace():
                     i += 1
-                if i == strlen:
+                if i == len(s):
                     break
                 c = s[i]
                 i += 1
 
-                # String literal (constant symbol)
                 if c in "\"'":
-                    if "\\" in s:
+                    # String literal/constant symbol
+                    if "\\" not in s:
+                        # Fast path: If the string contains no backslashes, we
+                        # can just find the matching quote.
+                        end = s.find(c, i)
+                        if end == -1:
+                            _tokenization_error(s, filename, linenr)
+                        token = s[i:end]
+                        i = end + 1
+                    else:
                         # Slow path: This could probably be sped up, but it's a
                         # very unusual case anyway.
                         quote = c
@@ -1346,66 +1341,57 @@ class Config(object):
                                 val += c
                                 i += 1
                         i += 1
-                        append(val)
-                    else:
-                        # Fast path: If the string contains no backslashes
-                        # (almost always) we can simply look for the matching
-                        # quote.
-                        end = s.find(c, i)
-                        if end == -1:
-                            _tokenization_error(s, filename, linenr)
-                        append(s[i:end])
-                        i = end + 1
+                        token = val
 
                 elif c == "&":
                     # Invalid characters are ignored
                     if i >= len(s) or s[i] != "&": continue
-                    append(_T_AND)
+                    token = _T_AND
                     i += 1
 
                 elif c == "|":
                     # Invalid characters are ignored
                     if i >= len(s) or s[i] != "|": continue
-                    append(_T_OR)
+                    token = _T_OR
                     i += 1
 
                 elif c == "!":
                     if i < len(s) and s[i] == "=":
-                        append(_T_UNEQUAL)
+                        token = _T_UNEQUAL
                         i += 1
                     else:
-                        append(_T_NOT)
+                        token = _T_NOT
 
                 elif c == "=":
-                    append(_T_EQUAL)
+                    token = _T_EQUAL
 
                 elif c == "(":
-                    append(_T_OPEN_PAREN)
+                    token = _T_OPEN_PAREN
 
                 elif c == ")":
-                    append(_T_CLOSE_PAREN)
+                    token = _T_CLOSE_PAREN
 
                 elif c == "#": break # Comment
 
                 # Very rare
                 elif c == "<":
                     if i < len(s) and s[i] == "=":
-                        append(_T_LESS_EQUAL)
+                        token = _T_LESS_EQUAL
                         i += 1
                     else:
-                        append(_T_LESS)
+                        token = _T_LESS
 
                 # Very rare
                 elif c == ">":
                     if i < len(s) and s[i] == "=":
-                        append(_T_GREATER_EQUAL)
+                        token = _T_GREATER_EQUAL
                         i += 1
                     else:
-                        append(_T_GREATER)
+                        token = _T_GREATER
 
                 else: continue # Invalid characters are ignored
 
-            previous = tokens[-1]
+            tokens.append(token)
 
         return _Feed(tokens)
 
@@ -3592,9 +3578,21 @@ _STRING_LEX = frozenset((
     _T_TRISTATE,
 ))
 
-# Matches the initial token on a line; see _tokenize(). Also eats trailing
-# whitespace as an optimization.
-_initial_token_re_match = re.compile(r"[^\w]*(\w+)\s*").match
+# Note: This hack is no longer needed as of upstream commit c226456
+# (kconfig: warn of unhandled characters in Kconfig commands). It
+# is kept around for backwards compatibility.
+#
+# The initial word on a line is parsed specially. Let
+# command_chars = [A-Za-z0-9_]. Then
+#  - leading non-command_chars characters are ignored, and
+#  - the first token consists the following one or more
+#    command_chars characters.
+# This is why things like "----help--" are accepted.
+#
+# As an optimization, this regex also fails to match for lines containing just
+# a comment, and also matches trailing whitespace so it can be jumped over
+# immediately.
+_initial_token_re_match = re.compile(r"[^\w#]*(\w+)\s*").match
 
 # Matches an identifier/keyword optionally preceded by whitespace. Also eats
 # trailing whitespace as an optimization.
