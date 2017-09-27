@@ -1157,64 +1157,98 @@ class Config(object):
         transform_m (default: False): Determines if 'm' should be rewritten to
             'm && MODULES'. See the Config.eval() docstring."""
 
-        # Use instance variables to avoid having to pass these as arguments
-        # through the top-down parser in _parse_expr_rec(), which is tedious
-        # and obfuscates the code. A profiler run shows no noticeable
-        # performance difference.
-        self._cur_item = cur_item
-        self._transform_m = transform_m
-        self._line = line
-        self._filename = filename
-        self._linenr = linenr
+        # Grammar:
+        #
+        #   expr:     and_expr ['||' expr]
+        #   and_expr: factor ['&&' and_expr]
+        #   factor:   <symbol> ['='/'!='/'<'/... <symbol>]
+        #             '!' factor
+        #             '(' expr ')'
+        #
+        # It helps to think of the 'expr: and_expr' case as a single-operand OR
+        # (no ||), and of the 'and_expr: factor' case as a single-operand AND
+        # (no &&). Parsing code is always a bit tricky.
 
-        return self._parse_expr_rec(feed)
+        # Mind dump: parse_factor() and two nested loops for OR and AND would
+        # work as well. The straightforward implementation there gives a
+        # (op, (op, (op, A, B), C), D) parse for A op B op C op D. Representing
+        # expressions as (op, [list of operands]) instead goes nicely with that
+        # version, but is wasteful for short expressions and complicates
+        # expression evaluation and other code that works on expressions (more
+        # complicated code likely offsets any performance gain from less
+        # recursion too). If we also try to optimize the list representation by
+        # merging lists when possible (e.g. when ANDing two AND expressions),
+        # we end up allocating a ton of lists instead of reusing expressions,
+        # which is bad.
 
-    def _parse_expr_rec(self, feed):
-        or_term = self._parse_or_term(feed)
-        return or_term \
+        and_expr = self._parse_and_expr(feed, cur_item, line, filename,
+                                        linenr, transform_m)
+
+        # Return 'and_expr' directly if we have a "single-operand" OR.
+        # Otherwise, parse the expression on the right and make an _OR node.
+        # This turns A || B || C || D into
+        # (_OR, A, (_OR, B, (_OR, C, D))).
+        return and_expr \
                if not feed.check(_T_OR) else \
-               (_OR, or_term, self._parse_expr_rec(feed))
+               (_OR, and_expr, self._parse_expr(feed, cur_item, line, filename,
+                                                linenr, transform_m))
 
-    def _parse_or_term(self, feed):
-        and_term = self._parse_factor(feed)
-        return and_term \
+    def _parse_and_expr(self, feed, cur_item, line, filename, linenr,
+                        transform_m):
+
+        factor = self._parse_factor(feed, cur_item, line, filename, linenr,
+                                    transform_m)
+
+        # Return 'factor' directly if we have a "single-operand" AND.
+        # Otherwise, parse the right operand and make an _AND node. This turns
+        # A && B && C && D into (_AND, A, (_AND, B, (_AND, C, D))).
+        return factor \
                if not feed.check(_T_AND) else \
-               (_AND, and_term, self._parse_or_term(feed))
+               (_AND, factor, self._parse_and_expr(feed, cur_item, line,
+                                                   filename, linenr,
+                                                   transform_m))
 
-    def _parse_factor(self, feed):
+    def _parse_factor(self, feed, cur_item, line, filename, linenr,
+                      transform_m):
         token = feed.get_next()
 
         if isinstance(token, (Symbol, str)):
-            if self._cur_item is not None and isinstance(token, Symbol):
-                self._cur_item._referenced_syms.add(token)
+            # Plain symbol or relation
+
+            if cur_item is not None and isinstance(token, Symbol):
+                cur_item._referenced_syms.add(token)
 
             next_token = feed.peek_next()
-            # For conditional expressions ('depends on <expr>',
-            # '... if <expr>', # etc.), "m" and m are rewritten to
-            # "m" && MODULES.
             if next_token not in _TOKEN_TO_RELATION:
-                if self._transform_m and (token is self._m or token == "m"):
+                # Plain symbol
+
+                # For conditional expressions ('depends on <expr>',
+                # '... if <expr>', etc.), "m" and m are rewritten to
+                # "m" && MODULES.
+                if transform_m and (token is self._m or token == "m"):
                     return (_AND, "m", self._lookup_sym("MODULES"))
                 return token
 
+            # Relation
+
             relation = _TOKEN_TO_RELATION[feed.get_next()]
-            token_2 = feed.get_next()
-            if self._cur_item is not None and isinstance(token_2, Symbol):
-                self._cur_item._referenced_syms.add(token_2)
-            return (relation, token, token_2)
+            right_op = feed.get_next()
+            if cur_item is not None and isinstance(right_op, Symbol):
+                cur_item._referenced_syms.add(right_op)
+            return (relation, token, right_op)
 
         if token == _T_NOT:
-            return (_NOT, self._parse_factor(feed))
+            return (_NOT, self._parse_factor(feed, cur_item, line, filename,
+                                             linenr, transform_m))
 
         if token == _T_OPEN_PAREN:
-            expr_parse = self._parse_expr_rec(feed)
+            expr_parse = self._parse_expr(feed, cur_item, line, filename,
+                                          linenr, transform_m)
             if not feed.check(_T_CLOSE_PAREN):
-                _parse_error(self._line, "missing end parenthesis",
-                             self._filename, self._linenr)
+                _parse_error(line, "missing end parenthesis", filename, linenr)
             return expr_parse
 
-        _parse_error(self._line, "malformed expression", self._filename,
-                     self._linenr)
+        _parse_error(line, "malformed expression", filename, linenr)
 
     def _tokenize(self, s, for_eval, filename=None, linenr=None):
         """Returns a _Feed instance containing tokens derived from the string
