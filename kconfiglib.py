@@ -550,9 +550,11 @@ class Config(object):
 
         Syntax checking is somewhat lax, partly to be compatible with lax
         parsing in the C implementation."""
-        return self._eval_expr(self._parse_expr(self._tokenize(s, True), # Feed
-                                                None, # Current symbol/choice
-                                                s))   # line
+        return self._eval_expr(self._parse_expr(self._tokenize(s, True),
+                                                None,  # Current symbol/choice
+                                                s,
+                                                None,  # filename
+                                                None)) # linenr
 
     def unset_user_values(self):
         """Resets the values of all symbols, as if Config.load_config() or
@@ -1126,7 +1128,7 @@ class Config(object):
                         _make_or(target._weak_rev_dep,
                                  _make_and(stmt, _make_and(cond, deps)))
 
-    def _parse_expr(self, feed, cur_item, line, filename=None, linenr=None,
+    def _parse_expr(self, feed, cur_item, line, filename, linenr,
                     transform_m=True):
         """Parses an expression from the tokens in 'feed' using a simple
         top-down approach. The result has the form
@@ -1146,22 +1148,14 @@ class Config(object):
 
         line: The line containing the expression being parsed.
 
-        filename (default: None): The file containing the expression.
+        filename: The file containing the expression. None when using
+            Config.eval().
 
-        linenr (default: None): The line number containing the expression.
+        linenr: The line number containing the expression. None when using
+            Config.eval().
 
         transform_m (default: False): Determines if 'm' should be rewritten to
-           'm && MODULES' -- see _parse_val_and_cond().
-
-        Expression grammar, in decreasing order of precedence:
-
-        <expr> -> <symbol>
-                  <symbol> '=' <symbol>
-                  <symbol> '!=' <symbol>
-                  '(' <expr> ')'
-                  '!' <expr>
-                  <expr> '&&' <expr>
-                  <expr> '||' <expr>"""
+            'm && MODULES'. See the Config.eval() docstring."""
 
         # Use instance variables to avoid having to pass these as arguments
         # through the top-down parser in _parse_expr_rec(), which is tedious
