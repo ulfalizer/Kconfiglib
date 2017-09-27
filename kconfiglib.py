@@ -554,7 +554,8 @@ class Config(object):
                                                 None,  # Current symbol/choice
                                                 s,
                                                 None,  # filename
-                                                None)) # linenr
+                                                None,  # linenr
+                                                True)) # transform_m
 
     def unset_user_values(self):
         """Resets the values of all symbols, as if Config.load_config() or
@@ -725,7 +726,7 @@ class Config(object):
 
                 dep_expr = self._parse_expr(tokens, None, line,
                                             line_feeder.filename,
-                                            line_feeder.linenr)
+                                            line_feeder.linenr, True)
                 # Add items to the same block
                 self._parse_block(line_feeder, _T_ENDIF, parent,
                                   _make_and(dep_expr, deps),
@@ -828,7 +829,7 @@ class Config(object):
     def _parse_cond(self, tokens, stmt, line, filename, linenr):
         """Parses an optional 'if <expr>' construct and returns the parsed
         <expr>, or None if the next token is not _T_IF."""
-        return self._parse_expr(tokens, stmt, line, filename, linenr) \
+        return self._parse_expr(tokens, stmt, line, filename, linenr, True) \
                if tokens.check(_T_IF) else None
 
     def _parse_val_and_cond(self, tokens, stmt, line, filename, linenr):
@@ -877,7 +878,7 @@ class Config(object):
                                  filename, linenr)
 
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename,
-                                               linenr)
+                                               linenr, True)
 
                 if isinstance(stmt, (Menu, Comment)):
                     stmt._orig_deps = _make_and(stmt._orig_deps, parsed_deps)
@@ -1044,7 +1045,7 @@ class Config(object):
                                  filename, linenr)
 
                 parsed_deps = self._parse_expr(tokens, stmt, line, filename,
-                                               linenr)
+                                               linenr, True)
                 stmt._visible_if_expr = _make_and(stmt._visible_if_expr,
                                                   parsed_deps)
 
@@ -1128,8 +1129,7 @@ class Config(object):
                         _make_or(target._weak_rev_dep,
                                  _make_and(stmt, _make_and(cond, deps)))
 
-    def _parse_expr(self, feed, cur_item, line, filename, linenr,
-                    transform_m=True):
+    def _parse_expr(self, feed, cur_item, line, filename, linenr, transform_m):
         """Parses an expression from the tokens in 'feed' using a simple
         top-down approach. The result has the form
         '(<operator> <operand 1> <operand 2>)' where <operator> is e.g.
