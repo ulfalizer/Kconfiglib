@@ -191,7 +191,7 @@ class Config(object):
         self._unset_re = re.compile(r"# {}(\w+) is not set"
                                     .format(self._config_prefix))
 
-        self._filename = filename
+        self._kconfig_filename = filename
 
         # See Config.__init__(). We need this for get_defconfig_filename().
         self._srctree = os.environ.get("srctree")
@@ -259,7 +259,7 @@ class Config(object):
     def get_kconfig_filename(self):
         """Returns the name of the (base) kconfig file this configuration was
         loaded from."""
-        return self._filename
+        return self._kconfig_filename
 
     def get_config_filename(self):
         """Returns the filename of the most recently loaded configuration file,
@@ -583,7 +583,7 @@ class Config(object):
         """Returns a string containing various information about the Config."""
         return _lines("Configuration",
                       "File                                   : " +
-                      self._filename,
+                      self._kconfig_filename,
                       "Base directory                         : " +
                       self._base_dir,
                       "Value of $ARCH at creation time        : " +
