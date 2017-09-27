@@ -528,10 +528,12 @@ class Config(object):
         for item in self._top_block:
             item._add_config_strings(add_fn)
 
-        # Write header and configuration
         with open(filename, "w") as f:
+            # Write header
             if header is not None:
-                f.write(_comment(header) + "\n")
+                f.writelines(["#" + line
+                              for line in (header + "\n").splitlines(True)])
+            # Write configuration
             f.writelines(config_strings)
 
     def eval(self, s):
@@ -3453,15 +3455,6 @@ def _lines(*args):
     """Returns a string consisting of all arguments, with newlines inserted
     between them."""
     return "\n".join(args)
-
-def _comment(s):
-    """Returns a new string with "#" inserted before each line in 's'."""
-    if not s:
-        return "#"
-    res = "".join(["#" + line for line in s.splitlines(True)])
-    if s.endswith("\n"):
-        return res + "#"
-    return res
 
 def _stderr_msg(msg, filename, linenr):
     if filename is not None:
