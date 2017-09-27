@@ -521,15 +521,18 @@ class Config(object):
         for sym in self._syms_iter():
             sym._already_written = False
 
+        # Build configuration. Avoiding string concatenation is worthwhile at
+        # least for PyPy.
+        config_strings = []
+        add_fn = config_strings.append
+        for item in self._top_block:
+            item._add_config_strings(add_fn)
+
+        # Write header and configuration
         with open(filename, "w") as f:
-            # Write header
             if header is not None:
                 f.write(_comment(header) + "\n")
-
-            # Build and write configuration
-            conf_strings = []
-            _make_block_conf(self._top_block, conf_strings.append)
-            f.write("\n".join(conf_strings) + "\n")
+            f.writelines(config_strings)
 
     def eval(self, s):
         """Returns the value of the expression 's' -- where 's' is represented
@@ -2482,9 +2485,9 @@ class Symbol(Item):
         self._is_defined = False
         # Should the symbol get an entry in .config?
         self._write_to_conf = False
-        # Set to true when _make_conf() is called on a symbol, so that symbols
-        # defined in multiple locations only get one .config entry. We need to
-        # reset it prior to writing out a new .config.
+        # Set to true when _add_config_strings() is called on a symbol, so that
+        # symbols defined in multiple locations only get one .config entry. We
+        # need to reset it prior to writing out a new .config.
         #
         # The C implementation reuses _write_to_conf for this, but we cache
         # _write_to_conf together with the value and don't invalidate cached
@@ -2584,7 +2587,7 @@ class Symbol(Item):
         if self._is_choice_sym:
             self._parent._unset_user_value()
 
-    def _make_conf(self, append_fn):
+    def _add_config_strings(self, add_fn):
         if self._already_written:
             return
 
@@ -2596,21 +2599,21 @@ class Symbol(Item):
             return
 
         if self._type in (BOOL, TRISTATE):
-            append_fn("# {}{} is not set".format(self._config._config_prefix,
-                                                 self._name)
-                      if val == "n" else
-                      "{}{}={}".format(self._config._config_prefix, self._name,
-                                       val))
+            add_fn("# {}{} is not set\n".format(self._config._config_prefix,
+                                                self._name)
+                   if val == "n" else
+                   "{}{}={}\n".format(self._config._config_prefix, self._name,
+                                      val))
 
         elif self._type in (INT, HEX):
-            append_fn("{}{}={}".format(self._config._config_prefix,
-                                       self._name, val))
+            add_fn("{}{}={}\n".format(self._config._config_prefix,
+                                      self._name, val))
 
         elif self._type == STRING:
             # Escape \ and "
-            append_fn('{}{}="{}"'
-                      .format(self._config._config_prefix, self._name,
-                              val.replace("\\", "\\\\").replace('"', '\\"')))
+            add_fn('{}{}="{}"\n'
+                   .format(self._config._config_prefix, self._name,
+                           val.replace("\\", "\\\\").replace('"', '\\"')))
 
         else:
             _internal_error("Internal error while creating .config: unknown "
@@ -2784,11 +2787,13 @@ class Menu(Item):
         # Contained items
         self._block = []
 
-    def _make_conf(self, append_fn):
+    def _add_config_strings(self, add_fn):
         if self._config._eval_expr(self._dep_expr) != "n" and \
            self._config._eval_expr(self._visible_if_expr) != "n":
-            append_fn("\n#\n# {}\n#".format(self._title))
-        _make_block_conf(self._block, append_fn)
+            add_fn("\n#\n# {}\n#\n".format(self._title))
+
+        for item in self._block:
+            item._add_config_strings(add_fn)
 
 class Choice(Item):
 
@@ -3073,8 +3078,9 @@ class Choice(Item):
         self._user_val = None
         self._user_mode = None
 
-    def _make_conf(self, append_fn):
-        _make_block_conf(self._block, append_fn)
+    def _add_config_strings(self, add_fn):
+        for item in self._block:
+            item._add_config_strings(add_fn)
 
 class Comment(Item):
 
@@ -3158,9 +3164,9 @@ class Comment(Item):
         # get_referenced_symbols())
         self._referenced_syms = set()
 
-    def _make_conf(self, append_fn):
+    def _add_config_strings(self, add_fn):
         if self._config._eval_expr(self._dep_expr) != "n":
-            append_fn("\n#\n# {}\n#".format(self._text))
+            add_fn("\n#\n# {}\n#\n".format(self._text))
 
 class Kconfig_Syntax_Error(Exception):
     """Exception raised for syntax errors."""
@@ -3377,11 +3383,6 @@ def _str_val(obj):
     """Returns the value of obj as a string. If obj is not a string (constant
     symbol), it must be a Symbol."""
     return obj if isinstance(obj, str) else obj.get_value()
-
-def _make_block_conf(block, append_fn):
-    """Returns a list of .config strings for a block (list) of items."""
-    for item in block:
-        item._make_conf(append_fn)
 
 def _format_and_op(expr):
     """_expr_to_str() helper. Returns the string representation of 'expr',
