@@ -3272,8 +3272,13 @@ def _get_visibility(sc):
             vis = sc._config._eval_max(vis, cond_expr)
 
         if isinstance(sc, Symbol) and sc._is_choice_sym:
-            if sc._type == TRISTATE and vis == "m" and \
-               sc._parent.get_mode() == "y":
+            if sc._parent._type == TRISTATE and sc._type != TRISTATE and \
+               sc._parent.get_mode() != "y":
+                # Non-tristate choice symbols in tristate choices depend on the
+                # choice being in mode "y"
+                vis = "n"
+            elif sc._type == TRISTATE and vis == "m" and \
+                 sc._parent.get_mode() == "y":
                 # Choice symbols with visibility "m" are not visible if the
                 # choice has mode "y"
                 vis = "n"

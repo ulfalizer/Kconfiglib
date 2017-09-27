@@ -996,8 +996,18 @@ def run_selftests():
     verify_sym_visibility("BOOL_menu_m", "n", "y") # Promoted
     verify_sym_visibility("BOOL_menu_y", "y", "y")
     verify_sym_visibility("BOOL_choice_n", "n", "n")
-    verify_sym_visibility("BOOL_choice_m", "n", "y") # Promoted
+
+    # Non-tristate symbols in tristate choices are only visible if the choice
+    # is in "y" mode
+    verify_sym_visibility("BOOL_choice_m", "n", "n")
+    verify_sym_visibility("BOOL_choice_y", "y", "n")
+    c["TRISTATE_choice_m"].set_user_value("y")
+    c["TRISTATE_choice_y"].set_user_value("y")
+    # Still limited by the visibility of the choice
+    verify_sym_visibility("BOOL_choice_m", "n", "n")
+    # This one should become visible now though
     verify_sym_visibility("BOOL_choice_y", "y", "y")
+
     verify_sym_visibility("TRISTATE_if_n", "n", "n")
     verify_sym_visibility("TRISTATE_if_m", "n", "m")
     verify_sym_visibility("TRISTATE_if_y", "y", "y")
@@ -1029,8 +1039,6 @@ def run_selftests():
       choice_tristate_m, choice_tristate_y, choice_tristate_if_m_and_y, \
       choice_tristate_menu_n_and_y \
       = c.get_choices()[3:]
-
-    verify(choice_bool_n.get_name() == "BOOL_CHOICE_n", "Ops - testing the wrong choices")
 
     verify_choice_visibility(choice_bool_n, "n", "n")
     verify_choice_visibility(choice_bool_m, "n", "y") # Promoted
