@@ -518,7 +518,18 @@ class Config(object):
            beginning of the file, with each line commented out automatically.
            None means no header."""
 
-        for sym in self._syms_iter():
+        # Symbol._already_written is set to True when _add_config_strings() is
+        # called on a symbol, so that symbols defined in multiple locations
+        # only get one .config entry. We reset it prior to writing out a new
+        # .config. It only needs to be reset for defined symbols, because
+        # undefined symbols will never have _add_config_strings() called on
+        # them (because they do not appear in the block structure rooted at
+        # _top_block).
+        #
+        # The C implementation reuses _write_to_conf for this, but we cache
+        # _write_to_conf together with the value and don't invalidate cached
+        # values when writing .config files, so that won't work.
+        for sym in self._kconfig_syms:
             sym._already_written = False
 
         # Build configuration. Avoiding string concatenation is worthwhile at
@@ -2418,6 +2429,7 @@ class Symbol(Item):
         # don't need defaults:
         #   _config
         #   _name
+        #   _already_written
 
         self._type = UNKNOWN
         self._prompts = []
@@ -2483,14 +2495,6 @@ class Symbol(Item):
         self._is_defined = False
         # Should the symbol get an entry in .config?
         self._write_to_conf = False
-        # Set to true when _add_config_strings() is called on a symbol, so that
-        # symbols defined in multiple locations only get one .config entry. We
-        # need to reset it prior to writing out a new .config.
-        #
-        # The C implementation reuses _write_to_conf for this, but we cache
-        # _write_to_conf together with the value and don't invalidate cached
-        # values writing .config files, so that won't work.
-        self._already_written = False
         # This is set to True for "actual" choice symbols; see
         # Choice._determine_actual_symbols().
         self._is_choice_sym = False
