@@ -2395,13 +2395,13 @@ def test_defconfig(conf):
             # bugs.
             shell("make kconfiglibtestconfig")
 
-        sys.stdout.write("  {:14}with {:60} ".
-                         format(conf.get_arch(), defconfig))
+        arch_defconfig_str = "  {:14}with {:60} " \
+                             .format(conf.get_arch(), defconfig)
 
         if equal_confs():
-            print("OK")
+            print(arch_defconfig_str + "OK")
         else:
-            print("FAIL")
+            print(arch_defconfig_str + "FAIL")
             fail()
             if log_mode:
                 with open("test_defconfig_fails", "a") as fail_log:
