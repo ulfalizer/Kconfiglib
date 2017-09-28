@@ -2010,159 +2010,155 @@ class Symbol(Item):
             self._cached_val = self._name
             return self._name
 
-        new_val = _DEFAULT_VALUE[self._type]
+        # This will hold the value at the end of the function
+        val = _DEFAULT_VALUE[self._type]
+
         vis = _get_visibility(self)
 
-        # This is easiest to calculate together with the value
-        self._write_to_conf = False
-
         if self._type in (BOOL, TRISTATE):
-            # The visibility and mode (modules-only or single-selection) of
-            # choice items will be taken into account in _get_visibility()
-            if self._is_choice_sym:
-                if vis != "n":
-                    choice = self._parent
-                    mode = choice.get_mode()
+            if not self._is_choice_sym:
+                self._write_to_conf = (vis != "n")
 
-                    self._write_to_conf = (mode != "n")
+                if vis != "n" and self._user_val is not None:
+                    # If the symbol is visible and has a user value, we use
+                    # that
+                    val = self._config._eval_min(self._user_val, vis)
 
-                    if mode == "y":
-                        new_val = "y" if choice.get_selection() is self \
-                                  else "n"
-                    elif mode == "m":
-                        if self._user_val in ("m", "y"):
-                            new_val = "m"
+                else:
+                    # Otherwise, we look at defaults and weak reverse
+                    # dependencies (implies)
 
-            else:
-                # If the symbol is visible and has a user value, use that.
-                # Otherwise, look at defaults and weak reverse dependencies
-                # (implies).
-                use_defaults_and_weak_rev_deps = True
-
-                if vis != "n":
-                    self._write_to_conf = True
-                    if self._user_val is not None:
-                        new_val = self._config._eval_min(self._user_val, vis)
-                        use_defaults_and_weak_rev_deps = False
-
-                if use_defaults_and_weak_rev_deps:
-                    for val_expr, cond_expr in self._def_exprs:
-                        cond_eval = self._config._eval_expr(cond_expr)
-                        if cond_eval != "n":
+                    for def_expr, cond_expr in self._def_exprs:
+                        cond_val = self._config._eval_expr(cond_expr)
+                        if cond_val != "n":
                             self._write_to_conf = True
-                            new_val = self._config._eval_min(val_expr,
-                                                             cond_eval)
+                            val = self._config._eval_min(def_expr, cond_val)
                             break
 
                     weak_rev_dep_val = \
                         self._config._eval_expr(self._weak_rev_dep)
                     if weak_rev_dep_val != "n":
                         self._write_to_conf = True
-                        new_val = self._config._eval_max(new_val,
-                                                         weak_rev_dep_val)
+                        val = self._config._eval_max(val, weak_rev_dep_val)
 
                 # Reverse (select-related) dependencies take precedence
                 rev_dep_val = self._config._eval_expr(self._rev_dep)
                 if rev_dep_val != "n":
                     self._write_to_conf = True
-                    new_val = self._config._eval_max(new_val, rev_dep_val)
+                    val = self._config._eval_max(val, rev_dep_val)
+
+            else:
+                # (bool/tristate) symbol in choice. See _get_visibility() for
+                # more choice-related logic.
+
+                # Initially
+                self._write_to_conf = False
+
+                if vis != "n":
+                    choice = self._parent
+                    mode = choice.get_mode()
+
+                    if mode != "n":
+                        self._write_to_conf = True
+
+                        if mode == "y":
+                            val = "y" if choice.get_selection() is self \
+                                  else "n"
+                        elif self._user_val in ("m", "y"):
+                            # mode == "m" here
+                            val = "m"
 
             # We need to promote "m" to "y" in two circumstances:
             #  1) If our type is boolean
             #  2) If our _weak_rev_dep (from IMPLY) is "y"
-            if new_val == "m" and \
+            if val == "m" and \
                (self._type == BOOL or
                 self._config._eval_expr(self._weak_rev_dep) == "y"):
-                new_val = "y"
+                val = "y"
 
         elif self._type in (INT, HEX):
-            has_active_range = False
-            low = None
-            high = None
-            use_defaults = True
+            base = _TYPE_TO_BASE[self._type]
 
-            base = 16 if self._type == HEX else 10
-
-            for l, h, cond_expr in self._ranges:
+            # Check if a range is in effect
+            for low_expr, high_expr, cond_expr in self._ranges:
                 if self._config._eval_expr(cond_expr) != "n":
                     has_active_range = True
 
-                    low_str = _str_val(l)
-                    high_str = _str_val(h)
+                    low_str = _str_val(low_expr)
+                    high_str = _str_val(high_expr)
+
                     low = int(low_str, base) if \
                       _is_base_n(low_str, base) else 0
                     high = int(high_str, base) if \
                       _is_base_n(high_str, base) else 0
 
                     break
+            else:
+                has_active_range = False
 
-            if vis != "n":
-                self._write_to_conf = True
+            self._write_to_conf = (vis != "n")
 
-                if self._user_val is not None and \
-                   _is_base_n(self._user_val, base) and \
-                   (not has_active_range or
-                    low <= int(self._user_val, base) <= high):
+            if vis != "n" and self._user_val is not None and \
+               _is_base_n(self._user_val, base) and \
+               (not has_active_range or
+                low <= int(self._user_val, base) <= high):
 
-                    # If the user value is OK, it is stored in exactly the same
-                    # form as specified in the assignment (with or without
-                    # "0x", etc).
+                # If the user value is well-formed and satisfies range
+                # contraints, it is stored in exactly the same form as
+                # specified in the assignment (with or without "0x", etc.)
+                val = self._user_val
 
-                    use_defaults = False
-                    new_val = self._user_val
+            else:
+                # No user value or invalid user value. Look at defaults.
 
-            if use_defaults:
                 for val_expr, cond_expr in self._def_exprs:
                     if self._config._eval_expr(cond_expr) != "n":
                         self._write_to_conf = True
 
-                        # If the default value is OK, it is stored in exactly
-                        # the same form as specified. Otherwise, it is clamped
-                        # to the range, and the output has "0x" as appropriate
-                        # for the type.
+                        # Similarly to above, well-formed defaults are
+                        # preserved as is. Defaults that do not satisfy a range
+                        # constraints are clamped and take on a standard form.
 
-                        new_val = _str_val(val_expr)
+                        val = _str_val(val_expr)
 
-                        if _is_base_n(new_val, base):
-                            new_val_num = int(new_val, base)
+                        if _is_base_n(val, base):
+                            val_num = int(val, base)
                             if has_active_range:
                                 clamped_val = None
 
-                                if new_val_num < low:
+                                if val_num < low:
                                     clamped_val = low
-                                elif new_val_num > high:
+                                elif val_num > high:
                                     clamped_val = high
 
                                 if clamped_val is not None:
-                                    new_val = (hex(clamped_val) if \
-                                      self._type == HEX else str(clamped_val))
+                                    val = (hex(clamped_val)
+                                           if self._type == HEX else
+                                           str(clamped_val))
 
                             break
-                else: # For the for loop
-                    # If no user value or default kicks in but the hex/int has
-                    # an active range, then the low end of the range is used,
+
+                else:
+                    # No default kicked in. If there is an active range
+                    # constraint, then the low end of the range is used,
                     # provided it's > 0, with "0x" prepended as appropriate.
                     if has_active_range and low > 0:
-                        new_val = (hex(low) if self._type == HEX else str(low))
+                        val = (hex(low) if self._type == HEX else str(low))
 
         elif self._type == STRING:
-            use_defaults = True
+            self._write_to_conf = (vis != "n")
 
-            if vis != "n":
-                self._write_to_conf = True
-                if self._user_val is not None:
-                    new_val = self._user_val
-                    use_defaults = False
-
-            if use_defaults:
+            if vis != "n" and self._user_val is not None:
+                val = self._user_val
+            else:
                 for val_expr, cond_expr in self._def_exprs:
                     if self._config._eval_expr(cond_expr) != "n":
                         self._write_to_conf = True
-                        new_val = _str_val(val_expr)
+                        val = _str_val(val_expr)
                         break
 
-        self._cached_val = new_val
-        return new_val
+        self._cached_val = val
+        return val
 
     def get_user_value(self):
         """Returns the value assigned to the symbol in a .config or via
