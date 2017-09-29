@@ -486,11 +486,10 @@ class Config(object):
 
                     sym._set_user_value_no_invalidate(val, True)
                 else:
-                    if self._print_undef_assign:
-                        _stderr_msg('note: attempt to assign the value "{}" '
-                                    "to the undefined symbol {}."
-                                    .format(val, name),
-                                    line_feeder.filename, line_feeder.linenr)
+                    self._warn_undef_assign(
+                        'attempt to assign the value "{}" to the undefined '
+                        "symbol {}".format(val, name),
+                        line_feeder.filename, line_feeder.linenr)
             else:
                 unset_match = unset_re_match(line)
                 if unset_match:
@@ -1909,8 +1908,15 @@ class Config(object):
                       "Locations: " + locations_str)
 
     def _warn(self, msg, filename=None, linenr=None):
-        """For printing warnings to stderr."""
+        """For printing general warnings."""
         if self._print_warnings:
+            _stderr_msg("warning: " + msg, filename, linenr)
+
+    def _warn_undef_assign(self, msg, filename=None, linenr=None):
+        """For printing warnings for assignments to undefined variables. We
+        treat this is a separate category of warnings to avoid spamming lots of
+        warnings."""
+        if self._print_undef_assign:
             _stderr_msg("warning: " + msg, filename, linenr)
 
 class Item(object):
@@ -2568,11 +2574,10 @@ class Symbol(Item):
 
         if not self._is_defined:
             filename, linenr = self._ref_locations[0]
-            if self._config._print_undef_assign:
-                _stderr_msg('note: attempt to assign the value "{}" to {}, '
-                            "which is referenced at {}:{} but never defined. "
-                            "Assignment ignored."
-                            .format(v, self._name, filename, linenr))
+            self._config._warn_undef_assign(
+                'attempt to assign the value "{}" to {}, which is referenced '
+                "at {}:{} but never defined. Assignment ignored."
+                .format(v, self._name, filename, linenr))
             return
 
         # Check if the value is valid for our type
