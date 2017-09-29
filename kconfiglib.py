@@ -1908,16 +1908,16 @@ class Config(object):
                       additional_deps_str,
                       "Locations: " + locations_str)
 
-    #
-    # Warnings and misc.
-    #
-
     def _is_header_line(self, line):
         """Returns True is the line could be part of the initial header in a
         .config file (which is really just another comment, but can be handy
-        for storing metadata."""
+        for storing metadata)."""
         return line is not None and line.startswith("#") and \
                not self._unset_re.match(line)
+
+    #
+    # Warnings
+    #
 
     def _warn(self, msg, filename=None, linenr=None):
         """For printing general warnings."""
