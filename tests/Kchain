@@ -75,6 +75,9 @@ config CHAIN_IMPLY_RELAY
     default y
     imply CHAIN_18 if CHAIN_17
 
+config CHAIN_18
+    tristate "chain 19"
+
 if CHAIN_18 = 0
 config CHAIN_19
     tristate "chain 19"

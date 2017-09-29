@@ -132,9 +132,6 @@ class Config(object):
 
         # The set of all symbols, indexed by name (a string)
         self._syms = {}
-        # Python 2/3 compatibility hack. This is the only one needed.
-        self._syms_iter = self._syms.values if sys.version_info[0] >= 3 else \
-                          self._syms.itervalues
 
         # The set of all defined symbols in the configuration in the order they
         # appear in the Kconfig files. This excludes the special symbols n, m,
@@ -576,7 +573,12 @@ class Config(object):
     def unset_user_values(self):
         """Resets the values of all symbols, as if Config.load_config() or
         Symbol.set_user_value() had never been called."""
-        for sym in self._syms_iter():
+
+        # set_user_value() already rejects undefined symbols, and they don't
+        # need to be invalidated (because their value never changes), so we can
+        # just iterate over defined symbols.
+
+        for sym in self._kconfig_syms:
             # We're iterating over all symbols already, so no need for symbols
             # to invalidate their dependent symbols
             sym._unset_user_value_no_recursive_invalidate()
@@ -1595,7 +1597,12 @@ class Config(object):
         #    (these won't be included in _dep as that makes the dependency
         #    graph unwieldy, but Symbol._get_dependent() will include them)
         #  - Any symbols in a choice statement that depends on the symbol
-        for sym in self._syms_iter():
+
+        # Only calculate _dep for defined symbols. Undefined symbols could
+        # theoretically be selected/implied, but it wouldn't change their value
+        # (they always evaluate to their name), so it's not a true dependency.
+
+        for sym in self._kconfig_syms:
             for _, e in sym._prompts:
                 add_expr_deps(e, sym)
 
@@ -1664,7 +1671,9 @@ class Config(object):
         return rec(expr)
 
     def _invalidate_all(self):
-        for sym in self._syms_iter():
+        # Undefined symbols never change value and don't need to be
+        # invalidated, so we can just iterate over defined symbols
+        for sym in self._kconfig_syms:
             sym._invalidate()
 
     #
