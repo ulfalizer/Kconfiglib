@@ -408,24 +408,16 @@ class Config(object):
 
         self._config_filename = filename
 
-        # Small optimization
-        set_re_match = self._set_re.match
-        unset_re_match = self._unset_re.match
-
         #
         # Read header
         #
 
-        def is_header_line(line):
-            return line is not None and line.startswith("#") and \
-                   not unset_re_match(line)
-
-        if not is_header_line(line_feeder.peek_next()):
+        if not self._is_header_line(line_feeder.peek_next()):
             self._config_header = None
         else:
             # Kinda inefficient, but this is an unlikely hotspot
             self._config_header = ""
-            while is_header_line(line_feeder.peek_next()):
+            while self._is_header_line(line_feeder.peek_next()):
                 self._config_header += line_feeder.get_next()[1:]
             # Makes c.write_config(".config", c.get_config_header()) preserve
             # the header exactly. We also handle weird cases like a .config
@@ -439,17 +431,15 @@ class Config(object):
         # Read assignments. Hotspot for some workloads.
         #
 
-        def warn_override(filename, linenr, name, old_user_val, new_user_val):
-            self._warn('overriding the value of {}. '
-                       'Old value: "{}", new value: "{}".'
-                       .format(name, old_user_val, new_user_val),
-                       filename, linenr)
-
         if replace:
             # This invalidates all symbols as a side effect
             self.unset_user_values()
         else:
             self._invalidate_all()
+
+        # Small optimization
+        set_re_match = self._set_re.match
+        unset_re_match = self._unset_re.match
 
         while 1:
             line = line_feeder.get_next()
@@ -461,49 +451,57 @@ class Config(object):
             set_match = set_re_match(line)
             if set_match:
                 name, val = set_match.groups()
+                if name not in self._syms:
+                    self._warn_undef_assign_load(
+                        name, val, line_feeder.filename, line_feeder.linenr)
+                    continue
 
-                if val.startswith('"'):
+                sym = self._syms[name]
+
+                if sym._type == STRING and val.startswith('"'):
                     if len(val) < 2 or val[-1] != '"':
-                        _parse_error(line, "malformed string literal",
-                                     line_feeder.filename, line_feeder.linenr)
+                        self._warn("malformed string literal",
+                                   line_feeder.filename,
+                                   line_feeder.linenr)
+                        continue
                     # Strip quotes and remove escapings. The unescaping
                     # procedure should be safe since " can only appear as \"
                     # inside the string.
-                    val = val[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+                    val = val[1:-1].replace('\\"', '"') \
+                                   .replace("\\\\", "\\")
 
-                if name in self._syms:
-                    sym = self._syms[name]
-                    if sym._user_val is not None:
-                        warn_override(line_feeder.filename, line_feeder.linenr,
-                                      name, sym._user_val, val)
+                if sym._is_choice_sym:
+                    user_mode = sym._parent._user_mode
+                    if user_mode is not None and user_mode != val:
+                        self._warn("assignment to {} changes mode of "
+                                   'containing choice from "{}" to "{}".'
+                                   .format(name, val, user_mode),
+                                   line_feeder.filename,
+                                   line_feeder.linenr)
 
-                    if sym._is_choice_sym:
-                        user_mode = sym._parent._user_mode
-                        if user_mode is not None and user_mode != val:
-                            self._warn("assignment to {} changes mode of "
-                                       'containing choice from "{}" to "{}".'
-                                       .format(name, val, user_mode),
-                                       line_feeder.filename,
-                                       line_feeder.linenr)
-
-                    sym._set_user_value_no_invalidate(val, True)
-                else:
-                    self._warn_undef_assign(
-                        'attempt to assign the value "{}" to the undefined '
-                        "symbol {}".format(val, name),
-                        line_feeder.filename, line_feeder.linenr)
             else:
                 unset_match = unset_re_match(line)
-                if unset_match:
-                    name = unset_match.group(1)
-                    if name in self._syms:
-                        sym = self._syms[name]
-                        if sym._user_val is not None:
-                            warn_override(line_feeder.filename,
-                                          line_feeder.linenr,
-                                          name, sym._user_val, "n")
+                if not unset_match:
+                    continue
 
-                        sym._set_user_value_no_invalidate("n", True)
+                name = unset_match.group(1)
+                if name not in self._syms:
+                    self._warn_undef_assign_load(
+                        name, val, line_feeder.filename, line_feeder.linenr)
+                    continue
+
+                sym = self._syms[name]
+                val = "n"
+
+            # Done parsing the assignment. Set the value.
+
+            if sym._user_val is not None:
+                self._warn('{} set more than once. Old value: "{}", new '
+                           'value: "{}".'
+                           .format(name, sym._user_val, val),
+                           line_feeder.filename, line_feeder.linenr)
+
+            sym._set_user_value_no_invalidate(val, True)
 
     def write_config(self, filename, header=None):
         """Writes out symbol values in the familiar .config format.
@@ -1910,6 +1908,17 @@ class Config(object):
                       additional_deps_str,
                       "Locations: " + locations_str)
 
+    #
+    # Warnings and misc.
+    #
+
+    def _is_header_line(self, line):
+        """Returns True is the line could be part of the initial header in a
+        .config file (which is really just another comment, but can be handy
+        for storing metadata."""
+        return line is not None and line.startswith("#") and \
+               not self._unset_re.match(line)
+
     def _warn(self, msg, filename=None, linenr=None):
         """For printing general warnings."""
         if self._print_warnings:
@@ -1921,6 +1930,12 @@ class Config(object):
         warnings."""
         if self._print_undef_assign:
             _stderr_msg("warning: " + msg, filename, linenr)
+
+    def _warn_undef_assign_load(self, name, val, filename, linenr):
+        """Special version for load_config()."""
+        self._warn_undef_assign(
+            'attempt to assign the value "{}" to the undefined symbol {}' \
+            .format(val, name), filename, linenr)
 
 class Item(object):
 
