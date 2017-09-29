@@ -136,7 +136,7 @@ class Config(object):
         # The set of all defined symbols in the configuration in the order they
         # appear in the Kconfig files. This excludes the special symbols n, m,
         # and y as well as symbols that are referenced but never defined.
-        self._kconfig_syms = []
+        self._defined_syms = []
 
         # The set of all named choices (yes, choices can have names), indexed
         # by name (a string)
@@ -349,7 +349,8 @@ class Config(object):
            merely referred to in the configuration will be included in the
            result, and will appear in the order that they are defined within
            the Kconfig configuration files."""
-        return list(self._syms.values()) if all_symbols else self._kconfig_syms
+        return list(self._syms.values()) if all_symbols else \
+               self._defined_syms
 
     def __iter__(self):
         """Convenience function for iterating over the set of all defined
@@ -362,7 +363,7 @@ class Config(object):
         configuration files. Symbols only referred to but not defined will not
         be included, nor will the special symbols n, m, and y. If you want to
         include such symbols as well, see config.get_symbols()."""
-        return iter(self._kconfig_syms)
+        return iter(self._defined_syms)
 
     def get_choices(self):
         """Returns a list containing all choice statements in the
@@ -526,7 +527,7 @@ class Config(object):
         # The C implementation reuses _write_to_conf for this, but we cache
         # _write_to_conf together with the value and don't invalidate cached
         # values when writing .config files, so that won't work.
-        for sym in self._kconfig_syms:
+        for sym in self._defined_syms:
             sym._already_written = False
 
         # Build configuration. Avoiding string concatenation is worthwhile at
@@ -578,7 +579,7 @@ class Config(object):
         # need to be invalidated (because their value never changes), so we can
         # just iterate over defined symbols.
 
-        for sym in self._kconfig_syms:
+        for sym in self._defined_syms:
             # We're iterating over all symbols already, so no need for symbols
             # to invalidate their dependent symbols
             sym._unset_user_value_no_recursive_invalidate()
@@ -704,7 +705,7 @@ class Config(object):
 
                 self._parse_properties(line_feeder, sym, deps, visible_if_deps)
 
-                self._kconfig_syms.append(sym)
+                self._defined_syms.append(sym)
                 block.append(sym)
 
             elif t0 == _T_SOURCE:
@@ -1602,7 +1603,7 @@ class Config(object):
         # theoretically be selected/implied, but it wouldn't change their value
         # (they always evaluate to their name), so it's not a true dependency.
 
-        for sym in self._kconfig_syms:
+        for sym in self._defined_syms:
             for _, e in sym._prompts:
                 add_expr_deps(e, sym)
 
@@ -1673,7 +1674,7 @@ class Config(object):
     def _invalidate_all(self):
         # Undefined symbols never change value and don't need to be
         # invalidated, so we can just iterate over defined symbols
-        for sym in self._kconfig_syms:
+        for sym in self._defined_syms:
             sym._invalidate()
 
     #
