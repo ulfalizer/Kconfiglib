@@ -1350,11 +1350,16 @@ class Config(object):
             else:
                 # Not an identifier/keyword
 
-                # Find the next non-whitespace character
-                while i < len(s) and s[i].isspace():
-                    i += 1
-                if i == len(s):
-                    break
+                # Note: _id_keyword_match and _initial_token_match strip
+                # trailing whitespace, making it safe to assume s[i] is the
+                # start of a token here. We manually strip trailing whitespace
+                # below as well.
+                #
+                # An old version stripped whitespace in this spot instead, but
+                # that leads to some redundancy and would cause
+                # _id_keyword_match to be tried against just "\n" fairly often
+                # (because file.readlines() keeps newlines).
+
                 c = s[i]
                 i += 1
 
@@ -1436,7 +1441,13 @@ class Config(object):
                     else:
                         token = _T_GREATER
 
-                else: continue # Invalid characters are ignored
+                else:
+                    # Invalid characters are ignored
+                    continue
+
+                # Skip trailing whitespace
+                while i < len(s) and s[i].isspace():
+                    i += 1
 
             tokens.append(token)
 
@@ -3627,14 +3638,16 @@ _STRING_LEX = frozenset((
 #    command_chars characters.
 # This is why things like "----help--" are accepted.
 #
-# As an optimization, this regex also fails to match for lines containing just
-# a comment, and also matches trailing whitespace so it can be jumped over
-# immediately.
+# In addition to the initial token, the regex also matches trailing whitespace
+# so that we can jump straight to the next token (or to the end of the line if
+# there's just a single token).
+#
+# As an optimization, this regex fails to match for lines containing just a
+# comment.
 _initial_token_re_match = re.compile(r"[^\w#]*(\w+)\s*").match
 
-# Matches an identifier/keyword optionally preceded by whitespace. Also eats
-# trailing whitespace as an optimization.
-_id_keyword_re_match = re.compile(r"\s*([\w./-]+)\s*").match
+# Matches an identifier/keyword, also eating trailing whitespace
+_id_keyword_re_match = re.compile(r"([\w./-]+)\s*").match
 
 # Regular expression for finding $-references to symbols in strings
 _sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
