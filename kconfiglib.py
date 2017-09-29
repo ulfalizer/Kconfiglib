@@ -267,12 +267,10 @@ class Config(object):
         """Returns the (uncommented) textual header of the .config file most
         recently loaded with load_config(). Returns None if no .config file has
         been loaded or if the most recently loaded .config file has no header.
-        The header consists of all lines up to but not including the first line
-        that either
 
-        1. Does not start with "#"
-        2. Has the form "# CONFIG_FOO is not set."
-        """
+        The header consists of all lines up to but not including the first line
+        that either (1) does not begin with "#", or (2) matches
+        "# CONFIG_FOO is not set"."""
         return self._config_header
 
     def get_mainmenu_text(self):
@@ -422,14 +420,18 @@ class Config(object):
             return line is not None and line.startswith("#") and \
                    not unset_re_match(line)
 
-        self._config_header = None
-
-        line = line_feeder.peek_next()
-        if is_header_line(line):
+        if not is_header_line(line_feeder.peek_next()):
+            self._config_header = None
+        else:
+            # Kinda inefficient, but this is an unlikely hotspot
             self._config_header = ""
             while is_header_line(line_feeder.peek_next()):
                 self._config_header += line_feeder.get_next()[1:]
-            # Remove trailing newline
+            # Makes c.write_config(".config", c.get_config_header()) preserve
+            # the header exactly. We also handle weird cases like a .config
+            # file with just "# foo" and no trailing newline in it (though we
+            # would never generate that ourselves), hence the slight
+            # awkwardness.
             if self._config_header.endswith("\n"):
                 self._config_header = self._config_header[:-1]
 
@@ -513,7 +515,8 @@ class Config(object):
 
         header (default: None): A textual header that will appear at the
            beginning of the file, with each line commented out automatically.
-           None means no header."""
+           Does not need to include a trailing newline. None means no
+           header."""
 
         # Symbol._already_written is set to True when _add_config_strings() is
         # called on a symbol, so that symbols defined in multiple locations

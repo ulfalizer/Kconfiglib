@@ -1651,15 +1651,12 @@ def run_selftests():
 
     config_test_file = "Kconfiglib/tests/config_test"
 
-    def verify_header(config_name, header):
-        c.load_config(config_name)
-        verify(c.get_config_header() == header,
-               "Expected the header '{}' from '{}', got the header '{}'.".
-               format(header, config_name, c.get_config_header()))
-
     def write_and_verify_header(header):
         c.write_config(config_test_file, header)
-        verify_header(config_test_file, header)
+        c.load_config(config_test_file)
+        verify(c.get_config_header() == header,
+               "The header {} morphed into {} on loading"
+               .format(repr(header), repr(c.get_config_header())))
 
     def verify_file_contents(fname, contents):
         with open(fname, "r") as f:
