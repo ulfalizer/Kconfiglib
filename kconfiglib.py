@@ -781,7 +781,7 @@ class Config(object):
                 self._menus.append(menu)
                 # Parse contents and put Items in menu._block
                 self._parse_block(line_feeder, _T_ENDMENU, menu,
-                                  menu._dep_expr,
+                                  menu._menu_dep,
                                   _make_and(visible_if_deps,
                                             menu._visible_if_expr),
                                   menu._block)
@@ -896,13 +896,10 @@ class Config(object):
                     _parse_error(line, 'expected "on" after "depends"',
                                  filename, linenr)
 
-                parsed_deps = self._parse_expr(tokens, stmt, line, filename,
-                                               linenr, True)
-
-                if isinstance(stmt, (Menu, Comment)):
-                    stmt._orig_deps = _make_and(stmt._orig_deps, parsed_deps)
-                else:
-                    depends_on_expr = _make_and(depends_on_expr, parsed_deps)
+                depends_on_expr = \
+                    _make_and(depends_on_expr,
+                              self._parse_expr(tokens, stmt, line, filename,
+                                               linenr, True))
 
             elif t0 == _T_HELP:
                 # Find first non-blank (not all-space) line and get its
@@ -936,6 +933,10 @@ class Config(object):
                 line_feeder.unget()
 
             elif t0 == _T_SELECT:
+                if not isinstance(stmt, Symbol):
+                    _parse_error(line, "only symbols can select", filename,
+                                 linenr)
+
                 target = tokens.get_next()
 
                 stmt._referenced_syms.add(target)
@@ -946,6 +947,10 @@ class Config(object):
                                               linenr)))
 
             elif t0 == _T_IMPLY:
+                if not isinstance(stmt, Symbol):
+                    _parse_error(line, "only symbols can imply", filename,
+                                 linenr)
+
                 target = tokens.get_next()
 
                 stmt._referenced_syms.add(target)
@@ -1000,7 +1005,7 @@ class Config(object):
                     stmt._is_from_env = True
 
                     if env_var not in os.environ:
-                        self._warn("The symbol {} references the non-existent "
+                        self._warn("the symbol {} references the non-existent "
                                    "environment variable {} and will get the "
                                    "empty string as its value. If you're "
                                    "using Kconfiglib via "
@@ -1063,10 +1068,10 @@ class Config(object):
                                  "'visible if' is only valid for menus",
                                  filename, linenr)
 
-                parsed_deps = self._parse_expr(tokens, stmt, line, filename,
-                                               linenr, True)
-                stmt._visible_if_expr = _make_and(stmt._visible_if_expr,
-                                                  parsed_deps)
+                stmt._visible_if_expr = \
+                    _make_and(stmt._visible_if_expr,
+                              self._parse_expr(tokens, stmt, line, filename,
+                                               linenr, True))
 
             elif t0 == _T_OPTIONAL:
                 if not isinstance(stmt, Choice):
@@ -1083,8 +1088,8 @@ class Config(object):
                 self._end_line_tokens = tokens
                 break
 
-        # Done parsing properties. Now propagate 'depends on' and enclosing
-        # menu/if dependencies to expressions.
+        # Done parsing properties. Now add the new
+        # prompts/defaults/selects/implies, with dependencies propagated.
 
         # The set of symbols referenced directly by the statement plus all
         # symbols referenced by enclosing menus and ifs
@@ -1094,59 +1099,65 @@ class Config(object):
         # Save original dependencies from enclosing menus and ifs
         stmt._deps_from_containing = deps
 
+        # The parent deps + the 'depends on' deps. This is also used to
+        # implicitly create menus when a symbol depends on the previous symbol,
+        # hence the name. In the C implementation, it's the dependency of a
+        # menu "node".
+        stmt._menu_dep = _make_and(deps, depends_on_expr)
+
         if isinstance(stmt, (Menu, Comment)):
-            stmt._dep_expr = _make_and(stmt._orig_deps, deps)
+            # For display purposes
+            stmt._orig_deps = depends_on_expr
         else:
             # Symbol or Choice
 
-            # See comment for _menu_dep
-            stmt._menu_dep = _make_and(deps, depends_on_expr)
-
             # Propagate dependencies to prompts
-
             if new_prompt is not None:
                 prompt, cond_expr = new_prompt
-                # Propagate 'visible if' dependencies from menus and local
-                # 'depends on' dependencies
+
+                # Propagate 'visible if' and 'depends on'
                 cond_expr = _make_and(_make_and(cond_expr, visible_if_deps),
                                       depends_on_expr)
-                # Save original
+
+                # Version without parent dependencies, for display
                 stmt._orig_prompts.append((prompt, cond_expr))
-                # Finalize with dependencies from enclosing menus and ifs
+
+                # This is what we actually use for evaluation
                 stmt._prompts.append((prompt, _make_and(cond_expr, deps)))
 
             # Propagate dependencies to defaults
+            for val_expr, cond_expr in new_def_exprs:
+                # Version without parent dependencies, for display
+                stmt._orig_def_exprs.append(
+                    (val_expr, _make_and(cond_expr, depends_on_expr)))
 
-            # Propagate 'depends on' dependencies
-            new_def_exprs = [(val_expr, _make_and(cond_expr, depends_on_expr))
-                             for val_expr, cond_expr in new_def_exprs]
-            # Save original
-            stmt._orig_def_exprs.extend(new_def_exprs)
-            # Finalize with dependencies from enclosing menus and ifs
-            stmt._def_exprs.extend([(val_expr, _make_and(cond_expr, deps))
-                                    for val_expr, cond_expr in new_def_exprs])
+                # This is what we actually use for evaluation
+                stmt._def_exprs.append(
+                    (val_expr, _make_and(cond_expr, stmt._menu_dep)))
 
-            # Propagate dependencies to selects and implies
+            # Handle selects
+            for target, cond_expr in new_selects:
+                # Used for display
+                stmt._orig_selects.append(
+                    (target, _make_and(cond_expr, depends_on_expr)))
 
-            # Only symbols can select and imply
-            if isinstance(stmt, Symbol):
-                # Propagate 'depends on' dependencies
-                new_selects = [(target, _make_and(cond_expr, depends_on_expr))
-                               for target, cond_expr in new_selects]
-                new_implies = [(target, _make_and(cond_expr, depends_on_expr))
-                               for target, cond_expr in new_implies]
-                # Save original
-                stmt._orig_selects.extend(new_selects)
-                stmt._orig_implies.extend(new_implies)
-                # Finalize with dependencies from enclosing menus and ifs
-                for target, cond in new_selects:
-                    target._rev_dep = \
-                        _make_or(target._rev_dep,
-                                 _make_and(stmt, _make_and(cond, deps)))
-                for target, cond in new_implies:
-                    target._weak_rev_dep = \
-                        _make_or(target._weak_rev_dep,
-                                 _make_and(stmt, _make_and(cond, deps)))
+                # Modify the dependencies of the selected symbol
+                target._rev_dep = \
+                    _make_or(target._rev_dep,
+                             _make_and(stmt, _make_and(cond_expr,
+                                                       stmt._menu_dep)))
+
+            # Handle implies
+            for target, cond_expr in new_implies:
+                # Used for display
+                stmt._orig_implies.append(
+                    (target, _make_and(cond_expr, depends_on_expr)))
+
+                # Modify the dependencies of the implied symbol
+                target._weak_rev_dep = \
+                    _make_or(target._weak_rev_dep,
+                             _make_and(stmt, _make_and(cond_expr,
+                                                       stmt._menu_dep)))
 
     def _parse_expr(self, feed, cur_item, line, filename, linenr, transform_m):
         """Parses an expression from the tokens in 'feed' using a simple
@@ -2508,9 +2519,7 @@ class Symbol(Item):
         # The set of symbols implied by this symbol (see get_implied_symbols())
         self._implied_syms = set()
 
-        # This records only dependencies from enclosing ifs and menus together
-        # with local 'depends on' dependencies. Needed when determining actual
-        # choice items (hrrrr...). See Choice._determine_actual_symbols().
+        # See comment in _parse_properties()
         self._menu_dep = None
 
         # See Symbol.get_ref/def_locations().
@@ -2769,7 +2778,7 @@ class Menu(Item):
     def get_visibility(self):
         """Returns the visibility of the menu. This also affects the visibility
         of subitems. See also Symbol.get_visibility()."""
-        return self._config._eval_expr(self._dep_expr)
+        return self._config._eval_expr(self._menu_dep)
 
     def get_visible_if_visibility(self):
         """Returns the visibility the menu gets from its 'visible if'
@@ -2817,7 +2826,7 @@ class Menu(Item):
         #   _title
         #   _all_referenced_syms
         #   _deps_from_containing
-        #   _dep_expr
+        #   _menu_dep
 
         # Dependencies specified with 'visible_if'
         self._visible_if_expr = None
@@ -2834,7 +2843,7 @@ class Menu(Item):
         self._block = []
 
     def _add_config_strings(self, add_fn):
-        if self._config._eval_expr(self._dep_expr) != "n" and \
+        if self._config._eval_expr(self._menu_dep) != "n" and \
            self._config._eval_expr(self._visible_if_expr) != "n":
             add_fn("\n#\n# {}\n#\n".format(self._title))
 
@@ -3159,7 +3168,7 @@ class Comment(Item):
     def get_visibility(self):
         """Returns the visibility of the comment. See also
         Symbol.get_visibility()."""
-        return self._config._eval_expr(self._dep_expr)
+        return self._config._eval_expr(self._menu_dep)
 
     def get_referenced_symbols(self, refs_from_enclosing=False):
         """See Symbol.get_referenced_symbols()."""
@@ -3200,18 +3209,15 @@ class Comment(Item):
         #   _text
         #   _all_referenced_syms
         #   _deps_from_containing
-        #   _dep_expr
-
-        # Dependency expression without dependencies from enclosing menus and
-        # ifs propagated
-        self._orig_deps = None
+        #   _menu_dep
+        #   _orig_deps
 
         # The set of symbols referenced by this comment (see
         # get_referenced_symbols())
         self._referenced_syms = set()
 
     def _add_config_strings(self, add_fn):
-        if self._config._eval_expr(self._dep_expr) != "n":
+        if self._config._eval_expr(self._menu_dep) != "n":
             add_fn("\n#\n# {}\n#\n".format(self._text))
 
 class Kconfig_Syntax_Error(Exception):
