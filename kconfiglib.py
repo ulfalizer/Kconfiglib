@@ -937,22 +937,18 @@ class Config(object):
                     _parse_error(line, "only symbols can select", filename,
                                  linenr)
 
-                target = tokens.get_next()
-                stmt._referenced_syms.add(target)
                 new_selects.append(
-                    (target, self._parse_cond(tokens, stmt, line, filename,
-                                              linenr)))
+                    (tokens.get_next(),
+                     self._parse_cond(tokens, stmt, line, filename, linenr)))
 
             elif t0 == _T_IMPLY:
                 if not isinstance(stmt, Symbol):
                     _parse_error(line, "only symbols can imply", filename,
                                  linenr)
 
-                target = tokens.get_next()
-                stmt._referenced_syms.add(target)
                 new_implies.append(
-                    (target, self._parse_cond(tokens, stmt, line, filename,
-                                              linenr)))
+                    (tokens.get_next(),
+                     self._parse_cond(tokens, stmt, line, filename, linenr)))
 
             elif t0 in (_T_BOOL, _T_TRISTATE, _T_INT, _T_HEX, _T_STRING):
                 stmt._type = _TOKEN_TO_TYPE[t0]
@@ -981,15 +977,10 @@ class Config(object):
                                                       filename, linenr)
 
             elif t0 == _T_RANGE:
-                low = tokens.get_next()
-                high = tokens.get_next()
-
-                stmt._referenced_syms.add(low)
-                stmt._referenced_syms.add(high)
-
                 stmt._ranges.append(
-                    (low, high, self._parse_cond(tokens, stmt, line, filename,
-                                                 linenr)))
+                    (tokens.get_next(),
+                     tokens.get_next(),
+                     self._parse_cond(tokens, stmt, line, filename, linenr)))
 
             elif t0 == _T_OPTION:
                 if tokens.check(_T_ENV) and tokens.check(_T_EQUAL):
@@ -1234,9 +1225,6 @@ class Config(object):
         if isinstance(token, (Symbol, str)):
             # Plain symbol or relation
 
-            if cur_item is not None and isinstance(token, Symbol):
-                cur_item._referenced_syms.add(token)
-
             next_token = feed.peek_next()
             if next_token not in _TOKEN_TO_RELATION:
                 # Plain symbol
@@ -1246,15 +1234,13 @@ class Config(object):
                 # "m" && MODULES.
                 if transform_m and (token is self._m or token == "m"):
                     return (_AND, "m", self._lookup_sym("MODULES"))
+
                 return token
 
             # Relation
-
-            relation = _TOKEN_TO_RELATION[feed.get_next()]
-            right_op = feed.get_next()
-            if cur_item is not None and isinstance(right_op, Symbol):
-                cur_item._referenced_syms.add(right_op)
-            return (relation, token, right_op)
+            return (_TOKEN_TO_RELATION[feed.get_next()],
+                    token,
+                    feed.get_next())
 
         if token == _T_NOT:
             return (_NOT, self._parse_factor(feed, cur_item, line, filename,
@@ -1597,9 +1583,11 @@ class Config(object):
 
         # Adds 'sym' as a directly dependent symbol to all symbols that appear
         # in the expression 'e'
-        def add_expr_deps(e, sym):
-            for s in _get_expr_syms(e):
-                s._dep.add(sym)
+        def add_expr_deps(expr, sym):
+            res = []
+            _expr_syms(expr, res)
+            for expr_sym in res:
+                expr_sym._dep.add(sym)
 
         # The directly dependent symbols of a symbol are:
         #  - Any symbols whose prompts, default values, _rev_dep (select
@@ -1961,26 +1949,6 @@ class Item(object):
         """Returns True if the item is a comment. Short for
         isinstance(item, kconfiglib.Comment)."""
         return isinstance(self, Comment)
-
-    def get_referenced_symbols(self, refs_from_enclosing=False):
-        """Returns the set() of all symbols referenced by this item. For
-        example, the symbol defined by
-
-        config FOO
-            bool
-            prompt "foo" if A && B
-            default C if D
-            depends on E
-            select F if G
-
-        references the symbols A through G.
-
-        refs_from_enclosing (default: False): If True, the symbols referenced
-           by enclosing menus and ifs will be included in the result."""
-        if not refs_from_enclosing:
-            return self._referenced_syms
-        return self._referenced_syms | \
-               _get_expr_syms(self._deps_from_containing)
 
 class Symbol(Item):
 
@@ -2351,6 +2319,45 @@ class Symbol(Item):
         get_assignable_values() and is_modifiable() before using this."""
         return _get_visibility(self)
 
+    def get_referenced_symbols(self, refs_from_enclosing=False):
+        """Returns the set() of all symbols referenced by this item. For
+        example, the symbol defined by
+
+        config FOO
+            bool
+            prompt "foo" if A && B
+            default C if D
+            depends on E
+            select F if G
+
+        references the symbols A through G.
+
+        refs_from_enclosing (default: False): If True, the symbols referenced
+           by enclosing menus and ifs will be included in the result."""
+        res = []
+
+        for _, cond_expr in self._orig_prompts:
+            _expr_syms(cond_expr, res)
+        for val_expr, cond_expr in self._orig_def_exprs:
+            _expr_syms(val_expr, res)
+            _expr_syms(cond_expr, res)
+        for sym, cond_expr in self._orig_selects:
+            res.append(sym)
+            _expr_syms(cond_expr, res)
+        for sym, cond_expr in self._orig_implies:
+            res.append(sym)
+            _expr_syms(cond_expr, res)
+        for low, high, cond_expr in self._ranges:
+            res.append(low)
+            res.append(high)
+            _expr_syms(cond_expr, res)
+
+        if refs_from_enclosing:
+            _expr_syms(self._deps_from_containing, res)
+
+        # Remove duplicates and return
+        return set(res)
+
     def get_selected_symbols(self):
         """Returns the set() of all symbols X for which this symbol has a
         'select X' or 'select X if Y' (regardless of whether Y is satisfied or
@@ -2498,9 +2505,6 @@ class Symbol(Item):
 
         # Dependencies inherited from containing menus and ifs
         self._deps_from_containing = None
-        # The set of symbols referenced by this symbol (see
-        # get_referenced_symbols())
-        self._referenced_syms = set()
 
         # See comment in _parse_properties()
         self._menu_dep = None
@@ -2768,6 +2772,19 @@ class Menu(Item):
         condition. "y" if the menu has no 'visible if' condition."""
         return self._config._eval_expr(self._visible_if_expr)
 
+    def get_referenced_symbols(self, refs_from_enclosing=False):
+        """See Symbol.get_referenced_symbols()."""
+        res = []
+
+        _expr_syms(self._visible_if_expr, res)
+        _expr_syms(self._orig_deps
+                   if not refs_from_enclosing else
+                   self._menu_dep,
+                   res)
+
+        # Remove duplicates and return
+        return set(res)
+
     def __str__(self):
         """Returns a string containing various information about the menu."""
         depends_on_str = self._config._expr_val_str(self._orig_deps,
@@ -2811,10 +2828,6 @@ class Menu(Item):
         # Dependency expression without dependencies from enclosing menus and
         # ifs propagated
         self._orig_deps = None
-
-        # The set of symbols referenced by this menu (see
-        # get_referenced_symbols())
-        self._referenced_syms = set()
 
         # Contained items
         self._block = []
@@ -2967,6 +2980,22 @@ class Choice(Item):
         in the choice, use get_items()."""
         return self._actual_symbols
 
+    def get_referenced_symbols(self, refs_from_enclosing=False):
+        """See Symbol.get_referenced_symbols()."""
+        res = []
+
+        for _, cond_expr in self._orig_prompts:
+            _expr_syms(cond_expr, res)
+        for val_expr, cond_expr in self._orig_def_exprs:
+            _expr_syms(val_expr, res)
+            _expr_syms(cond_expr, res)
+
+        if refs_from_enclosing:
+            _expr_syms(self._deps_from_containing, res)
+
+        # Remove duplicates and return
+        return set(res)
+
     def get_visibility(self):
         """Returns the visibility of the choice statement: one of "n", "m" or
         "y". This acts as an upper limit on the mode of the choice (though bool
@@ -3025,10 +3054,6 @@ class Choice(Item):
         # enclosing menus and ifs propagated
         self._orig_prompts = []
         self._orig_def_exprs = []
-
-        # The set of symbols referenced by this choice (see
-        # get_referenced_symbols())
-        self._referenced_syms = set()
 
         # See Choice.get_def_locations()
         self._def_locations = []
@@ -3141,6 +3166,18 @@ class Comment(Item):
         Symbol.get_visibility()."""
         return self._config._eval_expr(self._menu_dep)
 
+    def get_referenced_symbols(self, refs_from_enclosing=False):
+        """See Symbol.get_referenced_symbols()."""
+        res = []
+
+        _expr_syms(self._orig_deps
+                   if not refs_from_enclosing else
+                   self._menu_dep,
+                   res)
+
+        # Remove duplicates and return
+        return set(res)
+
     def __str__(self):
         """Returns a string containing various information about the
         comment."""
@@ -3176,10 +3213,6 @@ class Comment(Item):
         #   _deps_from_containing
         #   _menu_dep
         #   _orig_deps
-
-        # The set of symbols referenced by this comment (see
-        # get_referenced_symbols())
-        self._referenced_syms = set()
 
     def _add_config_strings(self, add_fn):
         if self._config._eval_expr(self._menu_dep) != "n":
@@ -3370,32 +3403,30 @@ def _make_or(e1, e2):
         return e2
     return (_OR, e1, e2)
 
-def _get_expr_syms_rec(expr, res):
-    """_get_expr_syms() helper. Recurses through expressions."""
+def _expr_syms_rec(expr, res):
+    """_expr_syms() helper. Recurses through expressions."""
     if isinstance(expr, Symbol):
-        res.add(expr)
+        res.append(expr)
     elif isinstance(expr, str):
         return
     elif expr[0] in (_AND, _OR):
-        _get_expr_syms_rec(expr[1], res)
-        _get_expr_syms_rec(expr[2], res)
+        _expr_syms_rec(expr[1], res)
+        _expr_syms_rec(expr[2], res)
     elif expr[0] == _NOT:
-        _get_expr_syms_rec(expr[1], res)
+        _expr_syms_rec(expr[1], res)
     elif expr[0] in _RELATIONS:
         if isinstance(expr[1], Symbol):
-            res.add(expr[1])
+            res.append(expr[1])
         if isinstance(expr[2], Symbol):
-            res.add(expr[2])
+            res.append(expr[2])
     else:
         _internal_error("Internal error while fetching symbols from an "
                         "expression with token stream {}.".format(expr))
 
-def _get_expr_syms(expr):
-    """Returns the set() of symbols appearing in expr."""
-    res = set()
+def _expr_syms(expr, res):
+    """append()s the symbols in 'expr' to 'res'. Does not remove duplicates."""
     if expr is not None:
-        _get_expr_syms_rec(expr, res)
-    return res
+        _expr_syms_rec(expr, res)
 
 def _str_val(obj):
     """Returns the value of obj as a string. If obj is not a string (constant
