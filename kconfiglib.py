@@ -1091,11 +1091,6 @@ class Config(object):
         # Done parsing properties. Now add the new
         # prompts/defaults/selects/implies, with dependencies propagated.
 
-        # The set of symbols referenced directly by the statement plus all
-        # symbols referenced by enclosing menus and ifs
-        stmt._all_referenced_syms = stmt._referenced_syms | \
-                                    _get_expr_syms(deps)
-
         # Save original dependencies from enclosing menus and ifs
         stmt._deps_from_containing = deps
 
@@ -1973,6 +1968,26 @@ class Item(object):
         isinstance(item, kconfiglib.Comment)."""
         return isinstance(self, Comment)
 
+    def get_referenced_symbols(self, refs_from_enclosing=False):
+        """Returns the set() of all symbols referenced by this item. For
+        example, the symbol defined by
+
+        config FOO
+            bool
+            prompt "foo" if A && B
+            default C if D
+            depends on E
+            select F if G
+
+        references the symbols A through G.
+
+        refs_from_enclosing (default: False): If True, the symbols referenced
+           by enclosing menus and ifs will be included in the result."""
+        if not refs_from_enclosing:
+            return self._referenced_syms
+        return self._referenced_syms | \
+               _get_expr_syms(self._deps_from_containing)
+
 class Symbol(Item):
 
     """Represents a configuration symbol - e.g. FOO for
@@ -2342,24 +2357,6 @@ class Symbol(Item):
         get_assignable_values() and is_modifiable() before using this."""
         return _get_visibility(self)
 
-    def get_referenced_symbols(self, refs_from_enclosing=False):
-        """Returns the set() of all symbols referenced by this symbol. For
-        example, the symbol defined by
-
-        config FOO
-            bool
-            prompt "foo" if A && B
-            default C if D
-            depends on E
-            select F if G
-
-        references the symbols A through G.
-
-        refs_from_enclosing (default: False): If True, the symbols referenced
-           by enclosing menus and ifs will be included in the result."""
-        return self._all_referenced_syms if refs_from_enclosing else \
-               self._referenced_syms
-
     def get_selected_symbols(self):
         """Returns the set() of all symbols X for which this symbol has a
         'select X' or 'select X if Y' (regardless of whether Y is satisfied or
@@ -2510,9 +2507,6 @@ class Symbol(Item):
         # The set of symbols referenced by this symbol (see
         # get_referenced_symbols())
         self._referenced_syms = set()
-        # Like _referenced_syms, but includes symbols from
-        # dependencies inherited from enclosing menus and ifs
-        self._all_referenced_syms = set()
         # The set of symbols selected by this symbol (see
         # get_selected_symbols())
         self._selected_syms = set()
@@ -2785,11 +2779,6 @@ class Menu(Item):
         condition. "y" if the menu has no 'visible if' condition."""
         return self._config._eval_expr(self._visible_if_expr)
 
-    def get_referenced_symbols(self, refs_from_enclosing=False):
-        """See Symbol.get_referenced_symbols()."""
-        return self._all_referenced_syms if refs_from_enclosing else \
-               self._referenced_syms
-
     def __str__(self):
         """Returns a string containing various information about the menu."""
         depends_on_str = self._config._expr_val_str(self._orig_deps,
@@ -2824,7 +2813,6 @@ class Menu(Item):
         #   _filename
         #   _linenr
         #   _title
-        #   _all_referenced_syms
         #   _deps_from_containing
         #   _menu_dep
 
@@ -2990,11 +2978,6 @@ class Choice(Item):
         in the choice, use get_items()."""
         return self._actual_symbols
 
-    def get_referenced_symbols(self, refs_from_enclosing=False):
-        """See Symbol.get_referenced_symbols()."""
-        return self._all_referenced_syms if refs_from_enclosing else \
-               self._referenced_syms
-
     def get_visibility(self):
         """Returns the visibility of the choice statement: one of "n", "m" or
         "y". This acts as an upper limit on the mode of the choice (though bool
@@ -3038,7 +3021,6 @@ class Choice(Item):
         #   _config
         #   _parent
         #   _deps_from_containing
-        #   _all_referenced_syms
         #   _actual_symbols (set in _determine_actual_symbols())
 
         self._name = None # Yes, choices can be named
@@ -3170,11 +3152,6 @@ class Comment(Item):
         Symbol.get_visibility()."""
         return self._config._eval_expr(self._menu_dep)
 
-    def get_referenced_symbols(self, refs_from_enclosing=False):
-        """See Symbol.get_referenced_symbols()."""
-        return self._all_referenced_syms if refs_from_enclosing else \
-               self._referenced_syms
-
     def __str__(self):
         """Returns a string containing various information about the
         comment."""
@@ -3207,7 +3184,6 @@ class Comment(Item):
         #   _filename
         #   _linenr
         #   _text
-        #   _all_referenced_syms
         #   _deps_from_containing
         #   _menu_dep
         #   _orig_deps
