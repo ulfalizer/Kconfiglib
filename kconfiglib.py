@@ -938,10 +938,7 @@ class Config(object):
                                  linenr)
 
                 target = tokens.get_next()
-
                 stmt._referenced_syms.add(target)
-                stmt._selected_syms.add(target)
-
                 new_selects.append(
                     (target, self._parse_cond(tokens, stmt, line, filename,
                                               linenr)))
@@ -952,10 +949,7 @@ class Config(object):
                                  linenr)
 
                 target = tokens.get_next()
-
                 stmt._referenced_syms.add(target)
-                stmt._implied_syms.add(target)
-
                 new_implies.append(
                     (target, self._parse_cond(tokens, stmt, line, filename,
                                               linenr)))
@@ -2362,14 +2356,14 @@ class Symbol(Item):
         'select X' or 'select X if Y' (regardless of whether Y is satisfied or
         not). This is a subset of the symbols returned by
         get_referenced_symbols()."""
-        return self._selected_syms
+        return {sym for sym, _ in self._orig_selects}
 
     def get_implied_symbols(self):
         """Returns the set() of all symbols X for which this symbol has an
         'imply X' or 'imply X if Y' (regardless of whether Y is satisfied or
         not). This is a subset of the symbols returned by
         get_referenced_symbols()."""
-        return self._implied_syms
+        return {sym for sym, _ in self._orig_implies}
 
     def set_user_value(self, v):
         """Sets the user value of the symbol.
@@ -2507,11 +2501,6 @@ class Symbol(Item):
         # The set of symbols referenced by this symbol (see
         # get_referenced_symbols())
         self._referenced_syms = set()
-        # The set of symbols selected by this symbol (see
-        # get_selected_symbols())
-        self._selected_syms = set()
-        # The set of symbols implied by this symbol (see get_implied_symbols())
-        self._implied_syms = set()
 
         # See comment in _parse_properties()
         self._menu_dep = None
