@@ -1094,6 +1094,9 @@ class Config(object):
         else:
             # Symbol or Choice
 
+            if isinstance(stmt, Symbol):
+                stmt._direct_deps = _make_or(stmt._direct_deps, stmt._menu_dep)
+
             # Propagate dependencies to prompts
             if new_prompt is not None:
                 prompt, cond_expr = new_prompt
@@ -1608,14 +1611,20 @@ class Config(object):
             for expr_sym in res:
                 expr_sym._dep.add(sym)
 
-        # The directly dependent symbols of a symbol are:
+        # The directly dependent symbols of a symbol S are:
+        #
         #  - Any symbols whose prompts, default values, _rev_dep (select
-        #    condition), _weak_rev_dep (imply condition) or ranges depend on
-        #    the symbol
-        #  - Any symbols that belong to the same choice statement as the symbol
-        #    (these won't be included in _dep as that makes the dependency
-        #    graph unwieldy, but Symbol._get_dependent() will include them)
-        #  - Any symbols in a choice statement that depends on the symbol
+        #    condition), _weak_rev_dep (imply condition) or ranges depend on S
+        #
+        #  - Any symbol that has S as a direct dependency (has S in
+        #    _direct_deps). This is needed to get invalidation right for
+        #    'imply'.
+        #
+        #  - Any symbols that belong to the same choice statement as S
+        #    (these won't be included in S._dep as that makes the dependency
+        #    graph unwieldy, but S._get_dependent() will include them)
+        #
+        #  - Any symbols in a choice statement that depends on S
 
         # Only calculate _dep for defined symbols. Undefined symbols could
         # theoretically be selected/implied, but it wouldn't change their value
@@ -1636,6 +1645,8 @@ class Config(object):
                 add_expr_deps(l, sym)
                 add_expr_deps(u, sym)
                 add_expr_deps(e, sym)
+
+            add_expr_deps(sym._direct_deps, sym)
 
             if sym._is_choice_sym:
                 choice = sym._parent
@@ -2098,11 +2109,14 @@ class Symbol(Item):
                             val = self._config._eval_min(def_expr, cond_val)
                             break
 
-                    weak_rev_dep_val = \
-                        self._config._eval_expr(self._weak_rev_dep)
-                    if weak_rev_dep_val != "n":
-                        self._write_to_conf = True
-                        val = self._config._eval_max(val, weak_rev_dep_val)
+                    # Weak reverse dependencies are only considered if our
+                    # direct dependencies are met
+                    if self._config._eval_expr(self._direct_deps) != "n":
+                        weak_rev_dep_val = \
+                            self._config._eval_expr(self._weak_rev_dep)
+                        if weak_rev_dep_val != "n":
+                            self._write_to_conf = True
+                            val = self._config._eval_max(val, weak_rev_dep_val)
 
                 # Reverse (select-related) dependencies take precedence
                 rev_dep_val = self._config._eval_expr(self._rev_dep)
@@ -2528,6 +2542,11 @@ class Symbol(Item):
 
         # See comment in _parse_properties()
         self._menu_dep = None
+
+        # The direct dependencies (inherited + 'depends on', with OR if a
+        # symbol is defined in multiple locations). This is needed for 'imply'
+        # support.
+        self._direct_deps = "n"
 
         # See Symbol.get_ref/def_locations().
         self._def_locations = []

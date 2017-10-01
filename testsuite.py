@@ -115,6 +115,11 @@ def run_selftests():
                "value was '{}'."
                .format(sym_name, new_val, user_val, sym_new_val, sym_old_val))
 
+    def assign_and_verify(sym_name, user_val):
+        """Like assign_and_verify_new_value(), with the expected value being
+        the value just set."""
+        assign_and_verify_new_value(sym_name, user_val, user_val)
+
     def assign_and_verify_new_user_value(sym_name, user_val, new_user_val):
         """Assigns a user value to the symbol and verifies the new user
         value."""
@@ -1828,6 +1833,104 @@ def run_selftests():
            "Wrong Kconfig filename - got '{}'".format(kconfig_filename))
 
     #
+    # Imply semantics
+    #
+
+    print("Testing imply semantics...")
+
+    c = kconfiglib.Config("Kconfiglib/tests/Kimply")
+
+    verify_value("IMPLY_DIRECT_DEPS", "y")
+    verify_value("UNMET_DIRECT_1", "n")
+    verify_value("UNMET_DIRECT_2", "n")
+    verify_value("UNMET_DIRECT_3", "n")
+    verify_value("MET_DIRECT_1", "y")
+    verify_value("MET_DIRECT_2", "y")
+    verify_value("MET_DIRECT_3", "y")
+    verify_value("MET_DIRECT_4", "y")
+
+    verify_value("IMPLY_COND", "y")
+    verify_value("IMPLIED_N_COND", "n")
+    verify_value("IMPLIED_M_COND", "m")
+    verify_value("IMPLIED_Y_COND", "y")
+
+    verify_value("IMPLY_N_1", "n")
+    verify_value("IMPLY_N_2", "n")
+    verify_value("IMPLIED_FROM_N_1", "n")
+    verify_value("IMPLIED_FROM_N_2", "n")
+
+    verify_value("IMPLY_M", "m")
+    verify_value("IMPLIED_M", "m")
+    verify_value("IMPLIED_M_BOOL", "y")
+
+    verify_value("IMPLY_M_TO_Y", "y")
+    verify_value("IMPLIED_M_TO_Y", "y")
+
+    # Test user value semantics
+
+    # Verify that IMPLIED_TRISTATE is invalidated if the direct
+    # dependencies change
+
+    assign_and_verify("IMPLY", "y")
+    assign_and_verify("DIRECT_DEP", "y")
+    verify_value("IMPLIED_TRISTATE", "y")
+    assign_and_verify("DIRECT_DEP", "n")
+    verify_value("IMPLIED_TRISTATE", "n")
+    # Set back for later tests
+    assign_and_verify("DIRECT_DEP", "y")
+
+    # Verify that IMPLIED_TRISTATE can be set to anything when IMPLY has value
+    # "n", and that it gets the value "n" by default (for non-imply-related
+    # reasons)
+
+    assign_and_verify("IMPLY", "n")
+    assign_and_verify("IMPLIED_TRISTATE", "n")
+    assign_and_verify("IMPLIED_TRISTATE", "m")
+    assign_and_verify("IMPLIED_TRISTATE", "y")
+    c["IMPLIED_TRISTATE"].unset_user_value()
+    verify_value("IMPLIED_TRISTATE", "n")
+
+    # Same as above for "m". Anything still goes, but "m" by default now.
+
+    assign_and_verify("IMPLY", "m")
+    assign_and_verify("IMPLIED_TRISTATE", "n")
+    assign_and_verify("IMPLIED_TRISTATE", "m")
+    assign_and_verify("IMPLIED_TRISTATE", "y")
+    c["IMPLIED_TRISTATE"].unset_user_value()
+    verify_value("IMPLIED_TRISTATE", "m")
+
+    # Same as above for "y". Only "n" and "y" should be accepted. "m" gets
+    # promoted to "y". Default should be "y".
+
+    assign_and_verify("IMPLY", "y")
+    assign_and_verify("IMPLIED_TRISTATE", "n")
+    assign_and_verify_new_value("IMPLIED_TRISTATE", "m", "y")
+    assign_and_verify("IMPLIED_TRISTATE", "y")
+    c["IMPLIED_TRISTATE"].unset_user_value()
+    verify_value("IMPLIED_TRISTATE", "y")
+
+    # Being implied to either "m" or "y" should give a bool the value "y"
+
+    c["IMPLY"].unset_user_value()
+    verify_value("IMPLIED_BOOL", "n")
+    assign_and_verify("IMPLY", "n")
+    verify_value("IMPLIED_BOOL", "n")
+    assign_and_verify("IMPLY", "m")
+    verify_value("IMPLIED_BOOL", "y")
+    assign_and_verify("IMPLY", "y")
+    verify_value("IMPLIED_BOOL", "y")
+
+    # A bool implied to "m" or "y" can take the values "n" and "y"
+
+    c["IMPLY"].set_user_value("m")
+    assign_and_verify("IMPLIED_BOOL", "n")
+    assign_and_verify("IMPLIED_BOOL", "y")
+
+    c["IMPLY"].set_user_value("y")
+    assign_and_verify("IMPLIED_BOOL", "n")
+    assign_and_verify("IMPLIED_BOOL", "y")
+
+    #
     # Choice semantics
     #
 
@@ -2025,7 +2128,7 @@ def run_selftests():
 
     # Test twice to cover dependency caching
     for i in range(0, 2):
-        n_deps = 37
+        n_deps = 39
         # Verify that D1, D2, .., D<n_deps> are dependent on D
         verify_dependent("D", ["D{}".format(i) for i in range(1, n_deps + 1)])
         # Choices

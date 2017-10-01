@@ -1,31 +1,31 @@
 config D
    bool "D"
-   select D29
-   imply D30
+   select D31
+   imply D32
 
 config DUMMY
-   select D31 if D
-   imply D32 if D
+   select D33 if D
+   imply D34 if D
 
 # The symbols below depend on D in different ways
 
 config D1
-   def_bool D
+    def_bool D
 
 config D2
-   int "D2" if D
+    int "D2" if D
 
 config D3
-   int "D3"
-   depends on D
+    int "D3"
+    depends on D
 
 config D4
-   bool "D4"
-   default D
+    bool "D4"
+    default D
 
 config D5
-   bool
-   default y if D
+    bool
+    default y if D
 
 config D6
     int
@@ -39,42 +39,47 @@ config D8
     int
     range 0 D
 
+# D9 and D10 depend on D even though they have no prompt, because it's needed
+# to get invalidation right for 'imply'
+
 if D
-
-# Has no prompt and hence does not depend on D even though it's within the
-# 'if D' block
-config NO_DEPEND
-    bool
-
 config D9
-    bool "D9"
+    bool
+endif
 
+config D10
+    bool
+    depends on D
+
+if D
+config D11
+    bool "D11"
 endif
 
 menu "m"
     depends on D
 
-config D10
-    bool "D10"
+config D12
+    bool "D12"
 
 menu "nested"
 
-config D11
-    bool "D11"
+config D13
+    bool "D13"
 
 endmenu
 endmenu
 
 # Indirect dependency
-config D12
-    def_tristate D11
+config D14
+    def_tristate D13
 
 menu "m"
     depends on D
 if D
 # Depends on D in lots of different ways
-config D13
-    int "D13" if D
+config D15
+    int "D15" if D
     depends on D && D12
     default D if D
     range D D if D
@@ -83,56 +88,50 @@ endmenu
 
 # Different kinds of expressions
 
-config D14
-    bool "D14" if D || n
-
-config D15
-    bool "D15" if n || D
-
 config D16
-    bool "D16" if D && y
+    bool "D16" if D || n
 
 config D17
-    bool "D17" if y && D
+    bool "D17" if n || D
 
 config D18
-    bool "D18" if !D
+    bool "D18" if D && y
 
 config D19
-    bool "D19" if !D && y
+    bool "D19" if y && D
 
 config D20
-    bool "D20" if !(D && y)
+    bool "D20" if !D
 
 config D21
-    bool "D21" if (D)
+    bool "D21" if !D && y
 
 config D22
-    bool "D22" if ((D))
+    bool "D22" if !(D && y)
 
 config D23
-    bool "D23" if n || (y && n || (m || D))
+    bool "D23" if (D)
 
 config D24
-    bool "D24" if D = n
+    bool "D24" if ((D))
 
 config D25
-    bool "D25" if n = D
+    bool "D25" if n || (y && n || (m || D))
 
 config D26
-    bool "D26" if n != D
+    bool "D26" if D = n
 
 config D27
-    bool "D27" if D != n
+    bool "D27" if n = D
 
 config D28
-    bool "D28" if n || ((n != D) || n)
+    bool "D28" if n != D
 
 config D29
-    tristate "D29"
+    bool "D29" if D != n
 
 config D30
-    tristate "D30"
+    bool "D30" if n || ((n != D) || n)
 
 config D31
     tristate "D31"
@@ -141,23 +140,29 @@ config D32
     tristate "D32"
 
 config D33
-    int "D33"
-    default 0 if D < 0
+    tristate "D33"
 
 config D34
-    int "D34"
-    default 0 if 0 < D
+    tristate "D34"
 
 config D35
     int "D35"
-    default 0 if 0 <= D
+    default 0 if D < 0
 
 config D36
     int "D36"
-    default 0 if 0 > D
+    default 0 if 0 < D
 
 config D37
     int "D37"
+    default 0 if 0 <= D
+
+config D38
+    int "D38"
+    default 0 if 0 > D
+
+config D39
+    int "D39"
     default 0 if 0 >= D
 
 #
