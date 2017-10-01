@@ -1267,18 +1267,21 @@ class Config(object):
            register new symbols."""
 
         # Tricky implementation detail: While parsing a token, 'token' refers
-        # to the previous token. See _STRING_LEX for why this is needed.
+        # to the previous token. See _NOT_REF for why this is needed.
 
         if for_eval:
             token = None
             tokens = []
-            i = 0 # The current index in the string being tokenized
+
+            # The current index in the string being tokenized
+            i = 0
 
         else:
             # See comment at _initial_token_re_match definition
             initial_token_match = _initial_token_re_match(s)
             if not initial_token_match:
                 return _Feed(())
+
             keyword = _get_keyword(initial_token_match.group(1))
             if keyword == _T_HELP:
                 # Avoid junk after "help", e.g. "---", being registered as a
@@ -1295,8 +1298,8 @@ class Config(object):
 
         # Main tokenization loop (for tokens past the first one)
         while i < len(s):
-            # Test for an identifier/keyword preceded by whitespace first; this
-            # is the most common case.
+            # Test for an identifier/keyword first. This is the most common
+            # case.
             id_keyword_match = _id_keyword_re_match(s, i)
             if id_keyword_match:
                 # We have an identifier or keyword
@@ -1304,34 +1307,37 @@ class Config(object):
                 # Jump past it
                 i = id_keyword_match.end()
 
-                # Check what it is
+                # Check what it is. lookup_sym() will take care of allocating
+                # new symbols for us the first time we see them. Note that
+                # 'token' still refers to the previous token.
+
                 name = id_keyword_match.group(1)
                 keyword = _get_keyword(name)
                 if keyword is not None:
                     # It's a keyword
                     token = keyword
-                elif token in _STRING_LEX:
-                    # What would ordinarily be considered an identifier is
-                    # treated as a string after certain tokens
-                    token = name
+
+                elif token not in _NOT_REF:
+                    # It's a symbol reference
+                    token = self._lookup_sym(name, for_eval)
+                    token._ref_locations.append((filename, linenr))
+
+                elif token == _T_CONFIG:
+                    # It's a symbol definition
+                    token = self._lookup_sym(name, for_eval)
+                    token._def_locations.append((filename, linenr))
+
                 else:
-                    # It's a symbol name. _lookup_sym() will take care of
-                    # allocating a new Symbol instance if it's the first time
-                    # we see it.
-                    sym = self._lookup_sym(name, for_eval)
-
-                    # Also handles 'menuconfig'
-                    if token == _T_CONFIG:
-                        # If the previous token is _T_(MENU)CONFIG
-                        # ("(menu)config"), we're tokenizing the first line of
-                        # a symbol definition, and should remember this as a
-                        # location where the symbol is defined
-                        sym._def_locations.append((filename, linenr))
-                    else:
-                        # Otherwise, it's a reference to the symbol
-                        sym._ref_locations.append((filename, linenr))
-
-                    token = sym
+                    # It's a case of missing quotes. For example, the
+                    # following is accepted:
+                    #
+                    #   menu unquoted_title
+                    #
+                    #   config A
+                    #       tristate unquoted_prompt
+                    #
+                    #   endmenu
+                    token = name
 
             else:
                 # Not an identifier/keyword
@@ -3636,10 +3642,12 @@ _get_keyword = {
     "visible":        _T_VISIBLE,
 }.get
 
-# Tokens after which identifier-like lexemes are treated as strings. _T_CHOICE
-# is included to avoid symbols being registered for named choices.
-_STRING_LEX = frozenset((
+# Tokens after which identifier-like lexemes are treated as strings, plus
+# _T_CONFIG. This allows us to quickly check if we have a symbol reference (as
+# opposed to a definition or something else) when tokenizing.
+_NOT_REF = frozenset((
     _T_BOOL,
+    _T_CONFIG,
     _T_CHOICE,
     _T_COMMENT,
     _T_HEX,
