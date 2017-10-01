@@ -1076,7 +1076,8 @@ class Config(object):
                 break
 
         # Done parsing properties. Now add the new
-        # prompts/defaults/selects/implies, with dependencies propagated.
+        # prompts/defaults/selects/implies/ranges, with dependencies
+        # propagated.
 
         # Save original dependencies from enclosing menus and ifs
         stmt._deps_from_containing = deps
@@ -2518,9 +2519,9 @@ class Symbol(Item):
         # dependencies from parents propagated to them
         self._orig_prompts = []
         self._orig_def_exprs = []
-        self._orig_ranges = []
         self._orig_selects = []
         self._orig_implies = []
+        self._orig_ranges = []
 
         # Dependencies inherited from containing menus and ifs
         self._deps_from_containing = None
