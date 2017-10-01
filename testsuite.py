@@ -1328,6 +1328,11 @@ def run_selftests():
     verify_range("HEX_RANGE_10_40_DEPENDENT", 0x10, 0x40,  0x10)
     verify_range("INT_RANGE_10_40_DEPENDENT", 10,   40,    10)
 
+    # Ranges and symbols defined in multiple locations
+
+    verify_value("INACTIVE_RANGE", "2")
+    verify_value("ACTIVE_RANGE", "1")
+
     #
     # get_referenced_symbols()
     #

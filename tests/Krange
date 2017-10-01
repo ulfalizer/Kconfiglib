@@ -108,3 +108,26 @@ config INT_40
 config INT_RANGE_10_40_DEPENDENT
     int "int range 10-40 dependent"
     range INT_RANGE_10_20 INT_40
+
+#
+# Ranges on symbols defined in multiple locations
+#
+
+if n
+config INACTIVE_RANGE
+    range 0 1
+endif
+
+config INACTIVE_RANGE
+    int
+    # Default will apply and should not get clamped,
+    # because the range does not apply
+    default 2
+
+config ACTIVE_RANGE
+    range 0 1
+
+config ACTIVE_RANGE
+    int
+    # Default will apply and should be clamped to 1
+    default 2

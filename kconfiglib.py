@@ -730,6 +730,7 @@ class Config(object):
                                           line_feeder.linenr,
                                           kconfig_file, exp_kconfig_file,
                                           self._base_dir))
+
                 # Add items to the same block
                 self._parse_file(filename, parent, deps, visible_if_deps,
                                  block)
@@ -863,13 +864,14 @@ class Config(object):
         Takes care of propagating dependencies from enclosing menus and ifs."""
 
         # In case the symbol is defined in multiple locations, we need to
-        # remember what prompts, defaults, selects, and implies are new for
-        # this definition, as "depends on" should only apply to the local
+        # remember what prompts, defaults, selects, implies, and ranges are new
+        # for this definition, as "depends on" should only apply to the local
         # definition.
         new_prompt = None
         new_def_exprs = []
         new_selects = []
         new_implies = []
+        new_ranges = []
 
         # Dependencies from 'depends on' statements
         depends_on_expr = None
@@ -977,7 +979,7 @@ class Config(object):
                                                       filename, linenr)
 
             elif t0 == _T_RANGE:
-                stmt._ranges.append(
+                new_ranges.append(
                     (tokens.get_next(),
                      tokens.get_next(),
                      self._parse_cond(tokens, stmt, line, filename, linenr)))
@@ -1114,6 +1116,16 @@ class Config(object):
                 # This is what we actually use for evaluation
                 stmt._def_exprs.append(
                     (val_expr, _make_and(cond_expr, stmt._menu_dep)))
+
+            # Propagate dependencies to ranges
+            for low, high, cond_expr in new_ranges:
+                # Version without parent dependencies, for display
+                stmt._orig_ranges.append(
+                    (low, high, _make_and(cond_expr, depends_on_expr)))
+
+                # This is what we actually use for evaluation
+                stmt._ranges.append(
+                    (low, high, _make_and(cond_expr, stmt._menu_dep)))
 
             # Handle selects
             for target, cond_expr in new_selects:
@@ -1771,11 +1783,11 @@ class Config(object):
         if isinstance(sc, Symbol):
             # Build ranges string
             if isinstance(sc, Symbol):
-                if not sc._ranges:
+                if not sc._orig_ranges:
                     ranges_str = " (no ranges)"
                 else:
                     ranges_str_rows = []
-                    for l, u, cond_expr in sc._ranges:
+                    for l, u, cond_expr in sc._orig_ranges:
                         ranges_str_rows.append(
                             " [{}, {}]".format(s(l), s(u))
                             if cond_expr is None else
@@ -1784,7 +1796,7 @@ class Config(object):
                     ranges_str = "\n".join(ranges_str_rows)
 
             # Build default values string
-            if not sc._def_exprs:
+            if not sc._orig_def_exprs:
                 defaults_str = " (no default values)"
             else:
                 defaults_str_rows = []
@@ -2353,7 +2365,7 @@ class Symbol(Item):
         for sym, cond_expr in self._orig_implies:
             res.append(sym)
             _expr_syms(cond_expr, res)
-        for low, high, cond_expr in self._ranges:
+        for low, high, cond_expr in self._orig_ranges:
             res.append(low)
             res.append(high)
             _expr_syms(cond_expr, res)
@@ -2502,10 +2514,11 @@ class Symbol(Item):
 
         self._user_val = None # Value set by user
 
-        # The prompt, default value, select, and imply conditions without any
-        # dependencies from menus and ifs propagated to them
+        # Prompts, default values, ranges, selects, and implies without any
+        # dependencies from parents propagated to them
         self._orig_prompts = []
         self._orig_def_exprs = []
+        self._orig_ranges = []
         self._orig_selects = []
         self._orig_implies = []
 
