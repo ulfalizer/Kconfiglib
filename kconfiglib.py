@@ -722,14 +722,18 @@ class Config(object):
                     filename = os.path.join(self._base_dir, exp_kconfig_file)
 
                 if not os.path.exists(filename):
-                    raise IOError('{}:{}: sourced file "{}" (expands to "{}") '
-                                  "not found. Perhaps base_dir (argument to "
-                                  'Config.__init__(), currently "{}") is set '
-                                  'to the wrong value.'
-                                  .format(line_feeder.filename,
-                                          line_feeder.linenr,
-                                          kconfig_file, exp_kconfig_file,
-                                          self._base_dir))
+                    raise IOError(
+                        '{}:{}: sourced file "{}" (expands to "{}") not '
+                        "found. Perhaps base_dir (argument to "
+                        'Config.__init__(), currently "{}") is set to the '
+                        "the wrong value. Also note that e.g. $FOO in a "
+                        "'source' statement does not refer to the "
+                        "environment variable FOO, but rather to the Kconfig "
+                        "symbol FOO (which would commonly have "
+                        "'option env=\"FOO\"' in its definition)."
+                        .format(line_feeder.filename, line_feeder.linenr,
+                                kconfig_file, exp_kconfig_file,
+                                self._base_dir))
 
                 # Add items to the same block
                 self._parse_file(filename, parent, deps, visible_if_deps,
