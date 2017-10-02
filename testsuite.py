@@ -555,7 +555,7 @@ def run_selftests():
     os.environ["SRCARCH"] = "bar"
     os.environ["srctree"] = "baz"
 
-    c = kconfiglib.Config("Kconfiglib/tests/Ktext", base_dir = "foobar")
+    c = kconfiglib.Config("Kconfiglib/tests/Ktext", base_dir="foobar")
     c.load_config("Kconfiglib/tests/empty")
     c.set_print_warnings(False)
     c.set_print_undef_assign(True)
@@ -849,7 +849,7 @@ def run_selftests():
     # Expanded in the 'source' statement in Klocation
     os.environ["FOO"] = "tests"
 
-    c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib/")
+    c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir="Kconfiglib/")
 
     verify_def_locations("n")
     verify_def_locations("m")
@@ -881,7 +881,7 @@ def run_selftests():
 
     # Reload without the slash at the end of 'base_dir' to get coverage for
     # that as well
-    c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir = "Kconfiglib")
+    c = kconfiglib.Config("Kconfiglib/tests/Klocation", base_dir="Kconfiglib")
 
     verify_ref_locations("A",
       ("Kconfiglib/tests/Klocation", 10),
@@ -1651,7 +1651,7 @@ def run_selftests():
     os.environ["EnV_VaR1"] = "Kconfigl"
     os.environ["EnV_VaR2"] = "ib/tests"
     kconfiglib.Config("Kconfiglib/tests/Kbase_dir",
-                      base_dir = "$EnV_VaR1$EnV_VaR2/")
+                      base_dir="$EnV_VaR1$EnV_VaR2/")
 
     #
     # .config reading and writing
@@ -2193,7 +2193,7 @@ def run_compatibility_tests():
             # Previously we used to load all the arches once and keep them
             # around for the tests. That now uses a huge amount of memory (pypy
             # helps a bit), so reload them for each test instead.
-            test_fn(kconfiglib.Config(base_dir = "."))
+            test_fn(kconfiglib.Config(base_dir="."))
 
             # Let kbuild infer SRCARCH from ARCH if we aren't in speedy mode.
             # This could detect issues with the test suite.
