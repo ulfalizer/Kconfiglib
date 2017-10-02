@@ -224,7 +224,7 @@ class Config(object):
         self._top_block = []
         self._parse_file(filename, None, None, None, self._top_block)
 
-        # Build Symbol._dep for all symbols
+        # Build Symbol._direct_dependents for all symbols
         self._build_dep()
 
     def get_arch(self):
@@ -1594,12 +1594,12 @@ class Config(object):
     #
 
     def _build_dep(self):
-        """Populates the Symbol._dep sets, linking the symbol to the symbols
-        that immediately depend on it in the sense that changing the value of
-        the symbol might affect the values of those other symbols. This is used
-        for caching/invalidation purposes. The calculated sets might be larger
-        than necessary as we don't do any complicated analysis of the
-        expressions."""
+        """Populates the Symbol._direct_dependents sets, linking the symbol to
+        the symbols that immediately depend on it in the sense that changing
+        the value of the symbol might affect the values of those other symbols.
+        This is used for caching/invalidation purposes. The calculated sets
+        might be larger than necessary as we don't do any complicated analysis
+        of the expressions."""
 
         # Adds 'sym' as a directly dependent symbol to all symbols that appear
         # in the expression 'e'
@@ -1607,7 +1607,7 @@ class Config(object):
             res = []
             _expr_syms(expr, res)
             for expr_sym in res:
-                expr_sym._dep.add(sym)
+                expr_sym._direct_dependents.add(sym)
 
         # The directly dependent symbols of a symbol S are:
         #
@@ -1619,14 +1619,16 @@ class Config(object):
         #    'imply'.
         #
         #  - Any symbols that belong to the same choice statement as S
-        #    (these won't be included in S._dep as that makes the dependency
-        #    graph unwieldy, but S._get_dependent() will include them)
+        #    (these won't be included in S._direct_dependents as that makes the
+        #    dependency graph unwieldy, but S._get_dependent() will include
+        #    them)
         #
         #  - Any symbols in a choice statement that depends on S
 
-        # Only calculate _dep for defined symbols. Undefined symbols could
-        # theoretically be selected/implied, but it wouldn't change their value
-        # (they always evaluate to their name), so it's not a true dependency.
+        # Only calculate _direct_dependents for defined symbols. Undefined
+        # symbols could theoretically be selected/implied, but it wouldn't
+        # change their value (they always evaluate to their name), so it's not
+        # a true dependency.
 
         for sym in self._defined_syms:
             for _, e in sym._prompts:
@@ -2561,7 +2563,7 @@ class Symbol(Item):
         # sense). The total set of dependent symbols for the symbol (the
         # transitive closure) is calculated on an as-needed basis in
         # _get_dependent().
-        self._dep = set()
+        self._direct_dependents = set()
 
         # Cached values
 
@@ -2716,20 +2718,22 @@ class Symbol(Item):
         # running time of _get_dependent() on kernel Kconfigs by about 1/3 as
         # measured by line_profiler.
         #
-        # res = set(self._dep)
-        # for s in self._dep:
+        # res = set(self._direct_dependents)
+        # for s in self._direct_dependents:
         #     res |= s._get_dependent()
-        res = self._dep | \
-              {sym for dep in self._dep for sym in dep._get_dependent()}
+        res = self._direct_dependents | \
+              {sym for dep in self._direct_dependents
+                   for sym in dep._get_dependent()}
 
         if self._is_choice_sym:
             # Choice symbols also depend (recursively) on their siblings. The
-            # siblings are not included in _dep to avoid dependency loops.
+            # siblings are not included in _direct_dependents to avoid
+            # dependency loops.
             for sibling in self._parent._actual_symbols:
                 if sibling is not self:
                     res.add(sibling)
-                    res |= sibling._dep
-                    for s in sibling._dep:
+                    res |= sibling._direct_dependents
+                    for s in sibling._direct_dependents:
                         res |= s._get_dependent()
 
         self._cached_deps = res
