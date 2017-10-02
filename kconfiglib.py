@@ -1505,9 +1505,7 @@ class Config(object):
         if isinstance(expr, Symbol):
             # Non-bool/tristate symbols are always "n" in a tristate sense,
             # regardless of their value
-            if expr._type != BOOL and expr._type != TRISTATE:
-                return "n"
-            return expr.get_value()
+            return expr.get_value() if expr._type in (BOOL, TRISTATE) else "n"
 
         if isinstance(expr, str):
             return expr if expr in ("m", "y") else "n"
@@ -1521,12 +1519,6 @@ class Config(object):
                    "m" if ev2 != "n" else \
                    "n"
 
-        if expr[0] == _NOT:
-            ev = self._eval_expr_rec(expr[1])
-            return "n" if ev == "y" else \
-                   "y" if ev == "n" else \
-                   "m"
-
         if expr[0] == _OR:
             ev1 = self._eval_expr_rec(expr[1])
             if ev1 == "y":
@@ -1534,6 +1526,12 @@ class Config(object):
             ev2 = self._eval_expr_rec(expr[2])
             return ev2 if ev1 == "n" else \
                    "y" if ev2 == "y" else \
+                   "m"
+
+        if expr[0] == _NOT:
+            ev = self._eval_expr_rec(expr[1])
+            return "n" if ev == "y" else \
+                   "y" if ev == "n" else \
                    "m"
 
         if expr[0] in _RELATIONS:
@@ -2255,8 +2253,14 @@ class Symbol(Item):
 
         See also the tri_less*() and tri_greater*() functions, which could come
         in handy."""
-        if self._type != BOOL and self._type != TRISTATE:
+        if self._type not in (BOOL, TRISTATE):
             return None
+
+        # Fast path for the common case
+        if self._rev_dep == "n":
+            vis = _get_visibility(self)
+            return vis if vis != "n" else None
+
         rev_dep_val = self._config._eval_expr(self._rev_dep)
         # A bool selected to "m" gets promoted to "y", pinning it
         if rev_dep_val == "m" and self._type == BOOL:
@@ -2276,7 +2280,7 @@ class Symbol(Item):
 
         See also the tri_less*() and tri_greater*() functions, which could come
         in handy."""
-        if self._type != BOOL and self._type != TRISTATE:
+        if self._type not in (BOOL, TRISTATE):
             return None
         rev_dep_val = self._config._eval_expr(self._rev_dep)
         # A bool selected to "m" gets promoted to "y", pinning it
@@ -2298,7 +2302,7 @@ class Symbol(Item):
         This is basically a more convenient interface to
         get_lower/upper_bound() when wanting to test if a particular tristate
         value can be assigned."""
-        if self._type != BOOL and self._type != TRISTATE:
+        if self._type not in (BOOL, TRISTATE):
             return []
         rev_dep_val = self._config._eval_expr(self._rev_dep)
         # A bool selected to "m" gets promoted to "y", pinning it
@@ -2687,8 +2691,8 @@ class Symbol(Item):
                                       val))
 
         elif self._type in (INT, HEX):
-            add_fn("{}{}={}\n".format(self._config._config_prefix,
-                                      self._name, val))
+            add_fn("{}{}={}\n".format(self._config._config_prefix, self._name,
+                                      val))
 
         elif self._type == STRING:
             # Escape \ and "
@@ -2708,9 +2712,15 @@ class Symbol(Item):
         if self._cached_deps is not None:
             return self._cached_deps
 
-        res = set(self._dep)
-        for s in self._dep:
-            res |= s._get_dependent()
+        # Less readable version of the following, measured to reduce the the
+        # running time of _get_dependent() on kernel Kconfigs by about 1/3 as
+        # measured by line_profiler.
+        #
+        # res = set(self._dep)
+        # for s in self._dep:
+        #     res |= s._get_dependent()
+        res = self._dep | \
+              {sym for dep in self._dep for sym in dep._get_dependent()}
 
         if self._is_choice_sym:
             # Choice symbols also depend (recursively) on their siblings. The
