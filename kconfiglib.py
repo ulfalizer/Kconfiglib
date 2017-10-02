@@ -3252,20 +3252,16 @@ class Comment(Item):
     # Private methods
     #
 
-    def __init__(self):
-        """Comment constructor -- not intended to be called directly by
-        Kconfiglib clients."""
-
-        # These attributes are always set on the instance from outside and
-        # don't need defaults:
-        #   _config
-        #   _parent
-        #   _filename
-        #   _linenr
-        #   _text
-        #   _deps_from_containing
-        #   _menu_dep
-        #   _orig_deps
+    # These attributes are always set on the instance from outside and don't
+    # need defaults:
+    #   _config
+    #   _parent
+    #   _filename
+    #   _linenr
+    #   _text
+    #   _deps_from_containing
+    #   _menu_dep
+    #   _orig_deps
 
     def _add_config_strings(self, add_fn):
         if self._config._eval_expr(self._menu_dep) != "n":
