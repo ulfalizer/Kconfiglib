@@ -3519,9 +3519,9 @@ def _type_and_val(obj):
     """Helper to hack around the fact that we don't represent plain strings as
     Symbols. Takes either a plain string or a Symbol and returns a
     (<type>, <value>) tuple."""
-    if isinstance(obj, str):
-        return (STRING, obj)
-    return (obj._type, obj.get_value())
+    return (obj._type, obj.get_value()) \
+           if not isinstance(obj, str) \
+           else (STRING, obj)
 
 def _indentation(line):
     """Returns the length of the line's leading whitespace, treating tab stops
