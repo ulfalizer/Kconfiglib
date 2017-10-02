@@ -1723,12 +1723,10 @@ class Config(object):
             if sym_ref_match is None:
                 return s
 
-            sym_name = sym_ref_match.group(0)[1:]
-            sym = self._syms.get(sym_name)
-            expansion = "" if sym is None else sym.get_value()
+            sym = self._syms.get(sym_ref_match.group(1))
 
             s = s[:sym_ref_match.start()] + \
-                expansion + \
+                (sym.get_value() if sym is not None else "") + \
                 s[sym_ref_match.end():]
 
     def _expr_val_str(self, expr, no_value_str="(none)",
@@ -3730,7 +3728,7 @@ _initial_token_re_match = re.compile(r"[^\w#]*(\w+)\s*").match
 _id_keyword_re_match = re.compile(r"([\w./-]+)\s*").match
 
 # Regular expression for finding $-references to symbols in strings
-_sym_ref_re_search = re.compile(r"\$[A-Za-z0-9_]+").search
+_sym_ref_re_search = re.compile(r"\$([A-Za-z0-9_]+)").search
 
 # Strings to use for types
 _TYPENAME = {
