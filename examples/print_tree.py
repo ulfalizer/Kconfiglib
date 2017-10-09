@@ -1,23 +1,67 @@
-# Prints a tree of all items in the configuration
+# Prints the menu tree of the configuration. Dependencies between symbols can
+# sometimes implicitly alter the menu structure (see kconfig-language.txt), and
+# that's implemented too.
+#
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
+#
+# Example output:
+#
+#   ...
+#   config HAVE_KERNEL_LZO
+#   config HAVE_KERNEL_LZ4
+#   choice
+#     config KERNEL_GZIP
+#     config KERNEL_BZIP2
+#     config KERNEL_LZMA
+#     config KERNEL_XZ
+#     config KERNEL_LZO
+#     config KERNEL_LZ4
+#   config DEFAULT_HOSTNAME
+#   config SWAP
+#   config SYSVIPC
+#     config SYSVIPC_SYSCTL
+#   config POSIX_MQUEUE
+#     config POSIX_MQUEUE_SYSCTL
+#   config CROSS_MEMORY_ATTACH
+#   config FHANDLE
+#   config USELIB
+#   config AUDIT
+#   config HAVE_ARCH_AUDITSYSCALL
+#   config AUDITSYSCALL
+#   config AUDIT_WATCH
+#   config AUDIT_TREE
+#   menu "IRQ subsystem"
+#     config MAY_HAVE_SPARSE_IRQ
+#     config GENERIC_IRQ_LEGACY
+#     config GENERIC_IRQ_PROBE
+#   ...
 
-import kconfiglib
+from kconfiglib import Config, Symbol, Choice, MENU, COMMENT
 import sys
 
-def print_with_indent(s, indent):
+def indent_print(s, indent):
     print((" " * indent) + s)
 
-def print_items(items, indent):
-    for item in items:
-        if item.is_symbol():
-            print_with_indent("config {0}".format(item.get_name()), indent)
-        elif item.is_menu():
-            print_with_indent('menu "{0}"'.format(item.get_title()), indent)
-            print_items(item.get_items(), indent + 2)
-        elif item.is_choice():
-            print_with_indent('choice', indent)
-            print_items(item.get_items(), indent + 2)
-        elif item.is_comment():
-            print_with_indent('comment "{0}"'.format(item.get_text()), indent)
+def print_items(node, indent):
+    while node is not None:
+        if isinstance(node.item, Symbol):
+            indent_print("config " + node.item.name, indent)
 
-conf = kconfiglib.Config(sys.argv[1])
-print_items(conf.get_top_level_items(), 0)
+        elif isinstance(node.item, Choice):
+            indent_print("choice", indent)
+
+        elif node.item == MENU:
+            indent_print('menu "{0}"'.format(node.prompt[0]), indent)
+
+        elif node.item == COMMENT:
+            indent_print('comment "{0}"'.format(node.prompt[0]), indent)
+
+        if node.list is not None:
+            print_items(node.list, indent + 2)
+
+        node = node.next
+
+conf = Config(sys.argv[1])
+print_items(conf.top_menu, 0)

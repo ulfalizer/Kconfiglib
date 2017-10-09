@@ -1,28 +1,35 @@
 # This is a simpler version of allnoconfig.py, corresponding to how the C
-# implementation does it. Setting a user value that's not in the assignable
-# range of the symbol (between get_lower_bound() and get_upper_bound(), or,
-# equivalently, not in get_assignable_values()) is OK; the value will simply
-# get truncated downwards or upwards as determined by the visibility and
-# selects.
+# implementation does it. Verified by the test suite to produce identical
+# output to 'make allnoconfig' for all ARCHes.
+#
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py
+#
+# Implementation/performance note
+# ===============================
+#
+# Kconfiglib immediately invalidates (flags for recalculation) all (possibly)
+# dependent symbols when a value is assigned to a symbol, which slows this down
+# a bit (due to tons of redundant invalidation), but makes any assignment
+# pattern safe ("just works"). Config.load_config() instead invalidates all
+# symbols up front, making it much faster. If you really need to eke out
+# performance, look at how load_config() does things (which involves internal
+# APIs that don't invalidate symbols). This has been fast enough for all cases
+# I've seen so far though (around 3 seconds for this particular script on my
+# Core i7 2600K, including the initial Kconfig parsing).
 
-# This version is a bit slower compared allnoconfig.py since Kconfiglib
-# invalidates all dependent symbols for each set_user_value() call. This does not
-# happen for load_config(), which instead invalidates all symbols once after
-# the configuration has been loaded. This is OK for load_config() since nearly
-# all symbols will tend to be affected anyway.
-
-import kconfiglib
+from kconfiglib import Config, BOOL, TRISTATE
 import sys
 
-conf = kconfiglib.Config(sys.argv[1])
+conf = Config(sys.argv[1])
 
-# Avoid warnings printed by Kconfiglib when assigning a user value with
-# set_user_value() to a symbol that has no prompt (such assignments never have
-# an effect)
-conf.set_print_warnings(False)
+# Avoid warnings printed by Kconfiglib when assigning a value to a symbol that
+# has no prompt. Such assignments never have an effect.
+conf.disable_warnings()
 
-for sym in conf:
-    if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE):
-        sym.set_user_value("y" if sym.is_allnoconfig_y() else "n")
+for sym in conf.defined_syms:
+    if sym.type in (BOOL, TRISTATE):
+        sym.set_value("y" if sym.is_allnoconfig_y else "n")
 
 conf.write_config(".config")

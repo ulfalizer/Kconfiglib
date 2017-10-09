@@ -1,5 +1,6 @@
 config A
     bool
+    depends on UNDEFINED
 
 choice
     bool "C"
@@ -18,6 +19,7 @@ menu "m2"
 config F
     bool
 choice
+    tristate "foo"
 config G
     bool "g"
 config H

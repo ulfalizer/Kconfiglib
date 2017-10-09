@@ -1,6 +1,7 @@
 # Enabled/disabled in the test
 config MODULES
     bool "modules"
+    option modules
 
 config N
     def_tristate n

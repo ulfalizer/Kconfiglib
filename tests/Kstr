@@ -1,0 +1,76 @@
+if UNDEFINED
+endif
+
+config NO_TYPE
+
+config BASIC_NO_PROMPT
+    bool
+    help
+      blah blah
+
+        blah blah blah
+
+       blah
+
+config BASIC_PROMPT
+    bool "basic"
+
+config ADVANCED
+    tristate "prompt" if DEP
+    default DEFAULT_1
+    default DEFAULT_2 if DEP
+    select SELECTED_1
+    select SELECTED_2 if DEP
+    imply IMPLIED_1
+    imply IMPLIED_2 if DEP
+    help
+      first help text
+
+config ADVANCED
+    prompt "prompt 2"
+
+menuconfig ADVANCED
+    prompt "prompt 3"
+    depends on DEP2
+
+config ADVANCED
+    help
+      second help text
+
+config STRING
+    string
+    default "foo"
+    default "bar" if DEP
+    default STRING2
+    default STRING3 if DEP
+
+config INT
+    int 
+    range 1 2
+    range FOO BAR
+    range BAZ QAZ if DEP
+
+config MODULES
+    option modules
+
+config OPTIONS
+    option allnoconfig_y
+    option defconfig_list
+    option env="ENV"
+
+choice CHOICE
+    tristate "foo"
+    default CHOICE_1
+    default CHOICE_2 if dep
+
+config CHOICE_1
+    tristate "choice 1"
+
+config CHOICE_2
+    tristate "choice 2"
+
+endchoice
+
+choice
+    tristate "no name"
+endchoice

@@ -1,65 +1,112 @@
-# Works like allyesconfig. This is a bit more involved than allnoconfig as we
-# need to handle choices in two different modes:
+# Works like 'make allyesconfig'. Verified by the test suite to generate
+# identical output to 'make allyesconfig' for all ARCHES.
 #
-# "y": One symbol is "y", the rest are "n".
-# "m": Any number of symbols are "m", the rest are "n".
+# This could be implemented as a straightforward tree walk just like
+# allnoconfig.py (or even simpler like allnoconfig_simpler.py), but do it a bit
+# differently (roundabout) just to demonstrate some other possibilities.
 #
-# Only tristate choices can be in "m" mode. It is safe since the code for two
-# conflicting options will appear as separate modules instead of simultaneously
-# in the kernel.
+# allyesconfig is a bit more involved than allnoconfig as we need to handle
+# choices in two different modes:
 #
-# If a choice can be in "y" mode, it will be. If it can only be in "m" mode
-# (due to dependencies), then all the options will be set to "m".
+#   y: One symbol is "y", the rest are "n"
+#   m: Any number of symbols are "m", the rest are "n"
 #
-# The looping is in case setting one symbol to "y" (or "m") allows the value of
-# other symbols to be raised.
+# Only tristate choices can be in "m" mode. No "m" mode choices seem to appear
+# for allyesconfig on the kernel Kconfigs as of 4.14, but we still handle it.
+#
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py
 
-import kconfiglib
+from kconfiglib import Config, Choice, tri_less
 import sys
 
-conf = kconfiglib.Config(sys.argv[1])
+conf = Config(sys.argv[1])
 
-# Get a list of all symbols that are not in choices
-non_choice_syms = [sym for sym in conf.get_symbols() if
-                   not sym.is_choice_symbol()]
+# Collect all the choices in the configuration. Demonstrates how the menu node
+# tree can be walked iteratively by using the parent pointers.
 
-done = False
-while not done:
-    done = True
+choices = []
+node = conf.top_menu
+
+while 1:
+    if isinstance(node.item, Choice):
+        choices.append(node.item)
+
+    # Iterative tree walking by using parent pointers.
+    #
+    # Recursing on next pointers can blow the Python stack. Recursing on child
+    # pointers is safe (as is done in the other examples). This gives a
+    # template for how you can avoid recursing on both. The same logic is found
+    # in the C implementation.
+
+    if node.list is not None:
+        # Jump to child node if available
+        node = node.list
+
+    elif node.next is not None:
+        # Otherwise, jump to next node if available
+        node = node.next
+
+    else:
+        # Otherwise, look for parents with next nodes to jump to
+        while node.parent is not None:
+            node = node.parent
+            if node.next is not None:
+                node = node.next
+                break
+        else:
+            # No parents with next nodes, all nodes visited
+            break
+
+# Collect all symbols that are not in choices
+non_choice_syms = [sym for sym in conf.defined_syms if sym.choice is None]
+
+while 1:
+    no_changes = True
 
     # Handle symbols outside of choices
 
     for sym in non_choice_syms:
-        upper_bound = sym.get_upper_bound()
+        # See allnoconfig example. [-1] gives the last (highest) assignable
+        # value.
+        if sym.assignable and tri_less(sym.value, sym.assignable[-1]):
+            sym.set_value(sym.assignable[-1])
+            no_changes = False
 
-        # See corresponding comment for allnoconfig implementation
-        if upper_bound is not None and \
-           kconfiglib.tri_less(sym.get_value(), upper_bound):
-            sym.set_user_value(upper_bound)
-            done = False
+    # Handle choices
 
-    # Handle symbols within choices
+    for choice in choices:
+        # Handle a choice whose visibility allows it to be in "y" mode
 
-    for choice in conf.get_choices():
+        if choice.visibility == "y":
+            selection = choice.default_selection
 
-        # Handle choices whose visibility allow them to be in "y" mode
-
-        if choice.get_visibility() == "y":
-            selection = choice.get_selection_from_defaults()
+            # Does the choice have a default selection that we haven't already
+            # selected?
             if selection is not None and \
-               selection is not choice.get_user_selection():
-                selection.set_user_value("y")
-                done = False
+               selection is not choice.user_value:
 
-        # Handle choices whose visibility only allow them to be in "m" mode.
+                # Yup, select it
+                selection.set_value("y")
+                no_changes = False
+
+        # Handle a choice whose visibility only allows it to be in "m" mode.
         # This might happen if a choice depends on a symbol that can only be
-        # "m" for example.
+        # "m", for example.
 
-        elif choice.get_visibility() == "m":
-            for sym in choice.get_symbols():
-                if sym.get_value() != "m" and \
-                   sym.get_upper_bound() != "n":
-                    sym.set_user_value("m")
-                    done = False
+        elif choice.visibility == "m":
+            for sym in choice.symbols:
+
+                # Does the choice have a symbol that can be "m" that we haven't
+                # already set to "m"?
+                if sym.user_value != "m" and "m" in sym.assignable:
+
+                    # Yup, set it
+                    sym.set_value("m")
+                    no_changes = False
+
+    if no_changes:
+        break
 
 conf.write_config(".config")

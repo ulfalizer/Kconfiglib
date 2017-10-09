@@ -1,18 +1,52 @@
-# Loads a Kconfig and a .config and prints information about a symbol.
+# Loads a Kconfig and a .config and prints a symbol.
+#
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/print_sym_info.py SCRIPT_ARG=<name>
+#
+# Example output for SCRIPT_ARG=modules:
+# 
+#   config MODULES
+#   	bool
+#   	prompt "Enable loadable module support"
+#   	option modules
+#   	help
+#   	  Kernel modules are small pieces of compiled code which can
+#   	  be inserted in the running kernel, rather than being
+#   	  permanently built into the kernel.  You use the "modprobe"
+#   	  tool to add (and sometimes remove) them.  If you say Y here,
+#   	  many parts of the kernel can be built as modules (by
+#   	  answering M instead of Y where indicated): this is most
+#   	  useful for infrequently used options which are not required
+#   	  for booting.  For more information, see the man pages for
+#   	  modprobe, lsmod, modinfo, insmod and rmmod.
+#   	  
+#   	  If you say Y here, you will need to run "make
+#   	  modules_install" to put the modules under /lib/modules/
+#   	  where modprobe can find them (you may need to be root to do
+#   	  this).
+#   	  
+#   	  If unsure, say Y.
+#
+#   value = n
+#   visibility = y
+#   currently assignable values: n, y
+#   defined at init/Kconfig:1678
 
 import kconfiglib
 import sys
 
-# Create a Config object representing a Kconfig configuration. (Any number of
-# these can be created -- the library has no global state.)
+if len(sys.argv) < 3:
+    print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
+    sys.exit(1)
+
 conf = kconfiglib.Config(sys.argv[1])
+sym = conf.syms[sys.argv[2]]
 
-# Load values from a .config file. 'srctree' is an environment variable set by
-# the Linux makefiles to the top-level directory of the kernel tree. It needs
-# to be used here for the script to work with alternative build directories
-# (specified e.g. with O=).
-conf.load_config("$srctree/arch/x86/configs/i386_defconfig")
+print(sym)
+print("value = " + sym.value)
+print("visibility = " + sym.visibility)
+print("currently assignable values: " + ", ".join(sym.assignable))
 
-# Print some information about a symbol. (The Config class implements
-# __getitem__() to provide a handy syntax for getting symbols.)
-print(conf["SERIAL_UARTLITE_CONSOLE"])
+for node in sym.nodes:
+    print("defined at {}:{}".format(node.filename, node.linenr))

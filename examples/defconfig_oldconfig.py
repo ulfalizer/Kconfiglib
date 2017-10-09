@@ -7,6 +7,10 @@
 # yes n | make oldconfig
 #
 # This came up in https://github.com/ulfalizer/Kconfiglib/issues/15.
+#
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/defconfig_oldconfig.py
 
 import kconfiglib
 import sys
@@ -19,15 +23,15 @@ conf.write_config(".config")
 
 # Mirrors the first oldconfig
 conf.load_config(".config")
-conf["ETHERNET"].set_user_value('n')
+conf.syms["ETHERNET"].set_value('n')
 conf.write_config(".config")
 
 # Mirrors the second oldconfig
 conf.load_config(".config")
-conf["ETHERNET"].set_user_value('y')
+conf.syms["ETHERNET"].set_value('y')
 for s in conf:
-    if s.get_user_value() is None and 'n' in s.get_assignable_values():
-        s.set_user_value('n')
+    if s.user_value is None and 'n' in s.assignable:
+        s.set_value('n')
 
 # Write the final configuration
 conf.write_config(".config")

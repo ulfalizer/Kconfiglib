@@ -1,6 +1,6 @@
 # For testing various minor APIs
 
-# is_optional()
+# optional choices
 
 choice NOT_OPTIONAL
     bool "not optional"

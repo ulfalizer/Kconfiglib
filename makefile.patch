@@ -38,7 +38,7 @@ index d9b1fef..e6311ed 100644
 +	  "import kconfiglib; \
 +	   import sys; \
 +	   c = kconfiglib.Config(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
-+	   print(\"A Config instance 'c' for the architecture ({0}) has been created.\".format(c.get_arch()))" \
++	   print(\"A Config instance 'c' for the architecture has been created.\")" \
 +	  $(srctree)/$(Kconfig)
 +
 +# Used by testsuite.py to be able to compare output for nonsensical

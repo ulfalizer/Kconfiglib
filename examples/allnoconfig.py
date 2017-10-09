@@ -1,40 +1,57 @@
-# Works like allnoconfig. Automatically verified by the testsuite to generate
-# identical output to 'make allnoconfig' for all ARCHes. The looping is done in
-# case setting one symbol to "n" allows other symbols to be set to "n" (due to
-# dependencies).
+# Works like 'make allnoconfig'. Verified by the test suite to generate
+# identical output to 'make allnoconfig' for all ARCHes.
+#
+# See allnoconfig_simpler.py for a much simpler version. This version
+# demonstrates some tree walking and value processing.
+#
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py
 
-import kconfiglib
+from kconfiglib import Config, Symbol, tri_less
 import sys
 
-conf = kconfiglib.Config(sys.argv[1])
+def do_allnoconfig(node):
+    global no_changes
 
-# Do an initial pass to give allnoconfig_y symbols the user value 'y'. It might
-# be possible to handle this through "successive raising" similarly to the
-# "successive lowering" below too, but keep it simple.
-for sym in conf:
-    if sym.get_type() in (kconfiglib.BOOL, kconfiglib.TRISTATE) and \
-       sym.is_allnoconfig_y():
-        sym.set_user_value('y')
+    # Walk the tree of menu nodes. You can imagine this as going down/into menu
+    # entries in the menuconfig interface, setting each to 'n' (or the lowest
+    # assignable value).
 
-done = False
-while not done:
-    done = True
+    while node is not None:
+        if isinstance(node.item, Symbol):
+            sym = node.item
 
-    for sym in conf:
-        # Choices take care of themselves for allnoconfig, so we only need to
-        # worry about non-choice symbols
-        if not sym.is_choice_symbol() and not sym.is_allnoconfig_y():
-            # If we can assign a value to the symbol (where "n", "m" and "y"
-            # are ordered from lowest to highest), then assign the lowest
-            # value. lower_bound() returns None for symbols whose values cannot
-            # (currently) be changed, as well as for non-bool/tristate symbols.
-            lower_bound = sym.get_lower_bound()
-            if lower_bound is not None and \
-               kconfiglib.tri_less(lower_bound, sym.get_value()):
+            # Is the symbol a non-choice symbol that can be set to a lower
+            # value than its current value?
+            if sym.choice is None and sym.assignable and \
+               tri_less(sym.assignable[0], sym.value):
 
-                sym.set_user_value(lower_bound)
-                # We just changed the value of some symbol. As this may affect
-                # other symbols, keep going.
-                done = False
+                # Yup, lower it
+                sym.set_value(sym.assignable[0])
+                no_changes = False
+
+        # Recursively lower children
+        if node.list is not None:
+            do_allnoconfig(node.list)
+
+        node = node.next
+
+conf = Config(sys.argv[1])
+
+while 1:
+    # For tricky dependencies involving '!', setting later symbols to 'n' might
+    # actually raise the value of earlier symbols. To be super safe, we do
+    # additional passes until a pass no longer changes the value of any symbol.
+    #
+    # This isn't actually needed for any ARCH in the kernel as of 4.14. A
+    # single pass gives the correct result.
+    no_changes = True
+
+    do_allnoconfig(conf.top_menu)
+
+    # Did the pass change any symbols?
+    if no_changes:
+        break
 
 conf.write_config(".config")

@@ -141,17 +141,39 @@ choice WEIRD_SYMS
 
 # Only WS1 is part of the choice
 config WS1
+    bool "WS1"
+
 config WS2
-    depends on WS1
-config WS3
-    depends on WS2
-config WS4
+    bool "WS2"
     depends on WS1
 
-# 'if' has the same effect, so only WS5 is part of the choice
+config WS3
+    bool
+    depends on WS2
+
+config WS4
+    bool
+    depends on WS1
+
 config WS5
-if WS5
+    bool "WS5" if WS1
+
+# 'if' has the same effect, so only WS6 is part of the choice
 config WS6
+    bool "WS6"
+
+if WS6
+
+config WS7
+    bool
+
+config WS8
+    bool "WS8"
+
 endif
+
+# Should also be part of the choice
+config WS9
+    bool "WS9"
 
 endchoice

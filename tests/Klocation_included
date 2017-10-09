@@ -1,42 +1,15 @@
-menuconfig A
-    bool "A"
-menuconfig A
-    bool "A"
-menu "menu 2"
-config M
-    def_bool !(n || (n || A = n))
-    default !A if y
-    default y if !A
-config S
-    bool
-    select A if NOT_DEFINED = y
-    select E if A
-    imply A
-    imply E if A
-endmenu
-choice
-    bool "C"
-config N
-    bool "N"
-config O
-    bool "O"
-endchoice
-choice B
-    bool "B"
 
-config B1
-    tristate "B1"
 
-config B2
-    tristate "B2"
+config MULTI_DEF
 
+choice CHOICE
 endchoice
 
-if !(NOT_DEFINED != A)
-comment "comment 2"
-endif
+config MENU_HOOK
 
-menu "visible if menu"
-    visible if A
-    visible if NOT_DEFINED
+menu "menu"
 endmenu
+
+config COMMENT_HOOK
+
+comment "comment"
