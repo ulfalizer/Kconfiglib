@@ -8,7 +8,12 @@ and read and write ``.config`` files. Highly compatible with the
 targets such as ``menuconfig`` and ``defconfig``.
 
 Supports both Python 2 and Python 3 without modification, and should also run
-on non-\*nix platforms
+on non-\*nix platforms.
+
+*NOTE: A non-backwards-compatible 2.0 version will be coming soon, with a much cleaner and more general API (property-based,
+less redundant, more logical). That one will also expose the menu structure (including implicit menus) and all the
+expressions directly. The major version will be bumped to 2 in accordance with
+semantic versioning.*
 
 .. contents:: Table of contents
    :backlinks: none
