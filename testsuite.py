@@ -242,22 +242,22 @@ def run_selftests():
                        True, True, True)
 
 
-    print("Testing string literal (constant symbol) lexing")
+    print("Testing string literal lexing")
 
     # Dummy empty configuration just to get a Config object
     c = kconfiglib.Config("Kconfiglib/tests/empty")
 
     def verify_string_lex(s, res):
         """
-        Verifies that the string (constant symbol) token 'res' is produced from
+        Verifies that a constant symbol with the name 'res' is produced from
         lexing 's'. Strips the first and last characters from 's' so that
         readable raw strings can be used as input
         """
         s = s[1:-1]
-        token = c._tokenize(s, for_eval = True).next()
-        verify(token == res,
-               "expected {} to produced the string token {}, produced {}"
-               .format(s, token, res))
+        token = c._tokenize(s, True, None, None).next()
+        verify(token.name == res,
+               'expected {} to produced the constant symbol {}, produced {}'
+               .format(s, token.name, res))
 
     verify_string_lex(r""" "" """, "")
     verify_string_lex(r""" '' """, "")
@@ -295,7 +295,7 @@ def run_selftests():
         """
         s = s[1:-1]
         try:
-            c._tokenize(s, for_eval = True)
+            c._tokenize(s, True, None, None)
         except kconfiglib.KconfigSyntaxError:
             pass
         else:
@@ -475,15 +475,16 @@ def run_selftests():
     verify_eval("'ab' < 'aa'", "n")
     verify_eval("'ab' > 'aa'", "y")
 
-    # If one operand is numeric and the other not a valid number, we get 'n'
-    verify_eval("INT_37 <  oops  ", "n")
-    verify_eval("INT_37 <= oops  ", "n")
-    verify_eval("INT_37 >  oops  ", "n")
-    verify_eval("INT_37 >= oops  ", "n")
-    verify_eval("oops   <  INT_37", "n")
-    verify_eval("oops   <= INT_37", "n")
-    verify_eval("oops   >  INT_37", "n")
-    verify_eval("oops   >= INT_37", "n")
+    # Comparisons where one of the operands doesn't parse as a number also give
+    # a lexicographic comparison
+    verify_eval("INT_37 <  '37a' ", "y")
+    verify_eval("'37a'  >  INT_37", "y")
+    verify_eval("INT_37 <= '37a' ", "y")
+    verify_eval("'37a'  >= INT_37", "y")
+    verify_eval("INT_37 >= '37a' ", "n")
+    verify_eval("INT_37 >  '37a' ", "n")
+    verify_eval("'37a'  <  INT_37", "n")
+    verify_eval("'37a'  <= INT_37", "n")
 
     def verify_eval_bad(expr):
         try:
@@ -1230,7 +1231,7 @@ g
 
     os.environ["ENV_VAR"] = "foo"
     # Contains reference to undefined environment variable, so disable warnings
-    c = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn = False)
+    c = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
 
     print("Testing is_optional...")
 
@@ -1371,12 +1372,12 @@ g
     verify_value("STRING", "")
 
     # Assign BOOL
-    c.load_config("Kconfiglib/tests/config_set_bool", replace = False)
+    c.load_config("Kconfiglib/tests/config_set_bool", replace=False)
     verify_value("BOOL", "y")
     verify_value("STRING", "")
 
     # Assign STRING
-    c.load_config("Kconfiglib/tests/config_set_string", replace = False)
+    c.load_config("Kconfiglib/tests/config_set_string", replace=False)
     verify_value("BOOL", "y")
     verify_value("STRING", "foo bar")
 
@@ -1399,8 +1400,8 @@ g
 
     print("Testing .config...")
 
-    c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn = False)
-    c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn = False)
+    c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
+    c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
 
     c1_undef, c1_bool, c1_choice, c1_menu, c1_comment = c1.syms["BOOL"], \
         c1.syms["NOT_DEFINED_1"], get_choices(c1)[0], get_menus(c1)[0], \
@@ -1911,14 +1912,28 @@ def test_call_all(conf, arch):
         s.visibility
         s.unset_value()
 
+    # TODO: verify that constant symbols do not:
+    #  1) have a non-empty dep
+    #  2) have nodes
+
+    # TODO: infinite recursion action
+    #for _, s in conf.const_syms.items():
+    #    s.__str__()
+    #    s.__repr__()
+    #    s.assignable
+    #    s.type
+    #    s.value
+    #    s.visibility
+    #    s.unset_value()
+
     # Cheat with internals
     for c in conf._choices:
         c.__str__()
         c.__repr__()
         c.value
-	c.assignable
+        c.assignable
         c.selection
-	c.default_selection
+        c.default_selection
         c.type
         c.visibility
 
@@ -1948,20 +1963,24 @@ def test_defconfig(conf, arch):
 
     def add_configs_for_arch(arch_):
         arch_dir = os.path.join("arch", arch_)
+
         # Some arches have a "defconfig" in the root of their arch/<arch>/
         # directory
         root_defconfig = os.path.join(arch_dir, "defconfig")
         if os.path.exists(root_defconfig):
             defconfigs.append(root_defconfig)
+
         # Assume all files in the arch/<arch>/configs directory (if it
         # exists) are configurations
         defconfigs_dir = os.path.join(arch_dir, "configs")
         if not os.path.exists(defconfigs_dir):
             return
+
         if not os.path.isdir(defconfigs_dir):
             print("Warning: '{}' is not a directory - skipping"
                   .format(defconfigs_dir))
             return
+
         for dirpath, _, filenames in os.walk(defconfigs_dir):
             for filename in filenames:
                 defconfigs.append(os.path.join(dirpath, filename))

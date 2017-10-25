@@ -110,16 +110,17 @@ A || B                (OR, A, B)
 A = B                 (EQUAL, A, B)
 A != "foo"            (UNEQUAL, A, "foo")
 A || (B && C && D)    (OR, A, (AND, B, (AND, C, D)))
-y                     "y"
-"y"                   "y"
+y                     config.y
+"y"                   config.y
 
-As seen in the final two examples, n/m/y are always represented as the strings
-(constant symbols) "n"/"m"/"y" in Kconfiglib, regardless of whether they're
-written with or without quotes. This simplifies some internals.
+As seen in the final two examples, n/m/y are always represented as the constant
+symbols config.n/m/y, regardless of whether they're written with or without
+quotes. 'config' represents the Config instance of the configuration the
+expression appears in.
 
 A missing expression (e.g. <cond> if the 'if <cond>' part is removed from
-'default A if <conf>') is represented as "y". The standard __str__() functions
-avoid printing 'if y' conditions to give cleaner output.
+'default A if <conf>') is represented as config.y. The standard __str__()
+functions avoid printing 'if y' conditions to give cleaner output.
 
 Implementation note
 -------------------
@@ -130,6 +131,8 @@ TODO: blah blah constant symbols
 Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service (or open a ticket on the GitHub page).
 """
+
+# TODO: document n/m/y
 
 import errno
 import os
@@ -253,13 +256,17 @@ class Config(object):
         "_set_re",
         "_unset_re",
         "config_prefix",
+        "const_syms",
         "defconfig_list",
         "defined_syms",
+        "m",
         "modules",
+        "n",
         "named_choices",
         "srctree",
         "syms",
         "top_node",
+        "y",
     )
 
     #
@@ -308,20 +315,40 @@ class Config(object):
         self._print_undef_assign = False
 
         self.syms = {}
+        self.const_syms = {}
         self.defined_syms = []
         self.named_choices = {}
         # Used for quickly invalidating all choices
         self._choices = []
 
-        self.modules = self._lookup_sym("MODULES")
+        for nmy in "n", "m", "y":
+            sym = Symbol()
+            sym.config = self
+            sym.name = nmy
+            sym.is_constant = True
+            sym._type = TRISTATE
+            sym._cached_val = nmy
+
+            self.const_syms[nmy] = sym
+
+        self.n = self.const_syms["n"]
+        self.m = self.const_syms["m"]
+        self.y = self.const_syms["y"]
+
+        # Just to make n/m/y well-formed symbols
+        for nmy in "n", "m", "y":
+            sym = self.const_syms[nmy]
+            sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
+
+        self.modules = self._lookup_sym("MODULES", False)
         self.defconfig_list = None
 
         # Predefined symbol. DEFCONFIG_LIST uses this.
-        uname_sym = Symbol()
+        uname_sym = self._lookup_const_sym("UNAME_RELEASE", False)
         uname_sym._type = STRING
-        uname_sym.name = "UNAME_RELEASE"
-        uname_sym.config = self
-        uname_sym.defaults.append((platform.uname()[2], "y"))
+        uname_sym.defaults.append(
+            (self._lookup_const_sym(platform.uname()[2], False),
+             self.y))
         # env_var doubles as the SYMBOL_AUTO flag from the C implementation, so
         # just set it to something. The naming breaks a bit here, but it's
         # pretty obscure.
@@ -331,10 +358,10 @@ class Config(object):
         self.top_node = MenuNode()
         self.top_node.config = self
         self.top_node.item = MENU
-        self.top_node.visibility = None
-        self.top_node.prompt = ("Linux Kernel Configuration", "y")
+        self.top_node.visibility = self.y
+        self.top_node.prompt = ("Linux Kernel Configuration", self.y)
         self.top_node.parent = None
-        self.top_node.dep = "y"
+        self.top_node.dep = self.y
         self.top_node.filename = filename
         self.top_node.linenr = 1
 
@@ -342,7 +369,7 @@ class Config(object):
         self._parse_block(_FileFeed(self._open(filename), filename),
                           None,           # end_token
                           self.top_node,  # parent
-                          "y",            # visible_if_deps
+                          self.y,         # visible_if_deps
                           None,           # prev_line
                           self.top_node)  # prev_node
 
@@ -372,7 +399,7 @@ class Config(object):
             return None
         for filename, cond_expr in self.defconfig_list.defaults:
             if eval_expr(cond_expr) != "n":
-                filename = self._expand_sym_refs(filename)
+                filename = self._expand_sym_refs(filename.value)
                 try:
                     with self._open(filename) as f:
                         return f.name
@@ -502,11 +529,17 @@ class Config(object):
         conditional ('if ...') expressions in the configuration (as well as in
         the C tools). m is rewritten to 'm && MODULES'.
         """
-        return eval_expr(self._parse_expr(self._tokenize(s, True),
-                                          s,
-                                          None,   # filename
-                                          None,   # linenr
-                                          True))  # transform_m
+        return eval_expr(
+                   self._parse_expr(
+                       self._tokenize(
+                           s,
+                           True,   # for_eval_string
+                           None,   # filename
+                           None),  # linenr
+                       s,
+                       None,   # filename
+                       None,   # linenr
+                       True))  # transform_m
 
     def unset_values(self):
         """
@@ -612,7 +645,7 @@ class Config(object):
     # Kconfig parsing
     #
 
-    def _tokenize(self, s, for_eval, filename=None, linenr=None):
+    def _tokenize(self, s, for_eval_string, filename, linenr):
         """
         Returns a _Feed instance containing tokens derived from the string 's'.
         Registers any new symbols encountered (via _lookup_sym()).
@@ -620,7 +653,7 @@ class Config(object):
         Tries to be reasonably speedy by processing chunks of text via regexes
         and string operations where possible. This is a hotspot during parsing.
 
-        for_eval:
+        for_eval_string:
           True when parsing an expression for a call to Config.eval_string(),
           in which case we should not treat the first token specially nor
           register new symbols.
@@ -629,7 +662,7 @@ class Config(object):
         # Tricky implementation detail: While parsing a token, 'token' refers
         # to the previous token. See _NOT_REF for why this is needed.
 
-        if for_eval:
+        if for_eval_string:
             token = None
             tokens = []
 
@@ -678,13 +711,14 @@ class Config(object):
                     token = keyword
 
                 elif token not in _STRING_LEX:
-                    # It's a symbol
+                    # It's a non-const symbol...
                     if name in ("n", "m", "y"):
-                        # Always represent n, m, y as strings (constant
-                        # symbols). This simplifies the expression logic.
-                        token = name
+                        # ...except we translate n, m, and y into the
+                        # corresponding constant symbols, like the C
+                        # implementation
+                        token = self._lookup_const_sym(name, for_eval_string)
                     else:
-                        token = self._lookup_sym(name, for_eval)
+                        token = self._lookup_sym(name, for_eval_string)
 
                 else:
                     # It's a case of missing quotes. For example, the
@@ -699,7 +733,7 @@ class Config(object):
                     token = name
 
             else:
-                # Not an identifier/keyword
+                # Not keyword/non-const symbol
 
                 # Note: _id_keyword_match and _initial_token_match strip
                 # trailing whitespace, making it safe to assume s[i] is the
@@ -722,7 +756,7 @@ class Config(object):
                         end = s.find(c, i)
                         if end == -1:
                             _tokenization_error(s, filename, linenr)
-                        token = s[i:end]
+                        val = s[i:end]
                         i = end + 1
                     else:
                         # Slow path: This could probably be sped up, but it's a
@@ -744,7 +778,17 @@ class Config(object):
                                 val += c
                                 i += 1
                         i += 1
-                        token = val
+
+                    # This is the only place where we don't survive with a
+                    # single token of lookback, hence the kludge:
+                    # 'option env="FOO"' does not refer to a constant symbol
+                    # named "FOO".
+                    token = \
+                        val \
+                        if token in _STRING_LEX or \
+                            (not for_eval_string and \
+                                 tokens[0] == _T_OPTION) else \
+                        self._lookup_const_sym(val, for_eval_string)
 
                 elif c == "&":
                     # Invalid characters are ignored
@@ -935,10 +979,10 @@ class Config(object):
                 node.filename = line_feeder.filename
                 node.linenr = line_feeder.linenr
                 node.dep = \
-                    _make_and(parent.dep,
-                              self._parse_expr(tokens, line,
-                                               line_feeder.filename,
-                                               line_feeder.linenr, True))
+                    self._make_and(parent.dep,
+                                   self._parse_expr(tokens, line,
+                                                    line_feeder.filename,
+                                                    line_feeder.linenr, True))
 
                 self._parse_block(line_feeder,
                                   _T_ENDIF,
@@ -956,7 +1000,7 @@ class Config(object):
                 node = MenuNode()
                 node.config = self
                 node.item = MENU
-                node.visibility = "y"
+                node.visibility = self.y
                 node.parent = parent
                 node.filename = line_feeder.filename
                 node.linenr = line_feeder.linenr
@@ -968,7 +1012,8 @@ class Config(object):
                 self._parse_block(line_feeder,
                                   _T_ENDMENU,
                                   node,         # parent
-                                  _make_and(visible_if_deps, node.visibility),
+                                  self._make_and(visible_if_deps,
+                                                 node.visibility),
                                   prev_line,
                                   node)         # prev_node
                 node.list = node.next
@@ -1033,7 +1078,7 @@ class Config(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_MAINMENU:
-                self.top_node.prompt = (tokens.next(), "y")
+                self.top_node.prompt = (tokens.next(), self.y)
                 self.top_node.filename = line_feeder.filename
                 self.top_node.linenr = line_feeder.linenr
 
@@ -1044,16 +1089,16 @@ class Config(object):
     def _parse_cond(self, tokens, line, filename, linenr):
         """
         Parses an optional 'if <expr>' construct and returns the parsed <expr>,
-        or "y" if the next token is not _T_IF
+        or self.y if the next token is not _T_IF
         """
         return self._parse_expr(tokens, line, filename, linenr, True) \
-               if tokens.check(_T_IF) else "y"
+               if tokens.check(_T_IF) else self.y
 
     def _parse_val_and_cond(self, tokens, line, filename, linenr):
         """
         Parses '<expr1> if <expr2>' constructs, where the 'if' part is
-        optional. Returns a tuple containing the parsed expressions, with "y"
-        as the second element if the 'if' part is missing.
+        optional. Returns a tuple containing the parsed expressions, with
+        config.y as the second element if the 'if' part is missing.
         """
         return (self._parse_expr(tokens, line, filename, linenr, False),
                 self._parse_cond(tokens, line, filename, linenr))
@@ -1092,7 +1137,7 @@ class Config(object):
 
         # Menu node dependency from 'depends on'. Will get propagated to the
         # properties above.
-        node.dep = "y"
+        node.dep = self.y
 
         # The cached (line, tokens) tuple that we return
         last_line = None
@@ -1117,9 +1162,9 @@ class Config(object):
                                  filename, linenr)
 
                 node.dep = \
-                    _make_and(node.dep,
-                              self._parse_expr(tokens, line, filename,
-                                               linenr, True))
+                    self._make_and(node.dep,
+                                   self._parse_expr(tokens, line, filename,
+                                                    linenr, True))
 
             elif t0 == _T_HELP:
                 # Find first non-blank (not all-space) line and get its
@@ -1164,34 +1209,24 @@ class Config(object):
                     _parse_error(line, "only symbols can select", filename,
                                  linenr)
 
-                # HACK: We always represent n/m/y using the constant symbol
-                # "n"/"m"/"y" forms, but that causes a crash if a Kconfig file
-                # does e.g. 'select n' (which is meaningless and probably stems
-                # from a misunderstanding). Seen in U-Boot. Just skip the
-                # select.
-                target = tokens.next()
-                if target not in ("n", "m", "y"):
-                    selects.append(
-                        (target,
-                         self._parse_cond(tokens, line, filename, linenr)))
+                selects.append(
+                    (tokens.next(),
+                     self._parse_cond(tokens, line, filename, linenr)))
 
             elif t0 == _T_IMPLY:
                 if not isinstance(node.item, Symbol):
                     _parse_error(line, "only symbols can imply", filename,
                                  linenr)
 
-                # See above
-                target = tokens.next()
-                if target not in ("n", "m", "y"):
-                    implies.append(
-                        (target,
-                         self._parse_cond(tokens, line, filename, linenr)))
+                implies.append(
+                    (tokens.next(),
+                     self._parse_cond(tokens, line, filename, linenr)))
 
             elif t0 in (_T_BOOL, _T_TRISTATE, _T_INT, _T_HEX, _T_STRING):
                 node.item._type = _TOKEN_TO_TYPE[t0]
                 if tokens.peek() is not None:
-                    prompt = self._parse_val_and_cond(tokens, line,
-                                                      filename, linenr)
+                    prompt = (tokens.next(),
+                              self._parse_cond(tokens, line, filename, linenr))
 
             elif t0 == _T_DEFAULT:
                 defaults.append(
@@ -1199,17 +1234,16 @@ class Config(object):
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
                 node.item._type = _TOKEN_TO_TYPE[t0]
-                if tokens.peek() is not None:
-                    defaults.append(
-                        self._parse_val_and_cond(tokens, line, filename,
-                                                 linenr))
+                defaults.append(
+                    self._parse_val_and_cond(tokens, line, filename,
+                                             linenr))
 
             elif t0 == _T_PROMPT:
                 # 'prompt' properties override each other within a single
                 # definition of a symbol, but additional prompts can be added
                 # by defining the symbol multiple times
-                prompt = self._parse_val_and_cond(tokens, line, filename,
-                                                  linenr)
+                prompt = (tokens.next(),
+                          self._parse_cond(tokens, line, filename, linenr))
 
             elif t0 == _T_RANGE:
                 ranges.append(
@@ -1236,7 +1270,10 @@ class Config(object):
                                    "service.".format(node.item.name, env_var),
                                    filename, linenr)
                     else:
-                        defaults.append((os.environ[env_var], "y"))
+                        defaults.append(
+                            (self._lookup_const_sym(os.environ[env_var],
+                                                    False),
+                             self.y))
 
                 elif tokens.check(_T_DEFCONFIG_LIST):
                     if self.defconfig_list is None:
@@ -1283,9 +1320,9 @@ class Config(object):
                                  filename, linenr)
 
                 node.visibility = \
-                    _make_and(node.visibility,
-                              self._parse_expr(tokens, line, filename, linenr,
-                                               True))
+                    self._make_and(node.visibility,
+                                   self._parse_expr(tokens, line, filename,
+                                                    linenr, True))
 
             elif t0 == _T_OPTIONAL:
                 if not isinstance(node.item, Choice):
@@ -1306,54 +1343,57 @@ class Config(object):
         # from node.dep propagated.
 
         # First propagate parent dependencies to node.dep
-        node.dep = _make_and(node.dep, node.parent.dep)
+        node.dep = self._make_and(node.dep, node.parent.dep)
 
         if isinstance(node.item, (Symbol, Choice)):
             if isinstance(node.item, Symbol):
-                node.item.direct_deps = \
-                    _make_or(node.item.direct_deps, node.dep)
+                node.item.direct_dep = \
+                    self._make_or(node.item.direct_dep, node.dep)
 
             # Set the prompt, with dependencies propagated
             if prompt is not None:
                 node.prompt = (prompt[0],
-                               _make_and(_make_and(prompt[1], node.dep),
-                                         visible_if_deps))
+                               self._make_and(self._make_and(prompt[1],
+                                                             node.dep),
+                                              visible_if_deps))
             else:
                 node.prompt = None
 
             # Add the new defaults, with dependencies propagated
             for val_expr, cond_expr in defaults:
                 node.item.defaults.append(
-                    (val_expr, _make_and(cond_expr, node.dep)))
+                    (val_expr, self._make_and(cond_expr, node.dep)))
 
             # Add the new ranges, with dependencies propagated
             for low, high, cond_expr in ranges:
                 node.item.ranges.append(
-                    (low, high, _make_and(cond_expr, node.dep)))
+                    (low, high, self._make_and(cond_expr, node.dep)))
 
             # Handle selects
             for target, cond_expr in selects:
                 # Only stored for convenience. Not used during evaluation.
                 node.item.selects.append(
-                    (target, _make_and(cond_expr, node.dep)))
+                    (target, self._make_and(cond_expr, node.dep)))
 
                 # Modify the dependencies of the selected symbol
                 target.rev_dep = \
-                    _make_or(target.rev_dep,
-                             _make_and(node.item,
-                                       _make_and(cond_expr, node.dep)))
+                    self._make_or(target.rev_dep,
+                                  self._make_and(node.item,
+                                                 self._make_and(cond_expr,
+                                                                node.dep)))
 
             # Handle implies
             for target, cond_expr in implies:
                 # Only stored for convenience. Not used during evaluation.
                 node.item.implies.append(
-                    (target, _make_and(cond_expr, node.dep)))
+                    (target, self._make_and(cond_expr, node.dep)))
 
                 # Modify the dependencies of the implied symbol
                 target.weak_rev_dep = \
-                    _make_or(target.weak_rev_dep,
-                             _make_and(node.item,
-                                       _make_and(cond_expr, node.dep)))
+                    self._make_or(target.weak_rev_dep,
+                                  self._make_and(node.item,
+                                                 self._make_and(cond_expr,
+                                                                node.dep)))
 
         # Return cached non-property line
         return last_line
@@ -1438,7 +1478,7 @@ class Config(object):
     def _parse_factor(self, feed, line, filename, linenr, transform_m):
         token = feed.next()
 
-        if isinstance(token, (Symbol, str)):
+        if isinstance(token, Symbol):
             # Plain symbol or relation
 
             next_token = feed.peek()
@@ -1448,8 +1488,8 @@ class Config(object):
                 # For conditional expressions ('depends on <expr>',
                 # '... if <expr>', etc.), "m" and m are rewritten to
                 # "m" && MODULES.
-                if transform_m and token == "m":
-                    return (AND, "m", self.modules)
+                if transform_m and token is self.m:
+                    return (AND, self.m, self.modules)
 
                 return token
 
@@ -1473,12 +1513,12 @@ class Config(object):
     # Symbol lookup
     #
 
-    def _lookup_sym(self, name, for_eval=False):
+    def _lookup_sym(self, name, for_eval_string):
         """
         Fetches the symbol 'name' from the symbol table, creating and
-        registering it if it does not exist. If 'for_eval' is True, the symbol
-        won't be added to the symbol table if it does not exist. This is for
-        Config.eval_string().
+        registering it if it does not exist. TODO If 'for_eval_string' is True,
+        the symbol won't be added to the symbol table if it does not exist.
+        This is for Config.eval_string().
         """
         if name in self.syms:
             return self.syms[name]
@@ -1486,10 +1526,32 @@ class Config(object):
         sym = Symbol()
         sym.config = self
         sym.name = name
-        if for_eval:
+        sym.is_constant = False
+        sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
+
+        if for_eval_string:
             self._warn("no symbol {} in configuration".format(name))
         else:
             self.syms[name] = sym
+
+        return sym
+
+    def _lookup_const_sym(self, name, for_eval_string):
+        """
+        TODO: say something
+        """
+        if name in self.const_syms:
+            return self.const_syms[name]
+
+        sym = Symbol()
+        sym.config = self
+        sym.name = name
+        sym.is_constant = True
+        sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
+
+        if not for_eval_string:
+            self.const_syms[name] = sym
+
         return sym
 
     #
@@ -1534,6 +1596,7 @@ class Config(object):
             elif (node.item == MENU and eval_expr(node.dep) != "n" and
                   eval_expr(node.visibility) != "n") or \
                  (node.item == COMMENT and eval_expr(node.dep) != "n"):
+
                 add_fn("\n#\n# {}\n#\n".format(node.prompt[0]))
 
             # Iterative tree walk using parent pointers
@@ -1557,21 +1620,14 @@ class Config(object):
 
     def _build_dep(self):
         """
-        Populates the Symbol._direct_dependents sets, linking the symbol to the
-        symbols that immediately depend on it in the sense that changing the
-        value of the symbol might affect the values of those other symbols.
-        This is used for caching/invalidation purposes. The calculated sets
-        might be larger than necessary as we don't do any complicated analysis
-        of the expressions.
-        """
+        Populates the Symbol._direct_dependents sets, which link symbols to the
+        symbols that immediately depend on them in the sense that changing the
+        value of the symbol might affect the values of the dependent symbols.
+        This is used for caching/invalidation purposes.
 
-        # Adds 'sym' as a directly dependent symbol to all symbols that appear
-        # in the expression 'expr'
-        def add_expr_deps(expr, sym):
-            res = []
-            _expr_syms(expr, res)
-            for expr_sym in res:
-                expr_sym._direct_dependents.add(sym)
+        The calculated sets might be larger than necessary as we don't do any
+        complex analysis of the expressions.
+        """
 
         # The directly dependent symbols of a symbol S are:
         #
@@ -1579,13 +1635,12 @@ class Config(object):
         #    condition), weak_rev_dep (imply condition), or ranges depend on S
         #
         #  - Any symbol that has S as a direct dependency (has S in
-        #    direct_deps). This is needed to get invalidation right for
+        #    direct_dep). This is needed to get invalidation right for
         #    'imply'.
         #
-        #  - Any symbols that belong to the same choice statement as S
-        #    (these won't be included in S._direct_dependents as that makes the
-        #    dependency graph unwieldy, but S._get_dependent() will include
-        #    them)
+        #  - Any symbols that belong to the same choice statement as S. These
+        #    won't be included in S._direct_dependents as it creates dependency
+        #    loops, but S._get_dependent() includes them.
         #
         #  - Any symbols in a choice statement that depends on S
 
@@ -1597,28 +1652,29 @@ class Config(object):
         for sym in self.defined_syms:
             for node in sym.nodes:
                 if node.prompt is not None:
-                    add_expr_deps(node.prompt[1], sym)
+                    _make_depend_on(sym, node.prompt[1])
 
             for value, cond in sym.defaults:
-                add_expr_deps(value, sym)
-                add_expr_deps(cond, sym)
+                _make_depend_on(sym, value)
+                _make_depend_on(sym, cond)
 
-            add_expr_deps(sym.rev_dep, sym)
-            add_expr_deps(sym.weak_rev_dep, sym)
+            _make_depend_on(sym, sym.rev_dep)
+            _make_depend_on(sym, sym.weak_rev_dep)
 
-            for l, u, e in sym.ranges:
-                add_expr_deps(l, sym)
-                add_expr_deps(u, sym)
-                add_expr_deps(e, sym)
+            for low, high, cond in sym.ranges:
+                _make_depend_on(sym, low)
+                _make_depend_on(sym, high)
+                _make_depend_on(sym, cond)
 
-            add_expr_deps(sym.direct_deps, sym)
+            _make_depend_on(sym, sym.direct_dep)
 
             if sym.choice is not None:
                 for node in sym.choice.nodes:
                     if node.prompt is not None:
-                        add_expr_deps(node.prompt[1], sym)
-                for _, e in sym.choice.defaults:
-                    add_expr_deps(e, sym)
+                        _make_depend_on(sym, node.prompt[1])
+
+                for _, cond in sym.choice.defaults:
+                    _make_depend_on(sym, cond)
 
     def _invalidate_all(self):
         # Undefined symbols never change value and don't need to be
@@ -1673,6 +1729,36 @@ class Config(object):
         self._warn_undef_assign(
             'attempt to assign the value "{}" to the undefined symbol {}' \
             .format(val, name), filename, linenr)
+
+    def _make_and(self, e1, e2):
+        """
+        Constructs an AND (&&) expression. Performs trivial simplification.
+        """
+        if e1 is self.y:
+            return e2
+
+        if e2 is self.y:
+            return e1
+
+        if e1 is self.n or e2 is self.n:
+            return self.n
+
+        return (AND, e1, e2)
+
+    def _make_or(self, e1, e2):
+        """
+        Constructs an OR (||) expression. Performs trivial simplification.
+        """
+        if e1 is self.n:
+            return e2
+
+        if e2 is self.n:
+            return e1
+
+        if e1 is self.y or e2 is self.y:
+            return self.y
+
+        return (OR, e1, e2)
 
 class Symbol(object):
     """
@@ -1774,23 +1860,23 @@ class Symbol(object):
     defaults:
       List of (default, cond) tuples for the symbol's 'default's. For example,
       'default A && B if C || D' is represented as ((AND, A, B), (OR, C, D)).
-      If there is no condition, 'cond' is None.
+      If no condition was given, 'cond' is self.config.y.
 
       Note that 'depends on' and parent dependencies are propagated to
       'default' conditions.
 
     selects:
       List of (symbol, cond) tuples for the symbol's 'select's. For example,
-      'select A if B' is represented as (A, B). If there is no condition,
-      'cond' is None.
+      'select A if B' is represented as (A, B). If no condition was given,
+      'cond' is self.config.y.
 
       Note that 'depends on' and parent dependencies are propagated to 'select'
       conditions.
 
     implies:
       List of (symbol, cond) tuples for the symbol's 'imply's. For example,
-      'imply A if B' is represented as (A, B). If there is no condition, 'cond'
-      is None.
+      'imply A if B' is represented as (A, B). If no condition was given,
+      'cond' is self.config.y.
 
       Note that 'depends on' and parent dependencies are propagated to 'imply'
       conditions.
@@ -1798,7 +1884,7 @@ class Symbol(object):
     ranges:
       List of (low, high, cond) tuples for the symbol's 'range's. For example,
       'range 1 2 if A' is represented as (1, 2, A). If there is no condition,
-      'cond' is None.
+      'cond' is self.config.y.
 
       Note that 'depends on' and parent dependencies are propagated to 'range'
       conditions.
@@ -1816,7 +1902,7 @@ class Symbol(object):
     weak_rev_dep:
       Like rev_dep, for imply.
 
-    direct_deps:
+    direct_dep:
       The 'depends on' dependencies. If a symbol is defined in multiple
       locations, the dependencies at each location are ORed together.
 
@@ -1854,10 +1940,11 @@ class Symbol(object):
         "choice",
         "config",
         "defaults",
-        "direct_deps",
+        "direct_dep",
         "env_var",
         "implies",
         "is_allnoconfig_y",
+        "is_constant",
         "name",
         "nodes",
         "ranges",
@@ -1926,7 +2013,7 @@ class Symbol(object):
 
                     # Weak reverse dependencies are only considered if our
                     # direct dependencies are met
-                    if eval_expr(self.direct_deps) != "n":
+                    if eval_expr(self.direct_dep) != "n":
                         weak_rev_dep_val = \
                             eval_expr(self.weak_rev_dep)
                         if weak_rev_dep_val != "n":
@@ -1974,13 +2061,10 @@ class Symbol(object):
                 if eval_expr(cond_expr) != "n":
                     has_active_range = True
 
-                    low_str = _str_val(low_expr)
-                    high_str = _str_val(high_expr)
-
-                    low = int(low_str, base) if \
-                      _is_base_n(low_str, base) else 0
-                    high = int(high_str, base) if \
-                      _is_base_n(high_str, base) else 0
+                    low = int(low_expr.value, base) if \
+                      _is_base_n(low_expr.value, base) else 0
+                    high = int(high_expr.value, base) if \
+                      _is_base_n(high_expr.value, base) else 0
 
                     break
             else:
@@ -2009,7 +2093,7 @@ class Symbol(object):
                         # preserved as is. Defaults that do not satisfy a range
                         # constraints are clamped and take on a standard form.
 
-                        val = _str_val(val_expr)
+                        val = val_expr.value
 
                         if _is_base_n(val, base):
                             val_num = int(val, base)
@@ -2044,7 +2128,7 @@ class Symbol(object):
                 for val_expr, cond_expr in self.defaults:
                     if eval_expr(cond_expr) != "n":
                         self._write_to_conf = True
-                        val = _str_val(val_expr)
+                        val = val_expr.value
                         break
 
         self._cached_val = val
@@ -2187,7 +2271,7 @@ class Symbol(object):
         if self is self.config.modules:
             fields.append("is the modules symbol")
 
-        fields.append("direct deps " + eval_expr(self.direct_deps))
+        fields.append("direct deps " + eval_expr(self.direct_dep))
 
         fields.append("{} menu node{}"
                       .format(len(self.nodes),
@@ -2207,23 +2291,23 @@ class Symbol(object):
 
         # These attributes are always set on the instance from outside and
         # don't need defaults:
-        #   config
-        #   name
         #   _already_written
+        #   config
+        #   direct_dep
+        #   is_constant
+        #   name
+        #   rev_dep
+        #   weak_rev_dep
 
         self._type = UNKNOWN
         self.defaults = []
         self.selects = []
         self.implies = []
         self.ranges = []
-        self.rev_dep = "n"
-        self.weak_rev_dep = "n"
 
         self.nodes = []
 
         self.user_value = None
-
-        self.direct_deps = "n"
 
         # Populated in Config._build_dep() after parsing. Links the symbol to
         # the symbols that immediately depend on it (in a caching/invalidation
@@ -2245,9 +2329,8 @@ class Symbol(object):
 
         # Flags
 
-        self.env_var = None
-
         self.choice = None
+        self.env_var = None
         self.is_allnoconfig_y = False
 
         # Should the symbol get an entry in .config? Calculated along with the
@@ -2488,7 +2571,7 @@ class Choice(object):
     defaults:
       List of (symbol, cond) tuples for the choices 'defaults's. For example,
       'default A if B && C' is represented as (A, (AND, B, C)). If there is no
-      condition, 'cond' is None.
+      condition, 'cond' is self.config.y.
 
       Note that 'depends on' and parent dependencies are propagated to
       'default' conditions.
@@ -2789,7 +2872,7 @@ class MenuNode(object):
 
     visibility:
         The 'visible if' dependencies for the menu node (which must represent a
-        menu). None if there are no 'visible if' dependencies. 'visible if'
+        menu). config.y if there are no 'visible if' dependencies. 'visible if'
         dependencies are recursively propagated to the prompts of symbols and
         choices within the menu.
 
@@ -2826,18 +2909,23 @@ class MenuNode(object):
 
         if isinstance(self.item, Symbol):
             fields.append("menu node for symbol " + self.item.name)
+
         elif isinstance(self.item, Choice):
             s = "menu node for choice"
             if self.item.name is not None:
                 s += " " + self.item.name
             fields.append(s)
+
         elif self.item == MENU:
             fields.append("menu node for menu")
+
         elif self.item == COMMENT:
             fields.append("menu node for comment")
+
         elif self.item is None:
             fields.append("menu node for if (should not appear in the final "
                           " tree)")
+
         else:
             raise InternalError("unable to determine type in "
                                 "MenuNode.__repr__()")
@@ -2923,9 +3011,6 @@ def eval_expr(expr):
         # regardless of their value
         return expr.value if expr._type in (BOOL, TRISTATE) else "n"
 
-    if isinstance(expr, str):
-        return expr if expr in ("m", "y") else "n"
-
     if expr[0] == AND:
         ev1 = eval_expr(expr[1])
 
@@ -2955,25 +3040,20 @@ def eval_expr(expr):
         # pythonic way to structure this.
 
         oper, op1, op2 = expr
-        op1_type, op1_str = _type_and_val(op1)
-        op2_type, op2_str = _type_and_val(op2)
 
         # If both operands are strings...
-        if op1_type == STRING and op2_type == STRING:
+        if op1._type == STRING and op2._type == STRING:
             # ...then compare them lexicographically
-            comp = _strcmp(op1_str, op2_str)
+            comp = _strcmp(op1.value, op2.value)
         else:
-            # Otherwise, try to compare them as numbers
+            # Otherwise, try to compare them as numbers...
             try:
-                comp = int(op1_str, _TYPE_TO_BASE[op1_type]) - \
-                       int(op2_str, _TYPE_TO_BASE[op2_type])
+                comp = int(op1.value, _TYPE_TO_BASE[op1._type]) - \
+                       int(op2.value, _TYPE_TO_BASE[op2._type])
             except ValueError:
-                # They're not both valid numbers. If the comparison is
-                # anything but = or !=, return 'n'. Otherwise, reuse
-                # _strcmp() to check for (in)equality.
-                if oper not in (EQUAL, UNEQUAL):
-                    return "n"
-                comp = _strcmp(op1_str, op2_str)
+                # Fall back on a lexicographic comparison if the operands don't
+                # parse as numbers
+                comp = _strcmp(op1.value, op2.value)
 
         if   oper == EQUAL:         res = comp == 0
         elif oper == UNEQUAL:       res = comp != 0
@@ -2987,6 +3067,26 @@ def eval_expr(expr):
     _internal_error("Internal error while evaluating expression: "
                     "unknown operation {}.".format(expr[0]))
 
+def expr_str(expr):
+    if isinstance(expr, Symbol):
+        return expr.name if not expr.is_constant else '"{}"'.format(expr.name)
+
+    if expr[0] == NOT:
+        if isinstance(expr[1], Symbol):
+            return "!" + expr_str(expr[1])
+        return "!({})".format(expr_str(expr[1]))
+
+    if expr[0] == AND:
+        return "{} && {}".format(_format_and_op(expr[1]),
+                                 _format_and_op(expr[2]))
+
+    if expr[0] == OR:
+        return "{} || {}".format(expr_str(expr[1]), expr_str(expr[2]))
+
+    # Relation
+    return "{} {} {}".format(expr_str(expr[1]),
+                             _RELATION_TO_STR[expr[0]],
+                             expr_str(expr[2]))
 
 #
 # Internal classes
@@ -3109,36 +3209,6 @@ def _get_visibility(sc):
 
     return vis
 
-def _make_and(e1, e2):
-    """
-    Constructs an AND (&&) expression. Performs trivial simplification.
-    """
-    if e1 == "y":
-        return e2
-
-    if e2 == "y":
-        return e1
-
-    if e1 == "n" or e2 == "n":
-        return "n"
-
-    return (AND, e1, e2)
-
-def _make_or(e1, e2):
-    """
-    Constructs an OR (||) expression. Performs trivial simplification.
-    """
-    if e1 == "n":
-        return e2
-
-    if e2 == "n":
-        return e1
-
-    if e1 == "y" or e2 == "y":
-        return "y"
-
-    return (OR, e1, e2)
-
 def _tri_min(v1, v2):
     """
     Returns the smallest tristate value among v1 and v2.
@@ -3151,88 +3221,40 @@ def _tri_max(v1, v2):
     """
     return v1 if _TRI_TO_INT[v1] >= _TRI_TO_INT[v2] else v2
 
-def _expr_syms_rec(expr, res):
+def _make_depend_on(sym, expr):
     """
-    _expr_syms() helper. Recurses through expressions.
+    Adds 'sym' as a dependency to all symbols in 'expr'. Constant symbols in
+    'expr' are skipped as they can never change value anyway.
     """
     if isinstance(expr, Symbol):
-        res.append(expr)
-    elif isinstance(expr, str):
-        return
+        if not expr.is_constant:
+            expr._direct_dependents.add(sym)
+
     elif expr[0] in (AND, OR):
-        _expr_syms_rec(expr[1], res)
-        _expr_syms_rec(expr[2], res)
+        _make_depend_on(sym, expr[1])
+        _make_depend_on(sym, expr[2])
+
     elif expr[0] == NOT:
-        _expr_syms_rec(expr[1], res)
+        _make_depend_on(sym, expr[1])
+
     elif expr[0] in _RELATIONS:
-        if isinstance(expr[1], Symbol):
-            res.append(expr[1])
-        if isinstance(expr[2], Symbol):
-            res.append(expr[2])
+        if not expr[1].is_constant:
+            expr[1]._direct_dependents.add(sym)
+        if not expr[2].is_constant:
+            expr[2]._direct_dependents.add(sym)
+
     else:
         _internal_error("Internal error while fetching symbols from an "
                         "expression with token stream {}.".format(expr))
 
-def _expr_syms(expr, res):
-    """
-    append()s the symbols in 'expr' to 'res'. Does not remove duplicates.
-    """
-    if expr is not None:
-        _expr_syms_rec(expr, res)
-
-def _str_val(obj):
-    """
-    Returns the value of obj as a string. If obj is not a string (constant
-    symbol), it must be a Symbol.
-    """
-    return obj if isinstance(obj, str) else obj.value
-
 def _format_and_op(expr):
     """
-    _expr_to_str() helper. Returns the string representation of 'expr', which
-    is assumed to be an operand to AND, with parentheses added if needed.
+    expr_str() helper. Returns the string representation of 'expr', which is
+    assumed to be an operand to AND, with parentheses added if needed.
     """
     if isinstance(expr, tuple) and expr[0] == OR:
-        return "({})".format(_expr_to_str(expr))
-    return _expr_to_str(expr)
-
-def _expr_to_str(expr):
-    if isinstance(expr, str):
-        if expr in ("n", "m", "y"):
-            # Don't print spammy quotes for these
-            return expr
-        return '"{}"'.format(expr)
-
-    if isinstance(expr, Symbol):
-        return expr.name
-
-    if expr[0] == NOT:
-        if isinstance(expr[1], (str, Symbol)):
-            return "!" + _expr_to_str(expr[1])
-        return "!({})".format(_expr_to_str(expr[1]))
-
-    if expr[0] == AND:
-        return "{} && {}".format(_format_and_op(expr[1]),
-                                 _format_and_op(expr[2]))
-
-    if expr[0] == OR:
-        return "{} || {}".format(_expr_to_str(expr[1]),
-                                 _expr_to_str(expr[2]))
-
-    # Relation
-    return "{} {} {}".format(_expr_to_str(expr[1]),
-                             _RELATION_TO_STR[expr[0]],
-                             _expr_to_str(expr[2]))
-
-def _type_and_val(obj):
-    """
-    Helper to hack around the fact that we don't represent plain strings as
-    Symbols. Takes either a plain string or a Symbol and returns a (<type>,
-    <value>) tuple.
-    """
-    return (obj._type, obj.value) \
-           if not isinstance(obj, str) \
-           else (STRING, obj)
+        return "({})".format(expr_str(expr))
+    return expr_str(expr)
 
 def _indentation(line):
     """
@@ -3335,8 +3357,8 @@ def _sym_choice_str(sc):
 
         if node.prompt is not None:
             prompt_str = 'prompt "{}"'.format(node.prompt[0])
-            if node.prompt[1] != "y":
-                prompt_str += " if " + _expr_to_str(node.prompt[1])
+            if node.prompt[1] is not sc.config.y:
+                prompt_str += " if " + expr_str(node.prompt[1])
             indent_add(prompt_str)
 
         if node is sc.nodes[0]:
@@ -3353,16 +3375,16 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 for range_ in sc.ranges:
                     range_string = "range {} {}" \
-                                   .format(_expr_to_str(range_[0]),
-                                           _expr_to_str(range_[1]))
-                    if range_[2] != "y":
-                        range_string += " if " + _expr_to_str(range_[2])
+                                   .format(expr_str(range_[0]),
+                                           expr_str(range_[1]))
+                    if range_[2] is not sc.config.y:
+                        range_string += " if " + expr_str(range_[2])
                     indent_add(range_string)
 
             for default in sc.defaults:
-                default_string = "default " + _expr_to_str(default[0])
-                if default[1] != "y":
-                    default_string += " if " + _expr_to_str(default[1])
+                default_string = "default " + expr_str(default[0])
+                if default[1] is not sc.config.y:
+                    default_string += " if " + expr_str(default[1])
                 indent_add(default_string)
 
             if isinstance(sc, Choice) and sc.is_optional:
@@ -3371,14 +3393,14 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 for select in sc.selects:
                     select_string = "select " + select[0].name
-                    if select[1] != "y":
-                        select_string += " if " + _expr_to_str(select[1])
+                    if select[1] is not sc.config.y:
+                        select_string += " if " + expr_str(select[1])
                     indent_add(select_string)
 
                 for imply in sc.implies:
                     imply_string = "imply " + imply[0].name
-                    if imply[1] != "y":
-                        imply_string += " if " + _expr_to_str(imply[1])
+                    if imply[1] is not sc.config.y:
+                        imply_string += " if " + expr_str(imply[1])
                     indent_add(imply_string)
 
         if node.help is not None:
@@ -3394,45 +3416,36 @@ def _sym_choice_str(sc):
 
 # Menu manipulation
 
-def _eq_to_sym(eq):
-    """
-    _expr_depends_on() helper. For (in)equalities of the form sym = y/m or
-    sym != n, returns sym. For other (in)equalities, returns None.
-    """
-    relation, left, right = eq
-
-    # Make sure the symbol (if any) appears to the left
-    if not isinstance(left, Symbol):
-        left, right = right, left
-    if not isinstance(left, Symbol):
-        return None
-    if (relation == EQUAL and right in ("m", "y")) or \
-       (relation == UNEQUAL and right == "n"):
-        return left
-    return None
-
 def _expr_depends_on(expr, sym):
     """
     Reimplementation of expr_depends_symbol() from mconf.c. Used to
     determine if a submenu should be implicitly created, which influences
     what items inside choice statements are considered choice items.
     """
-    if expr is None:
-        return False
+    if isinstance(expr, Symbol):
+        return expr is sym
 
-    def rec(expr):
-        if isinstance(expr, str):
+    if expr[0] in (EQUAL, UNEQUAL):
+        # Check for one of the following:
+        # sym = m/y, m/y = sym, sym != n, n != sym
+
+        left, right = expr[1:]
+
+        if right is sym:
+            left, right = right, left
+
+        if left is not sym:
             return False
-        if isinstance(expr, Symbol):
-            return expr is sym
 
-        if expr[0] in (EQUAL, UNEQUAL):
-            return _eq_to_sym(expr) is sym
-        if expr[0] == AND:
-            return rec(expr[1]) or rec(expr[2])
-        return False
+        return (expr[0] == EQUAL and right is sym.config.m or \
+                                     right is sym.config.y) or \
+               (expr[0] == UNEQUAL and right is sym.config.n)
 
-    return rec(expr)
+    if expr[0] == AND:
+        return _expr_depends_on(expr[1], sym) or \
+               _expr_depends_on(expr[2], sym)
+
+    return False
 
 def _has_auto_menu_dep(node1, node2):
     """
@@ -3440,7 +3453,6 @@ def _has_auto_menu_dep(node1, node2):
     has a prompt, we check its condition. Otherwise, we look directly at
     node2.dep.
     """
-
     if node2.prompt:
         return _expr_depends_on(node2.prompt[1], node1.item)
 
@@ -3776,8 +3788,8 @@ _DEFAULT_VALUE = {
 _NO_CACHED_SELECTION = object()
 
 # Used in comparisons. 0 means the base is inferred from the format of the
-# string. The entries for BOOL and TRISTATE are a convenience - they should
-# never convert to valid numbers.
+# string. The entries for BOOL and TRISTATE are an implementation convenience:
+# They should never convert to valid numbers.
 _TYPE_TO_BASE = {
     BOOL:     0,
     HEX:      16,
