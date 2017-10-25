@@ -27,7 +27,7 @@ conf = Config(sys.argv[1])
 # tree can be walked iteratively by using the parent pointers.
 
 choices = []
-node = conf.top_menu
+node = conf.top_node
 
 while 1:
     if isinstance(node.item, Choice):
@@ -85,7 +85,7 @@ while 1:
             # Does the choice have a default selection that we haven't already
             # selected?
             if selection is not None and \
-               selection is not choice.user_value:
+               selection is not choice.user_selection:
 
                 # Yup, select it
                 selection.set_value("y")

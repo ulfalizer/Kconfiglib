@@ -110,7 +110,7 @@ def get_items(config, type_):
                  items.append(node.item)
              rec(node.list)
              rec(node.next)
-    rec(config.top_menu)
+    rec(config.top_node)
     return items
 
 def get_comments(config):
@@ -121,7 +121,7 @@ def get_comments(config):
                  items.append(node)
              rec(node.list)
              rec(node.next)
-    rec(config.top_menu)
+    rec(config.top_node)
     return items
 
 def get_menus(config):
@@ -132,7 +132,7 @@ def get_menus(config):
                  items.append(node)
              rec(node.list)
              rec(node.next)
-    rec(config.top_menu)
+    rec(config.top_node)
     return items
 
 def get_choices(config):
@@ -1803,7 +1803,7 @@ def run_compatibility_tests():
 
     if all_passed:
         print("All selftests and compatibility tests passed")
-        print(nconfigs, "arch/defconfig pairs tested")
+        print("{} arch/defconfig pairs tested".format(nconfigs))
     else:
         print("Some tests failed")
 

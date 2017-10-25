@@ -64,4 +64,4 @@ def print_items(node, indent):
         node = node.next
 
 conf = Config(sys.argv[1])
-print_items(conf.top_menu, 0)
+print_items(conf.top_node, 0)

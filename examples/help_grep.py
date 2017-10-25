@@ -69,4 +69,4 @@ def search_tree(node):
         node = node.next
 
 conf = Config(sys.argv[1])
-search_tree(conf.top_menu)
+search_tree(conf.top_node)

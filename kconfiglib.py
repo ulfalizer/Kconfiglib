@@ -1,4 +1,7 @@
 """
+Overview
+========
+
 Kconfiglib is a Python 2/3 library for scripting and extracting information
 from Kconfig-based configuration systems. Features include the following:
 
@@ -6,40 +9,79 @@ from Kconfig-based configuration systems. Features include the following:
 
  - Reading/writing of .config files
 
- - Expression inspection and evaluation. All expressions are exposed and use a
-   simple format that can be processed manually if needed.
+ - Inspection of symbol properties: print()ing a symbol (which calls __str__())
+   produces output which could be fed back into a Kconfig parser to redefine
+   the symbol, and __str__() is implemented with only public APIs.
 
- - Menu tree inspection. The underlying menu tree is exposed, including
-   submenus created implicitly by symbols depending on preceding symbols. This
-   can be used e.g. to implement menuconfig-like functionality.
+   A helpful __repr__() is implemented on all objects as well.
 
- - Highly compatible with the standard Kconfig C tools: The test suite compares
-   outputs between Kconfiglib and the C tools on real-world kernel Kconfig and
-   defconfig files for a large number of cases (by diffing generated .configs).
+ - Expression inspection and evaluation: All expressions are exposed and use a
+   simple tuple-based format that can be processed manually if needed.
+
+ - Menu tree inspection: The underlying menu tree is exposed, including
+   submenus created implicitly from symbols depending on preceding symbols.
+   This can be used e.g. to implement menuconfig-like functionality.
+
+ - Runs under both Python 2 and 3. The code mostly uses basic Python features
+   (the most advanced things used are probably @property and __slots__).
+
+ - Robust and highly compatible with the standard Kconfig C tools: The test
+   suite automatically compares the output from Kconfiglib with the output from
+   the C tools on the real kernel Kconfig and defconfig files for all ARCHes.
+   The comparison is done by diffing the generated .config files to make sure
+   they're identical. All tests are expected to pass.
+
+   A suite of self tests is also included.
+
+ - Internals that (mostly) mirror the C implementation. A lot can indirectly be
+   learned about how it works by reading the Kconfiglib documentation and code.
 
  - Pretty speedy by pure Python standards: Parses the x86 Kconfigs in about a
    second on a Core i7 2600K (with a warm file cache). For long-running jobs,
-   PyPy gives a nice speedup.
+   PyPy gives a large performance boost.
+
+
+Using Kconfiglib on the Linux kernel
+====================================
 
 For the Linux kernel, a handy interface is provided by the
-scripts/kconfig/Makefile patch. For experimentation, you can use the
-iscriptconfig target, which gives an interactive Python prompt where the
-configuration for ARCH has been loaded:
+scripts/kconfig/Makefile patch.
 
-  $ make [ARCH=<arch>] iscriptconfig
+Use the 'iscriptconfig' target for experimentation. It gives an interactive
+Python prompt where the configuration for ARCH has been preloaded.
 
-To run a script, use the scriptconfig target:
+  $ make [ARCH=<arch>] [PYTHONCMD=<python/python3/pypy/...>] iscriptconfig
 
-  $ make [ARCH=<arch>] scriptconfig SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
+To run a script, use the 'scriptconfig' target.
+
+  $ make [ARCH=<arch>] [PYTHONCMD=<python/python3/pypy/...>] scriptconfig SCRIPT=<path to script> [SCRIPT_ARG=<arg>]
+
+PYTHONCMD is the Python interpreter to use. It defaults to "python".
+
+Tip: IronPython (PYTHONCMD=ipython) autocompletion is handy when figuring out
+the API.
+
+
+Writing scriptconfig scripts
+----------------------------
 
 See the examples/ subdirectory for example scripts.
 
+Scripts receive the name of the Kconfig file to load in sys.argv[1]. As far as
+I can tell, this is always "Kconfig" from the kernel top-level directory as of
+Linux 4.14. If an argument is provided with SCRIPT_ARG, it appears as
+sys.argv[2].
+
+
+Running Kconfiglib without the Makefile patch
+---------------------------------------------
 
 The Makefile patch is used to pick up the ARCH, SRCARCH, and KERNELVERSION
 environment variables (and any future environment variables that might get
 used). If you want to run Kconfiglib without the Makefile patch, the following
 will probably work in practice (it's what the test suite does in 'speedy' mode,
-except it tests all ARCHes):
+except it tests all ARCHes and doesn't bother setting KERNELVERSION to a sane
+value to save some time on startup).
 
   $ ARCH=x86 SRCARCH=x86 KERNELVERSION=`make kernelversion` python script.py
 
@@ -49,18 +91,40 @@ possible variations. The value of KERNELVERSION doesn't seem to matter as of
 Linux 4.14.
 
 Kconfiglib will warn if you forget to set some environment variable that's
-referenced in the configuration (via 'option env="ENV_VAR"').
+referenced in a Kconfig file (via 'option env="ENV_VAR"').
 
 
-When using scriptconfig, scripts receive the name of the Kconfig file to load
-in sys.argv[1]. As far as I can tell, this is always "Kconfig" from the kernel
-top-level directory as of Linux 4.14. If an argument is provided with
-SCRIPT_ARG, it appears as sys.argv[2].
+Expression format
+=================
 
+The following table should help you figure out how expressions are represented.
+A, B, C, ... are symbols (Symbol instances) or strings (which represent
+constant symbols). NOT is the kconfiglib.NOT constant, etc.
 
-Kconfiglib supports both Python 2 and Python 3 (and PyPy). For (i)scriptconfig,
-the Python interpreter to use can be passed in PYTHONCMD, which defaults to
-"python".
+Expression            Representation
+----------            --------------
+A                     A
+!A                    (NOT, A)
+A && B                (AND, A, B)
+A || B                (OR, A, B)
+A = B                 (EQUAL, A, B)
+A != "foo"            (UNEQUAL, A, "foo")
+A || (B && C && D)    (OR, A, (AND, B, (AND, C, D)))
+y                     "y"
+"y"                   "y"
+
+As seen in the final two examples, n/m/y are always represented as the strings
+(constant symbols) "n"/"m"/"y" in Kconfiglib, regardless of whether they're
+written with or without quotes. This simplifies some internals.
+
+A missing expression (e.g. <cond> if the 'if <cond>' part is removed from
+'default A if <conf>') is represented as "y". The standard __str__() functions
+avoid printing 'if y' conditions to give cleaner output.
+
+Implementation note
+-------------------
+
+TODO: blah blah constant symbols
 
 
 Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
@@ -97,58 +161,70 @@ class Config(object):
 
     The following attributes are available on Config instances. They should be
     viewed as read-only, and some are implemented through @property magic.
-    Modifying symbols is fine, but not the 'syms' dictionary itself.
 
     syms:
       A dictionary with all symbols in the configuration. The key is the name
-      of the symbol, so that e.g. conf.syms["MODULES"] returns the MODULES
-      symbol. Symbols that are referenced in expressions but never defined are
-      included as well.
+      of the symbol, so that e.g. conf.syms["FOO"] returns the Symbol instance
+      for the symbol FOO. Symbols that are referenced in expressions but never
+      defined also appear in 'syms'.
+
+      Constant symbols, e.g. "foo" in 'A = "foo"', are not included in
+      Config.syms.
 
     defined_syms:
       A list of all defined symbols, in the same order as they appear in the
-      Kconfig files. Provided as a convenience (and also used internally). The
-      defined symbols are those whose 'nodes' attribute is non-empty.
+      Kconfig files. Provided as a convenience. The defined symbols are those
+      whose 'nodes' attribute is non-empty.
 
     named_choices:
-      A dictionary like 'syms' for named choices (choice FOO). This is mostly
-      for completeness. I've never seen named choices being used.
+      A dictionary like 'syms' for named choices (choice FOO). This is for
+      completeness. I've never seen named choices being used.
 
-    top_menu:
-      The menu node (see the MenuNode class) of the top-level menu. Acts as the
-      root of the menu tree.
+    modules:
+      The Symbol instance for the modules symbol. This is currently hardcoded
+      to MODULES, which is backwards compatible, and Kconfiglib will warn if
+      'option modules' is specified on some other symbol. Tell me if you need
+      proper 'option modules' support.
 
-    mainmenu_text:
-      The prompt (title) of the top_menu menu, with Kconfig variable references
-      ("$FOO") expanded. Defaults to "Linux Kernel Configuration" (like in the
-      C tools). Can be changed with the 'mainmenu' statement (see
-      kconfig-language.txt).
+      Never None.
+
+    defconfig_list:
+      The Symbol instance for the 'option defconfig_list' symbol, or None if no
+      defconfig_list symbol exists. The defconfig filename derived from this
+      symbol can be found in Config.defconfig_filename.
+
+      Setting 'option defconfig_list' on multiple symbols ignores the setting
+      on all symbols after the first.
 
     defconfig_filename:
-      The filename given by the 'option defconfig_list' symbol. This is the
-      first existing file with a satisfied condition among the 'default'
-      properties of the symbol. If a file is not found at the given path, it is
-      also looked up relative to $srctree if set ($srctree/foo/defconfig is
-      looked up if foo/defconfig is not found).
+      The filename given by the 'option defconfig_list' symbol. This is taken
+      from the first 'default' with a satisfied condition where the file
+      specified by the 'default' exists. If a defconfig file foo/defconfig is
+      not found and $srctree was set when the Config was created,
+      $srctree/foo/defconfig is looked up as well.
 
-      Has the value None if either no defconfig_list symbol exists, or if it
-      has no 'default' with a satisfied dependency that points to an existing
-      file.
+      None if either no defconfig_list symbol exists, or if the defconfig_list
+      symbol has no 'default' with a satisfied condition that points to an
+      existing file.
 
       References to Kconfig symbols ("$FOO") are expanded in 'default'
       properties.
 
-      Setting 'option defconfig_list' on multiple symbols ignores symbols past
-      the first one.
-
-      Do print(c.syms["DEFCONFIG_LIST"]) on a kernel configuration to see an
-      example of a defconfig_list symbol.
-
-      Something to look out for is that scripts/kconfig/Makefile might use the
-      --defconfig=<defconfig> option when calling the C tools of e.g. 'make
-      defconfig'. This option overrides the 'option defconfig_list' symbol,
+      Something to look out for is that scripts/kconfig/Makefile might pass
+      --defconfig=<defconfig> to scripts/kconfig/conf when running e.g.
+      'make defconfig'. This option overrides the defconfig_list symbol,
       meaning defconfig_filename might not match what 'make defconfig' would
-      use.
+      use in those cases.
+
+    top_node:
+      The menu node (see the MenuNode class) of the top-level menu. Acts as the
+      root of the menu tree.
+
+    mainmenu_text:
+      The prompt (title) of the top_node menu, with Kconfig variable references
+      ("$FOO") expanded. Defaults to "Linux Kernel Configuration" (like in the
+      C tools). Can be changed with the 'mainmenu' statement (see
+      kconfig-language.txt).
 
     srctree:
       The value of the $srctree environment variable when the configuration was
@@ -157,9 +233,9 @@ class Config(object):
       (unless absolute paths are specified). This is to support out-of-tree
       builds. The C tools use this variable in the same way.
 
-      Changing $srctree after loading the configuration has no effect. Only the
-      value when the configuration is loaded matters. This avoids surprises if
-      multiple configurations are loaded with different values for $srctree.
+      Changing $srctree after creating the Config instance has no effect. Only
+      the value when the configuration is loaded matters. This avoids surprises
+      if multiple configurations are loaded with different values for $srctree.
 
     config_prefix:
       The value of the $CONFIG_ environment variable when the configuration was
@@ -183,7 +259,7 @@ class Config(object):
         "named_choices",
         "srctree",
         "syms",
-        "top_menu",
+        "top_node",
     )
 
     #
@@ -199,13 +275,15 @@ class Config(object):
         filename (default: "Kconfig"):
           The base Kconfig file. For the Linux kernel, you'll want "Kconfig"
           from the top-level directory, as environment variables will make sure
-          the right Kconfig is included from there
-          (arch/<architecture>/Kconfig). If you are using Kconfiglib via 'make
-          scriptconfig', the filename of the base base Kconfig file will be in
-          sys.argv[1] (always "Kconfig" in practice).
+          the right Kconfig is included from there (arch/$SRCARCH/Kconfig as of
+          writing).
 
-          The $srctree environment variable is used if set (see the class
-          documentation).
+          If you are using Kconfiglib via 'make scriptconfig', the filename of
+          the base base Kconfig file will be in sys.argv[1]. It's currently
+          always "Kconfig" in practice.
+
+          The $srctree environment variable is used to look up Kconfig files if
+          set (see the class documentation).
 
         warn (default: True):
           True if warnings related to this configuration should be printed to
@@ -214,28 +292,7 @@ class Config(object):
           argument since warnings might be generated during parsing.
         """
 
-        self.syms = {}
-        self.defined_syms = []
-        self.named_choices = {}
-
-        # Used for quickly invalidating all choices
-        self._choices = []
-
-        # Predefined symbol. DEFCONFIG_LIST has been seen using this.
-        uname_sym = Symbol()
-        uname_sym._type = STRING
-        uname_sym.name = "UNAME_RELEASE"
-        uname_sym.config = self
-        uname_sym.defaults.append((platform.uname()[2], None))
-        # env_var doubles as the SYMBOL_AUTO flag from the C implementation, so
-        # just set it to something. The naming breaks a bit here, but it's
-        # pretty obscure.
-        uname_sym.env_var = "<uname release>"
-        self.syms["UNAME_RELEASE"] = uname_sym
-
-        # The symbol with "option defconfig_list" set, containing a list of
-        # default .config files
-        self.defconfig_list = None
+        self.srctree = os.environ.get("srctree")
 
         self.config_prefix = os.environ.get("CONFIG_")
         if self.config_prefix is None:
@@ -247,34 +304,54 @@ class Config(object):
         self._unset_re = re.compile(r"# {}(\w+) is not set"
                                     .format(self.config_prefix))
 
-        self.srctree = os.environ.get("srctree")
-
         self._print_warnings = warn
         self._print_undef_assign = False
 
-        self.top_menu = MenuNode()
-        self.top_menu.config = self
-        self.top_menu.item = MENU
-        self.top_menu.visibility = None
-        self.top_menu.prompt = ("Linux Kernel Configuration", None)
-        self.top_menu.parent = None
-        self.top_menu.dep = None
-        self.top_menu.filename = filename
-        self.top_menu.linenr = 1
+        self.syms = {}
+        self.defined_syms = []
+        self.named_choices = {}
+        # Used for quickly invalidating all choices
+        self._choices = []
 
-        # We hardcode MODULES for backwards compatibility. Proper support via
-        # 'option modules' wouldn't be that tricky to add with backwards
-        # compatibility either though.
         self.modules = self._lookup_sym("MODULES")
+        self.defconfig_list = None
+
+        # Predefined symbol. DEFCONFIG_LIST uses this.
+        uname_sym = Symbol()
+        uname_sym._type = STRING
+        uname_sym.name = "UNAME_RELEASE"
+        uname_sym.config = self
+        uname_sym.defaults.append((platform.uname()[2], "y"))
+        # env_var doubles as the SYMBOL_AUTO flag from the C implementation, so
+        # just set it to something. The naming breaks a bit here, but it's
+        # pretty obscure.
+        uname_sym.env_var = "<uname release>"
+        self.syms["UNAME_RELEASE"] = uname_sym
+
+        self.top_node = MenuNode()
+        self.top_node.config = self
+        self.top_node.item = MENU
+        self.top_node.visibility = None
+        self.top_node.prompt = ("Linux Kernel Configuration", "y")
+        self.top_node.parent = None
+        self.top_node.dep = "y"
+        self.top_node.filename = filename
+        self.top_node.linenr = 1
 
         # Parse the Kconfig files
         self._parse_block(_FileFeed(self._open(filename), filename),
-                          None, self.top_menu, None, None, self.top_menu)
+                          None,           # end_token
+                          self.top_node,  # parent
+                          "y",            # visible_if_deps
+                          None,           # prev_line
+                          self.top_node)  # prev_node
 
-        self.top_menu.list = self.top_menu.next
-        self.top_menu.next = None
+        self.top_node.list = self.top_node.next
+        self.top_node.next = None
 
-        _finalize_tree(self.top_menu)
+        # Do various post-processing of the menu tree, e.g. to finalize
+        # choices, flatten ifs, and implicitly create menus
+        _finalize_tree(self.top_node)
 
         # Build Symbol._direct_dependents for all symbols
         self._build_dep()
@@ -284,7 +361,7 @@ class Config(object):
         """
         See the class documentation.
         """
-        return self._expand_sym_refs(self.top_menu.prompt[0])
+        return self._expand_sym_refs(self.top_node.prompt[0])
 
     @property
     def defconfig_filename(self):
@@ -727,7 +804,7 @@ class Config(object):
 
         return _Feed(tokens)
 
-    def _parse_block(self, line_feeder, end_marker, parent, visible_if_deps,
+    def _parse_block(self, line_feeder, end_token, parent, visible_if_deps,
                      prev_line, prev_node):
         """
         Parses a block, which is the contents of either a file or an if, menu,
@@ -737,7 +814,7 @@ class Config(object):
           A _FileFeed instance feeding lines from a file. The Kconfig language
           is line-based in practice.
 
-        end_marker:
+        end_token:
           The token that ends the block, e.g. _T_ENDIF ("endif") for ifs. None
           for files.
 
@@ -774,7 +851,7 @@ class Config(object):
             else:
                 line = line_feeder.next()
                 if line is None:
-                    if end_marker is not None:
+                    if end_token is not None:
                         raise KconfigSyntaxError("Unexpected end of file " +
                                                  line_feeder.filename)
 
@@ -837,11 +914,14 @@ class Config(object):
                                 e.message))
 
                 prev_node = self._parse_block(_FileFeed(f, exp_kconfig_file),
-                                              None, parent, visible_if_deps,
-                                              None, prev_node)
+                                              None,            # end_token
+                                              parent,
+                                              visible_if_deps,
+                                              None,            # prev_line
+                                              prev_node)
                 prev_line = None
 
-            elif t0 == end_marker:
+            elif t0 == end_token:
                 # We have reached the end of the block. Terminate the final
                 # node and return it.
                 prev_node.next = None
@@ -860,8 +940,12 @@ class Config(object):
                                                line_feeder.filename,
                                                line_feeder.linenr, True))
 
-                self._parse_block(line_feeder, _T_ENDIF, node, visible_if_deps,
-                                  None, node)
+                self._parse_block(line_feeder,
+                                  _T_ENDIF,
+                                  node,             # parent
+                                  visible_if_deps,
+                                  None,             # prev_line
+                                  node)             # prev_node
                 node.list = node.next
 
                 prev_line = None
@@ -872,7 +956,7 @@ class Config(object):
                 node = MenuNode()
                 node.config = self
                 node.item = MENU
-                node.visibility = None
+                node.visibility = "y"
                 node.parent = parent
                 node.filename = line_feeder.filename
                 node.linenr = line_feeder.linenr
@@ -881,9 +965,12 @@ class Config(object):
                                                    visible_if_deps)
                 node.prompt = (tokens.next(), node.dep)
 
-                self._parse_block(line_feeder, _T_ENDMENU, node,
+                self._parse_block(line_feeder,
+                                  _T_ENDMENU,
+                                  node,         # parent
                                   _make_and(visible_if_deps, node.visibility),
-                                  prev_line, node)
+                                  prev_line,
+                                  node)         # prev_node
                 node.list = node.next
 
                 prev_line = None
@@ -931,8 +1018,12 @@ class Config(object):
 
                 prev_line = self._parse_properties(line_feeder, node,
                                                    visible_if_deps)
-                self._parse_block(line_feeder, _T_ENDCHOICE, node,
-                                  visible_if_deps, prev_line, node)
+                self._parse_block(line_feeder,
+                                  _T_ENDCHOICE,
+                                  node,             # parent
+                                  visible_if_deps,
+                                  prev_line,
+                                  node)             # prev_node
                 node.list = node.next
 
                 prev_line = None
@@ -942,9 +1033,9 @@ class Config(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_MAINMENU:
-                self.top_menu.prompt = (tokens.next(), None)
-                self.top_menu.filename = line_feeder.filename
-                self.top_menu.linenr = line_feeder.linenr
+                self.top_node.prompt = (tokens.next(), "y")
+                self.top_node.filename = line_feeder.filename
+                self.top_node.linenr = line_feeder.linenr
 
             else:
                 _parse_error(line, "unrecognized construct",
@@ -953,15 +1044,15 @@ class Config(object):
     def _parse_cond(self, tokens, line, filename, linenr):
         """
         Parses an optional 'if <expr>' construct and returns the parsed <expr>,
-        or None if the next token is not _T_IF
+        or "y" if the next token is not _T_IF
         """
         return self._parse_expr(tokens, line, filename, linenr, True) \
-               if tokens.check(_T_IF) else None
+               if tokens.check(_T_IF) else "y"
 
     def _parse_val_and_cond(self, tokens, line, filename, linenr):
         """
         Parses '<expr1> if <expr2>' constructs, where the 'if' part is
-        optional. Returns a tuple containing the parsed expressions, with None
+        optional. Returns a tuple containing the parsed expressions, with "y"
         as the second element if the 'if' part is missing.
         """
         return (self._parse_expr(tokens, line, filename, linenr, False),
@@ -1001,7 +1092,7 @@ class Config(object):
 
         # Menu node dependency from 'depends on'. Will get propagated to the
         # properties above.
-        node.dep = None
+        node.dep = "y"
 
         # The cached (line, tokens) tuple that we return
         last_line = None
@@ -1145,7 +1236,7 @@ class Config(object):
                                    "service.".format(node.item.name, env_var),
                                    filename, linenr)
                     else:
-                        defaults.append((os.environ[env_var], None))
+                        defaults.append((os.environ[env_var], "y"))
 
                 elif tokens.check(_T_DEFCONFIG_LIST):
                     if self.defconfig_list is None:
@@ -1272,12 +1363,12 @@ class Config(object):
         Parses an expression from the tokens in 'feed' using a simple top-down
         approach. The result has the form
         '(<operator> <operand 1> <operand 2>)' where <operator> is e.g.
-        kconfiglib._AND. If there is only one operand (i.e., no && or ||), then
+        kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
         the operand is returned directly. This also goes for subexpressions.
 
         As an example, A && B && (!C || D == 3) is represented as the tuple
-        structure (_AND, A, (_AND, B, (_OR, (_NOT, C), (_EQUAL, D, 3)))), with
-        the Symbol objects stored directly in the expression.
+        structure (AND, A, (AND, B, (OR, (NOT, C), (EQUAL, D, 3)))), with the
+        Symbol objects stored directly in the expression.
 
         feed:
           _Feed instance containing the tokens for the expression.
@@ -1326,24 +1417,23 @@ class Config(object):
                                         transform_m)
 
         # Return 'and_expr' directly if we have a "single-operand" OR.
-        # Otherwise, parse the expression on the right and make an _OR node.
-        # This turns A || B || C || D into
-        # (_OR, A, (_OR, B, (_OR, C, D))).
+        # Otherwise, parse the expression on the right and make an OR node.
+        # This turns A || B || C || D into (OR, A, (OR, B, (OR, C, D))).
         return and_expr \
                if not feed.check(_T_OR) else \
-               (_OR, and_expr, self._parse_expr(feed, line, filename, linenr,
-                                                transform_m))
+               (OR, and_expr, self._parse_expr(feed, line, filename, linenr,
+                                               transform_m))
 
     def _parse_and_expr(self, feed, line, filename, linenr, transform_m):
         factor = self._parse_factor(feed, line, filename, linenr, transform_m)
 
         # Return 'factor' directly if we have a "single-operand" AND.
-        # Otherwise, parse the right operand and make an _AND node. This turns
-        # A && B && C && D into (_AND, A, (_AND, B, (_AND, C, D))).
+        # Otherwise, parse the right operand and make an AND node. This turns
+        # A && B && C && D into (AND, A, (AND, B, (AND, C, D))).
         return factor \
                if not feed.check(_T_AND) else \
-               (_AND, factor, self._parse_and_expr(feed, line, filename,
-                                                   linenr, transform_m))
+               (AND, factor, self._parse_and_expr(feed, line, filename,
+                                                  linenr, transform_m))
 
     def _parse_factor(self, feed, line, filename, linenr, transform_m):
         token = feed.next()
@@ -1359,7 +1449,7 @@ class Config(object):
                 # '... if <expr>', etc.), "m" and m are rewritten to
                 # "m" && MODULES.
                 if transform_m and token == "m":
-                    return (_AND, "m", self.modules)
+                    return (AND, "m", self.modules)
 
                 return token
 
@@ -1367,8 +1457,8 @@ class Config(object):
             return (_TOKEN_TO_REL[feed.next()], token, feed.next())
 
         if token == _T_NOT:
-            return (_NOT, self._parse_factor(feed, line, filename, linenr,
-                                             transform_m))
+            return (NOT, self._parse_factor(feed, line, filename, linenr,
+                                            transform_m))
 
         if token == _T_OPEN_PAREN:
             expr_parse = self._parse_expr(feed, line, filename,
@@ -1414,7 +1504,7 @@ class Config(object):
         config_strings = []
         add_fn = config_strings.append
 
-        node = self.top_menu.list
+        node = self.top_node.list
         if node is None:
             # Empty configuration
             return config_strings
@@ -1424,7 +1514,7 @@ class Config(object):
         # .config entry. We reset it prior to writing out a new .config. It
         # only needs to be reset for defined symbols, because undefined symbols
         # will never be written out (because they do not appear structure
-        # rooted at Config.top_menu).
+        # rooted at Config.top_node).
         #
         # The C tools reuse _write_to_conf for this, but we cache
         # _write_to_conf together with the value and don't invalidate cached
@@ -1731,12 +1821,18 @@ class Symbol(object):
       locations, the dependencies at each location are ORed together.
 
     env_var:
-      If the Symbol is set from the environment via 'option env="FOO"', this
-      contains the name ("FOO") of the environment variable. None for symbols
-      that aren't set from the environment.
+      If the Symbol has an 'option env="FOO"' option, this contains the name
+      ("FOO") of the environment variable. None for symbols that aren't set
+      from the environment.
 
-      Internally, this is only used to print the symbol. The value of the
-      environment variable is looked up once when the configuration is parsed.
+      'option env="FOO"' acts as a 'default' property whose value is the value
+      of $FOO.
+
+      env_var is also set (to "<uname release>") on the predefined symbol
+      UNAME_RELEASE, which holds the 'release' field from uname.
+
+      Symbols with an 'option env' option are never written out to .config
+      files.
 
     is_allnoconfig_y:
       True if the symbol has 'option allnoconfig_y' set on it. This has no
@@ -1815,7 +1911,7 @@ class Symbol(object):
                 if vis != "n" and self.user_value is not None:
                     # If the symbol is visible and has a user value, we use
                     # that
-                    val = _eval_min(self.user_value, vis)
+                    val = _tri_min(self.user_value, vis)
 
                 else:
                     # Otherwise, we look at defaults and weak reverse
@@ -1825,7 +1921,7 @@ class Symbol(object):
                         cond_val = eval_expr(cond)
                         if cond_val != "n":
                             self._write_to_conf = True
-                            val = _eval_min(default, cond_val)
+                            val = _tri_min(eval_expr(default), cond_val)
                             break
 
                     # Weak reverse dependencies are only considered if our
@@ -1835,13 +1931,13 @@ class Symbol(object):
                             eval_expr(self.weak_rev_dep)
                         if weak_rev_dep_val != "n":
                             self._write_to_conf = True
-                            val = _eval_max(val, weak_rev_dep_val)
+                            val = _tri_max(val, weak_rev_dep_val)
 
                 # Reverse (select-related) dependencies take precedence
                 rev_dep_val = eval_expr(self.rev_dep)
                 if rev_dep_val != "n":
                     self._write_to_conf = True
-                    val = _eval_max(val, rev_dep_val)
+                    val = _tri_max(val, rev_dep_val)
 
             else:
                 # (bool/tristate) symbol in choice. See _get_visibility() for
@@ -2082,7 +2178,7 @@ class Symbol(object):
         if self.is_allnoconfig_y:
             fields.append("allnoconfig_y")
 
-	if self is self.config.defconfig_list:
+        if self is self.config.defconfig_list:
             fields.append("is the defconfig_list symbol")
 
         if self.env_var is not None:
@@ -2239,8 +2335,8 @@ class Symbol(object):
 
         if self.choice is not None and self._type in (BOOL, TRISTATE):
             if value == "y":
-                self.choice.user_selection = self
                 self.choice.user_value = "y"
+                self.choice.user_selection = self
             elif value == "m":
                 self.choice.user_value = "m"
 
@@ -2441,7 +2537,7 @@ class Choice(object):
         See the class documentation.
         """
         if self.user_value is not None:
-            val = _eval_min(self.user_value, self.visibility)
+            val = _tri_min(self.user_value, self.visibility)
         else:
             val = "n"
 
@@ -2592,8 +2688,8 @@ class Choice(object):
 
         self.nodes = []
 
-        self.user_selection = None
         self.user_value = None
+        self.user_selection = None
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
@@ -2638,7 +2734,7 @@ class MenuNode(object):
     menu node for each location.
 
     The top-level menu node, corresponding to the implicit top-level menu, is
-    available in Config.top_menu.
+    available in Config.top_node.
 
     For symbols and choices, the menu nodes are available in the 'nodes'
     attribute. Menus and comments are represented as plain menu nodes, with
@@ -2819,12 +2915,9 @@ def tri_greater_eq(v1, v2):
 
 def eval_expr(expr):
     """
-    Evaluates an expression to "n", "m", or "y". Returns "y" for None, which
-    makes sense as None usually indicates a missing condition.
+    Evaluates an expression to "n", "m", or "y".
     """
-    return "y" if expr is None else _eval_expr_rec(expr)
 
-def _eval_expr_rec(expr):
     if isinstance(expr, Symbol):
         # Non-bool/tristate symbols are always "n" in a tristate sense,
         # regardless of their value
@@ -2833,28 +2926,22 @@ def _eval_expr_rec(expr):
     if isinstance(expr, str):
         return expr if expr in ("m", "y") else "n"
 
-    if expr[0] == _AND:
-        ev1 = _eval_expr_rec(expr[1])
-        if ev1 == "n":
-            # No need to look at expr[2]
-            return "n"
-        ev2 = _eval_expr_rec(expr[2])
-        return ev2 if ev1 == "y" else \
-               "m" if ev2 != "n" else \
-               "n"
+    if expr[0] == AND:
+        ev1 = eval_expr(expr[1])
 
-    if expr[0] == _OR:
-        ev1 = _eval_expr_rec(expr[1])
-        if ev1 == "y":
-            # No need to look at expr[2]
-            return "y"
-        ev2 = _eval_expr_rec(expr[2])
-        return ev2 if ev1 == "n" else \
-               "y" if ev2 == "y" else \
-               "m"
+        # Short-circuit the ev1 == "n" case
+        return "n" if ev1 == "n" else \
+               _tri_min(ev1, eval_expr(expr[2]))
 
-    if expr[0] == _NOT:
-        ev = _eval_expr_rec(expr[1])
+    if expr[0] == OR:
+        ev1 = eval_expr(expr[1])
+
+        # Short-circuit the ev1 == "y" case
+        return "y" if ev1 == "y" else \
+               _tri_max(ev1, eval_expr(expr[2]))
+
+    if expr[0] == NOT:
+        ev = eval_expr(expr[1])
         return "n" if ev == "y" else \
                "y" if ev == "n" else \
                "m"
@@ -2884,16 +2971,16 @@ def _eval_expr_rec(expr):
                 # They're not both valid numbers. If the comparison is
                 # anything but = or !=, return 'n'. Otherwise, reuse
                 # _strcmp() to check for (in)equality.
-                if oper not in (_EQUAL, _UNEQUAL):
+                if oper not in (EQUAL, UNEQUAL):
                     return "n"
                 comp = _strcmp(op1_str, op2_str)
 
-        if   oper == _EQUAL:         res = comp == 0
-        elif oper == _UNEQUAL:       res = comp != 0
-        elif oper == _LESS:          res = comp < 0
-        elif oper == _LESS_EQUAL:    res = comp <= 0
-        elif oper == _GREATER:       res = comp > 0
-        elif oper == _GREATER_EQUAL: res = comp >= 0
+        if   oper == EQUAL:         res = comp == 0
+        elif oper == UNEQUAL:       res = comp != 0
+        elif oper == LESS:          res = comp < 0
+        elif oper == LESS_EQUAL:    res = comp <= 0
+        elif oper == GREATER:       res = comp > 0
+        elif oper == GREATER_EQUAL: res = comp >= 0
 
         return "y" if res else "n"
 
@@ -2997,7 +3084,7 @@ def _get_visibility(sc):
 
     for node in sc.nodes:
         if node.prompt:
-            vis = _eval_max(vis, node.prompt[1])
+            vis = _tri_max(vis, eval_expr(node.prompt[1]))
 
     if isinstance(sc, Symbol) and sc.choice is not None:
         if sc.choice._type == TRISTATE and sc._type != TRISTATE and \
@@ -3011,7 +3098,7 @@ def _get_visibility(sc):
             # choice has mode "y"
             return "n"
 
-        vis = _eval_min(vis, sc.choice.visibility)
+        vis = _tri_min(vis, sc.choice.visibility)
 
     # Promote "m" to "y" if we're dealing with a non-tristate. This might lead
     # to infinite recursion if something really weird is done with MODULES, but
@@ -3024,48 +3111,45 @@ def _get_visibility(sc):
 
 def _make_and(e1, e2):
     """
-    Constructs an _AND (&&) expression. Performs trivial simplification. Nones
-    equate to 'y'.
-
-    Returns None if e1 == e2 == None, so that ANDing two nonexistent
-    expressions gives a nonexistent expression.
+    Constructs an AND (&&) expression. Performs trivial simplification.
     """
-    if e1 is None or e1 == "y":
+    if e1 == "y":
         return e2
-    if e2 is None or e2 == "y":
+
+    if e2 == "y":
         return e1
-    return (_AND, e1, e2)
+
+    if e1 == "n" or e2 == "n":
+        return "n"
+
+    return (AND, e1, e2)
 
 def _make_or(e1, e2):
     """
-    Constructs an _OR (||) expression. Performs trivial simplification and
-    avoids Nones. Nones equate to 'y', which is usually what we want, but needs
-    to be kept in mind.
+    Constructs an OR (||) expression. Performs trivial simplification.
     """
-
-    # Perform trivial simplification and avoid None's (which
-    # correspond to y's)
-    if e1 is None or e2 is None or e1 == "y" or e2 == "y":
-        return "y"
     if e1 == "n":
         return e2
-    return (_OR, e1, e2)
 
-def _eval_min(e1, e2):
-    """
-    Returns the minimum value of the two expressions. Equates None with 'y'.
-    """
-    e1_eval = eval_expr(e1)
-    e2_eval = eval_expr(e2)
-    return e1_eval if tri_less(e1_eval, e2_eval) else e2_eval
+    if e2 == "n":
+        return e1
 
-def _eval_max(e1, e2):
+    if e1 == "y" or e2 == "y":
+        return "y"
+
+    return (OR, e1, e2)
+
+def _tri_min(v1, v2):
     """
-    Returns the maximum value of the two expressions. Equates None with 'y'.
+    Returns the smallest tristate value among v1 and v2.
     """
-    e1_eval = eval_expr(e1)
-    e2_eval = eval_expr(e2)
-    return e1_eval if tri_greater(e1_eval, e2_eval) else e2_eval
+    return v1 if _TRI_TO_INT[v1] <= _TRI_TO_INT[v2] else v2
+
+def _tri_max(v1, v2):
+    """
+    Returns the largest tristate value among v1 and v2.
+    """
+    return v1 if _TRI_TO_INT[v1] >= _TRI_TO_INT[v2] else v2
 
 def _expr_syms_rec(expr, res):
     """
@@ -3075,10 +3159,10 @@ def _expr_syms_rec(expr, res):
         res.append(expr)
     elif isinstance(expr, str):
         return
-    elif expr[0] in (_AND, _OR):
+    elif expr[0] in (AND, OR):
         _expr_syms_rec(expr[1], res)
         _expr_syms_rec(expr[2], res)
-    elif expr[0] == _NOT:
+    elif expr[0] == NOT:
         _expr_syms_rec(expr[1], res)
     elif expr[0] in _RELATIONS:
         if isinstance(expr[1], Symbol):
@@ -3106,9 +3190,9 @@ def _str_val(obj):
 def _format_and_op(expr):
     """
     _expr_to_str() helper. Returns the string representation of 'expr', which
-    is assumed to be an operand to _AND, with parentheses added if needed.
+    is assumed to be an operand to AND, with parentheses added if needed.
     """
-    if isinstance(expr, tuple) and expr[0] == _OR:
+    if isinstance(expr, tuple) and expr[0] == OR:
         return "({})".format(_expr_to_str(expr))
     return _expr_to_str(expr)
 
@@ -3122,16 +3206,16 @@ def _expr_to_str(expr):
     if isinstance(expr, Symbol):
         return expr.name
 
-    if expr[0] == _NOT:
+    if expr[0] == NOT:
         if isinstance(expr[1], (str, Symbol)):
             return "!" + _expr_to_str(expr[1])
         return "!({})".format(_expr_to_str(expr[1]))
 
-    if expr[0] == _AND:
+    if expr[0] == AND:
         return "{} && {}".format(_format_and_op(expr[1]),
                                  _format_and_op(expr[2]))
 
-    if expr[0] == _OR:
+    if expr[0] == OR:
         return "{} || {}".format(_expr_to_str(expr[1]),
                                  _expr_to_str(expr[2]))
 
@@ -3251,7 +3335,7 @@ def _sym_choice_str(sc):
 
         if node.prompt is not None:
             prompt_str = 'prompt "{}"'.format(node.prompt[0])
-            if node.prompt[1] is not None:
+            if node.prompt[1] != "y":
                 prompt_str += " if " + _expr_to_str(node.prompt[1])
             indent_add(prompt_str)
 
@@ -3259,11 +3343,11 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 if sc.is_allnoconfig_y:
                     indent_add("option allnoconfig_y")
-		if sc is sc.config.defconfig_list:
+                if sc is sc.config.defconfig_list:
                     indent_add("option defconfig_list")
                 if sc.env_var is not None:
                     indent_add('option env="{}"'.format(sc.env_var))
-		if sc is sc.config.modules:
+                if sc is sc.config.modules:
                     indent_add("option modules")
 
             if isinstance(sc, Symbol):
@@ -3271,13 +3355,13 @@ def _sym_choice_str(sc):
                     range_string = "range {} {}" \
                                    .format(_expr_to_str(range_[0]),
                                            _expr_to_str(range_[1]))
-                    if range_[2] is not None:
+                    if range_[2] != "y":
                         range_string += " if " + _expr_to_str(range_[2])
                     indent_add(range_string)
 
             for default in sc.defaults:
                 default_string = "default " + _expr_to_str(default[0])
-                if default[1] is not None:
+                if default[1] != "y":
                     default_string += " if " + _expr_to_str(default[1])
                 indent_add(default_string)
 
@@ -3287,13 +3371,13 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 for select in sc.selects:
                     select_string = "select " + select[0].name
-                    if select[1] is not None:
+                    if select[1] != "y":
                         select_string += " if " + _expr_to_str(select[1])
                     indent_add(select_string)
 
                 for imply in sc.implies:
                     imply_string = "imply " + imply[0].name
-                    if imply[1] is not None:
+                    if imply[1] != "y":
                         imply_string += " if " + _expr_to_str(imply[1])
                     indent_add(imply_string)
 
@@ -3322,8 +3406,8 @@ def _eq_to_sym(eq):
         left, right = right, left
     if not isinstance(left, Symbol):
         return None
-    if (relation == _EQUAL and right in ("m", "y")) or \
-       (relation == _UNEQUAL and right == "n"):
+    if (relation == EQUAL and right in ("m", "y")) or \
+       (relation == UNEQUAL and right == "n"):
         return left
     return None
 
@@ -3342,9 +3426,9 @@ def _expr_depends_on(expr, sym):
         if isinstance(expr, Symbol):
             return expr is sym
 
-        if expr[0] in (_EQUAL, _UNEQUAL):
+        if expr[0] in (EQUAL, UNEQUAL):
             return _eq_to_sym(expr) is sym
-        if expr[0] == _AND:
+        if expr[0] == AND:
             return rec(expr[1]) or rec(expr[2])
         return False
 
@@ -3494,13 +3578,6 @@ def _finalize_tree(node):
 # Public global constants
 #
 
-# Integers representing menu and comment nodes
-
-(
-    MENU,
-    COMMENT,
-) = range(2)
-
 # Integers representing symbol types
 (
     BOOL,
@@ -3510,6 +3587,25 @@ def _finalize_tree(node):
     TRISTATE,
     UNKNOWN
 ) = range(6)
+
+# Integers representing expression types
+(
+    AND,
+    OR,
+    NOT,
+    EQUAL,
+    UNEQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+) = range(9)
+
+# Integers representing menu and comment menu nodes
+(
+    MENU,
+    COMMENT,
+) = range(2)
 
 #
 # Internal global constants
@@ -3679,19 +3775,6 @@ _DEFAULT_VALUE = {
 # will do) for it so we can test with 'is'.
 _NO_CACHED_SELECTION = object()
 
-# Integers representing expression types
-(
-    _AND,
-    _OR,
-    _NOT,
-    _EQUAL,
-    _UNEQUAL,
-    _LESS,
-    _LESS_EQUAL,
-    _GREATER,
-    _GREATER_EQUAL,
-) = range(9)
-
 # Used in comparisons. 0 means the base is inferred from the format of the
 # string. The entries for BOOL and TRISTATE are a convenience - they should
 # never convert to valid numbers.
@@ -3712,29 +3795,29 @@ _TRI_TO_INT = {
 }
 
 _RELATIONS = frozenset((
-    _EQUAL,
-    _UNEQUAL,
-    _LESS,
-    _LESS_EQUAL,
-    _GREATER,
-    _GREATER_EQUAL,
+    EQUAL,
+    UNEQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
 ))
 
 # Token to relation (=, !=, <, ...) mapping
 _TOKEN_TO_REL = {
-    _T_EQUAL:         _EQUAL,
-    _T_GREATER:       _GREATER,
-    _T_GREATER_EQUAL: _GREATER_EQUAL,
-    _T_LESS:          _LESS,
-    _T_LESS_EQUAL:    _LESS_EQUAL,
-    _T_UNEQUAL:       _UNEQUAL,
+    _T_EQUAL:         EQUAL,
+    _T_GREATER:       GREATER,
+    _T_GREATER_EQUAL: GREATER_EQUAL,
+    _T_LESS:          LESS,
+    _T_LESS_EQUAL:    LESS_EQUAL,
+    _T_UNEQUAL:       UNEQUAL,
 }
 
 _RELATION_TO_STR = {
-    _EQUAL:         "=",
-    _GREATER:       ">",
-    _GREATER_EQUAL: ">=",
-    _LESS:          "<",
-    _LESS_EQUAL:    "<=",
-    _UNEQUAL:       "!=",
+    EQUAL:         "=",
+    GREATER:       ">",
+    GREATER_EQUAL: ">=",
+    LESS:          "<",
+    LESS_EQUAL:    "<=",
+    UNEQUAL:       "!=",
 }
