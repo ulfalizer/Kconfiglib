@@ -113,6 +113,8 @@ A || (B && C && D)    (OR, A, (AND, B, (AND, C, D)))
 y                     config.y
 "y"                   config.y
 
+TODO: show example for other constant symbols
+
 As seen in the final two examples, n/m/y are always represented as the constant
 symbols config.n/m/y, regardless of whether they're written with or without
 quotes. 'config' represents the Config instance of the configuration the
@@ -122,17 +124,13 @@ A missing expression (e.g. <cond> if the 'if <cond>' part is removed from
 'default A if <conf>') is represented as config.y. The standard __str__()
 functions avoid printing 'if y' conditions to give cleaner output.
 
-Implementation note
--------------------
-
-TODO: blah blah constant symbols
-
 
 Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service (or open a ticket on the GitHub page).
 """
 
 # TODO: document n/m/y
+# TODO: consistent docstring format
 
 import errno
 import os
@@ -144,7 +142,6 @@ import sys
 #
 # Public classes
 # Public functions
-# Internal classes
 # Internal functions
 # Public global constants
 # Internal global constants
@@ -253,8 +250,8 @@ class Config(object):
         "_choices",
         "_print_undef_assign",
         "_print_warnings",
-        "_set_re",
-        "_unset_re",
+        "_set_re_match",
+        "_unset_re_match",
         "config_prefix",
         "const_syms",
         "defconfig_list",
@@ -267,6 +264,18 @@ class Config(object):
         "syms",
         "top_node",
         "y",
+
+        # These are used during parsing
+        "_line",
+        "_lines",
+        "_filename",
+        "_linenr",
+        "_file_len",
+        "_filestack",
+        "_tokens",
+        "_tokens_i",
+        "_tokens_len",
+        "_has_tokens",
     )
 
     #
@@ -305,11 +314,13 @@ class Config(object):
         if self.config_prefix is None:
             self.config_prefix = "CONFIG_"
 
-        # Regular expressions for parsing .config files
-        self._set_re = re.compile(r"{}(\w+)=(.*)"
-                                  .format(self.config_prefix))
-        self._unset_re = re.compile(r"# {}(\w+) is not set"
-                                    .format(self.config_prefix))
+        # Regular expressions for parsing .config files, with the get() method
+        # assigned directly as a small optimization (microscopic in this case,
+        # but it's consistent with the other regexes)
+        self._set_re_match = re.compile(r"{}(\w+)=(.*)"
+                                        .format(self.config_prefix)).match
+        self._unset_re_match = re.compile(r"# {}(\w+) is not set"
+                                          .format(self.config_prefix)).match
 
         self._print_warnings = warn
         self._print_undef_assign = False
@@ -366,11 +377,16 @@ class Config(object):
         self.top_node.linenr = 1
 
         # Parse the Kconfig files
-        self._parse_block(_FileFeed(self._open(filename), filename),
-                          None,           # end_token
+
+        self._has_tokens = False
+        self._tokens_i = 0
+
+        self._filestack = []
+
+        self._enter_file_empty_stack(filename)
+        self._parse_block(None,           # end_token
                           self.top_node,  # parent
                           self.y,         # visible_if_deps
-                          None,           # prev_line
                           self.top_node)  # prev_node
 
         self.top_node.list = self.top_node.next
@@ -432,8 +448,8 @@ class Config(object):
                 self._invalidate_all()
 
             # Small optimizations
-            set_re_match = self._set_re.match
-            unset_re_match = self._unset_re.match
+            set_re_match = self._set_re_match
+            unset_re_match = self._unset_re_match
             syms = self.syms
 
             for linenr, line in enumerate(f, 1):
@@ -452,8 +468,8 @@ class Config(object):
 
                     if sym._type == STRING and val.startswith('"'):
                         if len(val) < 2 or val[-1] != '"':
-                            self._warn("malformed string literal", filename,
-                                       linenr)
+                            self._warn("malformed string literal",
+                                       filename, linenr)
                             continue
                         # Strip quotes and remove escapings. The unescaping
                         # procedure should be safe since " can only appear as
@@ -529,17 +545,11 @@ class Config(object):
         conditional ('if ...') expressions in the configuration (as well as in
         the C tools). m is rewritten to 'm && MODULES'.
         """
-        return eval_expr(
-                   self._parse_expr(
-                       self._tokenize(
-                           s,
-                           True,   # for_eval_string
-                           None,   # filename
-                           None),  # linenr
-                       s,
-                       None,   # filename
-                       None,   # linenr
-                       True))  # transform_m
+        # TODO: explain
+        self._line = s
+        self._filename = None
+        self._tokenize(True)
+        return eval_expr(self._parse_expr(True))
 
     def unset_values(self):
         """
@@ -645,10 +655,10 @@ class Config(object):
     # Kconfig parsing
     #
 
-    def _tokenize(self, s, for_eval_string, filename, linenr):
+    def _tokenize(self, for_eval_string):
         """
-        Returns a _Feed instance containing tokens derived from the string 's'.
-        Registers any new symbols encountered (via _lookup_sym()).
+        Parses Config._line, putting the tokens in Config._tokens. Registers
+        any new symbols encountered (via _lookup_sym()).
 
         Tries to be reasonably speedy by processing chunks of text via regexes
         and string operations where possible. This is a hotspot during parsing.
@@ -659,13 +669,14 @@ class Config(object):
           register new symbols.
         """
 
+        s = self._line
+
         # Tricky implementation detail: While parsing a token, 'token' refers
         # to the previous token. See _NOT_REF for why this is needed.
 
         if for_eval_string:
+            self._tokens = []
             token = None
-            tokens = []
-
             # The current index in the string being tokenized
             i = 0
 
@@ -673,19 +684,24 @@ class Config(object):
             # See comment at _initial_token_re_match definition
             initial_token_match = _initial_token_re_match(s)
             if not initial_token_match:
-                return None
+                self._tokens_len = 0
+                return
 
             keyword = _get_keyword(initial_token_match.group(1))
+
             if keyword == _T_HELP:
                 # Avoid junk after "help", e.g. "---", being registered as a
                 # symbol
-                return _Feed((_T_HELP,))
+                self._tokens = (_T_HELP,)
+                self._tokens_len = 1  # TODO: why is this needed?
+                self._tokens_i = 0
+                return
+
             if keyword is None:
-                # We expect a keyword as the first token
-                _tokenization_error(s, filename, linenr)
+                self._parse_error("expected keyword as first token")
 
             token = keyword
-            tokens = [keyword]
+            self._tokens = [keyword]
             # The current index in the string being tokenized
             i = initial_token_match.end()
 
@@ -755,7 +771,8 @@ class Config(object):
                         # can just find the matching quote.
                         end = s.find(c, i)
                         if end == -1:
-                            _tokenization_error(s, filename, linenr)
+                            self._parse_error("unterminated string")
+
                         val = s[i:end]
                         i = end + 1
                     else:
@@ -763,20 +780,25 @@ class Config(object):
                         # very unusual case anyway.
                         quote = c
                         val = ""
+
                         while 1:
                             if i >= len(s):
-                                _tokenization_error(s, filename, linenr)
+                                self._parse_error("unterminated string")
+
                             c = s[i]
                             if c == quote:
                                 break
+
                             if c == "\\":
                                 if i + 1 >= len(s):
-                                    _tokenization_error(s, filename, linenr)
+                                    self._parse_error("unterminated string")
+
                                 val += s[i + 1]
                                 i += 2
                             else:
                                 val += c
                                 i += 1
+
                         i += 1
 
                     # This is the only place where we don't survive with a
@@ -787,18 +809,22 @@ class Config(object):
                         val \
                         if token in _STRING_LEX or \
                             (not for_eval_string and \
-                                 tokens[0] == _T_OPTION) else \
+                                 self._tokens[0] == _T_OPTION) else \
                         self._lookup_const_sym(val, for_eval_string)
 
                 elif c == "&":
                     # Invalid characters are ignored
-                    if i >= len(s) or s[i] != "&": continue
+                    if i >= len(s) or s[i] != "&":
+                        continue
+
                     token = _T_AND
                     i += 1
 
                 elif c == "|":
                     # Invalid characters are ignored
-                    if i >= len(s) or s[i] != "|": continue
+                    if i >= len(s) or s[i] != "|":
+                        continue
+
                     token = _T_OR
                     i += 1
 
@@ -818,7 +844,8 @@ class Config(object):
                 elif c == ")":
                     token = _T_CLOSE_PAREN
 
-                elif c == "#": break # Comment
+                elif c == "#":
+                    break
 
                 # Very rare
                 elif c == "<":
@@ -844,19 +871,85 @@ class Config(object):
                 while i < len(s) and s[i].isspace():
                     i += 1
 
-            tokens.append(token)
+            self._tokens.append(token)
 
-        return _Feed(tokens)
+        self._tokens_i = 0
+        self._tokens_len = len(self._tokens)
 
-    def _parse_block(self, line_feeder, end_token, parent, visible_if_deps,
-                     prev_line, prev_node):
+    def _next_token(self):
+        if self._tokens_i >= self._tokens_len:
+            return None
+        token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
+        return token
+
+    def _peek_token(self):
+        return None if self._tokens_i >= self._tokens_len \
+               else self._tokens[self._tokens_i]
+
+    def _check_token(self, token):
+        if self._tokens_i < self._tokens_len and \
+           self._tokens[self._tokens_i] == token:
+            self._tokens_i += 1
+            return True
+        return False
+
+    def _enter_file_empty_stack(self, filename):
+        try:
+            # TODO: comment
+            f = self._open(filename)
+        except IOError as e:
+            # Extend the error message a bit in this case
+            raise IOError(
+                "{}:{}: {} Also note that e.g. $FOO in a 'source' "
+                "statement does not refer to the environment "
+                "variable FOO, but rather to the Kconfig Symbol FOO "
+                "(which would commonly have 'option env=\"FOO\"' in "
+                "its definition)."
+                .format(self._filename, self._linenr, e.message))
+
+        self._filename = filename
+        self._linenr = 0
+        with f:
+            self._lines = f.readlines()
+        self._file_len = len(self._lines)
+
+    def _enter_file(self, filename):
+        self._filestack.append((self._filename, self._linenr, self._lines,
+                                self._file_len))
+        self._enter_file_empty_stack(filename)
+
+    def _leave_file(self):
+        self._filename, self._linenr, self._lines, self._file_len = \
+            self._filestack.pop()
+
+    def _next_line(self):
+        if self._linenr >= self._file_len:
+            return False
+
+        line = self._lines[self._linenr]
+        self._linenr += 1
+
+        while line.endswith("\\\n"):
+            line = line[:-2] + self._lines[self._linenr]
+            self._linenr += 1
+
+        self._line = line
+        return True
+
+    def _next_line_no_join(self):
+        if self._linenr >= self._file_len:
+            return None
+
+        self._line = self._lines[self._linenr]
+        self._linenr += 1
+
+        return self._line
+
+    def _parse_block(self, end_token, parent, visible_if_deps, prev_node):
         """
         Parses a block, which is the contents of either a file or an if, menu,
         or choice statement.
-
-        line_feeder:
-          A _FileFeed instance feeding lines from a file. The Kconfig language
-          is line-based in practice.
 
         end_token:
           The token that ends the block, e.g. _T_ENDIF ("endif") for ifs. None
@@ -890,35 +983,31 @@ class Config(object):
         """
 
         while 1:
-            if prev_line is not None:
-                line, tokens = prev_line
-            else:
-                line = line_feeder.next()
-                if line is None:
+            if not self._has_tokens:
+                # Also advances to the next line
+                if not self._next_line():
                     if end_token is not None:
                         raise KconfigSyntaxError("Unexpected end of file " +
-                                                 line_feeder.filename)
+                                                 self._filename)
 
                     # We have reached the end of the file. Terminate the final
                     # node and return it.
                     prev_node.next = None
                     return prev_node
 
-                tokens = self._tokenize(line, False, line_feeder.filename,
-                                        line_feeder.linenr)
-                if tokens is None:
-                    continue
+                self._tokenize(False)
 
-            t0 = tokens.next()
+            self._has_tokens = False
 
-            # Cases are ordered roughly by frequency, which speeds things up a
-            # bit
+            t0 = self._next_token()
+            if t0 is None:
+                continue
 
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer will automatically allocate a new Symbol object
                 # for any new names it encounters, so we don't need to worry
                 # about that here.
-                sym = tokens.next()
+                sym = self._next_token()
 
                 node = MenuNode()
                 node.config = self
@@ -926,12 +1015,11 @@ class Config(object):
                 node.help = None
                 node.list = None
                 node.parent = parent
-                node.filename = line_feeder.filename
-                node.linenr = line_feeder.linenr
+                node.filename = self._filename
+                node.linenr = self._linenr
                 node.is_menuconfig = (t0 == _T_MENUCONFIG)
 
-                prev_line = self._parse_properties(line_feeder, node,
-                                                   visible_if_deps)
+                self._parse_properties(node, visible_if_deps)
 
                 sym.nodes.append(node)
                 self.defined_syms.append(sym)
@@ -941,29 +1029,15 @@ class Config(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_SOURCE:
-                kconfig_file = tokens.next()
+                kconfig_file = self._next_token()
                 exp_kconfig_file = self._expand_sym_refs(kconfig_file)
 
-                try:
-                    f = self._open(exp_kconfig_file)
-                except IOError as e:
-                    # Extend the error message a bit in this case
-                    raise IOError(
-                        "{}:{}: {} Also note that e.g. $FOO in a 'source' "
-                        "statement does not refer to the environment "
-                        "variable FOO, but rather to the Kconfig Symbol FOO "
-                        "(which would commonly have 'option env=\"FOO\"' in "
-                        "its definition)."
-                        .format(line_feeder.filename, line_feeder.linenr,
-                                e.message))
-
-                prev_node = self._parse_block(_FileFeed(f, exp_kconfig_file),
-                                              None,            # end_token
+                self._enter_file(exp_kconfig_file)
+                prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
-                                              None,            # prev_line
                                               prev_node)
-                prev_line = None
+                self._leave_file()
 
             elif t0 == end_token:
                 # We have reached the end of the block. Terminate the final
@@ -976,23 +1050,16 @@ class Config(object):
                 node.item = None
                 node.prompt = None
                 node.parent = parent
-                node.filename = line_feeder.filename
-                node.linenr = line_feeder.linenr
+                node.filename = self._filename
+                node.linenr = self._linenr
                 node.dep = \
-                    self._make_and(parent.dep,
-                                   self._parse_expr(tokens, line,
-                                                    line_feeder.filename,
-                                                    line_feeder.linenr, True))
+                    self._make_and(parent.dep, self._parse_expr(True))
 
-                self._parse_block(line_feeder,
-                                  _T_ENDIF,
+                self._parse_block(_T_ENDIF,
                                   node,             # parent
                                   visible_if_deps,
-                                  None,             # prev_line
                                   node)             # prev_node
                 node.list = node.next
-
-                prev_line = None
 
                 prev_node.next = prev_node = node
 
@@ -1002,23 +1069,19 @@ class Config(object):
                 node.item = MENU
                 node.visibility = self.y
                 node.parent = parent
-                node.filename = line_feeder.filename
-                node.linenr = line_feeder.linenr
+                node.filename = self._filename
+                node.linenr = self._linenr
 
-                prev_line = self._parse_properties(line_feeder, node,
-                                                   visible_if_deps)
-                node.prompt = (tokens.next(), node.dep)
+                prompt = self._next_token()
+                self._parse_properties(node, visible_if_deps)
+                node.prompt = (prompt, node.dep)
 
-                self._parse_block(line_feeder,
-                                  _T_ENDMENU,
+                self._parse_block(_T_ENDMENU,
                                   node,         # parent
                                   self._make_and(visible_if_deps,
                                                  node.visibility),
-                                  prev_line,
                                   node)         # prev_node
                 node.list = node.next
-
-                prev_line = None
 
                 prev_node.next = prev_node = node
 
@@ -1028,17 +1091,17 @@ class Config(object):
                 node.item = COMMENT
                 node.list = None
                 node.parent = parent
-                node.filename = line_feeder.filename
-                node.linenr = line_feeder.linenr
+                node.filename = self._filename
+                node.linenr = self._linenr
 
-                prev_line = self._parse_properties(line_feeder, node,
-                                                   visible_if_deps)
-                node.prompt = (tokens.next(), node.dep)
+                prompt = self._next_token()
+                self._parse_properties(node, visible_if_deps)
+                node.prompt = (prompt, node.dep)
 
                 prev_node.next = prev_node = node
 
             elif t0 == _T_CHOICE:
-                name = tokens.next()
+                name = self._next_token()
                 if name is None:
                     choice = Choice()
                     self._choices.append(choice)
@@ -1058,60 +1121,40 @@ class Config(object):
                 node.item = choice
                 node.help = None
                 node.parent = parent
-                node.filename = line_feeder.filename
-                node.linenr = line_feeder.linenr
+                node.filename = self._filename
+                node.linenr = self._linenr
 
-                prev_line = self._parse_properties(line_feeder, node,
-                                                   visible_if_deps)
-                self._parse_block(line_feeder,
-                                  _T_ENDCHOICE,
+                self._parse_properties(node, visible_if_deps)
+                self._parse_block(_T_ENDCHOICE,
                                   node,             # parent
                                   visible_if_deps,
-                                  prev_line,
                                   node)             # prev_node
                 node.list = node.next
-
-                prev_line = None
 
                 choice.nodes.append(node)
 
                 prev_node.next = prev_node = node
 
             elif t0 == _T_MAINMENU:
-                self.top_node.prompt = (tokens.next(), self.y)
-                self.top_node.filename = line_feeder.filename
-                self.top_node.linenr = line_feeder.linenr
+                self.top_node.prompt = (self._next_token(), self.y)
+                self.top_node.filename = self._filename
+                self.top_node.linenr = self._linenr
 
             else:
-                _parse_error(line, "unrecognized construct",
-                             line_feeder.filename, line_feeder.linenr)
+                self._parse_error("unrecognized construct")
 
-    def _parse_cond(self, tokens, line, filename, linenr):
+    def _parse_cond(self):
         """
         Parses an optional 'if <expr>' construct and returns the parsed <expr>,
         or self.y if the next token is not _T_IF
         """
-        return self._parse_expr(tokens, line, filename, linenr, True) \
-               if tokens.check(_T_IF) else self.y
+        return self._parse_expr(True) if self._check_token(_T_IF) else self.y
 
-    def _parse_val_and_cond(self, tokens, line, filename, linenr):
-        """
-        Parses '<expr1> if <expr2>' constructs, where the 'if' part is
-        optional. Returns a tuple containing the parsed expressions, with
-        config.y as the second element if the 'if' part is missing.
-        """
-        return (self._parse_expr(tokens, line, filename, linenr, False),
-                self._parse_cond(tokens, line, filename, linenr))
-
-    def _parse_properties(self, line_feeder, node, visible_if_deps):
+    def _parse_properties(self, node, visible_if_deps):
         """
         Parses properties for symbols, menus, choices, and comments. Also takes
         care of propagating dependencies from the menu node to the properties
         of the item (this mirrors the inner working of the C tools).
-
-        line_feeder:
-          A _FileFeed instance feeding lines from a file. The Kconfig language
-          is line-based in practice.
 
         node:
           The menu node we're parsing properties on. Some properties (prompts,
@@ -1139,39 +1182,29 @@ class Config(object):
         # properties above.
         node.dep = self.y
 
-        # The cached (line, tokens) tuple that we return
-        last_line = None
-
         while 1:
-            line = line_feeder.next()
-            if line is None:
+            # Also advances to the next line
+            if not self._next_line():
                 break
 
-            filename = line_feeder.filename
-            linenr = line_feeder.linenr
+            self._tokenize(False)
 
-            tokens = self._tokenize(line, False, filename, linenr)
-            if tokens is None:
+            t0 = self._next_token()
+            if t0 is None:
                 continue
 
-            t0 = tokens.next()
-
             if t0 == _T_DEPENDS:
-                if not tokens.check(_T_ON):
-                    _parse_error(line, 'expected "on" after "depends"',
-                                 filename, linenr)
+                if not self._check_token(_T_ON):
+                    self._parse_error('expected "on" after "depends"')
 
-                node.dep = \
-                    self._make_and(node.dep,
-                                   self._parse_expr(tokens, line, filename,
-                                                    linenr, True))
+                node.dep = self._make_and(node.dep, self._parse_expr(True))
 
             elif t0 == _T_HELP:
                 # Find first non-blank (not all-space) line and get its
                 # indentation
 
                 while 1:
-                    line = line_feeder.next_no_join()
+                    line = self._next_line_no_join()
                     if line is None or not line.isspace():
                         break
 
@@ -1184,7 +1217,7 @@ class Config(object):
                     # If the first non-empty lines has zero indent, there is no
                     # help text
                     node.help = ""
-                    line_feeder.linenr -= 1
+                    self._linenr -= 1  # Unget the line
                     break
 
                 # The help text goes on till the first non-empty line with less
@@ -1192,7 +1225,7 @@ class Config(object):
 
                 help_lines = [_deindent(line, indent).rstrip()]
                 while 1:
-                    line = line_feeder.next_no_join()
+                    line = self._next_line_no_join()
                     if line is None or \
                        (not line.isspace() and _indentation(line) < indent):
                         node.help = "\n".join(help_lines).rstrip() + "\n"
@@ -1202,58 +1235,46 @@ class Config(object):
                 if line is None:
                     break
 
-                line_feeder.linenr -= 1
+                self._linenr -= 1  # Unget the line
 
             elif t0 == _T_SELECT:
                 if not isinstance(node.item, Symbol):
-                    _parse_error(line, "only symbols can select", filename,
-                                 linenr)
+                    self._parse_error("only symbols can select")
 
-                selects.append(
-                    (tokens.next(),
-                     self._parse_cond(tokens, line, filename, linenr)))
+                selects.append((self._next_token(), self._parse_cond()))
 
             elif t0 == _T_IMPLY:
                 if not isinstance(node.item, Symbol):
-                    _parse_error(line, "only symbols can imply", filename,
-                                 linenr)
+                    self._parse_error("only symbols can imply")
 
-                implies.append(
-                    (tokens.next(),
-                     self._parse_cond(tokens, line, filename, linenr)))
+                implies.append((self._next_token(), self._parse_cond()))
 
             elif t0 in (_T_BOOL, _T_TRISTATE, _T_INT, _T_HEX, _T_STRING):
                 node.item._type = _TOKEN_TO_TYPE[t0]
-                if tokens.peek() is not None:
-                    prompt = (tokens.next(),
-                              self._parse_cond(tokens, line, filename, linenr))
+                if self._peek_token() is not None:
+                    prompt = (self._next_token(), self._parse_cond())
 
             elif t0 == _T_DEFAULT:
-                defaults.append(
-                    self._parse_val_and_cond(tokens, line, filename, linenr))
+                defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
                 node.item._type = _TOKEN_TO_TYPE[t0]
-                defaults.append(
-                    self._parse_val_and_cond(tokens, line, filename,
-                                             linenr))
+                defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 == _T_PROMPT:
                 # 'prompt' properties override each other within a single
                 # definition of a symbol, but additional prompts can be added
                 # by defining the symbol multiple times
-                prompt = (tokens.next(),
-                          self._parse_cond(tokens, line, filename, linenr))
+                prompt = (self._next_token(), self._parse_cond())
 
             elif t0 == _T_RANGE:
-                ranges.append(
-                    (tokens.next(),
-                     tokens.next(),
-                     self._parse_cond(tokens, line, filename, linenr)))
+                ranges.append((self._next_token(),
+                               self._next_token(),
+                               self._parse_cond()))
 
             elif t0 == _T_OPTION:
-                if tokens.check(_T_ENV) and tokens.check(_T_EQUAL):
-                    env_var = tokens.next()
+                if self._check_token(_T_ENV) and self._check_token(_T_EQUAL):
+                    env_var = self._next_token()
 
                     node.item.env_var = env_var
 
@@ -1268,24 +1289,24 @@ class Config(object):
                                    "message, that might be an error, and you "
                                    "should email ulfalizer a.t Google's email "
                                    "service.".format(node.item.name, env_var),
-                                   filename, linenr)
+                                   self._filename, self._linenr)
                     else:
                         defaults.append(
                             (self._lookup_const_sym(os.environ[env_var],
                                                     False),
                              self.y))
 
-                elif tokens.check(_T_DEFCONFIG_LIST):
+                elif self._check_token(_T_DEFCONFIG_LIST):
                     if self.defconfig_list is None:
                         self.defconfig_list = node.item
                     else:
                         self._warn("'option defconfig_list' set on multiple "
                                    "symbols ({0} and {1}). Only {0} will be "
-                                   "used."
-                                   .format(self.defconfig_list.name,
-                                           node.item.name))
+                                   "used.".format(self.defconfig_list.name,
+                                                  node.item.name),
+                                   self._filename, self._linenr)
 
-                elif tokens.check(_T_MODULES):
+                elif self._check_token(_T_MODULES):
                     # To reduce warning spam, only warn if 'option modules' is
                     # set on some symbol that isn't MODULES, which should be
                     # safe. I haven't run into any projects that make use
@@ -1300,42 +1321,34 @@ class Config(object):
                                    "MODULES, like older versions of the C "
                                    "implementation did when 'option modules' "
                                    "wasn't used.)",
-                                   filename, linenr)
+                                   self._filename, self._linenr)
 
-                elif tokens.check(_T_ALLNOCONFIG_Y):
+                elif self._check_token(_T_ALLNOCONFIG_Y):
                     if not isinstance(node.item, Symbol):
-                        _parse_error(line,
-                                     "the 'allnoconfig_y' option is only "
-                                     "valid for symbols",
-                                     filename, linenr)
+                        self._parse_error("the 'allnoconfig_y' option is only "
+                                          "valid for symbols")
 
                     node.item.is_allnoconfig_y = True
 
                 else:
-                    _parse_error(line, "unrecognized option", filename, linenr)
+                    self._parse_error("unrecognized option")
 
             elif t0 == _T_VISIBLE:
-                if not tokens.check(_T_IF):
-                    _parse_error(line, 'expected "if" after "visible"',
-                                 filename, linenr)
+                if not self._check_token(_T_IF):
+                    self._parse_error('expected "if" after "visible"')
 
                 node.visibility = \
-                    self._make_and(node.visibility,
-                                   self._parse_expr(tokens, line, filename,
-                                                    linenr, True))
+                    self._make_and(node.visibility, self._parse_expr(True))
 
             elif t0 == _T_OPTIONAL:
                 if not isinstance(node.item, Choice):
-                    _parse_error(line,
-                                 '"optional" is only valid for choices',
-                                 filename,
-                                 linenr)
+                    self._parse_error('"optional" is only valid for choices')
 
                 node.item.is_optional = True
 
             else:
-                tokens.i = 0
-                last_line = (line, tokens)
+                self._tokens_i = 0
+                self._has_tokens = True
                 break
 
         # Done parsing properties. Now add the new
@@ -1395,13 +1408,10 @@ class Config(object):
                                                  self._make_and(cond_expr,
                                                                 node.dep)))
 
-        # Return cached non-property line
-        return last_line
-
-    def _parse_expr(self, feed, line, filename, linenr, transform_m):
+    def _parse_expr(self, transform_m):
         """
-        Parses an expression from the tokens in 'feed' using a simple top-down
-        approach. The result has the form
+        Parses an expression from the tokens in Config._tokens using a simple
+        top-down approach. The result has the form
         '(<operator> <operand 1> <operand 2>)' where <operator> is e.g.
         kconfiglib.AND. If there is only one operand (i.e., no && or ||), then
         the operand is returned directly. This also goes for subexpressions.
@@ -1409,20 +1419,6 @@ class Config(object):
         As an example, A && B && (!C || D == 3) is represented as the tuple
         structure (AND, A, (AND, B, (OR, (NOT, C), (EQUAL, D, 3)))), with the
         Symbol objects stored directly in the expression.
-
-        feed:
-          _Feed instance containing the tokens for the expression.
-
-        line:
-          The line containing the expression being parsed.
-
-        filename:
-          The file containing the expression. None when using
-          Config.eval_string().
-
-        linenr:
-          The line number containing the expression. None when using
-          Config.eval_string().
 
         transform_m:
           True if 'm' should be rewritten to 'm && MODULES'. See
@@ -1453,35 +1449,32 @@ class Config(object):
         # we end up allocating a ton of lists instead of reusing expressions,
         # which is bad.
 
-        and_expr = self._parse_and_expr(feed, line, filename, linenr,
-                                        transform_m)
+        and_expr = self._parse_and_expr(transform_m)
 
         # Return 'and_expr' directly if we have a "single-operand" OR.
         # Otherwise, parse the expression on the right and make an OR node.
         # This turns A || B || C || D into (OR, A, (OR, B, (OR, C, D))).
         return and_expr \
-               if not feed.check(_T_OR) else \
-               (OR, and_expr, self._parse_expr(feed, line, filename, linenr,
-                                               transform_m))
+               if not self._check_token(_T_OR) else \
+               (OR, and_expr, self._parse_expr(transform_m))
 
-    def _parse_and_expr(self, feed, line, filename, linenr, transform_m):
-        factor = self._parse_factor(feed, line, filename, linenr, transform_m)
+    def _parse_and_expr(self, transform_m):
+        factor = self._parse_factor(transform_m)
 
         # Return 'factor' directly if we have a "single-operand" AND.
         # Otherwise, parse the right operand and make an AND node. This turns
         # A && B && C && D into (AND, A, (AND, B, (AND, C, D))).
         return factor \
-               if not feed.check(_T_AND) else \
-               (AND, factor, self._parse_and_expr(feed, line, filename,
-                                                  linenr, transform_m))
+               if not self._check_token(_T_AND) else \
+               (AND, factor, self._parse_and_expr(transform_m))
 
-    def _parse_factor(self, feed, line, filename, linenr, transform_m):
-        token = feed.next()
+    def _parse_factor(self, transform_m):
+        token = self._next_token()
 
         if isinstance(token, Symbol):
             # Plain symbol or relation
 
-            next_token = feed.peek()
+            next_token = self._peek_token()
             if next_token not in _TOKEN_TO_REL:
                 # Plain symbol
 
@@ -1494,20 +1487,20 @@ class Config(object):
                 return token
 
             # Relation
-            return (_TOKEN_TO_REL[feed.next()], token, feed.next())
+            return (_TOKEN_TO_REL[self._next_token()], token,
+                    self._next_token())
 
         if token == _T_NOT:
-            return (NOT, self._parse_factor(feed, line, filename, linenr,
-                                            transform_m))
+            return (NOT, self._parse_factor(transform_m))
 
         if token == _T_OPEN_PAREN:
-            expr_parse = self._parse_expr(feed, line, filename,
-                                          linenr, transform_m)
-            if not feed.check(_T_CLOSE_PAREN):
-                _parse_error(line, "missing end parenthesis", filename, linenr)
+            expr_parse = self._parse_expr(transform_m)
+            if not self._check_token(_T_CLOSE_PAREN):
+                self._parse_error("missing end parenthesis")
+
             return expr_parse
 
-        _parse_error(line, "malformed expression", filename, linenr)
+        self._parse_error("malformed expression")
 
     #
     # Symbol lookup
@@ -1707,28 +1700,8 @@ class Config(object):
                 s[sym_ref_match.end():]
 
     #
-    # Warnings
+    # Expression construction
     #
-
-    def _warn(self, msg, filename=None, linenr=None):
-        """For printing general warnings."""
-        if self._print_warnings:
-            _stderr_msg("warning: " + msg, filename, linenr)
-
-    def _warn_undef_assign(self, msg, filename=None, linenr=None):
-        """
-        See the class documentation.
-        """
-        if self._print_undef_assign:
-            _stderr_msg("warning: " + msg, filename, linenr)
-
-    def _warn_undef_assign_load(self, name, val, filename, linenr):
-        """
-        Special version for load_config().
-        """
-        self._warn_undef_assign(
-            'attempt to assign the value "{}" to the undefined symbol {}' \
-            .format(val, name), filename, linenr)
 
     def _make_and(self, e1, e2):
         """
@@ -1759,6 +1732,39 @@ class Config(object):
             return self.y
 
         return (OR, e1, e2)
+
+    #
+    # Errors and warnings
+    #
+
+    def _parse_error(self, msg):
+        if self._filename is None:
+            loc = ""
+        else:
+            loc = "{}:{}: ".format(self._filename, self._linenr)
+
+        raise KconfigSyntaxError(
+            "{}Couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
+
+    def _warn(self, msg, filename=None, linenr=None):
+        """For printing general warnings."""
+        if self._print_warnings:
+            _stderr_msg("warning: " + msg, filename, linenr)
+
+    def _warn_undef_assign(self, msg, filename=None, linenr=None):
+        """
+        See the class documentation.
+        """
+        if self._print_undef_assign:
+            _stderr_msg("warning: " + msg, filename, linenr)
+
+    def _warn_undef_assign_load(self, name, val, filename, linenr):
+        """
+        Special version for load_config().
+        """
+        self._warn_undef_assign(
+            'attempt to assign the value "{}" to the undefined symbol {}' \
+            .format(val, name), filename, linenr)
 
 class Symbol(object):
     """
@@ -2735,7 +2741,8 @@ class Choice(object):
             "choice" if self.name is None else "choice " + self.name,
             _TYPENAME[self.type],
             "mode " + self.value,
-            "visibility " + self.visibility]
+            "visibility " + self.visibility
+        ]
 
         if self.is_optional:
             fields.append("optional")
@@ -3089,87 +3096,6 @@ def expr_str(expr):
                              expr_str(expr[2]))
 
 #
-# Internal classes
-#
-
-class _Feed(object):
-    """
-    Class for working with sequences in a stream-like fashion; handy for
-    tokens.
-    """
-
-    __slots__ = (
-        'i',
-        'length',
-        'items',
-    )
-
-    def __init__(self, items):
-        self.items = items
-        self.length = len(self.items)
-        self.i = 0
-
-    def next(self):
-        if self.i >= self.length:
-            return None
-        item = self.items[self.i]
-        self.i += 1
-        return item
-
-    def peek(self):
-        return None if self.i >= self.length else self.items[self.i]
-
-    def check(self, token):
-        """
-        Checks if the next token is 'token'. If so, removes it from the token
-        feed and return True. Otherwise, leaves it in and return False.
-        """
-        if self.i < self.length and self.items[self.i] == token:
-            self.i += 1
-            return True
-        return False
-
-class _FileFeed(object):
-    """
-    Feeds lines from a file. Keeps track of the filename and current line
-    number. Joins any line ending in \\ with the following line. We need to be
-    careful to get the line number right in the presence of continuation lines.
-    """
-
-    __slots__ = (
-        'filename',
-        'lines',
-        'length',
-        'linenr'
-    )
-
-    def __init__(self, file_, filename):
-        self.filename = filename
-        with file_:
-            # No interleaving of I/O and processing yet. Don't know if it would
-            # help.
-            self.lines = file_.readlines()
-        self.length = len(self.lines)
-        self.linenr = 0
-
-    def next(self):
-        if self.linenr >= self.length:
-            return None
-        line = self.lines[self.linenr]
-        self.linenr += 1
-        while line.endswith("\\\n"):
-            line = line[:-2] + self.lines[self.linenr]
-            self.linenr += 1
-        return line
-
-    def next_no_join(self):
-        if self.linenr >= self.length:
-            return None
-        line = self.lines[self.linenr]
-        self.linenr += 1
-        return line
-
-#
 # Internal functions
 #
 
@@ -3286,28 +3212,13 @@ def _strcmp(s1, s2):
     """
     return (s1 > s2) - (s1 < s2)
 
-def _lines(*args):
-    """
-    Returns a string consisting of all arguments, with newlines inserted
-    between them.
-    """
-    return "\n".join(args)
-
 def _stderr_msg(msg, filename, linenr):
-    if filename is not None:
-        sys.stderr.write("{}:{}: ".format(filename, linenr))
+    if filename is None:
+        s = msg
+    else:
+        s = "{}:{}: ".format(filename, linenr)
+
     sys.stderr.write(msg + "\n")
-
-def _tokenization_error(s, filename, linenr):
-    loc = "" if filename is None else "{}:{}: ".format(filename, linenr)
-    raise KconfigSyntaxError("{}Couldn't tokenize '{}'"
-                               .format(loc, s.strip()))
-
-def _parse_error(s, msg, filename, linenr):
-    loc = "" if filename is None else "{}:{}: ".format(filename, linenr)
-    raise KconfigSyntaxError("{}Couldn't parse '{}'{}"
-                             .format(loc, s.strip(),
-                                     "." if msg is None else ": " + msg))
 
 def _internal_error(msg):
     raise InternalError(
@@ -3419,7 +3330,7 @@ def _sym_choice_str(sc):
 def _expr_depends_on(expr, sym):
     """
     Reimplementation of expr_depends_symbol() from mconf.c. Used to
-    determine if a submenu should be implicitly created, which influences
+    determine if a submenu should be implicitly created. This also influences
     what items inside choice statements are considered choice items.
     """
     if isinstance(expr, Symbol):
@@ -3504,7 +3415,7 @@ def _flatten(node):
 
         node = node.next
 
-def _remove_if(node):
+def _remove_ifs(node):
     """
     Removes 'if' nodes (which can be recognized by MenuNode.item being None),
     which are assumed to already have been flattened. The C implementation
@@ -3580,7 +3491,7 @@ def _finalize_tree(node):
         # We have a node with finalized children. Do final steps to finalize
         # this node.
         _flatten(node.list)
-        _remove_if(node)
+        _remove_ifs(node)
 
     # Empty choices (node.list None) are possible, so this needs to go outside
     if isinstance(node.item, Choice):
@@ -3671,8 +3582,8 @@ def _finalize_tree(node):
     _T_VISIBLE,
 ) = range(44)
 
-# Keyword to token map. Note that the get() method is assigned directly as a
-# small optimization.
+# Keyword to token map, with the get() method assigned directly as a small
+# optimization
 _get_keyword = {
     "allnoconfig_y":  _T_ALLNOCONFIG_Y,
     "bool":           _T_BOOL,

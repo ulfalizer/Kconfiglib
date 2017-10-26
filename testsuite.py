@@ -253,11 +253,11 @@ def run_selftests():
         lexing 's'. Strips the first and last characters from 's' so that
         readable raw strings can be used as input
         """
-        s = s[1:-1]
-        token = c._tokenize(s, True, None, None).next()
-        verify(token.name == res,
+        c._line = s[1:-1]
+        c._tokenize(True)
+        verify(c._tokens[0].name == res,
                'expected {} to produced the constant symbol {}, produced {}'
-               .format(s, token.name, res))
+               .format(s, c._tokens[0].name, res))
 
     verify_string_lex(r""" "" """, "")
     verify_string_lex(r""" '' """, "")
@@ -293,9 +293,9 @@ def run_selftests():
         first and last characters from 's' so we can use readable raw strings
         as input.
         """
-        s = s[1:-1]
+        c._line = s[1:-1]
         try:
-            c._tokenize(s, True, None, None)
+            c._tokenize(True)
         except kconfiglib.KconfigSyntaxError:
             pass
         else:
@@ -812,7 +812,8 @@ g
     verify_locations(c.syms["MULTI_DEF"].nodes,
       "tests/Klocation:6",
       "tests/Klocation:16",
-      "tests/Klocation_included:3")
+      "tests/Klocation_included:3",
+      "tests/Klocation:32")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_included:5")
@@ -1915,6 +1916,8 @@ def test_call_all(conf, arch):
     # TODO: verify that constant symbols do not:
     #  1) have a non-empty dep
     #  2) have nodes
+
+    # TODO: Look for weird stuff in the dictionaries
 
     # TODO: infinite recursion action
     #for _, s in conf.const_syms.items():
