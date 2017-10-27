@@ -18,7 +18,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py
 
-from kconfiglib import Config, Choice, tri_less
+from kconfiglib import Config, Choice, STR_TO_TRI
 import sys
 
 conf = Config(sys.argv[1])
@@ -70,7 +70,7 @@ while 1:
     for sym in non_choice_syms:
         # See allnoconfig example. [-1] gives the last (highest) assignable
         # value.
-        if sym.assignable and tri_less(sym.value, sym.assignable[-1]):
+        if sym.assignable and sym.tri_value < STR_TO_TRI[sym.assignable[-1]]:
             sym.set_value(sym.assignable[-1])
             no_changes = False
 
@@ -79,7 +79,7 @@ while 1:
     for choice in choices:
         # Handle a choice whose visibility allows it to be in "y" mode
 
-        if choice.visibility == "y":
+        if choice.visibility == 2:
             selection = choice.default_selection
 
             # Does the choice have a default selection that we haven't already
@@ -95,12 +95,12 @@ while 1:
         # This might happen if a choice depends on a symbol that can only be
         # "m", for example.
 
-        elif choice.visibility == "m":
+        elif choice.visibility == 1:
             for sym in choice.symbols:
 
                 # Does the choice have a symbol that can be "m" that we haven't
                 # already set to "m"?
-                if sym.user_value != "m" and "m" in sym.assignable:
+                if sym.user_tri_value != 1 and "m" in sym.assignable:
 
                     # Yup, set it
                     sym.set_value("m")

@@ -168,9 +168,9 @@ def run_selftests():
         Verifies that a symbol has a particular value.
         """
         sym = c.syms[sym_name]
-        verify(sym.value == val,
+        verify(sym.str_value == val,
                'expected {} to have the value "{}", had the value "{}"'
-               .format(sym_name, val, sym.value))
+               .format(sym_name, val, sym.str_value))
 
     def assign_and_verify_value(sym_name, val, new_val):
         """
@@ -178,13 +178,13 @@ def run_selftests():
         'new_val'.
         """
         sym = c.syms[sym_name]
-        old_val = sym.value
+        old_val = sym.str_value
         sym.set_value(val)
-        verify(sym.value == new_val,
+        verify(sym.str_value == new_val,
                'expected {} to have the value "{}" after being assigned the '
                'value "{}". Instead, the value is "{}". The old value was '
                '"{}".'
-               .format(sym_name, new_val, val, sym.value, old_val))
+               .format(sym_name, new_val, val, sym.str_value, old_val))
 
     def assign_and_verify(sym_name, user_val):
         """
@@ -197,50 +197,18 @@ def run_selftests():
         """Assigns a user value to the symbol and verifies the new user
         value."""
         sym = c.syms[sym_name]
-        sym_old_user_val = sym.user_value
+        sym_old_user_val = sym.user_str_value
         sym.set_value(val)
-        verify(sym.user_value == user_val,
+        verify(sym.user_str_value == user_val,
                "{} should have the user value '{}' after being assigned "
                "the user value '{}'. Instead, the new user value was '{}'. "
                "The old user value was '{}'."
-               .format(sym_name, user_val, user_val, sym.user_value,
+               .format(sym_name, user_val, user_val, sym.user_str_value,
                        sym_old_user_val))
 
     #
     # Selftests
     #
-
-    print("Testing tristate comparisons")
-
-    def verify_truth_table(comp_fn, *table):
-        for (x, y), expected in zip((("n", "n"), ("n", "m"), ("n", "y"),
-                                     ("m", "n"), ("m", "m"), ("m", "y"),
-                                     ("y", "n"), ("y", "m"), ("y", "y")),
-                                    table):
-            verify(comp_fn(x, y) == expected,
-                   "expected {} on ('{}', '{}') to be '{}'".
-                   format(comp_fn, x, y, expected))
-
-    verify_truth_table(kconfiglib.tri_less,
-                       False, True, True,
-                       False, False, True,
-                       False, False, False)
-
-    verify_truth_table(kconfiglib.tri_less_eq,
-                       True, True, True,
-                       False, True, True,
-                       False, False, True)
-
-    verify_truth_table(kconfiglib.tri_greater,
-                       False, False, False,
-                       True, False, False,
-                       True, True, False)
-
-    verify_truth_table(kconfiglib.tri_greater_eq,
-                       True, False, False,
-                       True, True, False,
-                       True, True, True)
-
 
     print("Testing string literal lexing")
 
@@ -250,14 +218,12 @@ def run_selftests():
     def verify_string_lex(s, res):
         """
         Verifies that a constant symbol with the name 'res' is produced from
-        lexing 's'. Strips the first and last characters from 's' so that
-        readable raw strings can be used as input
+        lexing 's'
         """
-        c._line = s[1:-1]
-        c._tokenize(True)
+        c.eval_string(s)
         verify(c._tokens[0].name == res,
-               'expected {} to produced the constant symbol {}, produced {}'
-               .format(s, c._tokens[0].name, res))
+               "expected <{}> to produced the constant symbol <{}>, "
+               'produced <{}>'.format(s[1:-1], c._tokens[0].name, res))
 
     verify_string_lex(r""" "" """, "")
     verify_string_lex(r""" '' """, "")
@@ -293,13 +259,12 @@ def run_selftests():
         first and last characters from 's' so we can use readable raw strings
         as input.
         """
-        c._line = s[1:-1]
         try:
-            c._tokenize(True)
+            c.eval_string(s)
         except kconfiglib.KconfigSyntaxError:
             pass
         else:
-            fail("expected tokenization of {} to fail, didn't".format(s))
+            fail("expected tokenization of {} to fail, didn't".format(s[1:-1]))
 
     verify_string_bad(r""" " """)
     verify_string_bad(r""" ' """)
@@ -323,168 +288,168 @@ def run_selftests():
                "'{}' evaluated to {}, expected {}".format(expr, res, val))
 
     # No modules
-    verify_eval("n", "n")
-    verify_eval("m", "n")
-    verify_eval("y", "y")
-    verify_eval("'n'", "n")
-    verify_eval("'m'", "n")
-    verify_eval("'y'", "y")
-    verify_eval("M", "y")
+    verify_eval("n", 0)
+    verify_eval("m", 0)
+    verify_eval("y", 2)
+    verify_eval("'n'", 0)
+    verify_eval("'m'", 0)
+    verify_eval("'y'", 2)
+    verify_eval("M", 2)
 
     # Modules
-    c.syms["MODULES"].set_value("y")
-    verify_eval("n", "n")
-    verify_eval("m", "m")
-    verify_eval("y", "y")
-    verify_eval("'n'", "n")
-    verify_eval("'m'", "m")
-    verify_eval("'y'", "y")
-    verify_eval("M", "m")
-    verify_eval("(Y || N) && (m && y)", "m")
+    c.modules.set_value("y")
+    verify_eval("n", 0)
+    verify_eval("m", 1)
+    verify_eval("y", 2)
+    verify_eval("'n'", 0)
+    verify_eval("'m'", 1)
+    verify_eval("'y'", 2)
+    verify_eval("M", 1)
+    verify_eval("(Y || N) && (m && y)", 1)
 
     # Non-bool/non-tristate symbols are always "n" in a tristate sense
-    verify_eval("Y_STRING", "n")
-    verify_eval("Y_STRING || m", "m")
+    verify_eval("Y_STRING", 0)
+    verify_eval("Y_STRING || m", 1)
 
     # As are all constants besides "y" and "m"
-    verify_eval('"foo"', "n")
-    verify_eval('"foo" || "bar"', "n")
-    verify_eval('"foo" || m', "m")
+    verify_eval('"foo"', 0)
+    verify_eval('"foo" || "bar"', 0)
+    verify_eval('"foo" || m', 1)
 
     # Test equality for symbols
 
-    verify_eval("N = N", "y")
-    verify_eval("N = n", "y")
-    verify_eval("N = 'n'", "y")
-    verify_eval("N != N", "n")
-    verify_eval("N != n", "n")
-    verify_eval("N != 'n'", "n")
+    verify_eval("N = N", 2)
+    verify_eval("N = n", 2)
+    verify_eval("N = 'n'", 2)
+    verify_eval("N != N", 0)
+    verify_eval("N != n", 0)
+    verify_eval("N != 'n'", 0)
 
-    verify_eval("M = M", "y")
-    verify_eval("M = m", "y")
-    verify_eval("M = 'm'", "y")
-    verify_eval("M != M", "n")
-    verify_eval("M != m", "n")
-    verify_eval("M != 'm'", "n")
+    verify_eval("M = M", 2)
+    verify_eval("M = m", 2)
+    verify_eval("M = 'm'", 2)
+    verify_eval("M != M", 0)
+    verify_eval("M != m", 0)
+    verify_eval("M != 'm'", 0)
 
-    verify_eval("Y = Y", "y")
-    verify_eval("Y = y", "y")
-    verify_eval("Y = 'y'", "y")
-    verify_eval("Y != Y", "n")
-    verify_eval("Y != y", "n")
-    verify_eval("Y != 'y'", "n")
+    verify_eval("Y = Y", 2)
+    verify_eval("Y = y", 2)
+    verify_eval("Y = 'y'", 2)
+    verify_eval("Y != Y", 0)
+    verify_eval("Y != y", 0)
+    verify_eval("Y != 'y'", 0)
 
-    verify_eval("N != M", "y")
-    verify_eval("N != Y", "y")
-    verify_eval("M != Y", "y")
+    verify_eval("N != M", 2)
+    verify_eval("N != Y", 2)
+    verify_eval("M != Y", 2)
 
-    verify_eval("Y_STRING = y", "y")
-    verify_eval("Y_STRING = 'y'", "y")
-    verify_eval('FOO_BAR_STRING = "foo bar"', "y")
-    verify_eval('FOO_BAR_STRING != "foo bar baz"', "y")
-    verify_eval('INT_37 = 37', "y")
-    verify_eval("INT_37 = '37'", "y")
-    verify_eval('HEX_0X37 = 0x37', "y")
-    verify_eval("HEX_0X37 = '0x37'", "y")
+    verify_eval("Y_STRING = y", 2)
+    verify_eval("Y_STRING = 'y'", 2)
+    verify_eval('FOO_BAR_STRING = "foo bar"', 2)
+    verify_eval('FOO_BAR_STRING != "foo bar baz"', 2)
+    verify_eval('INT_37 = 37', 2)
+    verify_eval("INT_37 = '37'", 2)
+    verify_eval('HEX_0X37 = 0x37', 2)
+    verify_eval("HEX_0X37 = '0x37'", 2)
 
     # These should also hold after 31847b67 (kconfig: allow use of relations
     # other than (in)equality)
-    verify_eval("HEX_0X37 = '0x037'", "y")
-    verify_eval("HEX_0X37 = '0x0037'", "y")
+    verify_eval("HEX_0X37 = '0x037'", 2)
+    verify_eval("HEX_0X37 = '0x0037'", 2)
 
     # Constant symbol comparisons
-    verify_eval('"foo" != "bar"', "y")
-    verify_eval('"foo" = "bar"', "n")
-    verify_eval('"foo" = "foo"', "y")
+    verify_eval('"foo" != "bar"', 2)
+    verify_eval('"foo" = "bar"', 0)
+    verify_eval('"foo" = "foo"', 2)
 
     # Undefined symbols get their name as their value
     c.disable_warnings()
-    verify_eval("'not_defined' = not_defined", "y")
-    verify_eval("not_defined_2 = not_defined_2", "y")
-    verify_eval("not_defined_1 != not_defined_2", "y")
+    verify_eval("'not_defined' = not_defined", 2)
+    verify_eval("not_defined_2 = not_defined_2", 2)
+    verify_eval("not_defined_1 != not_defined_2", 2)
 
     # Test less than/greater than
 
     # Basic evaluation
-    verify_eval("INT_37 < 38", "y")
-    verify_eval("38 < INT_37", "n")
-    verify_eval("INT_37 < '38'", "y")
-    verify_eval("'38' < INT_37", "n")
-    verify_eval("INT_37 < 138", "y")
-    verify_eval("138 < INT_37", "n")
-    verify_eval("INT_37 < '138'", "y")
-    verify_eval("'138' < INT_37", "n")
-    verify_eval("INT_37 < -138", "n")
-    verify_eval("-138 < INT_37", "y")
-    verify_eval("INT_37 < '-138'", "n")
-    verify_eval("'-138' < INT_37", "y")
-    verify_eval("INT_37 < 37", "n")
-    verify_eval("37 < INT_37", "n")
-    verify_eval("INT_37 < 36", "n")
-    verify_eval("36 < INT_37", "y")
+    verify_eval("INT_37 < 38", 2)
+    verify_eval("38 < INT_37", 0)
+    verify_eval("INT_37 < '38'", 2)
+    verify_eval("'38' < INT_37", 0)
+    verify_eval("INT_37 < 138", 2)
+    verify_eval("138 < INT_37", 0)
+    verify_eval("INT_37 < '138'", 2)
+    verify_eval("'138' < INT_37", 0)
+    verify_eval("INT_37 < -138", 0)
+    verify_eval("-138 < INT_37", 2)
+    verify_eval("INT_37 < '-138'", 0)
+    verify_eval("'-138' < INT_37", 2)
+    verify_eval("INT_37 < 37", 0)
+    verify_eval("37 < INT_37", 0)
+    verify_eval("INT_37 < 36", 0)
+    verify_eval("36 < INT_37", 2)
 
     # Different formats in comparison
-    verify_eval("INT_37 < 0x26", "y") # 38
-    verify_eval("INT_37 < 0x25", "n") # 37
-    verify_eval("INT_37 < 0x24", "n") # 36
-    verify_eval("HEX_0X37 < 56", "y") # 0x38
-    verify_eval("HEX_0X37 < 55", "n") # 0x37
-    verify_eval("HEX_0X37 < 54", "n") # 0x36
+    verify_eval("INT_37 < 0x26", 2) # 38
+    verify_eval("INT_37 < 0x25", 0) # 37
+    verify_eval("INT_37 < 0x24", 0) # 36
+    verify_eval("HEX_0X37 < 56", 2) # 0x38
+    verify_eval("HEX_0X37 < 55", 0) # 0x37
+    verify_eval("HEX_0X37 < 54", 0) # 0x36
 
     # Other int comparisons
-    verify_eval("INT_37 <= 38", "y")
-    verify_eval("INT_37 <= 37", "y")
-    verify_eval("INT_37 <= 36", "n")
-    verify_eval("INT_37 >  38", "n")
-    verify_eval("INT_37 >  37", "n")
-    verify_eval("INT_37 >  36", "y")
-    verify_eval("INT_37 >= 38", "n")
-    verify_eval("INT_37 >= 37", "y")
-    verify_eval("INT_37 >= 36", "y")
+    verify_eval("INT_37 <= 38", 2)
+    verify_eval("INT_37 <= 37", 2)
+    verify_eval("INT_37 <= 36", 0)
+    verify_eval("INT_37 >  38", 0)
+    verify_eval("INT_37 >  37", 0)
+    verify_eval("INT_37 >  36", 2)
+    verify_eval("INT_37 >= 38", 0)
+    verify_eval("INT_37 >= 37", 2)
+    verify_eval("INT_37 >= 36", 2)
 
     # Other hex comparisons
-    verify_eval("HEX_0X37 <= 0x38", "y")
-    verify_eval("HEX_0X37 <= 0x37", "y")
-    verify_eval("HEX_0X37 <= 0x36", "n")
-    verify_eval("HEX_0X37 >  0x38", "n")
-    verify_eval("HEX_0X37 >  0x37", "n")
-    verify_eval("HEX_0X37 >  0x36", "y")
-    verify_eval("HEX_0X37 >= 0x38", "n")
-    verify_eval("HEX_0X37 >= 0x37", "y")
-    verify_eval("HEX_0X37 >= 0x36", "y")
+    verify_eval("HEX_0X37 <= 0x38", 2)
+    verify_eval("HEX_0X37 <= 0x37", 2)
+    verify_eval("HEX_0X37 <= 0x36", 0)
+    verify_eval("HEX_0X37 >  0x38", 0)
+    verify_eval("HEX_0X37 >  0x37", 0)
+    verify_eval("HEX_0X37 >  0x36", 2)
+    verify_eval("HEX_0X37 >= 0x38", 0)
+    verify_eval("HEX_0X37 >= 0x37", 2)
+    verify_eval("HEX_0X37 >= 0x36", 2)
 
     # A hex holding a value without a "0x" prefix should still be treated as
     # hexadecimal
-    verify_eval("HEX_37 < 0x38", "y")
-    verify_eval("HEX_37 < 0x37", "n")
-    verify_eval("HEX_37 < 0x36", "n")
+    verify_eval("HEX_37 < 0x38", 2)
+    verify_eval("HEX_37 < 0x37", 0)
+    verify_eval("HEX_37 < 0x36", 0)
 
     # Symbol comparisons
-    verify_eval("INT_37   <  HEX_0X37", "y")
-    verify_eval("INT_37   >  HEX_0X37", "n")
-    verify_eval("HEX_0X37 <  INT_37  ", "n")
-    verify_eval("HEX_0X37 >  INT_37  ", "y")
-    verify_eval("INT_37   <  INT_37  ", "n")
-    verify_eval("INT_37   <= INT_37  ", "y")
-    verify_eval("INT_37   >  INT_37  ", "n")
-    verify_eval("INT_37   <= INT_37  ", "y")
+    verify_eval("INT_37   <  HEX_0X37", 2)
+    verify_eval("INT_37   >  HEX_0X37", 0)
+    verify_eval("HEX_0X37 <  INT_37  ", 0)
+    verify_eval("HEX_0X37 >  INT_37  ", 2)
+    verify_eval("INT_37   <  INT_37  ", 0)
+    verify_eval("INT_37   <= INT_37  ", 2)
+    verify_eval("INT_37   >  INT_37  ", 0)
+    verify_eval("INT_37   <= INT_37  ", 2)
 
     # Strings compare lexicographically
-    verify_eval("'aa' < 'ab'", "y")
-    verify_eval("'aa' > 'ab'", "n")
-    verify_eval("'ab' < 'aa'", "n")
-    verify_eval("'ab' > 'aa'", "y")
+    verify_eval("'aa' < 'ab'", 2)
+    verify_eval("'aa' > 'ab'", 0)
+    verify_eval("'ab' < 'aa'", 0)
+    verify_eval("'ab' > 'aa'", 2)
 
     # Comparisons where one of the operands doesn't parse as a number also give
     # a lexicographic comparison
-    verify_eval("INT_37 <  '37a' ", "y")
-    verify_eval("'37a'  >  INT_37", "y")
-    verify_eval("INT_37 <= '37a' ", "y")
-    verify_eval("'37a'  >= INT_37", "y")
-    verify_eval("INT_37 >= '37a' ", "n")
-    verify_eval("INT_37 >  '37a' ", "n")
-    verify_eval("'37a'  <  INT_37", "n")
-    verify_eval("'37a'  <= INT_37", "n")
+    verify_eval("INT_37 <  '37a' ", 2)
+    verify_eval("'37a'  >  INT_37", 2)
+    verify_eval("INT_37 <= '37a' ", 2)
+    verify_eval("'37a'  >= INT_37", 2)
+    verify_eval("INT_37 >= '37a' ", 0)
+    verify_eval("INT_37 >  '37a' ", 0)
+    verify_eval("'37a'  <  INT_37", 0)
+    verify_eval("'37a'  <= INT_37", 0)
 
     def verify_eval_bad(expr):
         try:
@@ -518,6 +483,8 @@ def run_selftests():
         verify_equal(str(item), s[1:])
 
     c = kconfiglib.Config("Kconfiglib/tests/Kstr", warn=False)
+
+    c.modules.set_value("y")
 
     verify_str(c.syms["UNDEFINED"], """
 """)
@@ -582,8 +549,10 @@ config INT
 
     # We still hardcode the modules symbol. Otherwise OPTIONS would have made
     # more sense as a name here.
-    verify_str(c.syms["MODULES"], """
+    verify_str(c.modules, """
 config MODULES
+	bool
+	prompt "MODULES"
 	option modules
 """)
 
@@ -619,59 +588,58 @@ choice
     c = kconfiglib.Config("Kconfiglib/tests/Krepr", warn=False)
 
     verify_repr(c.syms["UNDEFINED"], """
-<symbol UNDEFINED, unknown, value "UNDEFINED", visibility n, direct deps n, 0 menu nodes>
+<symbol UNDEFINED, unknown, value "UNDEFINED", visibility n, direct deps n, undefined>
 """)
 
     verify_repr(c.syms["BASIC"], """
-<symbol BASIC, bool, value "y", visibility n, direct deps y, 1 menu node>
+<symbol BASIC, bool, value "y", visibility n, direct deps y, Kconfiglib/tests/Krepr:9>
 """)
 
     verify_repr(c.syms["VISIBLE"], """
-<symbol VISIBLE, bool, value "n", visibility y, direct deps y, 1 menu node>
+<symbol VISIBLE, bool, value "n", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
 """)
 
     verify_repr(c.syms["DIR_DEP_N"], """
-<symbol DIR_DEP_N, unknown, value "DIR_DEP_N", visibility n, direct deps n, 1 menu node>
+<symbol DIR_DEP_N, unknown, value "DIR_DEP_N", visibility n, direct deps n, Kconfiglib/tests/Krepr:17>
 """)
 
     verify_repr(c.syms["OPTIONS"], """
-<symbol OPTIONS, unknown, value "OPTIONS", visibility n, allnoconfig_y, is the defconfig_list symbol, from environment variable ENV, direct deps y, 1 menu node>
+<symbol OPTIONS, unknown, value "OPTIONS", visibility n, allnoconfig_y, is the defconfig_list symbol, from environment variable ENV, direct deps y, Kconfiglib/tests/Krepr:20>
 """)
 
     verify_repr(c.syms["MULTI_DEF"], """
-<symbol MULTI_DEF, unknown, value "MULTI_DEF", visibility n, direct deps y, 2 menu nodes>
+<symbol MULTI_DEF, unknown, value "MULTI_DEF", visibility n, direct deps y, Kconfiglib/tests/Krepr:25, Kconfiglib/tests/Krepr:26>
 """)
 
     verify_repr(c.syms["CHOICE_1"], """
-<symbol CHOICE_1, tristate, value "n", visibility y, choice symbol, direct deps y, 1 menu node>
+<symbol CHOICE_1, tristate, value "n", visibility y, choice symbol, direct deps y, Kconfiglib/tests/Krepr:33>
 """)
 
-    verify_repr(c.syms["MODULES"], """
-<symbol MODULES, bool, value "y", visibility n, is the modules symbol, direct deps y, 1 menu node>
+    verify_repr(c.modules, """
+<symbol MODULES, bool, value "y", visibility n, is the modules symbol, direct deps y, Kconfiglib/tests/Krepr:1>
 """)
-
 
 
     print("Testing Choice.__repr__()")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, mode m, visibility y, 1 menu node>
+<choice CHOICE, tristate, mode m, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
     c.named_choices["CHOICE"].set_value("y")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, mode y, visibility y, CHOICE_1 selected, 1 menu node>
+<choice CHOICE, tristate, mode y, visibility y, CHOICE_1 selected, Kconfiglib/tests/Krepr:30>
 """)
 
     c.syms["CHOICE_2"].set_value("y")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, mode y, visibility y, CHOICE_2 selected, 1 menu node>
+<choice CHOICE, tristate, mode y, visibility y, CHOICE_2 selected, Kconfiglib/tests/Krepr:30>
 """)
 
     verify_repr(c.syms["CHOICE_HOOK"].nodes[0].next.item, """
-<choice, tristate, mode n, visibility n, optional, 1 menu node>
+<choice, tristate, mode n, visibility n, optional, Kconfiglib/tests/Krepr:43>
 """)
 
 
@@ -830,13 +798,13 @@ g
     c = kconfiglib.Config("Kconfiglib/tests/Kvisibility")
 
     def verify_visibility(item, no_module_vis, module_vis):
-        c.syms["MODULES"].set_value("n")
+        c.modules.set_value("n")
         verify(item.visibility == no_module_vis,
                "expected {} to have visibility {} without modules, had "
                "visibility {}".
                format(repr(item), no_module_vis, item.visibility))
 
-        c.syms["MODULES"].set_value("y")
+	c.modules.set_value("y")
         verify(item.visibility == module_vis,
                "expected {} to have visibility {} with modules, had "
                "visibility {}".
@@ -844,72 +812,70 @@ g
 
     # Symbol visibility
 
-    verify_visibility(c.syms["NO_PROMPT"],     "n", "n")
-    verify_visibility(c.syms["BOOL_N"],        "n", "n")
-    verify_visibility(c.syms["BOOL_M"],        "n", "y")
-    verify_visibility(c.syms["BOOL_MOD"],      "y", "y")
-    verify_visibility(c.syms["BOOL_Y"],        "y", "y")
-    verify_visibility(c.syms["TRISTATE_M"],    "n", "m")
-    verify_visibility(c.syms["TRISTATE_MOD"],  "y", "m")
-    verify_visibility(c.syms["TRISTATE_Y"],    "y", "y")
-    verify_visibility(c.syms["BOOL_IF_N"],     "n", "n")
-    verify_visibility(c.syms["BOOL_IF_M"],     "n", "y")
-    verify_visibility(c.syms["BOOL_IF_Y"],     "y", "y")
-    verify_visibility(c.syms["BOOL_MENU_N"],   "n", "n")
-    verify_visibility(c.syms["BOOL_MENU_M"],   "n", "y")
-    verify_visibility(c.syms["BOOL_MENU_Y"],   "y", "y")
-    verify_visibility(c.syms["BOOL_CHOICE_N"], "n", "n")
+    verify_visibility(c.syms["NO_PROMPT"],     0, 0)
+    verify_visibility(c.syms["BOOL_N"],        0, 0)
+    verify_visibility(c.syms["BOOL_M"],        0, 2)
+    verify_visibility(c.syms["BOOL_MOD"],      2, 2)
+    verify_visibility(c.syms["BOOL_Y"],        2, 2)
+    verify_visibility(c.syms["TRISTATE_M"],    0, 1)
+    verify_visibility(c.syms["TRISTATE_MOD"],  2, 1)
+    verify_visibility(c.syms["TRISTATE_Y"],    2, 2)
+    verify_visibility(c.syms["BOOL_IF_N"],     0, 0)
+    verify_visibility(c.syms["BOOL_IF_M"],     0, 2)
+    verify_visibility(c.syms["BOOL_IF_Y"],     2, 2)
+    verify_visibility(c.syms["BOOL_MENU_N"],   0, 0)
+    verify_visibility(c.syms["BOOL_MENU_M"],   0, 2)
+    verify_visibility(c.syms["BOOL_MENU_Y"],   2, 2)
+    verify_visibility(c.syms["BOOL_CHOICE_N"], 0, 0)
 
     # Non-tristate symbols in tristate choices are only visible if the choice
-    # is in "y" mode
-    verify_visibility(c.syms["BOOL_CHOICE_M"], "n", "n")
+    # is in 2 mode
+    verify_visibility(c.syms["BOOL_CHOICE_M"], 0, 0)
 
-    # Tristate choices start out in "m" mode. When running without modules,
-    # their type gets adjusted to bool.
-    verify_visibility(c.syms["BOOL_CHOICE_Y"], "y", "n")
+    # Tristate choices start out in m mode. When running without modules, their
+    # type gets adjusted to bool.
+    verify_visibility(c.syms["BOOL_CHOICE_Y"], 2, 0)
 
     c.syms["TRISTATE_CHOICE_M"].set_value("y")
     c.syms["TRISTATE_CHOICE_Y"].set_value("y")
 
     # Still limited by the visibility of the choice
-    verify_visibility(c.syms["BOOL_CHOICE_M"], "n", "n")
+    verify_visibility(c.syms["BOOL_CHOICE_M"], 0, 0)
 
     # This one should become visible now
-    verify_visibility(c.syms["BOOL_CHOICE_Y"], "y", "y")
+    verify_visibility(c.syms["BOOL_CHOICE_Y"], 2, 2)
 
-    verify_visibility(c.syms["TRISTATE_IF_N"],     "n", "n")
-    verify_visibility(c.syms["TRISTATE_IF_M"],     "n", "m")
-    verify_visibility(c.syms["TRISTATE_IF_Y"],     "y", "y")
-    verify_visibility(c.syms["TRISTATE_MENU_N"],   "n", "n")
-    verify_visibility(c.syms["TRISTATE_MENU_M"],   "n", "m")
-    verify_visibility(c.syms["TRISTATE_MENU_Y"],   "y", "y")
-    verify_visibility(c.syms["TRISTATE_CHOICE_N"], "n", "n")
-    verify_visibility(c.syms["TRISTATE_CHOICE_M"], "n", "m")
-    verify_visibility(c.syms["TRISTATE_CHOICE_Y"], "y", "y")
+    verify_visibility(c.syms["TRISTATE_IF_N"],     0, 0)
+    verify_visibility(c.syms["TRISTATE_IF_M"],     0, 1)
+    verify_visibility(c.syms["TRISTATE_IF_Y"],     2, 2)
+    verify_visibility(c.syms["TRISTATE_MENU_N"],   0, 0)
+    verify_visibility(c.syms["TRISTATE_MENU_M"],   0, 1)
+    verify_visibility(c.syms["TRISTATE_MENU_Y"],   2, 2)
+    verify_visibility(c.syms["TRISTATE_CHOICE_N"], 0, 0)
+    verify_visibility(c.syms["TRISTATE_CHOICE_M"], 0, 1)
+    verify_visibility(c.syms["TRISTATE_CHOICE_Y"], 2, 2)
 
-    verify_visibility(c.named_choices["BOOL_CHOICE_N"],     "n", "n")
-    verify_visibility(c.named_choices["BOOL_CHOICE_M"],     "n", "y")
-    verify_visibility(c.named_choices["BOOL_CHOICE_Y"],     "y", "y")
-    verify_visibility(c.named_choices["TRISTATE_CHOICE_N"], "n", "n")
-    verify_visibility(c.named_choices["TRISTATE_CHOICE_M"], "n", "m")
-    verify_visibility(c.named_choices["TRISTATE_CHOICE_Y"], "y", "y")
+    verify_visibility(c.named_choices["BOOL_CHOICE_N"],     0, 0)
+    verify_visibility(c.named_choices["BOOL_CHOICE_M"],     0, 2)
+    verify_visibility(c.named_choices["BOOL_CHOICE_Y"],     2, 2)
+    verify_visibility(c.named_choices["TRISTATE_CHOICE_N"], 0, 0)
+    verify_visibility(c.named_choices["TRISTATE_CHOICE_M"], 0, 1)
+    verify_visibility(c.named_choices["TRISTATE_CHOICE_Y"], 2, 2)
 
-    verify_visibility(c.named_choices["TRISTATE_CHOICE_IF_M_AND_Y"],
-                      "n", "m")
-    verify_visibility(c.named_choices["TRISTATE_CHOICE_MENU_N_AND_Y"],
-                      "n", "n")
+    verify_visibility(c.named_choices["TRISTATE_CHOICE_IF_M_AND_Y"],   0, 1)
+    verify_visibility(c.named_choices["TRISTATE_CHOICE_MENU_N_AND_Y"], 0, 0)
 
     # Menu visibility
 
     def verify_menu_visibility(menu, no_module_vis, module_vis):
-        c["MODULES"].set_value("n")
+        c.modules.set_value("n")
         menu_vis = kconfiglib.eval_expr(menu.node.dep)
         verify(menu_vis == no_module_vis,
                "menu \"{}\" should have visibility '{}' without modules, "
                "has visibility '{}'"
                .format(menu.title, no_module_vis, menu_vis))
 
-        c["MODULES"].set_value("y")
+	c.modules.set_value("y")
         menu_vis = kconfiglib.eval_expr(menu.node.dep)
         verify(menu_vis == module_vis,
                "menu \"{}\" should have visibility '{}' with modules, "
@@ -935,14 +901,14 @@ g
       menu_visible_if_m_2 = get_menus(c)[13:]
 
     def verify_visible_if_visibility(menu, no_module_vis, module_vis):
-        c["MODULES"].set_value("n")
+        c.modules.set_value("n")
         menu_vis = menu.get_visible_if_visibility()
         verify(menu_vis == no_module_vis,
                "menu \"{}\" should have 'visible if' visibility '{}' "
                "without modules, has 'visible if' visibility '{}'".
                format(menu.title, no_module_vis, menu_vis))
 
-        c["MODULES"].set_value("y")
+        c.modules.set_value("y")
         menu_vis = menu.get_visible_if_visibility()
         verify(menu_vis == module_vis,
                "menu \"{}\" should have 'visible if' visibility '{}' "
@@ -963,15 +929,15 @@ g
     #verify_visible_if_visibility(menu_visible_if_m_2, "n", "m")
 
     # Verify that 'visible if' visibility gets propagated to prompts
-    verify_visibility(c.syms["VISIBLE_IF_N"], "n", "n")
-    verify_visibility(c.syms["VISIBLE_IF_M"], "n", "m")
-    verify_visibility(c.syms["VISIBLE_IF_Y"], "y", "y")
-    verify_visibility(c.syms["VISIBLE_IF_M_2"], "n", "m")
+    verify_visibility(c.syms["VISIBLE_IF_N"], 0, 0)
+    verify_visibility(c.syms["VISIBLE_IF_M"], 0, 1)
+    verify_visibility(c.syms["VISIBLE_IF_Y"], 2, 2)
+    verify_visibility(c.syms["VISIBLE_IF_M_2"], 0, 1)
 
     # Comment visibility
 
     def verify_comment_visibility(comment, no_module_vis, module_vis):
-        c["MODULES"].set_value("n")
+        c.modules.set_value("n")
         # TODO: uninternalize
         comment_vis = kconfiglib.eval_expr(comment.node.dep)
         verify(comment_vis == no_module_vis,
@@ -979,7 +945,7 @@ g
                "modules, has visibility '{}'".
                format(comment.text, no_module_vis, comment_vis))
 
-        c["MODULES"].set_value("y")
+        c.modules.set_value("y")
         comment_vis = kconfiglib.eval_expr(comment.node.dep)
         verify(comment_vis == module_vis,
                "comment \"{}\" should have visibility '{}' with "
@@ -1251,7 +1217,7 @@ g
       ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
 
     for sym in syms:
-        verify(sym.user_value is None,
+        verify(sym.user_str_value is None and sym.user_tri_value is None,
                "{} should not have a user value to begin with")
 
     # Assign valid values for the types
@@ -1278,7 +1244,7 @@ g
 
     for s in syms:
         s.unset_value()
-        verify(s.user_value is None,
+        verify(s.user_str_value is None and s.user_tri_value is None,
                "{} should not have a user value after being reset".
                format(s.name))
 
@@ -1399,7 +1365,7 @@ g
     # .config
     #
 
-    print("Testing .config...")
+    print("Testing Config separation...")
 
     c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
     c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
@@ -1547,9 +1513,8 @@ g
     def select_and_verify(sym):
         choice = get_parent(sym)
         sym.set_value("y")
-        verify(choice.value == "y",
-               'The mode of the choice should be "y" after selecting a '
-               "symbol")
+        verify(choice.str_value == "y",
+               "The mode of the choice should be y after selecting a symbol")
         verify(sym.choice.selection is sym,
                "{} should be the selected choice symbol"
                .format(sym.name))
@@ -1568,25 +1533,24 @@ g
             select_and_verify(choice.syms[i])
 
     def verify_mode(choice, no_modules_mode, modules_mode):
-        c.syms["MODULES"].set_value("n")
-        choice_mode = choice.value
+        c.modules.set_value("n")
+        choice_mode = choice.tri_value
         verify(choice_mode == no_modules_mode,
-               'Wrong mode for choice {} with no modules. Expected "{}", '
-               'got "{}".'.format(choice.name, no_modules_mode, choice_mode))
+               'Wrong mode for choice {} with no modules. Expected {}, got {}.'
+               .format(choice.name, no_modules_mode, choice_mode))
 
-        c.syms["MODULES"].set_value("y")
-        choice_mode = choice.value
+        c.modules.set_value("y")
+        choice_mode = choice.tri_value
         verify(choice_mode == modules_mode,
-               'Wrong mode for choice {} with modules. Expected "{}", '
-               'got "{}".'.format(choice.name, modules_mode,
-                                   choice_mode))
+               'Wrong mode for choice {} with modules. Expected {}, got {}.'
+               .format(choice.name, modules_mode, choice_mode))
 
-    verify_mode(choice_bool, "y", "y")
-    verify_mode(choice_bool_opt, "n", "n")
-    verify_mode(choice_tristate, "y", "m")
-    verify_mode(choice_tristate_opt, "n", "n")
-    verify_mode(choice_bool_m, "y", "y")
-    verify_mode(choice_tristate_m, "y", "m")
+    verify_mode(choice_bool,         2, 2)
+    verify_mode(choice_bool_opt,     0, 0)
+    verify_mode(choice_tristate,     2, 1)
+    verify_mode(choice_tristate_opt, 0, 0)
+    verify_mode(choice_bool_m,       2, 2)
+    verify_mode(choice_tristate_m,   2, 1)
 
     # Test defaults
 
@@ -1606,7 +1570,7 @@ g
 
     # Test "y" mode selection
 
-    c.syms["MODULES"].set_value("y")
+    c.modules.set_value("y")
 
     select_and_verify_all(choice_bool)
     select_and_verify_all(choice_bool_opt)
@@ -1621,12 +1585,12 @@ g
 
     for sym_name in ("T_1", "T_2"):
         assign_and_verify_value(sym_name, "m", "m")
-        verify(choice_tristate.value == "m",
+        verify(choice_tristate.tri_value == 1,
                'Selecting {} to "m" should have changed the mode of the '
                'choice to "m"'.format(sym_name))
 
         assign_and_verify_value(sym_name, "y", "y")
-        verify(choice_tristate.value == "y" and
+        verify(choice_tristate.tri_value == 2 and
                choice_tristate.selection is c.syms[sym_name],
                'Selecting {} to "y" should have changed the mode of the '
                'choice to "y" and made it the selection'.format(sym_name))
@@ -1638,7 +1602,7 @@ g
         assign_and_verify_value(sym_name, "n", "n")
         # "y" should be truncated
         assign_and_verify_value(sym_name, "y", "m")
-        verify(choice_tristate_m.value == "m",
+        verify(choice_tristate_m.tri_value == 1,
                'A choice that can only be in "m" mode was not')
 
     # Verify that choices with no explicitly specified type get the type of the
@@ -1746,8 +1710,10 @@ g
           "\nSome selftests failed\n")
 
 def run_compatibility_tests():
-    """Runs tests on configurations from the kernel. Tests compability with the
-    C implementation by comparing outputs."""
+    """
+    Runs tests on configurations from the kernel. Tests compability with the
+    C implementation by comparing outputs.
+    """
 
     os.environ.pop("ARCH", None)
     os.environ.pop("SRCARCH", None)
@@ -1798,9 +1764,9 @@ def run_compatibility_tests():
 
             if compare_configs:
                 if equal_confs():
-                    print("  {:14}OK".format(arch))
+                    print("{:14}OK".format(arch))
                 else:
-                    print("  {:14}FAIL".format(arch))
+                    print("{:14}FAIL".format(arch))
                     fail()
 
     if all_passed:
@@ -1810,8 +1776,9 @@ def run_compatibility_tests():
         print("Some tests failed")
 
 def get_arch_srcarch_list():
-    """Returns a list of (ARCH, SRCARCH) tuples to test."""
-
+    """
+    Returns a list of (ARCH, SRCARCH) tuples to test.
+    """
     res = []
 
     def add_arch(arch):
@@ -1837,16 +1804,17 @@ def get_arch_srcarch_list():
     return res
 
 def test_load(conf, arch):
-   """Load all arch Kconfigs to make sure we don't throw any errors"""
-   print("  {:14}OK".format(arch))
+   """
+   Load all arch Kconfigs to make sure we don't throw any errors
+   """
+   print("{:14}OK".format(arch))
 
-# The weird docstring formatting is to get the format right when we print the
-# docstring ourselves
 def test_all_no(conf, arch):
     """
     Verify that our examples/allnoconfig.py script generates the same .config
     as 'make allnoconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode."""
+    'make scriptconfig', so kinda slow even in speedy mode.
+    """
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py "
@@ -1861,7 +1829,8 @@ def test_all_no_simpler(conf, arch):
     """
     Verify that our examples/allnoconfig_simpler.py script generates the same
     .config as 'make allnoconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode."""
+    'make scriptconfig', so kinda slow even in speedy mode.
+    """
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py "
@@ -1876,7 +1845,8 @@ def test_all_yes(conf, arch):
     """
     Verify that our examples/allyesconfig.py script generates the same .config
     as 'make allyesconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode."""
+    'make scriptconfig', so kinda slow even in speedy mode.
+    """
 
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py "
@@ -1889,11 +1859,12 @@ def test_all_yes(conf, arch):
 
 def test_call_all(conf, arch):
     """
-    Call all public methods on all symbols, menus, choices, and comments for
+    Call all public methods on all symbols, choices, and TODO menu nodes for
     all architectures to make sure we never crash or hang. (Nearly all public
     methods: some are hard to test like this, but are exercised by other
-    tests.)"""
-    print("  For {}...".format(arch))
+    tests.)
+    """
+    print("For {}...".format(arch))
 
     conf.defconfig_filename
     conf.mainmenu_text
@@ -1909,7 +1880,8 @@ def test_call_all(conf, arch):
         s.__repr__()
         s.assignable
         s.type
-        s.value
+        s.str_value
+	s.tri_value
         s.visibility
         s.unset_value()
 
@@ -1933,7 +1905,8 @@ def test_call_all(conf, arch):
     for c in conf._choices:
         c.__str__()
         c.__repr__()
-        c.value
+        c.str_value
+        c.tri_value
         c.assignable
         c.selection
         c.default_selection
@@ -1943,7 +1916,8 @@ def test_call_all(conf, arch):
 def test_config_absent(conf, arch):
     """
     Verify that Kconfiglib generates the same .config as 'make alldefconfig',
-    for each architecture"""
+    for each architecture
+    """
     conf.write_config("._config")
     if speedy:
         shell("scripts/kconfig/conf --alldefconfig Kconfig")
@@ -1959,7 +1933,8 @@ def test_defconfig(conf, arch):
     run.
 
     With logging enabled, this test appends any failures to a file
-    test_defconfig_fails in the root."""
+    test_defconfig_fails in the root.
+    """
 
     global nconfigs
     defconfigs = []
@@ -2037,8 +2012,10 @@ def test_defconfig(conf, arch):
 #
 
 def rm_configs():
-    """Delete any old ".config" (generated by the C implementation) and
-    "._config" (generated by us), if present."""
+    """
+    Delete any old ".config" (generated by the C implementation) and
+    "._config" (generated by us), if present.
+    """
     def rm_if_exists(f):
         if os.path.exists(f):
             os.remove(f)

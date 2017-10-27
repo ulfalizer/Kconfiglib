@@ -338,7 +338,8 @@ class Config(object):
             sym.name = nmy
             sym.is_constant = True
             sym._type = TRISTATE
-            sym._cached_val = nmy
+            sym._cached_tri_val = STR_TO_TRI[nmy]
+            sym._cached_str_val = nmy
 
             self.const_syms[nmy] = sym
 
@@ -416,9 +417,10 @@ class Config(object):
         """
         if self.defconfig_list is None:
             return None
+
         for filename, cond_expr in self.defconfig_list.defaults:
-            if eval_expr(cond_expr) != "n":
-                filename = self._expand_sym_refs(filename.value)
+            if eval_expr(cond_expr):
+                filename = self._expand_sym_refs(filename.str_value)
                 try:
                     with self._open(filename) as f:
                         return f.name
@@ -474,6 +476,7 @@ class Config(object):
                             self._warn("malformed string literal",
                                        filename, linenr)
                             continue
+
                         # Strip quotes and remove escapings. The unescaping
                         # procedure should be safe since " can only appear as
                         # \" inside the string.
@@ -481,7 +484,7 @@ class Config(object):
                                        .replace("\\\\", "\\")
 
                     if sym.choice is not None:
-                        mode = sym.choice.user_value
+                        mode = sym.choice.user_str_value
                         if mode is not None and mode != val:
                             self._warn("assignment to {} changes mode of "
                                        'containing choice from "{}" to "{}".'
@@ -504,10 +507,10 @@ class Config(object):
 
                 # Done parsing the assignment. Set the value.
 
-                if sym.user_value is not None:
+                if sym.user_str_value is not None:
                     self._warn('{} set more than once. Old value: "{}", new '
                                'value: "{}".'
-                               .format(name, sym.user_value, val),
+                               .format(name, sym.user_str_value, val),
                                filename, linenr)
 
                 sym._set_value_no_invalidate(val, True)
@@ -542,7 +545,7 @@ class Config(object):
         returns "y".
 
         This function always yields a tristate value. To get the value of
-        non-bool, non-tristate symbols, use Symbol.value.
+        non-bool, non-tristate symbols, use Symbol.str_value.
 
         The result of this function is consistent with how evaluation works for
         conditional ('if ...') expressions in the configuration (as well as in
@@ -571,11 +574,12 @@ class Config(object):
         for sym in self.defined_syms:
             # We're iterating over all symbols, so no need for symbols to
             # invalidate their dependent symbols
-            sym.user_value = None
+            sym.user_str_value = sym.user_tri_value = None
             sym._invalidate()
 
         for choice in self._choices:
-            choice.user_value = choice.user_selection = None
+            choice.user_str_value = choice.user_tri_value = \
+                choice.user_selection = None
             choice._invalidate()
 
     def enable_warnings(self):
@@ -616,7 +620,7 @@ class Config(object):
             'config symbol prefix "{}"'.format(self.config_prefix),
             "warnings " + ("enabled" if self._print_warnings else "disabled"),
             "undef. symbol assignment warnings " +
-                ("enabled" if self._print_undef_assign else "disabled")
+                ("enabled" if self._print_undef_assign else "disabled"),
         )
 
         return "<{}>".format(", ".join(fields))
@@ -1007,10 +1011,7 @@ class Config(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_SOURCE:
-                kconfig_file = self._next_token()
-                exp_kconfig_file = self._expand_sym_refs(kconfig_file)
-
-                self._enter_file(exp_kconfig_file)
+                self._enter_file(self._expand_sym_refs(self._next_token()))
                 prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
@@ -1030,8 +1031,7 @@ class Config(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
-                node.dep = \
-                    self._make_and(parent.dep, self._parse_expr(True))
+                node.dep = self._make_and(parent.dep, self._parse_expr(True))
 
                 self._parse_block(_T_ENDIF,
                                   node,             # parent
@@ -1259,16 +1259,10 @@ class Config(object):
                     node.item.env_var = env_var
 
                     if env_var not in os.environ:
-                        self._warn("the symbol {0} references the "
-                                   "non-existent environment variable {1} "
-                                   "(meaning the 'option env=\"{1}\"' will "
-                                   "have no effect). If you're using "
-                                   "Kconfiglib via 'make (i)scriptconfig', it "
-                                   "should have set up the environment "
-                                   "correctly for you. If you still got this "
-                                   "message, that might be an error, and you "
-                                   "should email ulfalizer a.t Google's email "
-                                   "service.".format(node.item.name, env_var),
+                        self._warn("'option env=\"{0}\"' on symbol {1} will "
+                                   "have no effect, because the environment "
+                                   "variable {0} is not set"
+                                   .format(node.item.name, env_var),
                                    self._filename, self._linenr)
                     else:
                         defaults.append(
@@ -1565,9 +1559,9 @@ class Config(object):
                         add_fn(config_string)
                     sym._already_written = True
 
-            elif (node.item == MENU and eval_expr(node.dep) != "n" and
-                  eval_expr(node.visibility) != "n") or \
-                 (node.item == COMMENT and eval_expr(node.dep) != "n"):
+            elif eval_expr(node.dep) and \
+                 ((node.item == MENU and eval_expr(node.visibility)) or
+                   node.item == COMMENT):
 
                 add_fn("\n#\n# {}\n#\n".format(node.prompt[0]))
 
@@ -1669,13 +1663,13 @@ class Config(object):
 
         while 1:
             sym_ref_match = _sym_ref_re_search(s)
-            if sym_ref_match is None:
+            if not sym_ref_match:
                 return s
 
             sym = self.syms.get(sym_ref_match.group(1))
 
             s = s[:sym_ref_match.start()] + \
-                (sym.value if sym is not None else "") + \
+                (sym.str_value if sym is not None else "") + \
                 s[sym_ref_match.end():]
 
     #
@@ -1772,9 +1766,13 @@ class Symbol(object):
       menuconfig-like functionality. (Check the implementation of the property
       if you need to get the original type.)
 
-    value:
+    str_value:
+      TODO
       The current value of the symbol. Automatically recalculated as
       dependencies change.
+
+    tri_value:
+      TODO
 
     assignable:
        A string containing the tristate values that can be assigned to the
@@ -1819,13 +1817,23 @@ class Symbol(object):
       dependencies) are propagated to the prompt dependencies. Additional
       dependencies can be specified with e.g. 'bool "foo" if <cond>".
 
-    user_value:
-      The value assigned with Symbol.set_value(), or None if no value has been
-      assigned. This won't necessarily match 'value' even if set, as
-      dependencies and prompt visibility take precedence.
+    user_str_value:
+      The string value assigned with Symbol.set_value(), or None if no value
+      has been assigned. This won't necessarily match 'str_value' even if set,
+      as dependencies and prompt visibility take precedence.
 
-      Note that you should use Symbol.set_value() to change this value.
-      Properties are always read-only.
+      Note that you should use Symbol.set_value() to change this value (which
+      will also change user_tri_value). Changing the value directly will break
+      things, as Kconfiglib might need to invalidate other symbols. Properties
+      are always read-only.
+
+      The string value is only used in comparisons (e.g.
+      'depends on SYMBOL = "foo"'). See user_tri_value.
+
+    user_tri_value:
+      The tristate value corresponding to user_str_value. The rule is that "n",
+      "m", and "y" correspond to 0, 1, and 2 for BOOL and TRISTATE symbols.
+      Other symbol types always evaluate to 0 (n) in a tristate sense.
 
     config_string:
       The .config assignment string that would get written out for the symbol
@@ -1917,7 +1925,8 @@ class Symbol(object):
         "_already_written",
         "_cached_assignable",
         "_cached_deps",
-        "_cached_val",
+        "_cached_str_val",
+        "_cached_tri_val",
         "_cached_vis",
         "_direct_dependents",
         "_type",
@@ -1935,7 +1944,8 @@ class Symbol(object):
         "ranges",
         "rev_dep",
         "selects",
-        "user_value",
+        "user_str_value",
+        "user_tri_value",
         "weak_rev_dep",
     )
 
@@ -1950,138 +1960,79 @@ class Symbol(object):
         """
 
         if self._type == TRISTATE and \
-           ((self.choice is not None and self.choice.value == "y") or
-            self.config.modules.value == "n"):
+           ((self.choice is not None and self.choice.tri_value == 2) or
+            not self.config.modules.tri_value):
             return BOOL
         return self._type
 
     @property
-    def value(self):
+    def str_value(self):
         """
         See the class documentation.
         """
 
-        if self._cached_val is not None:
-            return self._cached_val
-
-        # As a quirk of Kconfig, undefined symbols get their name as their
-        # value. This is why things like "FOO = bar" work for seeing if FOO has
-        # the value "bar".
-        if self._type == UNKNOWN:
-            self._cached_val = self.name
-            return self.name
-
-        # This will hold the value at the end of the function
-        val = _DEFAULT_VALUE[self._type]
-
-        vis = self.visibility
+        if self._cached_str_val is not None:
+            return self._cached_str_val
 
         if self._type in (BOOL, TRISTATE):
-            if self.choice is None:
-                self._write_to_conf = (vis != "n")
+            self._cached_str_val = TRI_TO_STR[self.tri_value]
+            return self._cached_str_val
 
-                if vis != "n" and self.user_value is not None:
-                    # If the symbol is visible and has a user value, we use
-                    # that
-                    val = _tri_min(self.user_value, vis)
+        # As a quirk of Kconfig, undefined symbols get their name as their
+        # string value. This is why things like "FOO = bar" work for seeing if
+        # FOO has the value "bar".
+        if self._type == UNKNOWN:
+            self._cached_str_val = self.name
+            return self.name
 
-                else:
-                    # Otherwise, we look at defaults and weak reverse
-                    # dependencies (implies)
+        val = ""
+        vis = self.visibility
 
-                    for default, cond in self.defaults:
-                        cond_val = eval_expr(cond)
-                        if cond_val != "n":
-                            self._write_to_conf = True
-                            val = _tri_min(eval_expr(default), cond_val)
-                            break
+        self._write_to_conf = (vis != 0)
 
-                    # Weak reverse dependencies are only considered if our
-                    # direct dependencies are met
-                    if eval_expr(self.direct_dep) != "n":
-                        weak_rev_dep_val = \
-                            eval_expr(self.weak_rev_dep)
-                        if weak_rev_dep_val != "n":
-                            self._write_to_conf = True
-                            val = _tri_max(val, weak_rev_dep_val)
-
-                # Reverse (select-related) dependencies take precedence
-                rev_dep_val = eval_expr(self.rev_dep)
-                if rev_dep_val != "n":
-                    self._write_to_conf = True
-                    val = _tri_max(val, rev_dep_val)
-
-            else:
-                # (bool/tristate) symbol in choice. See _get_visibility() for
-                # more choice-related logic.
-
-                # Initially
-                self._write_to_conf = False
-
-                if vis != "n":
-                    mode = self.choice.value
-
-                    if mode != "n":
-                        self._write_to_conf = True
-
-                        if mode == "y":
-                            val = "y" if self.choice.selection is self else "n"
-                        elif self.user_value in ("m", "y"):
-                            # mode == "m" and self.user_value is not None or
-                            # "n"
-                            val = "m"
-
-            # "m" is promoted to "y" in two circumstances:
-            #  1) If our type is boolean
-            #  2) If our weak_rev_dep (from IMPLY) is "y"
-            if val == "m" and \
-               (self.type == BOOL or eval_expr(self.weak_rev_dep) == "y"):
-                val = "y"
-
-        elif self._type in (INT, HEX):
+        if self._type in (INT, HEX):
             base = _TYPE_TO_BASE[self._type]
 
             # Check if a range is in effect
             for low_expr, high_expr, cond_expr in self.ranges:
-                if eval_expr(cond_expr) != "n":
+                if eval_expr(cond_expr):
                     has_active_range = True
 
-                    low = int(low_expr.value, base) if \
-                      _is_base_n(low_expr.value, base) else 0
-                    high = int(high_expr.value, base) if \
-                      _is_base_n(high_expr.value, base) else 0
+                    low = int(low_expr.str_value, base) if \
+                      _is_base_n(low_expr.str_value, base) else 0
+                    high = int(high_expr.str_value, base) if \
+                      _is_base_n(high_expr.str_value, base) else 0
 
                     break
             else:
                 has_active_range = False
 
-            self._write_to_conf = (vis != "n")
-
-            if vis != "n" and self.user_value is not None and \
-               _is_base_n(self.user_value, base) and \
+            if vis and self.user_str_value is not None and \
+               _is_base_n(self.user_str_value, base) and \
                (not has_active_range or
-                low <= int(self.user_value, base) <= high):
+                low <= int(self.user_str_value, base) <= high):
 
                 # If the user value is well-formed and satisfies range
                 # contraints, it is stored in exactly the same form as
                 # specified in the assignment (with or without "0x", etc.)
-                val = self.user_value
+                val = self.user_str_value
 
             else:
                 # No user value or invalid user value. Look at defaults.
 
                 for val_expr, cond_expr in self.defaults:
-                    if eval_expr(cond_expr) != "n":
+                    if eval_expr(cond_expr):
                         self._write_to_conf = True
 
                         # Similarly to above, well-formed defaults are
                         # preserved as is. Defaults that do not satisfy a range
                         # constraints are clamped and take on a standard form.
 
-                        val = val_expr.value
+                        val = val_expr.str_value
 
                         if _is_base_n(val, base):
                             val_num = int(val, base)
+                            # TODO: move outside?
                             if has_active_range:
                                 clamped_val = None
 
@@ -2105,18 +2056,93 @@ class Symbol(object):
                         val = (hex(low) if self._type == HEX else str(low))
 
         elif self._type == STRING:
-            self._write_to_conf = (vis != "n")
-
-            if vis != "n" and self.user_value is not None:
-                val = self.user_value
+            if vis and self.user_str_value is not None:
+                val = self.user_str_value
             else:
                 for val_expr, cond_expr in self.defaults:
-                    if eval_expr(cond_expr) != "n":
+                    if eval_expr(cond_expr):
                         self._write_to_conf = True
-                        val = val_expr.value
+                        val = val_expr.str_value
                         break
 
-        self._cached_val = val
+        self._cached_str_val = val
+        return val
+
+    @property
+    def tri_value(self):
+        """
+        See the class documentation.
+        """
+
+        if self._cached_tri_val is not None:
+            return self._cached_tri_val
+
+        if self._type not in (BOOL, TRISTATE):
+            self._cached_tri_val = 0
+            return self._cached_tri_val
+
+        val = 0
+        vis = self.visibility
+
+        if self.choice is None:
+            self._write_to_conf = (vis != 0)
+
+            if vis and self.user_tri_value is not None:
+                # If the symbol is visible and has a user value, we use that
+                val = min(self.user_tri_value, vis)
+
+            else:
+                # Otherwise, we look at defaults and weak reverse dependencies
+                # (implies)
+
+                for default, cond in self.defaults:
+                    cond_val = eval_expr(cond)
+                    if cond_val:
+                        val = min(cond_val, eval_expr(default))
+                        self._write_to_conf = True
+                        break
+
+                # Weak reverse dependencies are only considered if our
+                # direct dependencies are met
+                if eval_expr(self.direct_dep):
+                    weak_rev_dep_val = eval_expr(self.weak_rev_dep)
+                    if weak_rev_dep_val:
+                        val = max(weak_rev_dep_val, val)
+                        self._write_to_conf = True
+
+            # Reverse (select-related) dependencies take precedence
+            rev_dep_val = eval_expr(self.rev_dep)
+            if rev_dep_val:
+                val = max(rev_dep_val, val)
+                self._write_to_conf = True
+
+        else:
+            # (bool/tristate) symbol in choice. See _get_visibility() for
+            # more choice-related logic.
+
+            # Initially
+            self._write_to_conf = False
+
+            if vis:
+                mode = self.choice.tri_value
+
+                if mode:
+                    self._write_to_conf = True
+
+                    if mode == 2:
+                        val = 2 if self.choice.selection is self else 0
+                    elif self.user_tri_value:
+                        # mode == 1, user value available and not 0
+                        val = 1
+
+        # m is promoted to y in two circumstances:
+        #  1) If our type is boolean
+        #  2) If our weak_rev_dep (from IMPLY) is y
+        if val == 1 and \
+           (self.type == BOOL or eval_expr(self.weak_rev_dep) == 2):
+            val = 2
+
+        self._cached_tri_val = val
         return val
 
     @property
@@ -2152,8 +2178,9 @@ class Symbol(object):
             # corresponds to the SYMBOL_AUTO flag in the C implementation.
             return None
 
-        # Note: _write_to_conf is determined when the value is calculated
-        val = self.value
+        # Note: _write_to_conf is determined when the value is calculated. This
+        # is a hidden function call due to property magic.
+        val = self.str_value
         if not self._write_to_conf:
             return None
 
@@ -2184,10 +2211,11 @@ class Symbol(object):
         Equal in effect to assigning the value to the symbol within a .config
         file. Use the 'assignable' attribute to check which values can
         currently be assigned. Setting values outside 'assignable' will cause
-        Symbol.user_value to differ from Symbol.value (be truncated down or
-        up). Values that are invalid for the type (such as "foo" or "m" for a
-        BOOL) are ignored (and won't be stored in Symbol.user_value). A warning
-        is printed for attempts to assign invalid values.
+        Symbol.user_str/tri_value to differ from Symbol.str/tri_value (be
+        truncated down or up). Values that are invalid for the type (such as
+        "foo" or "m" for a BOOL) are ignored (and won't be stored in
+        Symbol.user_str/tri_value). A warning is printed for attempts to assign
+        invalid values.
 
         The values of other symbols that depend on this symbol are
         automatically recalculated to reflect the new value.
@@ -2208,7 +2236,7 @@ class Symbol(object):
         Resets the user value of the symbol, as if the symbol had never gotten
         a user value via Config.load_config() or Symbol.set_value().
         """
-        self.user_value = None
+        self.user_str_value = self.user_tri_value = None
         self._rec_invalidate()
 
     def __str__(self):
@@ -2229,17 +2257,17 @@ class Symbol(object):
     def __repr__(self):
         """
         Prints some information about the symbol (including its name, value,
-        and visibility) when it is evaluated.
+        visibility, and location(s)) when it is evaluated.
         """
         fields = [
             "symbol " + self.name,
             _TYPENAME[self.type],
-            'value "{}"'.format(self.value),
-            "visibility {}".format(self.visibility)
+            'value "{}"'.format(self.str_value),
+            "visibility " + TRI_TO_STR[self.visibility],
         ]
 
-        if self.user_value is not None:
-            fields.append('user value "{}"'.format(self.user_value))
+        if self.user_str_value is not None:
+            fields.append('user value "{}"'.format(self.user_str_value))
 
         if self.choice is not None:
             fields.append("choice symbol")
@@ -2256,11 +2284,13 @@ class Symbol(object):
         if self is self.config.modules:
             fields.append("is the modules symbol")
 
-        fields.append("direct deps " + eval_expr(self.direct_dep))
+        fields.append("direct deps " + TRI_TO_STR[eval_expr(self.direct_dep)])
 
-        fields.append("{} menu node{}"
-                      .format(len(self.nodes),
-                              "" if len(self.nodes) == 1 else "s"))
+        if self.nodes:
+            for node in self.nodes:
+                fields.append("{}:{}".format(node.filename, node.linenr))
+        else:
+            fields.append("undefined")
 
         return "<{}>".format(", ".join(fields))
 
@@ -2292,7 +2322,7 @@ class Symbol(object):
 
         self.nodes = []
 
-        self.user_value = None
+        self.user_str_value = self.user_tri_value = None
 
         # Populated in Config._build_dep() after parsing. Links the symbol to
         # the symbols that immediately depend on it (in a caching/invalidation
@@ -2302,15 +2332,8 @@ class Symbol(object):
 
         # Cached values
 
-        # Caches the calculated value
-        self._cached_val = None
-        # Caches the visibility
-        self._cached_vis = None
-        # Caches the total list of dependent symbols. Calculated in
-        # _get_dependent().
-        self._cached_deps = None
-        # Caches the 'assignable' attribute
-        self._cached_assignable = None
+        self._cached_str_val = self._cached_tri_val = self._cached_vis = \
+            self._cached_deps = self._cached_assignable = None
 
         # Flags
 
@@ -2332,35 +2355,35 @@ class Symbol(object):
 
         vis = self.visibility
 
-        if vis == "n":
+        if not vis:
             return ""
 
         rev_dep_val = eval_expr(self.rev_dep)
 
-        if vis == "y":
-            if rev_dep_val == "n":
-                if self.type == BOOL or eval_expr(self.weak_rev_dep) == "y":
+        if vis == 2:
+            if not rev_dep_val:
+                if self.type == BOOL or eval_expr(self.weak_rev_dep) == 2:
                     return "ny"
                 return "nmy"
 
-            if rev_dep_val == "y":
+            if rev_dep_val == 2:
                 return "y"
 
-            # rev_dep_val == "m"
+            # rev_dep_val == 1
 
-            if self.type == BOOL or eval_expr(self.weak_rev_dep) == "y":
+            if self.type == BOOL or eval_expr(self.weak_rev_dep) == 2:
                 return "y"
             return "my"
 
-        # vis == "m"
+        # vis == 1
 
-        if rev_dep_val == "n":
-            return "m" if eval_expr(self.weak_rev_dep) != "y" else "y"
+        if not rev_dep_val:
+            return "m" if eval_expr(self.weak_rev_dep) != 2 else "y"
 
-        if rev_dep_val == "y":
+        if rev_dep_val == 2:
             return "y"
 
-        # vis == "m", rev_dep == "m" (rare)
+        # vis == rev_dep_val == 1
 
         return "m"
 
@@ -2399,20 +2422,29 @@ class Symbol(object):
                                   "promptless symbol {} will have no effect"
                                   .format(value, self.name))
 
-        self.user_value = value
+        self.user_str_value = value
+        self.user_tri_value = \
+            STR_TO_TRI[value] \
+            if self._type in (BOOL, TRISTATE) else \
+            0
 
-        if self.choice is not None and self._type in (BOOL, TRISTATE):
-            if value == "y":
-                self.choice.user_value = "y"
+        # TODO: assigning automatically changes choice yada yada
+
+        if self.choice is not None:
+            if self.user_tri_value == 2:
+                self.choice.user_str_value = "y"
+                self.choice.user_tri_value = 2
                 self.choice.user_selection = self
-            elif value == "m":
-                self.choice.user_value = "m"
+            elif self.user_tri_value == 1:
+                self.choice.user_str_value = "m"
+                self.choice.user_tri_value = 1
 
     def _invalidate(self):
         """
         Marks the symbol as needing to be recalculated.
         """
-        self._cached_val = self._cached_vis = self._cached_assignable = None
+        self._cached_str_val = self._cached_tri_val = self._cached_vis = \
+            self._cached_assignable = None
 
     def _rec_invalidate(self):
         """
@@ -2531,10 +2563,13 @@ class Choice(object):
       The symbol that would be selected by default, had the user not selected
       any symbol. Can be None for the same reasons as 'selected'.
 
-    user_value:
+    user_str_value: TODO
       The value (mode) selected by the user (by assigning some choice symbol or
       calling Choice.set_value()). This does not necessarily match Choice.value
-      for the same reasons that Symbol.user_value might not match Symbol.value.
+      for the same reasons that Symbol.user_str_value might not match
+      Symbol.value.
+
+    user_tri_value: TODO
 
     user_selection:
       The symbol selected by the user (by setting it to "y"). Ignored if the
@@ -2585,7 +2620,8 @@ class Choice(object):
         "nodes",
         "syms",
         "user_selection",
-        "user_value",
+        "user_str_value",
+        "user_tri_value",
     )
 
     #
@@ -2595,25 +2631,32 @@ class Choice(object):
     @property
     def type(self):
         """Returns the type of the choice. See Symbol.type."""
-        if self._type == TRISTATE and self.config.modules.value == "n":
+        if self._type == TRISTATE and not self.config.modules.tri_value:
             return BOOL
         return self._type
 
     @property
-    def value(self):
+    def str_value(self):
         """
         See the class documentation.
         """
-        if self.user_value is not None:
-            val = _tri_min(self.user_value, self.visibility)
-        else:
-            val = "n"
+        return TRI_TO_STR[self.tri_value]
 
-        if val == "n" and not self.is_optional:
-            val = "m"
+    @property
+    def tri_value(self):
+        """
+        See the class documentation.
+        """
+        if self.user_tri_value is not None:
+            val = min(self.user_tri_value, self.visibility)
+        else:
+            val = 0
+
+        if not val and not self.is_optional:
+            val = 1
 
         # Promote "m" to "y" for boolean choices
-        return "y" if val == "m" and self.type == BOOL else val
+        return 2 if val == 1 and self.type == BOOL else val
 
     @property
     def assignable(self):
@@ -2645,13 +2688,13 @@ class Choice(object):
         if self._cached_selection is not _NO_CACHED_SELECTION:
             return self._cached_selection
 
-        if self.value != "y":
+        if self.tri_value != 2:
             self._cached_selection = None
             return None
 
         # User choice available?
         if self.user_selection is not None and \
-           self.user_selection.visibility == "y":
+           self.user_selection.visibility == 2:
             self._cached_selection = self.user_selection
             return self.user_selection
 
@@ -2666,14 +2709,12 @@ class Choice(object):
         See the class documentation.
         """
         for sym, cond_expr in self.defaults:
-            if (eval_expr(cond_expr) != "n" and
-                # Must be visible too
-                sym.visibility != "n"):
+            if eval_expr(cond_expr) and sym.visibility:
                 return sym
 
         # Otherwise, pick the first visible symbol, if any
         for sym in self.syms:
-            if sym.visibility != "n":
+            if sym.visibility:
                 return sym
 
         # Couldn't find a default
@@ -2692,7 +2733,8 @@ class Choice(object):
                               "which has type {}. Assignment ignored"
                               .format(value, _TYPENAME[self._type]))
 
-        self.user_value = value
+        self.user_str_value = value
+        self.user_tri_value = STR_TO_TRI[value]
 
         if self.syms:
             # Hackish way to invalidate the choice and all the choice symbols
@@ -2703,7 +2745,7 @@ class Choice(object):
         Resets the user value (mode) and user selection of the Choice, as if
         the user had never touched the mode or any of the choice symbols.
         """
-        self.user_value = self.user_selection = None
+        self.user_str_value = self.user_tri_value = self.user_selection = None
         if self.syms:
             # Hackish way to invalidate the choice and all the choice symbols
             self.syms[0]._rec_invalidate()
@@ -2716,11 +2758,14 @@ class Choice(object):
         return _sym_choice_str(self)
 
     def __repr__(self):
+        """
+        TODO
+        """
         fields = [
             "choice" if self.name is None else "choice " + self.name,
             _TYPENAME[self.type],
-            "mode " + self.value,
-            "visibility " + self.visibility
+            "mode " + self.str_value,
+            "visibility " + TRI_TO_STR[self.visibility],
         ]
 
         if self.is_optional:
@@ -2729,12 +2774,10 @@ class Choice(object):
         if self.selection is not None:
             fields.append("{} selected".format(self.selection.name))
 
-        fields.append("{} menu node{}"
-                      .format(len(self.nodes),
-                              "" if len(self.nodes) == 1 else "s"))
+        for node in self.nodes:
+            fields.append("{}:{}".format(node.filename, node.linenr))
 
         return "<{}>".format(", ".join(fields))
-
 
     #
     # Private methods
@@ -2757,17 +2800,15 @@ class Choice(object):
 
         self.nodes = []
 
-        self.user_value = None
-        self.user_selection = None
+        self.user_str_value = self.user_tri_value = self.user_selection = None
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
         self.defaults = []
 
         # Cached values
+        self._cached_vis = self._cached_assignable = None
         self._cached_selection = _NO_CACHED_SELECTION
-        self._cached_vis = None
-        self._cached_assignable = None
 
         self.is_optional = False
 
@@ -2778,21 +2819,21 @@ class Choice(object):
 
         vis = self.visibility
 
-        if vis == "n":
+        if not vis:
             return ""
 
-        if vis == "y":
+        if vis == 2:
             if not self.is_optional:
                 return "y" if self.type == BOOL else "my"
             return "y"
 
-        # vis == "m"
+        # vis == 1
 
         return "nm" if self.is_optional else "m"
 
     def _invalidate(self):
-        self._cached_selection = _NO_CACHED_SELECTION
         self._cached_vis = self._cached_assignable = None
+        self._cached_selection = _NO_CACHED_SELECTION
 
 class MenuNode(object):
     """
@@ -2920,15 +2961,17 @@ class MenuNode(object):
 
         if self.prompt is not None:
             fields.append('prompt "{}" (visibility {})'
-                          .format(self.prompt[0], eval_expr(self.prompt[1])))
+                          .format(self.prompt[0],
+                                  TRI_TO_STR[eval_expr(self.prompt[1])]))
 
         if isinstance(self.item, Symbol) and self.is_menuconfig:
             fields.append("is menuconfig")
 
-        fields.append("deps " + eval_expr(self.dep))
+        fields.append("deps " + TRI_TO_STR[eval_expr(self.dep)])
 
         if self.item == MENU:
-            fields.append("'visible if' deps " + eval_expr(self.visibility))
+            fields.append("'visible if' deps " + \
+                          TRI_TO_STR[eval_expr(self.visibility)])
 
         if isinstance(self.item, (Symbol, Choice)) and self.help is not None:
             fields.append("has help")
@@ -2957,65 +3000,26 @@ class InternalError(Exception):
 # Public functions
 #
 
-def tri_less(v1, v2):
-    """
-    Returns True if the tristate v1 is less than the tristate v2, where "n",
-    "m" and "y" are ordered from lowest to highest.
-    """
-    return _TRI_TO_INT[v1] < _TRI_TO_INT[v2]
-
-def tri_less_eq(v1, v2):
-    """
-    Returns True if the tristate v1 is less than or equal to the tristate v2,
-    where "n", "m" and "y" are ordered from lowest to highest.
-    """
-    return _TRI_TO_INT[v1] <= _TRI_TO_INT[v2]
-
-def tri_greater(v1, v2):
-    """
-    Returns True if the tristate v1 is greater than the tristate v2, where "n",
-    "m" and "y" are ordered from lowest to highest.
-    """
-    return _TRI_TO_INT[v1] > _TRI_TO_INT[v2]
-
-def tri_greater_eq(v1, v2):
-    """
-    Returns True if the tristate v1 is greater than or equal to the tristate
-    v2, where "n", "m" and "y" are ordered from lowest to highest.
-    """
-    return _TRI_TO_INT[v1] >= _TRI_TO_INT[v2]
-
-# Expression evaluation
-
 def eval_expr(expr):
     """
-    Evaluates an expression to "n", "m", or "y".
+    TODO
     """
-
     if isinstance(expr, Symbol):
-        # Non-bool/tristate symbols are always "n" in a tristate sense,
-        # regardless of their value
-        return expr.value if expr._type in (BOOL, TRISTATE) else "n"
+        return expr.tri_value
 
     if expr[0] == AND:
-        ev1 = eval_expr(expr[1])
-
-        # Short-circuit the ev1 == "n" case
-        return "n" if ev1 == "n" else \
-               _tri_min(ev1, eval_expr(expr[2]))
+        v1 = eval_expr(expr[1])
+        # Short-circuit the n case as an optimization (~5% faster
+        # allnoconfig.py and allyesconfig.py, as of writing)
+        return 0 if not v1 else min(v1, eval_expr(expr[2]))
 
     if expr[0] == OR:
-        ev1 = eval_expr(expr[1])
-
-        # Short-circuit the ev1 == "y" case
-        return "y" if ev1 == "y" else \
-               _tri_max(ev1, eval_expr(expr[2]))
+        v1 = eval_expr(expr[1])
+        # Short-circuit the y case as an optimization
+        return 2 if v1 == 2 else max(v1, eval_expr(expr[2]))
 
     if expr[0] == NOT:
-        ev = eval_expr(expr[1])
-        return "n" if ev == "y" else \
-               "y" if ev == "n" else \
-               "m"
+        return 2 - eval_expr(expr[1])
 
     if expr[0] in _RELATIONS:
         # Implements <, <=, >, >= comparisons as well. These were added to
@@ -3030,16 +3034,16 @@ def eval_expr(expr):
         # If both operands are strings...
         if op1._type == STRING and op2._type == STRING:
             # ...then compare them lexicographically
-            comp = _strcmp(op1.value, op2.value)
+            comp = _strcmp(op1.str_value, op2.str_value)
         else:
             # Otherwise, try to compare them as numbers...
             try:
-                comp = int(op1.value, _TYPE_TO_BASE[op1._type]) - \
-                       int(op2.value, _TYPE_TO_BASE[op2._type])
+                comp = int(op1.str_value, _TYPE_TO_BASE[op1._type]) - \
+                       int(op2.str_value, _TYPE_TO_BASE[op2._type])
             except ValueError:
                 # Fall back on a lexicographic comparison if the operands don't
                 # parse as numbers
-                comp = _strcmp(op1.value, op2.value)
+                comp = _strcmp(op1.str_value, op2.str_value)
 
         if   oper == EQUAL:         res = comp == 0
         elif oper == UNEQUAL:       res = comp != 0
@@ -3048,12 +3052,15 @@ def eval_expr(expr):
         elif oper == GREATER:       res = comp > 0
         elif oper == GREATER_EQUAL: res = comp >= 0
 
-        return "y" if res else "n"
+        return 2*res
 
     _internal_error("Internal error while evaluating expression: "
                     "unknown operation {}.".format(expr[0]))
 
 def expr_str(expr):
+    """
+    TODO
+    """
     if isinstance(expr, Symbol):
         return expr.name if not expr.is_constant else '"{}"'.format(expr.name)
 
@@ -3085,46 +3092,34 @@ def _get_visibility(sc):
     'make menuconfig'. This function calculates the visibility for the Symbol
     or Choice 'sc' -- the logic is nearly identical.
     """
-    vis = "n"
+    vis = 0
 
     for node in sc.nodes:
         if node.prompt:
-            vis = _tri_max(vis, eval_expr(node.prompt[1]))
+            vis = max(vis, eval_expr(node.prompt[1]))
 
     if isinstance(sc, Symbol) and sc.choice is not None:
         if sc.choice._type == TRISTATE and sc._type != TRISTATE and \
-           sc.choice.value != "y":
+           sc.choice.tri_value != 2:
             # Non-tristate choice symbols in tristate choices depend on the
             # choice being in mode "y"
-            return "n"
+            return 0
 
-        if sc._type == TRISTATE and vis == "m" and sc.choice.value == "y":
+        if sc._type == TRISTATE and vis == 1 and sc.choice.tri_value == 2:
             # Choice symbols with visibility "m" are not visible if the
             # choice has mode "y"
-            return "n"
+            return 0
 
-        vis = _tri_min(vis, sc.choice.visibility)
+        vis = min(vis, sc.choice.visibility)
 
-    # Promote "m" to "y" if we're dealing with a non-tristate. This might lead
-    # to infinite recursion if something really weird is done with MODULES, but
+    # Promote m to y if we're dealing with a non-tristate. This might lead to
+    # infinite recursion if something really weird is done with MODULES, but
     # it's not a problem in practice.
-    if vis == "m" and \
-       (sc._type != TRISTATE or sc.config.modules.value == "n"):
-        return "y"
+    if vis == 1 and \
+       (sc._type != TRISTATE or not sc.config.modules.tri_value):
+        return 2
 
     return vis
-
-def _tri_min(v1, v2):
-    """
-    Returns the smallest tristate value among v1 and v2.
-    """
-    return v1 if _TRI_TO_INT[v1] <= _TRI_TO_INT[v2] else v2
-
-def _tri_max(v1, v2):
-    """
-    Returns the largest tristate value among v1 and v2.
-    """
-    return v1 if _TRI_TO_INT[v1] >= _TRI_TO_INT[v2] else v2
 
 def _make_depend_on(sym, expr):
     """
@@ -3192,10 +3187,8 @@ def _strcmp(s1, s2):
     return (s1 > s2) - (s1 < s2)
 
 def _stderr_msg(msg, filename, linenr):
-    if filename is None:
-        s = msg
-    else:
-        s = "{}:{}: ".format(filename, linenr)
+    if filename is not None:
+        msg = "{}:{}: {}".format(filename, linenr, msg)
 
     sys.stderr.write(msg + "\n")
 
@@ -3509,6 +3502,18 @@ def _finalize_tree(node):
     COMMENT,
 ) = range(2)
 
+TRI_TO_STR = {
+    0: "n",
+    1: "m",
+    2: "y",
+}
+
+STR_TO_TRI = {
+    "n": 0,
+    "m": 1,
+    "y": 2,
+}
+
 #
 # Internal global constants
 #
@@ -3643,12 +3648,12 @@ _sym_ref_re_search = re.compile(r"\$([A-Za-z0-9_]+)").search
 
 # Strings to use for types
 _TYPENAME = {
-    UNKNOWN: "unknown",
-    BOOL: "bool",
+    UNKNOWN:  "unknown",
+    BOOL:     "bool",
     TRISTATE: "tristate",
-    STRING: "string",
-    HEX: "hex",
-    INT: "int",
+    STRING:   "string",
+    HEX:      "hex",
+    INT:      "int",
 }
 
 # Token to type mapping
@@ -3660,16 +3665,6 @@ _TOKEN_TO_TYPE = {
     _T_INT:          INT,
     _T_STRING:       STRING,
     _T_TRISTATE:     TRISTATE,
-}
-
-# Default values for symbols of different types (the value the symbol gets if
-# it is not assigned a user value and none of its 'default' clauses kick in)
-_DEFAULT_VALUE = {
-    BOOL:     "n",
-    TRISTATE: "n",
-    HEX:      "",
-    INT:      "",
-    STRING:   "",
 }
 
 # Constant representing that there's no cached choice selection. This is

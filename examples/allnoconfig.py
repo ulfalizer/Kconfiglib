@@ -8,7 +8,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py
 
-from kconfiglib import Config, Symbol, tri_less
+from kconfiglib import Config, Symbol, STR_TO_TRI
 import sys
 
 def do_allnoconfig(node):
@@ -27,7 +27,7 @@ def do_allnoconfig(node):
             if (sym.choice is None and
                 not sym.is_allnoconfig_y and
                 sym.assignable and
-                tri_less(sym.assignable[0], sym.value)):
+                STR_TO_TRI[sym.assignable[0]] < sym.tri_value):
 
                 # Yup, lower it
                 sym.set_value(sym.assignable[0])
