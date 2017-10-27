@@ -265,16 +265,16 @@ class Config(object):
         "top_node",
         "y",
 
-        # These are used during parsing
-        "_line",
-        "_lines",
+        # Parsing-related
+        "_parsing_kconfigs",
+        "_reuse_line",
+        "_file",
         "_filename",
         "_linenr",
-        "_file_len",
         "_filestack",
+        "_line",
         "_tokens",
         "_tokens_i",
-        "_tokens_len",
         "_has_tokens",
     )
 
@@ -351,14 +351,16 @@ class Config(object):
             sym = self.const_syms[nmy]
             sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
 
-        self.modules = self._lookup_sym("MODULES", False)
+        self._parsing_kconfigs = True
+
+        self.modules = self._lookup_sym("MODULES")
         self.defconfig_list = None
 
         # Predefined symbol. DEFCONFIG_LIST uses this.
-        uname_sym = self._lookup_const_sym("UNAME_RELEASE", False)
+        uname_sym = self._lookup_const_sym("UNAME_RELEASE")
         uname_sym._type = STRING
         uname_sym.defaults.append(
-            (self._lookup_const_sym(platform.uname()[2], False),
+            (self._lookup_const_sym(platform.uname()[2]),
              self.y))
         # env_var doubles as the SYMBOL_AUTO flag from the C implementation, so
         # just set it to something. The naming breaks a bit here, but it's
@@ -378,8 +380,8 @@ class Config(object):
 
         # Parse the Kconfig files
 
+        self._reuse_line = False
         self._has_tokens = False
-        self._tokens_i = 0
 
         self._filestack = []
 
@@ -388,9 +390,10 @@ class Config(object):
                           self.top_node,  # parent
                           self.y,         # visible_if_deps
                           self.top_node)  # prev_node
-
         self.top_node.list = self.top_node.next
         self.top_node.next = None
+
+        self._parsing_kconfigs = False
 
         # Do various post-processing of the menu tree, e.g. to finalize
         # choices, flatten ifs, and implicitly create menus
@@ -546,9 +549,13 @@ class Config(object):
         the C tools). m is rewritten to 'm && MODULES'.
         """
         # TODO: explain
-        self._line = s
         self._filename = None
-        self._tokenize(True)
+
+        self._line = "if " + s
+        self._tokenize()
+        self._line = s
+        del self._tokens[0]
+
         return eval_expr(self._parse_expr(True))
 
     def unset_values(self):
@@ -655,55 +662,43 @@ class Config(object):
     # Kconfig parsing
     #
 
-    def _tokenize(self, for_eval_string):
+    def _tokenize(self):
         """
         Parses Config._line, putting the tokens in Config._tokens. Registers
         any new symbols encountered (via _lookup_sym()).
 
         Tries to be reasonably speedy by processing chunks of text via regexes
         and string operations where possible. This is a hotspot during parsing.
-
-        for_eval_string:
-          True when parsing an expression for a call to Config.eval_string(),
-          in which case we should not treat the first token specially nor
-          register new symbols.
         """
 
         s = self._line
 
         # Tricky implementation detail: While parsing a token, 'token' refers
-        # to the previous token. See _NOT_REF for why this is needed.
+        # to the previous token. See _STRING_LEX for why this is needed.
 
-        if for_eval_string:
-            self._tokens = []
-            token = None
-            # The current index in the string being tokenized
-            i = 0
+        # See comment at _initial_token_re_match definition
+        initial_token_match = _initial_token_re_match(s)
+        if not initial_token_match:
+            self._tokens = (None,)
+            self._tokens_i = -1
+            return
 
-        else:
-            # See comment at _initial_token_re_match definition
-            initial_token_match = _initial_token_re_match(s)
-            if not initial_token_match:
-                self._tokens_len = 0
-                return
+        keyword = _get_keyword(initial_token_match.group(1))
 
-            keyword = _get_keyword(initial_token_match.group(1))
+        if keyword == _T_HELP:
+            # Avoid junk after "help", e.g. "---", being registered as a
+            # symbol
+            self._tokens = (_T_HELP, None)
+            self._tokens_i = -1
+            return
 
-            if keyword == _T_HELP:
-                # Avoid junk after "help", e.g. "---", being registered as a
-                # symbol
-                self._tokens = (_T_HELP,)
-                self._tokens_len = 1  # TODO: why is this needed?
-                self._tokens_i = 0
-                return
+        if keyword is None:
+            self._parse_error("expected keyword as first token")
 
-            if keyword is None:
-                self._parse_error("expected keyword as first token")
-
-            token = keyword
-            self._tokens = [keyword]
-            # The current index in the string being tokenized
-            i = initial_token_match.end()
+        token = keyword
+        self._tokens = [keyword]
+        # The current index in the string being tokenized
+        i = initial_token_match.end()
 
         # Main tokenization loop (for tokens past the first one)
         while i < len(s):
@@ -732,9 +727,9 @@ class Config(object):
                         # ...except we translate n, m, and y into the
                         # corresponding constant symbols, like the C
                         # implementation
-                        token = self._lookup_const_sym(name, for_eval_string)
+                        token = self._lookup_const_sym(name)
                     else:
-                        token = self._lookup_sym(name, for_eval_string)
+                        token = self._lookup_sym(name)
 
                 else:
                     # It's a case of missing quotes. For example, the
@@ -802,15 +797,12 @@ class Config(object):
                         i += 1
 
                     # This is the only place where we don't survive with a
-                    # single token of lookback, hence the kludge:
-                    # 'option env="FOO"' does not refer to a constant symbol
-                    # named "FOO".
-                    token = \
-                        val \
-                        if token in _STRING_LEX or \
-                            (not for_eval_string and \
-                                 self._tokens[0] == _T_OPTION) else \
-                        self._lookup_const_sym(val, for_eval_string)
+                    # single token of lookback: 'option env="FOO"' does not
+                    # refer to a constant symbol named "FOO".
+                    token = val \
+                            if token in _STRING_LEX or \
+                                self._tokens[0] == _T_OPTION else \
+                            self._lookup_const_sym(val)
 
                 elif c == "&":
                     # Invalid characters are ignored
@@ -873,23 +865,20 @@ class Config(object):
 
             self._tokens.append(token)
 
-        self._tokens_i = 0
-        self._tokens_len = len(self._tokens)
+        # TODO: say something about the None-termination
+
+        self._tokens.append(None)
+        self._tokens_i = -1
 
     def _next_token(self):
-        if self._tokens_i >= self._tokens_len:
-            return None
-        token = self._tokens[self._tokens_i]
         self._tokens_i += 1
-        return token
+        return self._tokens[self._tokens_i]
 
     def _peek_token(self):
-        return None if self._tokens_i >= self._tokens_len \
-               else self._tokens[self._tokens_i]
+        return self._tokens[self._tokens_i + 1]
 
     def _check_token(self, token):
-        if self._tokens_i < self._tokens_len and \
-           self._tokens[self._tokens_i] == token:
+        if self._tokens[self._tokens_i + 1] == token:
             self._tokens_i += 1
             return True
         return False
@@ -897,7 +886,7 @@ class Config(object):
     def _enter_file_empty_stack(self, filename):
         try:
             # TODO: comment
-            f = self._open(filename)
+            self._file = self._open(filename)
         except IOError as e:
             # Extend the error message a bit in this case
             raise IOError(
@@ -910,40 +899,33 @@ class Config(object):
 
         self._filename = filename
         self._linenr = 0
-        with f:
-            self._lines = f.readlines()
-        self._file_len = len(self._lines)
 
     def _enter_file(self, filename):
-        self._filestack.append((self._filename, self._linenr, self._lines,
-                                self._file_len))
+        self._filestack.append((self._file, self._filename, self._linenr))
         self._enter_file_empty_stack(filename)
 
     def _leave_file(self):
-        self._filename, self._linenr, self._lines, self._file_len = \
-            self._filestack.pop()
+        self._file.close()
+        self._file, self._filename, self._linenr = self._filestack.pop()
 
     def _next_line(self):
-        if self._linenr >= self._file_len:
-            return False
-
-        line = self._lines[self._linenr]
-        self._linenr += 1
-
-        while line.endswith("\\\n"):
-            line = line[:-2] + self._lines[self._linenr]
+        # This provides a single line of "unget" if _reuse_line is set to True
+        if not self._reuse_line:
+            self._line = self._file.readline()
             self._linenr += 1
 
-        self._line = line
-        return True
+        self._reuse_line = False
+
+        while self._line.endswith("\\\n"):
+            # TODO: Can hang if the file ends with a backslash
+            self._line = self._line[:-2] + self._file.readline()
+            self._linenr += 1
+
+        return self._line
 
     def _next_line_no_join(self):
-        if self._linenr >= self._file_len:
-            return None
-
-        self._line = self._lines[self._linenr]
+        self._line = self._file.readline()
         self._linenr += 1
-
         return self._line
 
     def _parse_block(self, end_token, parent, visible_if_deps, prev_node):
@@ -963,10 +945,6 @@ class Config(object):
         visible_if_deps:
           'visible if' dependencies from enclosing menus. Propagated to Symbol
           and Choice prompts.
-
-        prev_line:
-          A "cached" (line, tokens) tuple from having parsed a line earlier
-          that we realized belonged to a different construct.
 
         prev_node:
           The previous menu node. New nodes will be added after this one (by
@@ -995,7 +973,7 @@ class Config(object):
                     prev_node.next = None
                     return prev_node
 
-                self._tokenize(False)
+                self._tokenize()
 
             self._has_tokens = False
 
@@ -1187,7 +1165,7 @@ class Config(object):
             if not self._next_line():
                 break
 
-            self._tokenize(False)
+            self._tokenize()
 
             t0 = self._next_token()
             if t0 is None:
@@ -1205,10 +1183,10 @@ class Config(object):
 
                 while 1:
                     line = self._next_line_no_join()
-                    if line is None or not line.isspace():
+                    if not line or not line.isspace():
                         break
 
-                if line is None:
+                if not line:
                     node.help = ""
                     break
 
@@ -1217,7 +1195,7 @@ class Config(object):
                     # If the first non-empty lines has zero indent, there is no
                     # help text
                     node.help = ""
-                    self._linenr -= 1  # Unget the line
+                    self._reuse_line = True  # "Unget" the line
                     break
 
                 # The help text goes on till the first non-empty line with less
@@ -1226,16 +1204,16 @@ class Config(object):
                 help_lines = [_deindent(line, indent).rstrip()]
                 while 1:
                     line = self._next_line_no_join()
-                    if line is None or \
+                    if not line or \
                        (not line.isspace() and _indentation(line) < indent):
                         node.help = "\n".join(help_lines).rstrip() + "\n"
                         break
                     help_lines.append(_deindent(line, indent).rstrip())
 
-                if line is None:
+                if not line:
                     break
 
-                self._linenr -= 1  # Unget the line
+                self._reuse_line = True  # "Unget" the line
 
             elif t0 == _T_SELECT:
                 if not isinstance(node.item, Symbol):
@@ -1251,6 +1229,7 @@ class Config(object):
 
             elif t0 in (_T_BOOL, _T_TRISTATE, _T_INT, _T_HEX, _T_STRING):
                 node.item._type = _TOKEN_TO_TYPE[t0]
+
                 if self._peek_token() is not None:
                     prompt = (self._next_token(), self._parse_cond())
 
@@ -1259,6 +1238,7 @@ class Config(object):
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
                 node.item._type = _TOKEN_TO_TYPE[t0]
+
                 defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 == _T_PROMPT:
@@ -1292,8 +1272,7 @@ class Config(object):
                                    self._filename, self._linenr)
                     else:
                         defaults.append(
-                            (self._lookup_const_sym(os.environ[env_var],
-                                                    False),
+                            (self._lookup_const_sym(os.environ[env_var]),
                              self.y))
 
                 elif self._check_token(_T_DEFCONFIG_LIST):
@@ -1347,7 +1326,7 @@ class Config(object):
                 node.item.is_optional = True
 
             else:
-                self._tokens_i = 0
+                self._tokens_i = -1
                 self._has_tokens = True
                 break
 
@@ -1506,7 +1485,7 @@ class Config(object):
     # Symbol lookup
     #
 
-    def _lookup_sym(self, name, for_eval_string):
+    def _lookup_sym(self, name):
         """
         Fetches the symbol 'name' from the symbol table, creating and
         registering it if it does not exist. TODO If 'for_eval_string' is True,
@@ -1522,14 +1501,14 @@ class Config(object):
         sym.is_constant = False
         sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
 
-        if for_eval_string:
-            self._warn("no symbol {} in configuration".format(name))
-        else:
+        if self._parsing_kconfigs:
             self.syms[name] = sym
+        else:
+            self._warn("no symbol {} in configuration".format(name))
 
         return sym
 
-    def _lookup_const_sym(self, name, for_eval_string):
+    def _lookup_const_sym(self, name):
         """
         TODO: say something
         """
@@ -1542,7 +1521,7 @@ class Config(object):
         sym.is_constant = True
         sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
 
-        if not for_eval_string:
+        if self._parsing_kconfigs:
             self.const_syms[name] = sym
 
         return sym
@@ -1556,14 +1535,6 @@ class Config(object):
         Returns a list containing all .config strings for the configuration.
         """
 
-        config_strings = []
-        add_fn = config_strings.append
-
-        node = self.top_node.list
-        if node is None:
-            # Empty configuration
-            return config_strings
-
         # Symbol._already_written is set to True when a symbol config string is
         # fetched, so that symbols defined in multiple locations only get one
         # .config entry. We reset it prior to writing out a new .config. It
@@ -1576,6 +1547,14 @@ class Config(object):
         # values when writing .config files, so that won't work.
         for sym in self.defined_syms:
             sym._already_written = False
+
+        node = self.top_node.list
+        if node is None:
+            # Empty configuration
+            return []
+
+        config_strings = []
+        add_fn = config_strings.append
 
         while 1:
             if isinstance(node.item, Symbol):
