@@ -13,7 +13,7 @@ on non-\*nix platforms.
 *NOTE: A non-backwards-compatible 2.0 version will be coming soon, with a much cleaner and more general API (property-based,
 less redundant, more logical). That one will also expose the menu structure (including implicit menus) and all the
 expressions directly. The major version will be bumped to 2 in accordance with
-semantic versioning.*
+semantic versioning. See the kconfiglib-2-backup branch for a sneak peek (or if you feel like beta testing).*
 
 .. contents:: Table of contents
    :backlinks: none
