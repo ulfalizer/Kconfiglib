@@ -360,13 +360,13 @@ class Config(object):
         # Predefined symbol. DEFCONFIG_LIST uses this.
         uname_sym = self._lookup_const_sym("UNAME_RELEASE")
         uname_sym._type = STRING
-        uname_sym.defaults.append(
-            (self._lookup_const_sym(platform.uname()[2]),
-             self.y))
         # env_var doubles as the SYMBOL_AUTO flag from the C implementation, so
         # just set it to something. The naming breaks a bit here, but it's
         # pretty obscure.
         uname_sym.env_var = "<uname release>"
+        uname_sym.defaults.append(
+            (self._lookup_const_sym(platform.uname()[2]),
+             self.y))
         self.syms["UNAME_RELEASE"] = uname_sym
 
         self.top_node = MenuNode()
@@ -418,8 +418,8 @@ class Config(object):
         if self.defconfig_list is None:
             return None
 
-        for filename, cond_expr in self.defconfig_list.defaults:
-            if eval_expr(cond_expr):
+        for filename, cond in self.defconfig_list.defaults:
+            if expr_value(cond):
                 filename = self._expand_sym_refs(filename.str_value)
                 try:
                     with self._open(filename) as f:
@@ -559,7 +559,7 @@ class Config(object):
         self._line = s
         del self._tokens[0]
 
-        return eval_expr(self._parse_expr(True))
+        return expr_value(self._parse_expr(True))
 
     def unset_values(self):
         """
@@ -921,7 +921,6 @@ class Config(object):
         self._reuse_line = False
 
         while self._line.endswith("\\\n"):
-            # TODO: Can hang if the file ends with a backslash
             self._line = self._line[:-2] + self._file.readline()
             self._linenr += 1
 
@@ -1346,39 +1345,39 @@ class Config(object):
                 node.prompt = None
 
             # Add the new defaults, with dependencies propagated
-            for val_expr, cond_expr in defaults:
+            for val_expr, cond in defaults:
                 node.item.defaults.append(
-                    (val_expr, self._make_and(cond_expr, node.dep)))
+                    (val_expr, self._make_and(cond, node.dep)))
 
             # Add the new ranges, with dependencies propagated
-            for low, high, cond_expr in ranges:
+            for low, high, cond in ranges:
                 node.item.ranges.append(
-                    (low, high, self._make_and(cond_expr, node.dep)))
+                    (low, high, self._make_and(cond, node.dep)))
 
             # Handle selects
-            for target, cond_expr in selects:
+            for target, cond in selects:
                 # Only stored for convenience. Not used during evaluation.
                 node.item.selects.append(
-                    (target, self._make_and(cond_expr, node.dep)))
+                    (target, self._make_and(cond, node.dep)))
 
                 # Modify the dependencies of the selected symbol
                 target.rev_dep = \
                     self._make_or(target.rev_dep,
                                   self._make_and(node.item,
-                                                 self._make_and(cond_expr,
+                                                 self._make_and(cond,
                                                                 node.dep)))
 
             # Handle implies
-            for target, cond_expr in implies:
+            for target, cond in implies:
                 # Only stored for convenience. Not used during evaluation.
                 node.item.implies.append(
-                    (target, self._make_and(cond_expr, node.dep)))
+                    (target, self._make_and(cond, node.dep)))
 
                 # Modify the dependencies of the implied symbol
                 target.weak_rev_dep = \
                     self._make_or(target.weak_rev_dep,
                                   self._make_and(node.item,
-                                                 self._make_and(cond_expr,
+                                                 self._make_and(cond,
                                                                 node.dep)))
 
     def _parse_expr(self, transform_m):
@@ -1559,8 +1558,8 @@ class Config(object):
                         add_fn(config_string)
                     sym._already_written = True
 
-            elif eval_expr(node.dep) and \
-                 ((node.item == MENU and eval_expr(node.visibility)) or
+            elif expr_value(node.dep) and \
+                 ((node.item == MENU and expr_value(node.visibility)) or
                    node.item == COMMENT):
 
                 add_fn("\n#\n# {}\n#\n".format(node.prompt[0]))
@@ -1994,8 +1993,8 @@ class Symbol(object):
             base = _TYPE_TO_BASE[self._type]
 
             # Check if a range is in effect
-            for low_expr, high_expr, cond_expr in self.ranges:
-                if eval_expr(cond_expr):
+            for low_expr, high_expr, cond in self.ranges:
+                if expr_value(cond):
                     has_active_range = True
 
                     low = int(low_expr.str_value, base) if \
@@ -2020,8 +2019,8 @@ class Symbol(object):
             else:
                 # No user value or invalid user value. Look at defaults.
 
-                for val_expr, cond_expr in self.defaults:
-                    if eval_expr(cond_expr):
+                for val_expr, cond in self.defaults:
+                    if expr_value(cond):
                         self._write_to_conf = True
 
                         # Similarly to above, well-formed defaults are
@@ -2059,8 +2058,8 @@ class Symbol(object):
             if vis and self.user_str_value is not None:
                 val = self.user_str_value
             else:
-                for val_expr, cond_expr in self.defaults:
-                    if eval_expr(cond_expr):
+                for val_expr, cond in self.defaults:
+                    if expr_value(cond):
                         self._write_to_conf = True
                         val = val_expr.str_value
                         break
@@ -2096,22 +2095,22 @@ class Symbol(object):
                 # (implies)
 
                 for default, cond in self.defaults:
-                    cond_val = eval_expr(cond)
+                    cond_val = expr_value(cond)
                     if cond_val:
-                        val = min(cond_val, eval_expr(default))
+                        val = min(cond_val, expr_value(default))
                         self._write_to_conf = True
                         break
 
                 # Weak reverse dependencies are only considered if our
                 # direct dependencies are met
-                if eval_expr(self.direct_dep):
-                    weak_rev_dep_val = eval_expr(self.weak_rev_dep)
+                if expr_value(self.direct_dep):
+                    weak_rev_dep_val = expr_value(self.weak_rev_dep)
                     if weak_rev_dep_val:
                         val = max(weak_rev_dep_val, val)
                         self._write_to_conf = True
 
             # Reverse (select-related) dependencies take precedence
-            rev_dep_val = eval_expr(self.rev_dep)
+            rev_dep_val = expr_value(self.rev_dep)
             if rev_dep_val:
                 val = max(rev_dep_val, val)
                 self._write_to_conf = True
@@ -2139,7 +2138,7 @@ class Symbol(object):
         #  1) If our type is boolean
         #  2) If our weak_rev_dep (from IMPLY) is y
         if val == 1 and \
-           (self.type == BOOL or eval_expr(self.weak_rev_dep) == 2):
+           (self.type == BOOL or expr_value(self.weak_rev_dep) == 2):
             val = 2
 
         self._cached_tri_val = val
@@ -2259,38 +2258,51 @@ class Symbol(object):
         Prints some information about the symbol (including its name, value,
         visibility, and location(s)) when it is evaluated.
         """
-        fields = [
-            "symbol " + self.name,
-            _TYPENAME[self.type],
-            'value "{}"'.format(self.str_value),
-            "visibility " + TRI_TO_STR[self.visibility],
-        ]
+        fields = []
 
-        if self.user_str_value is not None:
-            fields.append('user value "{}"'.format(self.user_str_value))
+        fields.append("symbol " + self.name)
+        fields.append(_TYPENAME[self.type])
 
-        if self.choice is not None:
-            fields.append("choice symbol")
+        for node in self.nodes:
+            if node.prompt is not None:
+                fields.append('"{}"'.format(node.prompt[0]))
 
-        if self.is_allnoconfig_y:
-            fields.append("allnoconfig_y")
+        fields.append('value "{}"'.format(self.str_value))
 
-        if self is self.config.defconfig_list:
-            fields.append("is the defconfig_list symbol")
+        if not self.is_constant:
+            # These aren't helpful to show for constant symbols
 
-        if self.env_var is not None:
-            fields.append("from environment variable " + self.env_var)
+            if self.user_str_value is not None:
+                fields.append('user value "{}"'.format(self.user_str_value))
 
-        if self is self.config.modules:
-            fields.append("is the modules symbol")
+            fields.append("visibility " + TRI_TO_STR[self.visibility])
 
-        fields.append("direct deps " + TRI_TO_STR[eval_expr(self.direct_dep)])
+            if self.choice is not None:
+                fields.append("choice symbol")
+
+            if self.is_allnoconfig_y:
+                fields.append("allnoconfig_y")
+
+            if self is self.config.defconfig_list:
+                fields.append("is the defconfig_list symbol")
+
+            if self.env_var is not None:
+                fields.append("from environment variable " + self.env_var)
+
+            if self is self.config.modules:
+                fields.append("is the modules symbol")
+
+            fields.append("direct deps " +
+                          TRI_TO_STR[expr_value(self.direct_dep)])
 
         if self.nodes:
             for node in self.nodes:
                 fields.append("{}:{}".format(node.filename, node.linenr))
         else:
-            fields.append("undefined")
+            if self.is_constant:
+                fields.append("constant")
+            else:
+                fields.append("undefined")
 
         return "<{}>".format(", ".join(fields))
 
@@ -2358,11 +2370,11 @@ class Symbol(object):
         if not vis:
             return ""
 
-        rev_dep_val = eval_expr(self.rev_dep)
+        rev_dep_val = expr_value(self.rev_dep)
 
         if vis == 2:
             if not rev_dep_val:
-                if self.type == BOOL or eval_expr(self.weak_rev_dep) == 2:
+                if self.type == BOOL or expr_value(self.weak_rev_dep) == 2:
                     return "ny"
                 return "nmy"
 
@@ -2371,14 +2383,14 @@ class Symbol(object):
 
             # rev_dep_val == 1
 
-            if self.type == BOOL or eval_expr(self.weak_rev_dep) == 2:
+            if self.type == BOOL or expr_value(self.weak_rev_dep) == 2:
                 return "y"
             return "my"
 
         # vis == 1
 
         if not rev_dep_val:
-            return "m" if eval_expr(self.weak_rev_dep) != 2 else "y"
+            return "m" if expr_value(self.weak_rev_dep) != 2 else "y"
 
         if rev_dep_val == 2:
             return "y"
@@ -2451,10 +2463,14 @@ class Symbol(object):
         Invalidates the symbol and all symbols and choices that (possibly
         indirectly) depend on it
         """
-        self._invalidate()
+        # Constant symbols must never be invalidated, because they lose their
+        # value. They never appear as dependencies, but can still be manually
+        # assigned a user value (and that's OK, though pointless).
+        if not self.is_constant:
+            self._invalidate()
 
-        for item in self._get_dependent():
-            item._invalidate()
+            for item in self._get_dependent():
+                item._invalidate()
 
     def _get_dependent(self):
         """
@@ -2708,8 +2724,8 @@ class Choice(object):
         """
         See the class documentation.
         """
-        for sym, cond_expr in self.defaults:
-            if eval_expr(cond_expr) and sym.visibility:
+        for sym, cond in self.defaults:
+            if expr_value(cond) and sym.visibility:
                 return sym
 
         # Otherwise, pick the first visible symbol, if any
@@ -2761,18 +2777,37 @@ class Choice(object):
         """
         TODO
         """
-        fields = [
-            "choice" if self.name is None else "choice " + self.name,
-            _TYPENAME[self.type],
-            "mode " + self.str_value,
-            "visibility " + TRI_TO_STR[self.visibility],
-        ]
+        fields = []
 
-        if self.is_optional:
-            fields.append("optional")
+        fields.append("choice" if self.name is None else \
+                      "choice " + self.name)
+        fields.append(_TYPENAME[self.type])
+
+        for node in self.nodes:
+            if node.prompt is not None:
+                fields.append('"{}"'.format(node.prompt[0]))
+
+        fields.append("mode " + self.str_value)
+
+        if self.user_str_value is not None:
+            fields.append('user mode {}'.format(self.user_str_value))
 
         if self.selection is not None:
             fields.append("{} selected".format(self.selection.name))
+
+        if self.user_selection is not None:
+            user_sel_str = "{} selected by user" \
+                           .format(self.user_selection.name)
+
+            if self.selection is not self.user_selection:
+                user_sel_str += " (overriden)"
+
+            fields.append(user_sel_str)
+
+        fields.append("visibility " + TRI_TO_STR[self.visibility])
+
+        if self.is_optional:
+            fields.append("optional")
 
         for node in self.nodes:
             fields.append("{}:{}".format(node.filename, node.linenr))
@@ -2932,46 +2967,42 @@ class MenuNode(object):
     )
 
     def __repr__(self):
+        """
+        TODO
+        """
         fields = []
 
         if isinstance(self.item, Symbol):
             fields.append("menu node for symbol " + self.item.name)
-
         elif isinstance(self.item, Choice):
             s = "menu node for choice"
             if self.item.name is not None:
                 s += " " + self.item.name
             fields.append(s)
-
         elif self.item == MENU:
             fields.append("menu node for menu")
-
         elif self.item == COMMENT:
             fields.append("menu node for comment")
-
         elif self.item is None:
             fields.append("menu node for if (should not appear in the final "
                           " tree)")
-
         else:
             raise InternalError("unable to determine type in "
                                 "MenuNode.__repr__()")
 
-        fields.append("{}:{}".format(self.filename, self.linenr))
-
         if self.prompt is not None:
             fields.append('prompt "{}" (visibility {})'
                           .format(self.prompt[0],
-                                  TRI_TO_STR[eval_expr(self.prompt[1])]))
+                                  TRI_TO_STR[expr_value(self.prompt[1])]))
 
         if isinstance(self.item, Symbol) and self.is_menuconfig:
             fields.append("is menuconfig")
 
-        fields.append("deps " + TRI_TO_STR[eval_expr(self.dep)])
+        fields.append("deps " + TRI_TO_STR[expr_value(self.dep)])
 
         if self.item == MENU:
             fields.append("'visible if' deps " + \
-                          TRI_TO_STR[eval_expr(self.visibility)])
+                          TRI_TO_STR[expr_value(self.visibility)])
 
         if isinstance(self.item, (Symbol, Choice)) and self.help is not None:
             fields.append("has help")
@@ -2981,6 +3012,8 @@ class MenuNode(object):
 
         if self.next is not None:
             fields.append("has next")
+
+        fields.append("{}:{}".format(self.filename, self.linenr))
 
         return "<{}>".format(", ".join(fields))
 
@@ -3000,7 +3033,7 @@ class InternalError(Exception):
 # Public functions
 #
 
-def eval_expr(expr):
+def expr_value(expr):
     """
     TODO
     """
@@ -3008,18 +3041,18 @@ def eval_expr(expr):
         return expr.tri_value
 
     if expr[0] == AND:
-        v1 = eval_expr(expr[1])
+        v1 = expr_value(expr[1])
         # Short-circuit the n case as an optimization (~5% faster
         # allnoconfig.py and allyesconfig.py, as of writing)
-        return 0 if not v1 else min(v1, eval_expr(expr[2]))
+        return 0 if not v1 else min(v1, expr_value(expr[2]))
 
     if expr[0] == OR:
-        v1 = eval_expr(expr[1])
+        v1 = expr_value(expr[1])
         # Short-circuit the y case as an optimization
-        return 2 if v1 == 2 else max(v1, eval_expr(expr[2]))
+        return 2 if v1 == 2 else max(v1, expr_value(expr[2]))
 
     if expr[0] == NOT:
-        return 2 - eval_expr(expr[1])
+        return 2 - expr_value(expr[1])
 
     if expr[0] in _RELATIONS:
         # Implements <, <=, >, >= comparisons as well. These were added to
@@ -3096,7 +3129,7 @@ def _get_visibility(sc):
 
     for node in sc.nodes:
         if node.prompt:
-            vis = max(vis, eval_expr(node.prompt[1]))
+            vis = max(vis, expr_value(node.prompt[1]))
 
     if isinstance(sc, Symbol) and sc.choice is not None:
         if sc.choice._type == TRISTATE and sc._type != TRISTATE and \

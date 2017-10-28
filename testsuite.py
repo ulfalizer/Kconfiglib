@@ -56,7 +56,7 @@ def fail(msg=None):
     global all_passed
     all_passed = False
     if msg is not None:
-        print("Fail: " + msg)
+        print("fail: " + msg)
 
 def verify(cond, msg):
     if not cond:
@@ -587,6 +587,18 @@ choice
 
     c = kconfiglib.Config("Kconfiglib/tests/Krepr", warn=False)
 
+    verify_repr(c.n, """
+<symbol n, tristate, value "n", constant>
+""")
+
+    verify_repr(c.m, """
+<symbol m, tristate, value "m", constant>
+""")
+
+    verify_repr(c.y, """
+<symbol y, tristate, value "y", constant>
+""")
+
     verify_repr(c.syms["UNDEFINED"], """
 <symbol UNDEFINED, unknown, value "UNDEFINED", visibility n, direct deps n, undefined>
 """)
@@ -596,7 +608,13 @@ choice
 """)
 
     verify_repr(c.syms["VISIBLE"], """
-<symbol VISIBLE, bool, value "n", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
+<symbol VISIBLE, bool, "visible", value "n", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
+""")
+
+    c.syms["VISIBLE"].set_value("y")
+
+    verify_repr(c.syms["VISIBLE"], """
+<symbol VISIBLE, bool, "visible", value "y", user value "y", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
 """)
 
     verify_repr(c.syms["DIR_DEP_N"], """
@@ -612,7 +630,7 @@ choice
 """)
 
     verify_repr(c.syms["CHOICE_1"], """
-<symbol CHOICE_1, tristate, value "n", visibility y, choice symbol, direct deps y, Kconfiglib/tests/Krepr:33>
+<symbol CHOICE_1, tristate, "choice sym", value "n", visibility y, choice symbol, direct deps y, Kconfiglib/tests/Krepr:33>
 """)
 
     verify_repr(c.modules, """
@@ -623,66 +641,72 @@ choice
     print("Testing Choice.__repr__()")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, mode m, visibility y, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode m, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
     c.named_choices["CHOICE"].set_value("y")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, mode y, visibility y, CHOICE_1 selected, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_1 selected, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
     c.syms["CHOICE_2"].set_value("y")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, mode y, visibility y, CHOICE_2 selected, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_2 selected, CHOICE_2 selected by user, visibility y, Kconfiglib/tests/Krepr:30>
+""")
+
+    c.syms["CHOICE_1"].set_value("m")
+
+    verify_repr(c.named_choices["CHOICE"], """
+<choice CHOICE, tristate, "choice", mode m, user mode m, CHOICE_2 selected by user (overriden), visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
     verify_repr(c.syms["CHOICE_HOOK"].nodes[0].next.item, """
-<choice, tristate, mode n, visibility n, optional, Kconfiglib/tests/Krepr:43>
+<choice, tristate, "optional choice", mode n, visibility n, optional, Kconfiglib/tests/Krepr:43>
 """)
 
 
     print("Testing MenuNode.__repr__()")
 
     verify_repr(c.syms["BASIC"].nodes[0], """
-<menu node for symbol BASIC, Kconfiglib/tests/Krepr:9, deps y, has help, has next>
+<menu node for symbol BASIC, deps y, has help, has next, Kconfiglib/tests/Krepr:9>
 """)
 
     verify_repr(c.syms["DIR_DEP_N"].nodes[0], """
-<menu node for symbol DIR_DEP_N, Kconfiglib/tests/Krepr:17, deps n, has next>
+<menu node for symbol DIR_DEP_N, deps n, has next, Kconfiglib/tests/Krepr:17>
 """)
 
     verify_repr(c.syms["MULTI_DEF"].nodes[0], """
-<menu node for symbol MULTI_DEF, Kconfiglib/tests/Krepr:25, deps y, has next>
+<menu node for symbol MULTI_DEF, deps y, has next, Kconfiglib/tests/Krepr:25>
 """)
 
     verify_repr(c.syms["MULTI_DEF"].nodes[1], """
-<menu node for symbol MULTI_DEF, Kconfiglib/tests/Krepr:26, deps y, has next>
+<menu node for symbol MULTI_DEF, deps y, has next, Kconfiglib/tests/Krepr:26>
 """)
 
     verify_repr(c.syms["MENUCONFIG"].nodes[0], """
-<menu node for symbol MENUCONFIG, Kconfiglib/tests/Krepr:28, is menuconfig, deps y, has next>
+<menu node for symbol MENUCONFIG, is menuconfig, deps y, has next, Kconfiglib/tests/Krepr:28>
 """)
 
     verify_repr(c.named_choices["CHOICE"].nodes[0], """
-<menu node for choice CHOICE, Kconfiglib/tests/Krepr:30, prompt "choice" (visibility y), deps y, has child, has next>
+<menu node for choice CHOICE, prompt "choice" (visibility y), deps y, has child, has next, Kconfiglib/tests/Krepr:30>
 """)
 
     verify_repr(c.syms["CHOICE_HOOK"].nodes[0].next, """
-<menu node for choice, Kconfiglib/tests/Krepr:43, prompt "choice" (visibility n), deps y, has next>
+<menu node for choice, prompt "optional choice" (visibility n), deps y, has next, Kconfiglib/tests/Krepr:43>
 """)
 
     verify_repr(c.syms["NO_VISIBLE_IF_HOOK"].nodes[0].next, """
-<menu node for menu, Kconfiglib/tests/Krepr:50, prompt "no visible if" (visibility y), deps y, 'visible if' deps y, has next>
+<menu node for menu, prompt "no visible if" (visibility y), deps y, 'visible if' deps y, has next, Kconfiglib/tests/Krepr:50>
 """)
 
     verify_repr(c.syms["VISIBLE_IF_HOOK"].nodes[0].next, """
-<menu node for menu, Kconfiglib/tests/Krepr:55, prompt "visible if" (visibility y), deps y, 'visible if' deps m, has next>
+<menu node for menu, prompt "visible if" (visibility y), deps y, 'visible if' deps m, has next, Kconfiglib/tests/Krepr:55>
 """)
 
     verify_repr(c.syms["COMMENT_HOOK"].nodes[0].next, """
-<menu node for comment, Kconfiglib/tests/Krepr:61, prompt "comment" (visibility y), deps y>
+<menu node for comment, prompt "comment" (visibility y), deps y, Kconfiglib/tests/Krepr:61>
 """)
 
 
@@ -869,14 +893,14 @@ g
 
     def verify_menu_visibility(menu, no_module_vis, module_vis):
         c.modules.set_value("n")
-        menu_vis = kconfiglib.eval_expr(menu.node.dep)
+        menu_vis = kconfiglib.expr_value(menu.node.dep)
         verify(menu_vis == no_module_vis,
                "menu \"{}\" should have visibility '{}' without modules, "
                "has visibility '{}'"
                .format(menu.title, no_module_vis, menu_vis))
 
 	c.modules.set_value("y")
-        menu_vis = kconfiglib.eval_expr(menu.node.dep)
+        menu_vis = kconfiglib.expr_value(menu.node.dep)
         verify(menu_vis == module_vis,
                "menu \"{}\" should have visibility '{}' with modules, "
                "has visibility '{}'".
@@ -939,14 +963,14 @@ g
     def verify_comment_visibility(comment, no_module_vis, module_vis):
         c.modules.set_value("n")
         # TODO: uninternalize
-        comment_vis = kconfiglib.eval_expr(comment.node.dep)
+        comment_vis = kconfiglib.expr_value(comment.node.dep)
         verify(comment_vis == no_module_vis,
                "comment \"{}\" should have visibility '{}' without "
                "modules, has visibility '{}'".
                format(comment.text, no_module_vis, comment_vis))
 
         c.modules.set_value("y")
-        comment_vis = kconfiglib.eval_expr(comment.node.dep)
+        comment_vis = kconfiglib.expr_value(comment.node.dep)
         verify(comment_vis == module_vis,
                "comment \"{}\" should have visibility '{}' with "
                "modules, has visibility '{}'".
@@ -1731,11 +1755,11 @@ def run_compatibility_tests():
     # (generated by the C implementation) should be compared to ._config
     # (generated by us) after each invocation.
     all_arch_tests = [(test_load,           False),
-                      (test_config_absent,  True),
-                      (test_call_all,       False),
+                      (test_alldefconfig,   True),
+                      (test_sanity,         False),
                       (test_all_no,         True),
-                      (test_all_yes,        True),
                       (test_all_no_simpler, True),
+                      (test_all_yes,        True),
                       # Needs to report success/failure for each arch/defconfig
                       # combo, hence False.
                       (test_defconfig,      False)]
@@ -1857,49 +1881,78 @@ def test_all_yes(conf, arch):
     else:
         shell("make allyesconfig")
 
-def test_call_all(conf, arch):
+def test_sanity(conf, arch):
     """
-    Call all public methods on all symbols, choices, and TODO menu nodes for
-    all architectures to make sure we never crash or hang. (Nearly all public
-    methods: some are hard to test like this, but are exercised by other
-    tests.)
+    Do sanity checks on each configuration and call all public methods on all
+    symbols, choices, and menu nodes for all architectures to make sure we
+    never crash or hang.
     """
     print("For {}...".format(arch))
 
+    conf.modules
+    conf.defconfig_list
     conf.defconfig_filename
-    conf.mainmenu_text
     conf.enable_undef_warnings()
     conf.disable_undef_warnings()
-    conf.disable_warnings()
     conf.enable_warnings()
+    conf.disable_warnings()
+    conf.mainmenu_text
     conf.unset_values()
 
     # Python 2/3 compatible
-    for _, s in conf.syms.items():
-        s.__str__()
-        s.__repr__()
-        s.assignable
-        s.type
-        s.str_value
-	s.tri_value
-        s.visibility
-        s.unset_value()
+    for _, sym in conf.syms.items():
+        if sym.name != "UNAME_RELEASE":
+            verify(not sym.is_constant, sym.name + " in 'syms' and constant")
 
-    # TODO: verify that constant symbols do not:
-    #  1) have a non-empty dep
-    #  2) have nodes
+        verify(sym not in conf.const_syms,
+               sym.name + " in both 'syms' and 'const_syms'")
 
-    # TODO: Look for weird stuff in the dictionaries
+        for dep in sym._direct_dependents:
+            verify(not dep.is_constant,
+                   "the constant symbol {} depends on {}"
+                   .format(dep.name, sym.name))
 
-    # TODO: infinite recursion action
-    #for _, s in conf.const_syms.items():
-    #    s.__str__()
-    #    s.__repr__()
-    #    s.assignable
-    #    s.type
-    #    s.value
-    #    s.visibility
-    #    s.unset_value()
+        sym.__repr__()
+        sym.__str__()
+        sym.assignable
+        conf.disable_warnings()
+        sym.set_value("y")
+        conf.enable_warnings()
+        sym.str_value
+        sym.tri_value
+        sym.type
+        sym.unset_value()
+        sym.user_str_value
+        sym.user_tri_value
+        sym.visibility
+
+    for sym in conf.defined_syms:
+       verify(sym.nodes, sym.name + " is defined but lacks menu nodes")
+
+    for _, sym in conf.const_syms.items():
+        verify(sym.is_constant,
+               '"{}" is in const_syms but not marked constant'
+               .format(sym.name))
+
+        verify(not sym.nodes,
+               '"{}" is constant but has menu nodes'
+               .format(sym.name))
+
+        verify(not sym._direct_dependents,
+               '"{}" is constant but is a dependency of some symbol'
+               .format(sym.name))
+
+        sym.__repr__()
+        sym.__str__()
+        sym.assignable
+        conf.disable_warnings()
+        sym.set_value("y")
+        conf.enable_warnings()
+        sym.str_value
+        sym.tri_value
+        sym.type
+        sym.unset_value()
+        sym.visibility
 
     # Cheat with internals
     for c in conf._choices:
@@ -1907,13 +1960,38 @@ def test_call_all(conf, arch):
         c.__repr__()
         c.str_value
         c.tri_value
+        c.user_str_value
+        c.user_tri_value
         c.assignable
         c.selection
         c.default_selection
         c.type
         c.visibility
 
-def test_config_absent(conf, arch):
+    # Menu nodes
+
+    node = conf.top_node
+
+    while 1:
+        # Everything else should be well exercised elsewhere
+        node.__repr__()
+
+        if node.list is not None:
+            node = node.list
+
+        elif node.next is not None:
+            node = node.next
+
+        else:
+            while node.parent is not None:
+                node = node.parent
+                if node.next is not None:
+                    node = node.next
+                    break
+            else:
+                break
+
+def test_alldefconfig(conf, arch):
     """
     Verify that Kconfiglib generates the same .config as 'make alldefconfig',
     for each architecture
