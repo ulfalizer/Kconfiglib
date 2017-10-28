@@ -41,7 +41,7 @@ endchoice
 config CHOICE_HOOK
 
 choice
-    tristate "choice" if n
+    tristate "optional choice" if n
     optional
 endchoice
 

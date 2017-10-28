@@ -28,3 +28,5 @@ config _INCLUDED
 
 # Expands to "tests/Klocation_included"
 source "$EXPANDED_FROM_ENV/Klocation$_INCLUDED"
+
+config MULTI_DEF

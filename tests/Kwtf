@@ -1,0 +1,8 @@
+config A
+    bool
+    select n
+    select m
+    select y
+    imply n
+    imply m
+    imply y

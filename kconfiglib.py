@@ -893,6 +893,8 @@ class Config(object):
             self._file = self._open(filename)
         except IOError as e:
             # Extend the error message a bit in this case
+            # TODO: broken for top-level Kconfig (because
+            # self._filename/_linenr isn't set)
             raise IOError(
                 "{}:{}: {} Also note that e.g. $FOO in a 'source' "
                 "statement does not refer to the environment "

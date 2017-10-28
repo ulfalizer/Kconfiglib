@@ -51,6 +51,7 @@ config INT
     range BAZ QAZ if DEP
 
 config MODULES
+    bool "MODULES"
     option modules
 
 config OPTIONS
