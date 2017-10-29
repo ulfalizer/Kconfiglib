@@ -13,10 +13,10 @@ if len(sys.argv) < 3:
     print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=NAME')
     sys.exit(1)
 
-conf = kconfiglib.Config(sys.argv[1])
+conf = kconfiglib.Kconfig(sys.argv[1])
 
 # Enable modules so that 'm' doesn't get demoted to 'n'
-conf.syms["MODULES"].set_value("y")
+conf.syms["MODULES"].set_value(2)
 
 print("the expression '{}' evaluates to {}"
       .format(sys.argv[2], conf.eval_string(sys.argv[2])))

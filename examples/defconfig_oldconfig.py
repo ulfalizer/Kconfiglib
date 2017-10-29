@@ -15,7 +15,7 @@
 import kconfiglib
 import sys
 
-conf = kconfiglib.Config(sys.argv[1])
+conf = kconfiglib.Kconfig(sys.argv[1])
 
 # Mirrors defconfig
 conf.load_config("arch/x86/configs/x86_64_defconfig")
@@ -23,15 +23,15 @@ conf.write_config(".config")
 
 # Mirrors the first oldconfig
 conf.load_config(".config")
-conf.syms["ETHERNET"].set_value('n')
+conf.syms["ETHERNET"].set_value(0)
 conf.write_config(".config")
 
 # Mirrors the second oldconfig
 conf.load_config(".config")
-conf.syms["ETHERNET"].set_value('y')
+conf.syms["ETHERNET"].set_value(2)
 for s in conf:
-    if s.user_value is None and 'n' in s.assignable:
-        s.set_value('n')
+    if s.user_value is None and 0 in s.assignable:
+        s.set_value(0)
 
 # Write the final configuration
 conf.write_config(".config")

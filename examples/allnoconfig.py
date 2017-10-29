@@ -8,7 +8,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py
 
-from kconfiglib import Config, Symbol, STR_TO_TRI
+from kconfiglib import Kconfig, Symbol, STR_TO_TRI
 import sys
 
 def do_allnoconfig(node):
@@ -27,7 +27,7 @@ def do_allnoconfig(node):
             if (sym.choice is None and
                 not sym.is_allnoconfig_y and
                 sym.assignable and
-                STR_TO_TRI[sym.assignable[0]] < sym.tri_value):
+                sym.assignable[0] < sym.tri_value):
 
                 # Yup, lower it
                 sym.set_value(sym.assignable[0])
@@ -39,12 +39,12 @@ def do_allnoconfig(node):
 
         node = node.next
 
-conf = Config(sys.argv[1])
+conf = Kconfig(sys.argv[1])
 
 # Do an initial pass to set 'option allnoconfig_y' symbols to 'y'
 for sym in conf.defined_syms:
     if sym.is_allnoconfig_y:
-        sym.set_value("y")
+        sym.set_value(2)
 
 while 1:
     # Changing later symbols in the configuration can sometimes allow earlier

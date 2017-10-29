@@ -33,7 +33,7 @@
 #   ...
 
 
-from kconfiglib import Config, Symbol, Choice, MENU, COMMENT
+from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
 import re
 import sys
 
@@ -68,5 +68,5 @@ def search_tree(node):
 
         node = node.next
 
-conf = Config(sys.argv[1])
+conf = Kconfig(sys.argv[1])
 search_tree(conf.top_node)

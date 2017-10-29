@@ -8,7 +8,7 @@ import kconfiglib
 import os
 import sys
 
-conf = kconfiglib.Config(sys.argv[1])
+conf = kconfiglib.Kconfig(sys.argv[1])
 
 if os.path.exists(".config"):
     print("using existing .config")

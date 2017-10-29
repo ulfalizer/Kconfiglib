@@ -35,9 +35,11 @@
 # All tests should pass. Report regressions to ulfalizer a.t Google's email
 # service.
 
+from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, \
+                       BOOL, TRISTATE, HEX, STRING, \
+                       KconfigSyntaxError, expr_value
 import difflib
 import errno
-import kconfiglib
 import os
 import platform
 import re
@@ -117,7 +119,7 @@ def get_comments(config):
     items = []
     def rec(node):
         if node is not None:
-             if node.item == kconfiglib.COMMENT:
+             if node.item == COMMENT:
                  items.append(node)
              rec(node.list)
              rec(node.next)
@@ -128,7 +130,7 @@ def get_menus(config):
     items = []
     def rec(node):
         if node is not None:
-             if node.item == kconfiglib.MENU:
+             if node.item == MENU:
                  items.append(node)
              rec(node.list)
              rec(node.next)
@@ -136,7 +138,7 @@ def get_menus(config):
     return items
 
 def get_choices(config):
-    choices = get_items(config, kconfiglib.Choice)
+    choices = get_items(config, Choice)
     unique_choices = []
     for choice in choices:
         if choice not in unique_choices:
@@ -144,7 +146,7 @@ def get_choices(config):
     return unique_choices
 
 def get_parent(item):
-    if isinstance(item, (kconfiglib.Symbol, kconfiglib.Choice)):
+    if isinstance(item, (Symbol, Choice)):
         if not item.nodes:
             return None
         return item.nodes[0].parent.item
@@ -157,6 +159,9 @@ def get_prompts(item):
             prompts.append(node.prompt[0])
     return prompts
 
+STR_TO_TRI = {"n": 0, "m": 1, "y": 2}
+TRI_TO_STR = {0: "n", 1: "m", 2: "y"}
+
 def run_selftests():
     #
     # Common helper functions. These all expect 'c' to hold the current
@@ -167,6 +172,10 @@ def run_selftests():
         """
         Verifies that a symbol has a particular value.
         """
+
+        if isinstance(val, int):
+            val = TRI_TO_STR[val]
+
         sym = c.syms[sym_name]
         verify(sym.str_value == val,
                'expected {} to have the value "{}", had the value "{}"'
@@ -177,6 +186,10 @@ def run_selftests():
         Assigns 'val' to a symbol and verifies that its value becomes
         'new_val'.
         """
+
+        if isinstance(new_val, int):
+            new_val = TRI_TO_STR[new_val]
+
         sym = c.syms[sym_name]
         old_val = sym.str_value
         sym.set_value(val)
@@ -194,9 +207,13 @@ def run_selftests():
         assign_and_verify_value(sym_name, user_val, user_val)
 
     def assign_and_verify_user_value(sym_name, val, user_val):
-        """Assigns a user value to the symbol and verifies the new user
-        value."""
+        """Assigns a user value to the symbol and verifies the new user value.
+        Also checks consistency of user_str_value and user_tri_value."""
         sym = c.syms[sym_name]
+
+        if sym.type in (BOOL, TRISTATE):
+            user_val = TRI_TO_STR[user_val]
+
         sym_old_user_val = sym.user_str_value
         sym.set_value(val)
         verify(sym.user_str_value == user_val,
@@ -206,14 +223,23 @@ def run_selftests():
                .format(sym_name, user_val, user_val, sym.user_str_value,
                        sym_old_user_val))
 
+        if sym.type in (BOOL, TRISTATE):
+            verify(sym.user_tri_value == STR_TO_TRI[sym.user_str_value],
+                   "{} has an inconsistent user value ('{}' vs '{}')"
+                   .format(sym_name, sym.user_tri_value, sym.user_str_value))
+        else:
+            verify(sym.user_tri_value == 0,
+                   "{} is non-bool/tristate and has the non-zero "
+                   "user_tri_value {}".format(sym_name, sym.user_tri_value))
+
     #
     # Selftests
     #
 
     print("Testing string literal lexing")
 
-    # Dummy empty configuration just to get a Config object
-    c = kconfiglib.Config("Kconfiglib/tests/empty")
+    # Dummy empty configuration just to get a Kconfig object
+    c = Kconfig("Kconfiglib/tests/empty")
 
     def verify_string_lex(s, res):
         """
@@ -261,7 +287,7 @@ def run_selftests():
         """
         try:
             c.eval_string(s)
-        except kconfiglib.KconfigSyntaxError:
+        except KconfigSyntaxError:
             pass
         else:
             fail("expected tokenization of {} to fail, didn't".format(s[1:-1]))
@@ -280,7 +306,7 @@ def run_selftests():
 
     print("Testing expression evaluation")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Keval")
+    c = Kconfig("Kconfiglib/tests/Keval")
 
     def verify_eval(expr, val):
         res = c.eval_string(expr)
@@ -297,7 +323,7 @@ def run_selftests():
     verify_eval("M", 2)
 
     # Modules
-    c.modules.set_value("y")
+    c.modules.set_value(2)
     verify_eval("n", 0)
     verify_eval("m", 1)
     verify_eval("y", 2)
@@ -454,7 +480,7 @@ def run_selftests():
     def verify_eval_bad(expr):
         try:
             c.eval_string(expr)
-        except kconfiglib.KconfigSyntaxError:
+        except KconfigSyntaxError:
             pass
         else:
             fail('expected eval_string("{}") to throw KconfigSyntaxError, ' \
@@ -482,9 +508,9 @@ def run_selftests():
     def verify_str(item, s):
         verify_equal(str(item), s[1:])
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kstr", warn=False)
+    c = Kconfig("Kconfiglib/tests/Kstr", warn=False)
 
-    c.modules.set_value("y")
+    c.modules.set_value(2)
 
     verify_str(c.syms["UNDEFINED"], """
 """)
@@ -585,7 +611,7 @@ choice
     def verify_repr(item, s):
         verify_equal(repr(item) + "\n", s[1:])
 
-    c = kconfiglib.Config("Kconfiglib/tests/Krepr", warn=False)
+    c = Kconfig("Kconfiglib/tests/Krepr", warn=False)
 
     verify_repr(c.n, """
 <symbol n, tristate, value "n", constant>
@@ -611,7 +637,7 @@ choice
 <symbol VISIBLE, bool, "visible", value "n", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
 """)
 
-    c.syms["VISIBLE"].set_value("y")
+    c.syms["VISIBLE"].set_value(2)
 
     verify_repr(c.syms["VISIBLE"], """
 <symbol VISIBLE, bool, "visible", value "y", user value "y", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
@@ -644,19 +670,19 @@ choice
 <choice CHOICE, tristate, "choice", mode m, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
-    c.named_choices["CHOICE"].set_value("y")
+    c.named_choices["CHOICE"].set_value(2)
 
     verify_repr(c.named_choices["CHOICE"], """
 <choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_1 selected, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
-    c.syms["CHOICE_2"].set_value("y")
+    c.syms["CHOICE_2"].set_value(2)
 
     verify_repr(c.named_choices["CHOICE"], """
 <choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_2 selected, CHOICE_2 selected by user, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
-    c.syms["CHOICE_1"].set_value("m")
+    c.syms["CHOICE_1"].set_value(1)
 
     verify_repr(c.named_choices["CHOICE"], """
 <choice CHOICE, tristate, "choice", mode m, user mode m, CHOICE_2 selected by user (overriden), visibility y, Kconfiglib/tests/Krepr:30>
@@ -710,7 +736,7 @@ choice
 """)
 
 
-    print("Testing Config.__repr__()")
+    print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
 <configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree not set, config symbol prefix "CONFIG_", warnings disabled, undef. symbol assignment warnings disabled>
@@ -719,7 +745,7 @@ choice
     os.environ["srctree"] = "srctree value"
     os.environ["CONFIG_"] = "CONFIG_ value"
 
-    c = kconfiglib.Config("Kconfiglib/tests/Krepr", warn=False)
+    c = Kconfig("Kconfiglib/tests/Krepr", warn=False)
     c.enable_warnings()
     c.enable_undef_warnings()
 
@@ -733,7 +759,7 @@ choice
 
     print("Testing tricky help strings")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Khelp")
+    c = Kconfig("Kconfiglib/tests/Khelp")
 
     def verify_help(node, s):
         verify_equal(node.help, s[1:])
@@ -794,7 +820,7 @@ g
     os.environ["EXPANDED_FROM_ENV"] = "tests"
     os.environ["srctree"] = "Kconfiglib/"
 
-    c = kconfiglib.Config("tests/Klocation")
+    c = Kconfig("tests/Klocation")
 
     os.environ.pop("EXPANDED_FROM_ENV", None)
     os.environ.pop("srctree", None)
@@ -819,16 +845,16 @@ g
 
     print("Testing visibility")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kvisibility")
+    c = Kconfig("Kconfiglib/tests/Kvisibility")
 
     def verify_visibility(item, no_module_vis, module_vis):
-        c.modules.set_value("n")
+        c.modules.set_value(0)
         verify(item.visibility == no_module_vis,
                "expected {} to have visibility {} without modules, had "
                "visibility {}".
                format(repr(item), no_module_vis, item.visibility))
 
-	c.modules.set_value("y")
+        c.modules.set_value(2)
         verify(item.visibility == module_vis,
                "expected {} to have visibility {} with modules, had "
                "visibility {}".
@@ -860,8 +886,8 @@ g
     # type gets adjusted to bool.
     verify_visibility(c.syms["BOOL_CHOICE_Y"], 2, 0)
 
-    c.syms["TRISTATE_CHOICE_M"].set_value("y")
-    c.syms["TRISTATE_CHOICE_Y"].set_value("y")
+    c.syms["TRISTATE_CHOICE_M"].set_value(2)
+    c.syms["TRISTATE_CHOICE_Y"].set_value(2)
 
     # Still limited by the visibility of the choice
     verify_visibility(c.syms["BOOL_CHOICE_M"], 0, 0)
@@ -892,15 +918,15 @@ g
     # Menu visibility
 
     def verify_menu_visibility(menu, no_module_vis, module_vis):
-        c.modules.set_value("n")
-        menu_vis = kconfiglib.expr_value(menu.node.dep)
+        c.modules.set_value(0)
+        menu_vis = expr_value(menu.node.dep)
         verify(menu_vis == no_module_vis,
                "menu \"{}\" should have visibility '{}' without modules, "
                "has visibility '{}'"
                .format(menu.title, no_module_vis, menu_vis))
 
-	c.modules.set_value("y")
-        menu_vis = kconfiglib.expr_value(menu.node.dep)
+        c.modules.set_value(2)
+        menu_vis = expr_value(menu.node.dep)
         verify(menu_vis == module_vis,
                "menu \"{}\" should have visibility '{}' with modules, "
                "has visibility '{}'".
@@ -925,14 +951,14 @@ g
       menu_visible_if_m_2 = get_menus(c)[13:]
 
     def verify_visible_if_visibility(menu, no_module_vis, module_vis):
-        c.modules.set_value("n")
+        c.modules.set_value(0)
         menu_vis = menu.get_visible_if_visibility()
         verify(menu_vis == no_module_vis,
                "menu \"{}\" should have 'visible if' visibility '{}' "
                "without modules, has 'visible if' visibility '{}'".
                format(menu.title, no_module_vis, menu_vis))
 
-        c.modules.set_value("y")
+        c.modules.set_value(2)
         menu_vis = menu.get_visible_if_visibility()
         verify(menu_vis == module_vis,
                "menu \"{}\" should have 'visible if' visibility '{}' "
@@ -961,16 +987,16 @@ g
     # Comment visibility
 
     def verify_comment_visibility(comment, no_module_vis, module_vis):
-        c.modules.set_value("n")
+        c.modules.set_value(0)
         # TODO: uninternalize
-        comment_vis = kconfiglib.expr_value(comment.node.dep)
+        comment_vis = expr_value(comment.node.dep)
         verify(comment_vis == no_module_vis,
                "comment \"{}\" should have visibility '{}' without "
                "modules, has visibility '{}'".
                format(comment.text, no_module_vis, comment_vis))
 
-        c.modules.set_value("y")
-        comment_vis = kconfiglib.expr_value(comment.node.dep)
+        c.modules.set_value(2)
+        comment_vis = expr_value(comment.node.dep)
         verify(comment_vis == module_vis,
                "comment \"{}\" should have visibility '{}' with "
                "modules, has visibility '{}'".
@@ -999,7 +1025,7 @@ g
     # Object relations
     #
 
-    c = kconfiglib.Config("Kconfiglib/tests/Krelation")
+    c = Kconfig("Kconfiglib/tests/Krelation")
 
     UNDEFINED, A, B, C, D, E, F, G, H, I = \
         c.syms["UNDEFINED"], c.syms["A"], c.syms["B"], c.syms["C"], \
@@ -1043,7 +1069,7 @@ g
 
     print("Testing hex/int ranges...")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Krange")
+    c = Kconfig("Kconfiglib/tests/Krange")
 
     for sym_name in "HEX_NO_RANGE", "INT_NO_RANGE", "HEX_40", "INT_40":
         sym = c.syms[sym_name]
@@ -1093,7 +1119,7 @@ g
         """Tests that the values in the range 'low'-'high' can be assigned, and
         that assigning values outside this range reverts the value back to
         'default' (None if it should revert back to "")."""
-        is_hex = (c.syms[sym_name].type == kconfiglib.HEX)
+        is_hex = (c.syms[sym_name].type == HEX)
         for i in range(low, high + 1):
             assign_and_verify_user_value(sym_name, str(i), str(i))
             if is_hex:
@@ -1166,11 +1192,11 @@ g
 
     print("Testing defconfig_filename...")
 
-    c = kconfiglib.Config("Kconfiglib/tests/empty")
+    c = Kconfig("Kconfiglib/tests/empty")
     verify(c.defconfig_filename is None,
            "defconfig_filename should be None with no defconfig_list symbol")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_nonexistent")
+    c = Kconfig("Kconfiglib/tests/Kdefconfig_nonexistent")
     verify(c.defconfig_filename is None,
            "defconfig_filename should be None when none of the files in the "
            "defconfig_list symbol exist")
@@ -1178,12 +1204,12 @@ g
     # Referenced in Kdefconfig_existent(_but_n)
     os.environ["BAR"] = "defconfig_2"
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_existent_but_n")
+    c = Kconfig("Kconfiglib/tests/Kdefconfig_existent_but_n")
     verify(c.defconfig_filename is None,
            "defconfig_filename should be None when the condition is n for all "
            "the defaults")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_existent")
+    c = Kconfig("Kconfiglib/tests/Kdefconfig_existent")
     verify(c.defconfig_filename == "Kconfiglib/tests/defconfig_2",
            "defconfig_filename should return the existent file "
            "Kconfiglib/tests/defconfig_2")
@@ -1191,12 +1217,12 @@ g
     # Should also look relative to $srctree if the defconfig is an absolute
     # path and not found
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_srctree")
+    c = Kconfig("Kconfiglib/tests/Kdefconfig_srctree")
     verify(c.defconfig_filename == "Kconfiglib/tests/defconfig_2",
            "defconfig_filename gave wrong file with $srctree unset")
 
     os.environ["srctree"] = "Kconfiglib/tests"
-    c = kconfiglib.Config("Kconfiglib/tests/Kdefconfig_srctree")
+    c = Kconfig("Kconfiglib/tests/Kdefconfig_srctree")
     verify(c.defconfig_filename == "Kconfiglib/tests/sub/defconfig_in_sub",
            "defconfig_filename gave wrong file with $srctree set")
 
@@ -1206,13 +1232,13 @@ g
 
     print("Testing mainmenu_text...")
 
-    c = kconfiglib.Config("Kconfiglib/tests/empty")
+    c = Kconfig("Kconfiglib/tests/empty")
     verify(c.mainmenu_text == "Linux Kernel Configuration",
            "An empty Kconfig should get a default main menu prompt")
 
     # Expanded in the mainmenu text
     os.environ["FOO"] = "bar baz"
-    c = kconfiglib.Config("Kconfiglib/tests/Kmainmenu")
+    c = Kconfig("Kconfiglib/tests/Kmainmenu")
     verify(c.mainmenu_text == "---bar baz---",
            "Wrong mainmenu text")
 
@@ -1222,7 +1248,7 @@ g
 
     os.environ["ENV_VAR"] = "foo"
     # Contains reference to undefined environment variable, so disable warnings
-    c = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
+    c = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
 
     print("Testing is_optional...")
 
@@ -1246,11 +1272,11 @@ g
 
     # Assign valid values for the types
 
-    assign_and_verify_user_value("BOOL", "n", "n")
-    assign_and_verify_user_value("BOOL", "y", "y")
-    assign_and_verify_user_value("TRISTATE", "n", "n")
-    assign_and_verify_user_value("TRISTATE", "m", "m")
-    assign_and_verify_user_value("TRISTATE", "y", "y")
+    assign_and_verify_user_value("BOOL", 0, 0)
+    assign_and_verify_user_value("BOOL", 2, 2)
+    assign_and_verify_user_value("TRISTATE", 0, 0)
+    assign_and_verify_user_value("TRISTATE", 1, 1)
+    assign_and_verify_user_value("TRISTATE", 2, 2)
     assign_and_verify_user_value("STRING", "foo bar", "foo bar")
     assign_and_verify_user_value("INT", "123", "123")
     assign_and_verify_user_value("HEX", "0x123", "0x123")
@@ -1258,13 +1284,16 @@ g
     # Assign invalid values for the types. They should retain their old user
     # value.
 
-    assign_and_verify_user_value("BOOL", "m", "y")
-    assign_and_verify_user_value("BOOL", "foo", "y")
-    assign_and_verify_user_value("BOOL", "1", "y")
-    assign_and_verify_user_value("TRISTATE", "foo", "y")
-    assign_and_verify_user_value("TRISTATE", "1", "y")
+    assign_and_verify_user_value("BOOL", 1, 2)
+    assign_and_verify_user_value("BOOL", "foo", 2)
+    assign_and_verify_user_value("BOOL", "1", 2)
+    assign_and_verify_user_value("TRISTATE", "foo", 2)
+    assign_and_verify_user_value("TRISTATE", "1", 2)
+    assign_and_verify_user_value("STRING", 0, "foo bar")
     assign_and_verify_user_value("INT", "foo", "123")
+    assign_and_verify_user_value("INT", 0, "123")
     assign_and_verify_user_value("HEX", "foo", "0x123")
+    assign_and_verify_user_value("HEX", 0, "0x123")
 
     for s in syms:
         s.unset_value()
@@ -1308,7 +1337,7 @@ g
     verify_value("UNAME_RELEASE", platform.uname()[2])
     ur = c.syms["UNAME_RELEASE"]
     verify(ur.config is c and
-           ur.type == kconfiglib.STRING and
+           ur.type == STRING and
            ur.env_var == "<uname release>",
            "UNAME_RELEASE has wrong fields")
 
@@ -1336,7 +1365,7 @@ g
 
     # Writing/reading strings with characters that need to be escaped
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kescape")
+    c = Kconfig("Kconfiglib/tests/Kescape")
 
     # Test the default value
     c.write_config(config_test_file + "_from_def", header="")
@@ -1356,7 +1385,7 @@ g
 
     # Appending values from a .config
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kappend")
+    c = Kconfig("Kconfiglib/tests/Kappend")
 
     # Values before assigning
     verify_value("BOOL", "n")
@@ -1391,8 +1420,8 @@ g
 
     print("Testing Config separation...")
 
-    c1 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
-    c2 = kconfiglib.Config("Kconfiglib/tests/Kmisc", warn=False)
+    c1 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
+    c2 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
 
     c1_undef, c1_bool, c1_choice, c1_menu, c1_comment = c1.syms["BOOL"], \
         c1.syms["NOT_DEFINED_1"], get_choices(c1)[0], get_menus(c1)[0], \
@@ -1417,7 +1446,7 @@ g
 
     print("Testing imply semantics...")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kimply")
+    c = Kconfig("Kconfiglib/tests/Kimply")
 
     verify_value("IMPLY_DIRECT_DEPS", "y")
     verify_value("UNMET_DIRECT_1", "n")
@@ -1450,64 +1479,64 @@ g
     # Verify that IMPLIED_TRISTATE is invalidated if the direct
     # dependencies change
 
-    assign_and_verify("IMPLY", "y")
-    assign_and_verify("DIRECT_DEP", "y")
-    verify_value("IMPLIED_TRISTATE", "y")
-    assign_and_verify("DIRECT_DEP", "n")
-    verify_value("IMPLIED_TRISTATE", "n")
+    assign_and_verify("IMPLY", 2)
+    assign_and_verify("DIRECT_DEP", 2)
+    verify_value("IMPLIED_TRISTATE", 2)
+    assign_and_verify("DIRECT_DEP", 0)
+    verify_value("IMPLIED_TRISTATE", 0)
     # Set back for later tests
-    assign_and_verify("DIRECT_DEP", "y")
+    assign_and_verify("DIRECT_DEP", 2)
 
     # Verify that IMPLIED_TRISTATE can be set to anything when IMPLY has value
     # "n", and that it gets the value "n" by default (for non-imply-related
     # reasons)
 
-    assign_and_verify("IMPLY", "n")
-    assign_and_verify("IMPLIED_TRISTATE", "n")
-    assign_and_verify("IMPLIED_TRISTATE", "m")
-    assign_and_verify("IMPLIED_TRISTATE", "y")
+    assign_and_verify("IMPLY", 0)
+    assign_and_verify("IMPLIED_TRISTATE", 0)
+    assign_and_verify("IMPLIED_TRISTATE", 1)
+    assign_and_verify("IMPLIED_TRISTATE", 2)
     c.syms["IMPLIED_TRISTATE"].unset_value()
     verify_value("IMPLIED_TRISTATE", "n")
 
     # Same as above for "m". Anything still goes, but "m" by default now.
 
-    assign_and_verify("IMPLY", "m")
-    assign_and_verify("IMPLIED_TRISTATE", "n")
-    assign_and_verify("IMPLIED_TRISTATE", "m")
-    assign_and_verify("IMPLIED_TRISTATE", "y")
+    assign_and_verify("IMPLY", 1)
+    assign_and_verify("IMPLIED_TRISTATE", 0)
+    assign_and_verify("IMPLIED_TRISTATE", 1)
+    assign_and_verify("IMPLIED_TRISTATE", 2)
     c.syms["IMPLIED_TRISTATE"].unset_value()
-    verify_value("IMPLIED_TRISTATE", "m")
+    verify_value("IMPLIED_TRISTATE", 1)
 
     # Same as above for "y". Only "n" and "y" should be accepted. "m" gets
     # promoted to "y". Default should be "y".
 
-    assign_and_verify("IMPLY", "y")
-    assign_and_verify("IMPLIED_TRISTATE", "n")
-    assign_and_verify_value("IMPLIED_TRISTATE", "m", "y")
-    assign_and_verify("IMPLIED_TRISTATE", "y")
+    assign_and_verify("IMPLY", 2)
+    assign_and_verify("IMPLIED_TRISTATE", 0)
+    assign_and_verify_value("IMPLIED_TRISTATE", 1, 2)
+    assign_and_verify("IMPLIED_TRISTATE", 2)
     c.syms["IMPLIED_TRISTATE"].unset_value()
-    verify_value("IMPLIED_TRISTATE", "y")
+    verify_value("IMPLIED_TRISTATE", 2)
 
     # Being implied to either "m" or "y" should give a bool the value "y"
 
     c.syms["IMPLY"].unset_value()
-    verify_value("IMPLIED_BOOL", "n")
-    assign_and_verify("IMPLY", "n")
-    verify_value("IMPLIED_BOOL", "n")
-    assign_and_verify("IMPLY", "m")
-    verify_value("IMPLIED_BOOL", "y")
-    assign_and_verify("IMPLY", "y")
-    verify_value("IMPLIED_BOOL", "y")
+    verify_value("IMPLIED_BOOL", 0)
+    assign_and_verify("IMPLY", 0)
+    verify_value("IMPLIED_BOOL", 0)
+    assign_and_verify("IMPLY", 1)
+    verify_value("IMPLIED_BOOL", 2)
+    assign_and_verify("IMPLY", 2)
+    verify_value("IMPLIED_BOOL", 2)
 
     # A bool implied to "m" or "y" can take the values "n" and "y"
 
-    c.syms["IMPLY"].set_value("m")
-    assign_and_verify("IMPLIED_BOOL", "n")
-    assign_and_verify("IMPLIED_BOOL", "y")
+    c.syms["IMPLY"].set_value(1)
+    assign_and_verify("IMPLIED_BOOL", 0)
+    assign_and_verify("IMPLIED_BOOL", 2)
 
-    c.syms["IMPLY"].set_value("y")
-    assign_and_verify("IMPLIED_BOOL", "n")
-    assign_and_verify("IMPLIED_BOOL", "y")
+    c.syms["IMPLY"].set_value(2)
+    assign_and_verify("IMPLIED_BOOL", 0)
+    assign_and_verify("IMPLIED_BOOL", 2)
 
     #
     # Choice semantics
@@ -1515,7 +1544,7 @@ g
 
     print("Testing choice semantics...")
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kchoice")
+    c = Kconfig("Kconfiglib/tests/Kchoice")
 
     choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
       choice_bool_m, choice_tristate_m, choice_defaults, \
@@ -1525,18 +1554,18 @@ g
 
     for choice in (choice_bool, choice_bool_opt, choice_bool_m,
                    choice_defaults):
-        verify(choice.type == kconfiglib.BOOL,
+        verify(choice.type == BOOL,
                "choice {} should have type bool".format(choice.name))
 
     # TODO: fix this laters. type automatically changed.
     #for choice in (choice_tristate, choice_tristate_opt, choice_tristate_m):
-    #    verify(choice.type == kconfiglib.TRISTATE,
+    #    verify(choice.type == TRISTATE,
     #           "choice {} should have type tristate"
     #           .format(choice.name))
 
     def select_and_verify(sym):
         choice = get_parent(sym)
-        sym.set_value("y")
+        sym.set_value(2)
         verify(choice.str_value == "y",
                "The mode of the choice should be y after selecting a symbol")
         verify(sym.choice.selection is sym,
@@ -1557,13 +1586,13 @@ g
             select_and_verify(choice.syms[i])
 
     def verify_mode(choice, no_modules_mode, modules_mode):
-        c.modules.set_value("n")
+        c.modules.set_value(0)
         choice_mode = choice.tri_value
         verify(choice_mode == no_modules_mode,
                'Wrong mode for choice {} with no modules. Expected {}, got {}.'
                .format(choice.name, no_modules_mode, choice_mode))
 
-        c.modules.set_value("y")
+        c.modules.set_value(2)
         choice_mode = choice.tri_value
         verify(choice_mode == modules_mode,
                'Wrong mode for choice {} with modules. Expected {}, got {}.'
@@ -1578,13 +1607,13 @@ g
 
     # Test defaults
 
-    c.syms["TRISTATE_SYM"].set_value("n")
+    c.syms["TRISTATE_SYM"].set_value(0)
     verify(choice_defaults.selection is c.syms["OPT_4"],
            "Wrong choice default with TRISTATE_SYM = n")
-    c.syms["TRISTATE_SYM"].set_value("y")
+    c.syms["TRISTATE_SYM"].set_value(2)
     verify(choice_defaults.selection is c.syms["OPT_2"],
            "Wrong choice default with TRISTATE_SYM = y")
-    c.syms["OPT_1"].set_value("y")
+    c.syms["OPT_1"].set_value(2)
     verify(choice_defaults.selection is c.syms["OPT_1"],
            "User selection should override defaults")
 
@@ -1594,7 +1623,7 @@ g
 
     # Test "y" mode selection
 
-    c.modules.set_value("y")
+    c.modules.set_value(2)
 
     select_and_verify_all(choice_bool)
     select_and_verify_all(choice_bool_opt)
@@ -1608,12 +1637,12 @@ g
     # ...for a choice that can also be in "y" mode
 
     for sym_name in ("T_1", "T_2"):
-        assign_and_verify_value(sym_name, "m", "m")
+        assign_and_verify_value(sym_name, 1, 1)
         verify(choice_tristate.tri_value == 1,
                'Selecting {} to "m" should have changed the mode of the '
                'choice to "m"'.format(sym_name))
 
-        assign_and_verify_value(sym_name, "y", "y")
+        assign_and_verify_value(sym_name, 2, 2)
         verify(choice_tristate.tri_value == 2 and
                choice_tristate.selection is c.syms[sym_name],
                'Selecting {} to "y" should have changed the mode of the '
@@ -1622,32 +1651,31 @@ g
     # ...for a choice that can only be in "m" mode
 
     for sym_name in ("TM_1", "TM_2"):
-        assign_and_verify_value(sym_name, "m", "m")
-        assign_and_verify_value(sym_name, "n", "n")
+        assign_and_verify_value(sym_name, 1, 1)
+        assign_and_verify_value(sym_name, 0, 0)
         # "y" should be truncated
-        assign_and_verify_value(sym_name, "y", "m")
+        assign_and_verify_value(sym_name, 2, 1)
         verify(choice_tristate_m.tri_value == 1,
-               'A choice that can only be in "m" mode was not')
+               'A choice that can only be in m mode was not')
 
     # Verify that choices with no explicitly specified type get the type of the
     # first contained symbol with a type
 
-    verify(choice_no_type_bool.type == kconfiglib.BOOL,
+    verify(choice_no_type_bool.type == BOOL,
            "Expected first choice without explicit type to have type bool")
-    verify(choice_no_type_tristate.type == kconfiglib.TRISTATE,
+    verify(choice_no_type_tristate.type == TRISTATE,
            "Expected second choice without explicit type to have type "
            "tristate")
 
     # Verify that symbols without a type in the choice get the type of the
     # choice
 
-    verify((c.syms["MMT_1"]._type, c.syms["MMT_2"]._type,
-            c.syms["MMT_3"]._type) ==
-             (kconfiglib.BOOL, kconfiglib.BOOL, kconfiglib.TRISTATE),
+    verify((c.syms["MMT_1"].orig_type, c.syms["MMT_2"].orig_type,
+            c.syms["MMT_3"].orig_type) == (BOOL, BOOL, TRISTATE),
            "Wrong types for first choice with missing member types")
 
-    verify((c.syms["MMT_4"]._type, c.syms["MMT_5"]._type) ==
-             (kconfiglib.BOOL, kconfiglib.BOOL),
+    verify((c.syms["MMT_4"].orig_type, c.syms["MMT_5"].orig_type) ==
+             (BOOL, BOOL),
            "Wrong types for second choice with missing member types")
 
     # Verify that symbols in choices that depend on the preceding symbol aren't
@@ -1687,7 +1715,7 @@ g
 
     # Note: This tests an internal API
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kdep")
+    c = Kconfig("Kconfiglib/tests/Kdep")
 
     def verify_dependent(sym_name, deps_names):
         sym = c.syms[sym_name]
@@ -1696,7 +1724,7 @@ g
         verify(len(sym_deps) == len(set(sym_deps)),
                "{}'s dependencies contains duplicates".format(sym_name))
         sym_deps = [item for item in sym_deps
-                         if not isinstance(item, kconfiglib.Choice)]
+                         if not isinstance(item, Choice)]
         verify(len(sym_deps) == len(deps),
                "Wrong number of dependent symbols for {}".format(sym_name))
         for dep in deps:
@@ -1717,7 +1745,7 @@ g
     # Verify that the last symbol depends on the first in a long chain of
     # dependencies. Test twice to cover dependency caching.
 
-    c = kconfiglib.Config("Kconfiglib/tests/Kchain")
+    c = Kconfig("Kconfiglib/tests/Kchain")
 
     for i in range(0, 2):
         verify(c.syms["CHAIN_26"] in c.syms["CHAIN_1"]._get_dependent(),
@@ -1728,7 +1756,7 @@ g
     # Check that Kconfiglib doesn't crash for stuff like 'select n' (seen in
     # U-Boot). These probably originate from misunderstandings of how Kconfig
     # works.
-    kconfiglib.Config("Kconfiglib/tests/Kwtf")
+    Kconfig("Kconfiglib/tests/Kwtf")
 
     print("\nAll selftests passed\n" if all_passed else
           "\nSome selftests failed\n")
@@ -1754,15 +1782,15 @@ def run_compatibility_tests():
     # tree -- currently, all tests. The boolean flag indicates whether .config
     # (generated by the C implementation) should be compared to ._config
     # (generated by us) after each invocation.
-    all_arch_tests = [(test_load,           False),
+    all_arch_tests = ((test_load,           False),
                       (test_alldefconfig,   True),
+                      (test_defconfig,      False),
                       (test_sanity,         False),
                       (test_all_no,         True),
                       (test_all_no_simpler, True),
-                      (test_all_yes,        True),
+                      (test_all_yes,        True))
                       # Needs to report success/failure for each arch/defconfig
                       # combo, hence False.
-                      (test_defconfig,      False)]
 
     arch_srcarch_list = get_arch_srcarch_list()
 
@@ -1779,7 +1807,7 @@ def run_compatibility_tests():
             # Previously we used to load all the arches once and keep them
             # around for the tests. That now uses a huge amount of memory (pypy
             # helps a bit), so reload them for each test instead.
-            test_fn(kconfiglib.Config(), arch)
+            test_fn(Kconfig(), arch)
 
             # Let kbuild infer SRCARCH from ARCH if we aren't in speedy mode.
             # This could detect issues with the test suite.
@@ -1900,7 +1928,9 @@ def test_sanity(conf, arch):
     conf.unset_values()
 
     # Python 2/3 compatible
-    for _, sym in conf.syms.items():
+    for key, sym in conf.syms.items():
+        verify(isinstance(key, str), "weird key '{}' in syms dict".format(key))
+
         if sym.name != "UNAME_RELEASE":
             verify(not sym.is_constant, sym.name + " in 'syms' and constant")
 
@@ -1916,7 +1946,8 @@ def test_sanity(conf, arch):
         sym.__str__()
         sym.assignable
         conf.disable_warnings()
-        sym.set_value("y")
+        sym.set_value(2)
+        sym.set_value("foo")
         conf.enable_warnings()
         sym.str_value
         sym.tri_value
@@ -1929,24 +1960,33 @@ def test_sanity(conf, arch):
     for sym in conf.defined_syms:
        verify(sym.nodes, sym.name + " is defined but lacks menu nodes")
 
-    for _, sym in conf.const_syms.items():
+       verify(not (sym.orig_type not in (BOOL, TRISTATE) and sym.choice),
+              sym.name + " is a choice symbol but not bool/tristate")
+
+    for key, sym in conf.const_syms.items():
+        verify(isinstance(key, str),
+               "weird key '{}' in const_syms dict".format(key))
+
         verify(sym.is_constant,
                '"{}" is in const_syms but not marked constant'
                .format(sym.name))
 
         verify(not sym.nodes,
-               '"{}" is constant but has menu nodes'
-               .format(sym.name))
+               '"{}" is constant but has menu nodes'.format(sym.name))
 
         verify(not sym._direct_dependents,
                '"{}" is constant but is a dependency of some symbol'
                .format(sym.name))
 
+        verify(not sym.choice,
+               '"{}" is constant and a choice symbol'.format(sym.name))
+
         sym.__repr__()
         sym.__str__()
         sym.assignable
         conf.disable_warnings()
-        sym.set_value("y")
+        sym.set_value(2)
+        sym.set_value("foo")
         conf.enable_warnings()
         sym.str_value
         sym.tri_value
@@ -1955,18 +1995,27 @@ def test_sanity(conf, arch):
         sym.visibility
 
     # Cheat with internals
-    for c in conf._choices:
-        c.__str__()
-        c.__repr__()
-        c.str_value
-        c.tri_value
-        c.user_str_value
-        c.user_tri_value
-        c.assignable
-        c.selection
-        c.default_selection
-        c.type
-        c.visibility
+    for choice in conf._choices:
+        for sym in choice.syms:
+            verify(sym.choice is choice,
+                   "{0} is in choice.syms but 'sym.choice' is not the choice"
+                   .format(sym.name))
+
+            verify(sym.type in (BOOL, TRISTATE),
+                   "{} is a choice symbol but is not a bool/tristate"
+                   .format(sym.name))
+
+        choice.__str__()
+        choice.__repr__()
+        choice.str_value
+        choice.tri_value
+        choice.user_str_value
+        choice.user_tri_value
+        choice.assignable
+        choice.selection
+        choice.default_selection
+        choice.type
+        choice.visibility
 
     # Menu nodes
 
@@ -1975,6 +2024,9 @@ def test_sanity(conf, arch):
     while 1:
         # Everything else should be well exercised elsewhere
         node.__repr__()
+        verify(isinstance(node.item, (Symbol, Choice)) or \
+               node.item in (MENU, COMMENT),
+               "'{}' appeared as a menu item".format(node.item))
 
         if node.list is not None:
             node = node.list

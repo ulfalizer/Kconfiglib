@@ -38,7 +38,7 @@
 #     config GENERIC_IRQ_PROBE
 #   ...
 
-from kconfiglib import Config, Symbol, Choice, MENU, COMMENT
+from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
 import sys
 
 def indent_print(s, indent):
@@ -63,5 +63,5 @@ def print_items(node, indent):
 
         node = node.next
 
-conf = Config(sys.argv[1])
+conf = Kconfig(sys.argv[1])
 print_items(conf.top_node, 0)

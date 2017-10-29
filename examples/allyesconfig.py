@@ -8,20 +8,20 @@
 # allyesconfig is a bit more involved than allnoconfig as we need to handle
 # choices in two different modes:
 #
-#   y: One symbol is "y", the rest are "n"
-#   m: Any number of symbols are "m", the rest are "n"
+#   y: One symbol is y, the rest are n
+#   m: Any number of symbols are m, the rest are n
 #
-# Only tristate choices can be in "m" mode. No "m" mode choices seem to appear
-# for allyesconfig on the kernel Kconfigs as of 4.14, but we still handle it.
+# Only tristate choices can be in m mode. No m mode choices seem to appear for
+# allyesconfig on the kernel Kconfigs as of 4.14, but we still handle it.
 #
 # Usage:
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py
 
-from kconfiglib import Config, Choice, STR_TO_TRI
+from kconfiglib import Kconfig, Choice, STR_TO_TRI
 import sys
 
-conf = Config(sys.argv[1])
+conf = Kconfig(sys.argv[1])
 
 # Collect all the choices in the configuration. Demonstrates how the menu node
 # tree can be walked iteratively by using the parent pointers.
@@ -70,14 +70,14 @@ while 1:
     for sym in non_choice_syms:
         # See allnoconfig example. [-1] gives the last (highest) assignable
         # value.
-        if sym.assignable and sym.tri_value < STR_TO_TRI[sym.assignable[-1]]:
+        if sym.assignable and sym.tri_value < sym.assignable[-1]:
             sym.set_value(sym.assignable[-1])
             no_changes = False
 
     # Handle choices
 
     for choice in choices:
-        # Handle a choice whose visibility allows it to be in "y" mode
+        # Handle a choice whose visibility allows it to be in y mode
 
         if choice.visibility == 2:
             selection = choice.default_selection
@@ -88,7 +88,7 @@ while 1:
                selection is not choice.user_selection:
 
                 # Yup, select it
-                selection.set_value("y")
+                selection.set_value(2)
                 no_changes = False
 
         # Handle a choice whose visibility only allows it to be in "m" mode.
@@ -100,10 +100,10 @@ while 1:
 
                 # Does the choice have a symbol that can be "m" that we haven't
                 # already set to "m"?
-                if sym.user_tri_value != 1 and "m" in sym.assignable:
+                if sym.user_tri_value != 1 and 1 in sym.assignable:
 
                     # Yup, set it
-                    sym.set_value("m")
+                    sym.set_value(1)
                     no_changes = False
 
     if no_changes:
