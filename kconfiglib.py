@@ -901,7 +901,7 @@ class Kconfig(object):
     def _next_line(self):
         """
         Returns the next line in the current file, or the empty string at EOF
-        (like the standard readline() function)
+        (like the standard readline() function).
         """
         # This provides a single line of "unget" if _reuse_line is set to True
         if not self._reuse_line:
@@ -919,7 +919,7 @@ class Kconfig(object):
 
     def _next_line_no_join(self):
         """
-        Used for help texts, which don't do line joining
+        Used for help texts, which don't do line joining.
         """
         self._line = self._file.readline()
         self._linenr += 1
@@ -2450,15 +2450,12 @@ class Symbol(object):
         automatically recalculated to reflect the assigned value.
 
         value:
-          The user value to give to the symbol.
+          The user value to give to the symbol. For bool and tristate symbols,
+          pass 0, 1, 2 for n, m, and y, respectively. For other symbol types,
+          pass a string.
 
-          A a convenience, set_value() accepts both 0/1/2 (plain python
-          integers) and "n"/"m"/"y" as the the format of the 'value' argument
-          for bool and tristate symbols. This was added so that 'assignable'
-          could return integers (which are easier to work with) while at the
-          same time being able to assign a value from 'assignable' without an
-          ugly conversion. Accepting strings for all symbols streamlines
-          .config handling.
+          A warning will be printed by default if the value is not valid for
+          the symbol's type.
         """
         self._set_value_no_invalidate(value, False)
 
