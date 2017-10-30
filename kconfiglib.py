@@ -24,8 +24,8 @@ from Kconfig-based configuration systems. Features include the following:
    This can be used e.g. to implement menuconfig-like functionality.
 
  - Runs under both Python 2 and 3. The code mostly uses basic Python features
-   and has no third-party dependencies (the most advanced things used are
-   @property and __slots__).
+   and has no third-party dependencies. The most advanced things used are
+   probably @property and __slots__.
 
  - Robust and highly compatible with the standard Kconfig C tools: The test
    suite automatically compares output from Kconfiglib and the C tools (by
@@ -46,29 +46,31 @@ Using Kconfiglib on the Linux kernel with the Makefile targets
 ==============================================================
 
 For the Linux kernel, a handy interface is provided by the
-scripts/kconfig/Makefile patch, which adds the following targets:
+scripts/kconfig/Makefile patch. See further down for a motivation for the
+Makefile patch and for how to run Kconfiglib without it.
+
+The Makefile patch adds the following targets:
 
 
-make iscriptconfig
-------------------
+make [ARCH=<arch>] iscriptconfig
+--------------------------------
 
-This target gives an interactive Python prompt where the configuration for ARCH
-has been preloaded and is available in 'kconf'.
+This target gives an interactive Python prompt where a Kconfig instance has
+been preloaded and is available in 'k'.
 
 To get a feel for the API, try evaluating and printing the symbols in
-kconf.defined_syms, and explore the menu tree starting at kconf.top_node by
+k.defined_syms, and explore the MenuNode menu tree starting at k.top_node by
 following 'next' and 'list' pointers.
 
-The item contained in the menu node is found in MenuNode.item, and all symbols
-and choices have a 'nodes' attribute which gives their menu nodes (usually only
-one).
+The item contained in a menu node is found in MenuNode.item, and all symbols
+and choices have a 'nodes' attribute containing their menu nodes (usually only
+one). Printing a menu node will print its item.
 
 If you want to look up a symbol by name, use the kconf.syms dictionary.
 
 
-As usual, ARCH=<arch> can be passed to 'make' to select the arch.
-PYTHONCMD=<executable> selects the Python executable to use (default:
-"python").
+To change the Python interpreter used, pass PYTHONCMD=<executable> to make. The
+default is "python".
 
 Tip: IronPython (PYTHONCMD=ipython) is handy when figuring out the API, as it
 provides autocompletion for attributes.
@@ -115,7 +117,8 @@ does this (as of writing):
 
 If $SRCARCH is not set, this expands to "arch//Kconfig", and arch/Kconfig
 happens to be an existing file, giving something that appears to work but is
-actually a truncated configuration.
+actually a truncated configuration. The available symbols will differ depending
+on the arch as well.
 
 
 Intro to symbol values
@@ -180,8 +183,8 @@ value of the symbol instead. The lower bound is determined by the value of the
 select*ing* symbol. 'select' does not respect visibility, so non-visible
 symbols can be forced to a particular (minimum) value by a select as well.
 
-For non-bool/tristate choices, it only matters if the visibility is n or not: m
-visibility works the same as y visibility.
+For non-bool/tristate symbols, only whether the visibility is n or not matters:
+m visibility works the same as y visibility.
 
 Conditions on 'default' and 'select' work in mostly intuitive ways. If the
 condition is n, the 'default' or 'select' is disabled. If it is m, the
@@ -204,8 +207,8 @@ Intro to the menu tree
 
 The menu structure, as seen in e.g. menuconfig, is represented by a tree of
 MenuNode objects. The top node of the configuration corresponds to an implicit
-top-level menu, the title of which is shown at the top in the menuconfig
-interface. (The title with variables expanded is available in
+top-level menu, the title of which is shown at the top in the standard
+menuconfig interface. (The title with variables expanded is available in
 Kconfig.mainmenu_text in Kconfiglib.)
 
 The top node is found in Kconfig.top_node. From there, you can visit child menu
@@ -277,15 +280,18 @@ Manual evaluation examples:
   - The value of A = B is 2 (y) if A.str_value == B.str_value, and 0 (n)
     otherwise. Note that str_value is used here instead of tri_value.
 
+    For constant (as well as undefined) symbols, str_value matches the name of
+    the symbol. This mirrors the C implementation and explains why
+    'depends on SYM = "foo"' above works as expected.
+
 n/m/y are automatically converted to the corresponding constant symbols
 "n"/"m"/"y" (Kconfig.n/m/y) during parsing.
 
-A "missing" condition (e.g. <cond> if the 'if <cond>' part is removed from
-'default A if <cond>') or other "missing" expression is represented as
-Kconfig.y. The standard __str__() functions avoid printing 'if y' conditions to
-give cleaner output.
-
 Kconfig.const_syms is a dictionary like Kconfig.syms but for constant symbols.
+
+If a condition is "missing" (e.g., <cond> if the 'if <cond>' is removed from
+'default A if <cond>'), it is actually Kconfig.y. The standard __str__()
+functions just avoid printing 'if y' conditions to give cleaner output.
 
 
 Feedback
@@ -2535,9 +2541,9 @@ class Symbol(object):
 
     def __str__(self):
         """
-        Returns a string representation of the symbol, matching the Kconfig
-        format. As a convenience, prompts and help texts are also printed, even
-        though they really belong to the symbol's menu nodes and not to the
+        Returns a string representation of the symbol when it is printed,
+        matching the Kconfig format. Prompts and help texts are included,
+        though they really belong to the symbol's menu nodes rather than the
         symbol itself.
 
         The output is designed so that feeding it back to a Kconfig parser
@@ -3032,7 +3038,8 @@ class Choice(object):
 
     def __repr__(self):
         """
-        TODO
+        Returns a string with information about the choice when it is evaluated
+        in e.g. the interactive interpreter.
         """
         fields = []
 
@@ -3073,8 +3080,12 @@ class Choice(object):
 
     def __str__(self):
         """
-        Returns a string containing various information about the choice
-        statement.
+        Returns a string representation of the choice when it is printed,
+        matching the Kconfig format (though without the contained choice
+        symbols). Prompts and help texts are included, though they really
+        belong to the choice's menu nodes rather than the choice itself.
+
+        See Symbol.__str__() as well.
         """
         return _sym_choice_str(self)
 
@@ -3544,13 +3555,13 @@ def _sym_choice_str(sc):
         lines.append("\t" + s)
 
     # We print the prompt(s) and help text(s) too as a convenience, even though
-    # they're actually part of the menu node. If a symbol or choice is defined
-    # in multiple locations (has more than one menu node), we output one
+    # they're actually part of the MenuNode. If a symbol or choice is defined
+    # in multiple locations (has more than one MenuNode), we output one
     # statement for each location, and print all the properties that belong to
     # the symbol/choice itself only at the first location. This gives output
     # that would function if fed to a Kconfig parser, even for such
-    # symbols/choices (choices defined in multiple locations gets iffy since
-    # they also have child nodes, but I've never seen such a choice).
+    # symbols/choices (choices defined in multiple locations gets a bit iffy
+    # since they also have child nodes, though I've never seen such a choice).
 
     if not sc.nodes:
         return ""
@@ -3580,10 +3591,13 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 if sc.is_allnoconfig_y:
                     indent_add("option allnoconfig_y")
+
                 if sc is sc.kconfig.defconfig_list:
                     indent_add("option defconfig_list")
+
                 if sc.env_var is not None:
                     indent_add('option env="{}"'.format(sc.env_var))
+
                 if sc is sc.kconfig.modules:
                     indent_add("option modules")
 
