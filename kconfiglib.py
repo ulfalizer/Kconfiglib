@@ -2478,21 +2478,6 @@ class Symbol(object):
         self.user_str_value = self.user_tri_value = None
         self._rec_invalidate()
 
-    def __str__(self):
-        """
-        Returns a string representation of the symbol, matching the Kconfig
-        format. As a convenience, prompts and help texts are also printed, even
-        though they really belong to the symbol's menu nodes and not to the
-        symbol itself.
-
-        The output is designed so that feeding it back to a Kconfig parser
-        redefines the symbol as is. This also works for symbols defined in
-        multiple locations, where all the definitions are output.
-
-        An empty string is returned for undefined symbols.
-        """
-        return _sym_choice_str(self)
-
     def __repr__(self):
         """
         Prints some information about the symbol (including its name, value,
@@ -2545,6 +2530,21 @@ class Symbol(object):
                 fields.append("undefined")
 
         return "<{}>".format(", ".join(fields))
+
+    def __str__(self):
+        """
+        Returns a string representation of the symbol, matching the Kconfig
+        format. As a convenience, prompts and help texts are also printed, even
+        though they really belong to the symbol's menu nodes and not to the
+        symbol itself.
+
+        The output is designed so that feeding it back to a Kconfig parser
+        redefines the symbol as is. This also works for symbols defined in
+        multiple locations, where all the definitions are output.
+
+        An empty string is returned for undefined symbols.
+        """
+        return _sym_choice_str(self)
 
     #
     # Private methods
@@ -3040,13 +3040,6 @@ class Choice(object):
             # Hackish way to invalidate the choice and all the choice symbols
             self.syms[0]._rec_invalidate()
 
-    def __str__(self):
-        """
-        Returns a string containing various information about the choice
-        statement.
-        """
-        return _sym_choice_str(self)
-
     def __repr__(self):
         """
         TODO
@@ -3087,6 +3080,13 @@ class Choice(object):
             fields.append("{}:{}".format(node.filename, node.linenr))
 
         return "<{}>".format(", ".join(fields))
+
+    def __str__(self):
+        """
+        Returns a string containing various information about the choice
+        statement.
+        """
+        return _sym_choice_str(self)
 
     #
     # Private methods
