@@ -1993,12 +1993,15 @@ class Symbol(object):
       when printing the symbol.
 
     str_value:
-      The value of the symbol as a string. Gives the string value for
-      string/int/hex symbols. For bool/tristate symbols, gives "n", "m", or
-      "y".
+      The value of the symbol as a string. Gives the value for string/int/hex
+      symbols. For bool/tristate symbols, gives "n", "m", or "y".
 
       This is the symbol value that's used in relational expressions
       (A = B, A != B, etc.)
+
+      Gotcha: For int/hex symbols, the exact format of the value must often be
+      preserved (e.g., when writing a .config file), hence why you can't get it
+      directly as an int. Do int(sym.str_value) to get the integer value.
 
     tri_value:
       The tristate value of the symbol as an integer. One of 0, 1, 2,
