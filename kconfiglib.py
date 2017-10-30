@@ -301,8 +301,6 @@ Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service, or open a ticket on the GitHub page.
 """
 
-# TODO: consistent docstring format
-
 import errno
 import os
 import platform
@@ -419,7 +417,6 @@ class Kconfig(object):
       Like for srctree, only the value of $CONFIG_ when the configuration is
       loaded matters.
     """
-
     __slots__ = (
         "_choices",
         "_print_undef_assign",
@@ -481,7 +478,6 @@ class Kconfig(object):
           Kconfig.enable/disable_warnings(). It is provided as a constructor
           argument since warnings might be generated during parsing.
         """
-
         self.srctree = os.environ.get("srctree")
 
         self.config_prefix = os.environ.get("CONFIG_")
@@ -627,7 +623,6 @@ class Kconfig(object):
           True if all existing user values should be cleared before loading the
           .config.
         """
-
         with self._open(filename) as f:
             if replace:
                 # Invalidates all symbols as a side effect
@@ -787,7 +782,6 @@ class Kconfig(object):
         Resets the user values of all symbols, as if Kconfig.load_config() or
         Symbol.set_value() had never been called.
         """
-
         # set_value() already rejects undefined symbols, and they don't need to
         # be invalidated (because their value never changes), so we can just
         # iterate over defined symbols
@@ -830,7 +824,8 @@ class Kconfig(object):
 
     def __repr__(self):
         """
-        Prints some general information when a Kconfig object is evaluated.
+        Returns a string with information about the Kconfig object when it is
+        evaluated on e.g. the interactive Python prompt.
         """
         return "<{}>".format(", ".join((
             "configuration with {} symbols".format(len(self.syms)),
@@ -990,7 +985,6 @@ class Kconfig(object):
         and string operations where possible. This is the biggest hotspot
         during parsing.
         """
-
         s = self._line
 
         # Tricky implementation detail: While parsing a token, 'token' refers
@@ -1274,7 +1268,6 @@ class Kconfig(object):
         Returns the final menu node in the block (or prev_node if the block is
         empty). This allows chaining.
         """
-
         while 1:
             # We might already have tokens from parsing a line to check if it's
             # a property and discovering it isn't. This is a kind of "unget".
@@ -1456,7 +1449,6 @@ class Kconfig(object):
           'visible if' dependencies from enclosing menus. Propagated to Symbol
           and Choice prompts.
         """
-
         # New properties encountered at this location. A local 'depends on'
         # only applies to these, in case a symbol is defined in multiple
         # locations.
@@ -1646,6 +1638,7 @@ class Kconfig(object):
 
         if isinstance(node.item, (Symbol, Choice)):
             if isinstance(node.item, Symbol):
+                # See the class documentation
                 node.item.direct_dep = \
                     self._make_or(node.item.direct_dep, node.dep)
 
@@ -1703,7 +1696,6 @@ class Kconfig(object):
           True if m should be rewritten to m && MODULES. See the
           Kconfig.eval_string() documentation.
         """
-
         # Grammar:
         #
         #   expr:     and_expr ['||' expr]
@@ -1794,7 +1786,6 @@ class Kconfig(object):
         The calculated sets might be larger than necessary as we don't do any
         complex analysis of the expressions.
         """
-
         # The directly dependent symbols of a symbol S are:
         #
         #  - Any symbols whose prompts, default values, rev_dep (select
@@ -1859,7 +1850,6 @@ class Kconfig(object):
         """
         Returns a list containing all .config strings for the configuration.
         """
-
         # Symbol._already_written is set to True when a symbol config string is
         # fetched, so that symbols defined in multiple locations only get one
         # .config entry. We reset it prior to writing out a new .config. It
@@ -1922,7 +1912,6 @@ class Kconfig(object):
         Expands $-references to symbols in 's' to symbol values, or to the
         empty string for undefined symbols.
         """
-
         while 1:
             sym_ref_match = _sym_ref_re_search(s)
             if not sym_ref_match:
@@ -2035,7 +2024,7 @@ class Symbol(object):
 
       Some handy 'assignable' idioms:
 
-        # Is the symbol assignable (visible)?
+        # Is 'sym' an assignable (visible) bool/tristate symbol?
         if sym.assignable:
             # What's the highest value it can be assigned? [-1] in Python
             # gives the last element.
@@ -2060,7 +2049,7 @@ class Symbol(object):
       The user value of the symbol. None if no user value has been assigned
       (via Kconfig.load_config() or Symbol.set_value()).
 
-      0, 1, or 2 for bool/tristate symbols, and a string for other symbol
+      0, 1, or 2 for bool/tristate symbols, and a string for the other symbol
       types.
 
       Warning: Do not assign directly to this. It will break things. Use
@@ -2127,8 +2116,10 @@ class Symbol(object):
     direct_dep:
       The 'depends on' dependencies. If a symbol is defined in multiple
       locations, the dependencies at each location are ORed together.
+
       Internally, this is only used to implement 'imply', which only applies if
-      the implied symbol has expr_value(self.direct_dep) != 0.
+      the implied symbol has expr_value(self.direct_dep) != 0. 'depends on' is
+      automatically propagated to the conditions of all properties.
 
     env_var:
       If the Symbol has an 'option env="FOO"' option, this contains the name
@@ -2156,7 +2147,6 @@ class Symbol(object):
     kconfig:
       The Kconfig instance this symbol is from.
     """
-
     __slots__ = (
         "_already_written",
         "_cached_assignable",
@@ -2206,7 +2196,6 @@ class Symbol(object):
         """
         See the class documentation.
         """
-
         if self._cached_str_val is not None:
             return self._cached_str_val
 
@@ -2311,7 +2300,6 @@ class Symbol(object):
         """
         See the class documentation.
         """
-
         if self._cached_tri_val is not None:
             return self._cached_tri_val
 
@@ -2408,7 +2396,6 @@ class Symbol(object):
         """
         See the class documentation.
         """
-
         if self.env_var is not None:
             # Corresponds to SYMBOL_AUTO being set in the C implementation
             return None
@@ -2446,10 +2433,12 @@ class Symbol(object):
         file. For bool and tristate symbols, use the 'assignable' attribute to
         check which values can currently be assigned. Setting values outside
         'assignable' will cause Symbol.user_str/tri_value to differ from
-        Symbol.str/tri_value (be truncated down or up). Values that are invalid
-        for the type (such as "foo" or "m" for a BOOL) are ignored and won't be
-        stored in Symbol.user_str/tri_value (Kconfiglib will print a warning by
-        default).
+        Symbol.str/tri_value (be truncated down or up).
+
+        Assigning a 1 (m) or 2 (y) value to a choice symbol automatically
+        changes the mode of the choice (see the Choice class). Setting a choice
+        symbol to 2 (y) makes it the currently selected choice symbol, which is
+        significant for choices in y mode.
 
         Other symbols that depend (possibly indirectly) on this symbol are
         automatically recalculated to reflect the assigned value.
@@ -2459,8 +2448,9 @@ class Symbol(object):
           pass 0, 1, 2 for n, m, and y, respectively. For other symbol types,
           pass a string.
 
-          A warning will be printed by default if the value is not valid for
-          the symbol's type.
+          Values that are invalid for the type (such as "foo" or 1 (m) for a
+          BOOL) are ignored and won't be stored in Symbol.user_str/tri_value.
+          Kconfiglib will print a warning by default for invalid assignments.
         """
         self._set_value_no_invalidate(value, False)
 
@@ -2563,7 +2553,6 @@ class Symbol(object):
         Symbol constructor -- not intended to be called directly by Kconfiglib
         clients.
         """
-
         # These attributes are always set on the instance from outside and
         # don't need defaults:
         #   _already_written
@@ -2609,7 +2598,6 @@ class Symbol(object):
         """
         Worker function for the 'assignable' attribute.
         """
-
         if self.orig_type not in (BOOL, TRISTATE):
             return ()
 
@@ -2656,7 +2644,6 @@ class Symbol(object):
           spammy for Linux defconfigs, so turn it off when loading .configs.
           It's still helpful when manually invoking set_value().
         """
-
         # Check if the value is valid for our type
         if not ((self.orig_type == BOOL     and value in (0, 2)       ) or
                 (self.orig_type == TRISTATE and value in (0, 1, 2)    ) or
@@ -2693,9 +2680,8 @@ class Symbol(object):
 
         self.user_value = value
 
-        # TODO: assigning automatically changes choice yada yada
-
         if self.choice is not None:
+            # Change mode of choice
             if self.user_value == 2:
                 self.choice.user_value = 2
                 self.choice.user_selection = self
@@ -3239,7 +3225,8 @@ class MenuNode(object):
 
     def __repr__(self):
         """
-        TODO
+        Returns a string with information about the menu node when it is
+        evaluated on e.g. the interactive Python prompt.
         """
         fields = []
 
@@ -3290,7 +3277,12 @@ class MenuNode(object):
 
     def __str__(self):
         """
-        TODO
+        Returns a string representation of the MenuNode, matching the Kconfig
+        format.
+
+        For Symbol and Choice menu nodes, this function simply calls through to
+        MenuNode.item.__str__(). For MENU and COMMENT nodes, a Kconfig-like
+        representation of the menu or comment is returned.
         """
         if isinstance(self.item, (Symbol, Choice)):
             return self.item.__str__()
@@ -3328,7 +3320,15 @@ class InternalError(Exception):
 
 def expr_value(expr):
     """
-    TODO
+    Evaluates the expression 'expr' to a tristate value. Returns 0 (n), 1 (m),
+    or 2 (y).
+
+    'expr' must be an already-parsed expression from a Symbol, Choice, or
+    MenuNode. To evaluate an expression represented as a string, use
+    Kconfig.eval_string().
+
+    Passing subexpressions of expressions to this function is allowed and works
+    as expected.
     """
     if isinstance(expr, Symbol):
         return expr.tri_value
@@ -3385,7 +3385,11 @@ def expr_value(expr):
 
 def expr_str(expr):
     """
-    TODO
+    Returns the string representation of the expression 'expr', as in a Kconfig
+    file.
+
+    Passing subexpressions of expressions to this function is allowed and works
+    as expected.
     """
     if isinstance(expr, Symbol):
         if expr.is_constant:
@@ -3409,18 +3413,22 @@ def expr_str(expr):
                              _RELATION_TO_STR[expr[0]],
                              expr_str(expr[2]))
 
+# escape()/unescape() helpers
 _escape_re_sub = re.compile(r'(["\\])').sub
 _unescape_re_sub = re.compile(r"\\(.)").sub
 
 def escape(s):
-    """
-    TODO
+    r"""
+    Escapes the string 's' in the same fashion as is done for display in
+    Kconfig format and when writing strings to a .config file. " and \ are
+    replaced by \" and \\, respectively.
     """
     return _escape_re_sub(r"\\\1", s)
 
 def unescape(s):
-    """
-    TODO
+    r"""
+    Unescapes the string 's'. Any character preceded by a \ is replaced with
+    just that character. Used internally when reading .config files.
     """
     return _unescape_re_sub(r"\1", s)
 
