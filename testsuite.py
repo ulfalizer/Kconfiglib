@@ -2024,6 +2024,7 @@ def test_sanity(conf, arch):
     while 1:
         # Everything else should be well exercised elsewhere
         node.__repr__()
+        node.__str__()
         verify(isinstance(node.item, (Symbol, Choice)) or \
                node.item in (MENU, COMMENT),
                "'{}' appeared as a menu item".format(node.item))
