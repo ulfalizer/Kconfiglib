@@ -91,16 +91,16 @@ while 1:
                 selection.set_value(2)
                 no_changes = False
 
-        # Handle a choice whose visibility only allows it to be in "m" mode.
-        # This might happen if a choice depends on a symbol that can only be
-        # "m", for example.
+        # Handle a choice whose visibility only allows it to be in m mode. This
+        # might happen if a choice depends on a symbol that can only be m, for
+        # example.
 
         elif choice.visibility == 1:
             for sym in choice.symbols:
 
-                # Does the choice have a symbol that can be "m" that we haven't
-                # already set to "m"?
-                if sym.user_tri_value != 1 and 1 in sym.assignable:
+                # Does the choice have a symbol that can be m that we haven't
+                # already set to m?
+                if sym.user_value != 1 and 1 in sym.assignable:
 
                     # Yup, set it
                     sym.set_value(1)

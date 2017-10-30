@@ -207,30 +207,18 @@ def run_selftests():
         assign_and_verify_value(sym_name, user_val, user_val)
 
     def assign_and_verify_user_value(sym_name, val, user_val):
-        """Assigns a user value to the symbol and verifies the new user value.
-        Also checks consistency of user_str_value and user_tri_value."""
+        """
+        Assigns a user value to the symbol and verifies the new user value.
+        """
         sym = c.syms[sym_name]
+        sym_old_user_val = sym.user_value
 
-        if sym.type in (BOOL, TRISTATE):
-            user_val = TRI_TO_STR[user_val]
-
-        sym_old_user_val = sym.user_str_value
         sym.set_value(val)
-        verify(sym.user_str_value == user_val,
-               "{} should have the user value '{}' after being assigned "
-               "the user value '{}'. Instead, the new user value was '{}'. "
-               "The old user value was '{}'."
-               .format(sym_name, user_val, user_val, sym.user_str_value,
-                       sym_old_user_val))
-
-        if sym.type in (BOOL, TRISTATE):
-            verify(sym.user_tri_value == STR_TO_TRI[sym.user_str_value],
-                   "{} has an inconsistent user value ('{}' vs '{}')"
-                   .format(sym_name, sym.user_tri_value, sym.user_str_value))
-        else:
-            verify(sym.user_tri_value == 0,
-                   "{} is non-bool/tristate and has the non-zero "
-                   "user_tri_value {}".format(sym_name, sym.user_tri_value))
+        verify(sym.user_value == user_val,
+               "the assigned user value '{}' wasn't reflected in user_value "
+               "on the symbol {}. Instead, the new user_value was '{}'. The "
+               "old user value was '{}'."
+               .format(user_val, sym.name, sym.user_value, sym_old_user_val))
 
     #
     # Selftests
@@ -614,15 +602,15 @@ choice
     c = Kconfig("Kconfiglib/tests/Krepr", warn=False)
 
     verify_repr(c.n, """
-<symbol n, tristate, value "n", constant>
+<symbol n, tristate, value n, constant>
 """)
 
     verify_repr(c.m, """
-<symbol m, tristate, value "m", constant>
+<symbol m, tristate, value m, constant>
 """)
 
     verify_repr(c.y, """
-<symbol y, tristate, value "y", constant>
+<symbol y, tristate, value y, constant>
 """)
 
     verify_repr(c.syms["UNDEFINED"], """
@@ -630,17 +618,17 @@ choice
 """)
 
     verify_repr(c.syms["BASIC"], """
-<symbol BASIC, bool, value "y", visibility n, direct deps y, Kconfiglib/tests/Krepr:9>
+<symbol BASIC, bool, value y, visibility n, direct deps y, Kconfiglib/tests/Krepr:9>
 """)
 
     verify_repr(c.syms["VISIBLE"], """
-<symbol VISIBLE, bool, "visible", value "n", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
+<symbol VISIBLE, bool, "visible", value n, visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
 """)
 
     c.syms["VISIBLE"].set_value(2)
 
     verify_repr(c.syms["VISIBLE"], """
-<symbol VISIBLE, bool, "visible", value "y", user value "y", visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
+<symbol VISIBLE, bool, "visible", value y, user value y, visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
 """)
 
     verify_repr(c.syms["DIR_DEP_N"], """
@@ -656,11 +644,11 @@ choice
 """)
 
     verify_repr(c.syms["CHOICE_1"], """
-<symbol CHOICE_1, tristate, "choice sym", value "n", visibility y, choice symbol, direct deps y, Kconfiglib/tests/Krepr:33>
+<symbol CHOICE_1, tristate, "choice sym", value n, visibility y, choice symbol, direct deps y, Kconfiglib/tests/Krepr:33>
 """)
 
     verify_repr(c.modules, """
-<symbol MODULES, bool, value "y", visibility n, is the modules symbol, direct deps y, Kconfiglib/tests/Krepr:1>
+<symbol MODULES, bool, value y, visibility n, is the modules symbol, direct deps y, Kconfiglib/tests/Krepr:1>
 """)
 
 
@@ -1267,7 +1255,7 @@ g
       ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
 
     for sym in syms:
-        verify(sym.user_str_value is None and sym.user_tri_value is None,
+        verify(sym.user_value is None,
                "{} should not have a user value to begin with")
 
     # Assign valid values for the types
@@ -1297,7 +1285,7 @@ g
 
     for s in syms:
         s.unset_value()
-        verify(s.user_str_value is None and s.user_tri_value is None,
+        verify(s.user_value is None,
                "{} should not have a user value after being reset".
                format(s.name))
 
@@ -1953,8 +1941,7 @@ def test_sanity(conf, arch):
         sym.tri_value
         sym.type
         sym.unset_value()
-        sym.user_str_value
-        sym.user_tri_value
+        sym.user_value
         sym.visibility
 
     for sym in conf.defined_syms:
@@ -2009,8 +1996,7 @@ def test_sanity(conf, arch):
         choice.__repr__()
         choice.str_value
         choice.tri_value
-        choice.user_str_value
-        choice.user_tri_value
+        choice.user_value
         choice.assignable
         choice.selection
         choice.default_selection

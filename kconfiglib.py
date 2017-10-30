@@ -665,16 +665,18 @@ class Kconfig(object):
                                                sym.name))
                             continue
 
+                        # We represent tristate values as 0, 1, 2
+                        val = STR_TO_TRI[val[0]]
+
                         if sym.choice is not None:
-                            mode = sym.choice.user_str_value
+                            mode = sym.choice.user_value
                             if mode is not None and mode != val:
                                 self._warn("assignment to {} changes mode of "
                                            'containing choice from {} to {}.'
-                                           .format(name, mode, val),
+                                           .format(name,
+                                                   TRI_TO_STR[mode],
+                                                   TRI_TO_STR[val]),
                                            filename, linenr)
-
-                        # We represent tristate values as 0, 1, 2
-                        val = STR_TO_TRI[val[0]]
 
                     elif sym.orig_type == STRING:
                         string_match = _conf_string_re_match(val)
@@ -706,17 +708,18 @@ class Kconfig(object):
 
                 # Done parsing the assignment. Set the value.
 
-                if sym.user_str_value is not None:
-                    # Make the format for the old and new value consistent in
-                    # the warning
+                if sym.user_value is not None:
+                    # Use strings for tristate values in the warning
                     if sym.orig_type in (BOOL, TRISTATE):
                         display_val = TRI_TO_STR[val]
+                        display_user_val = TRI_TO_STR[sym.user_value]
                     else:
                         display_val = val
+                        display_user_val = sym.user_value
 
                     self._warn('{} set more than once. Old value: "{}", new '
                                'value: "{}".'
-                               .format(name, sym.user_str_value, display_val),
+                               .format(name, display_user_val, display_val),
                                filename, linenr)
 
                 sym._set_value_no_invalidate(val, True)
@@ -786,12 +789,11 @@ class Kconfig(object):
         for sym in self.defined_syms:
             # We're iterating over all (defined) symbols, so no need for
             # symbols to invalidate their dependent symbols
-            sym.user_str_value = sym.user_tri_value = None
+            sym.user_value = None
             sym._invalidate()
 
         for choice in self._choices:
-            choice.user_str_value = choice.user_tri_value = \
-                choice.user_selection = None
+            choice.user_value = choice.user_selection = None
             choice._invalidate()
 
     def enable_warnings(self):
@@ -2045,21 +2047,12 @@ class Symbol(object):
       The visibility of the symbol. One of 0, 1, 2, representing n, m, y. See
       the module documentation for an overview of symbol values and visibility.
 
-    user_str_value:
-      The user value of the symbol as a string, or None if no user value has
-      been assigned (via Kconfig.load_value() or Symbol.set_value()). See
-      str_value.
+    user_value:
+      The user value of the symbol. None if no user value has been assigned
+      (via Kconfig.load_config() or Symbol.set_value()).
 
-      Warning: Do not assign directly to this. It will break things. Use
-      Symbol.set_value().
-
-    user_tri_value:
-      The user value of the symbol as a tristate value (0, 1, 2), or None if no
-      user value has been assigned (via Kconfig.load_value() or
-      Symbol.set_value()). See tri_value.
-
-      Always 0 (n) for non-bool/tristate symbols (or None if no user value has
-      been set).
+      0, 1, or 2 for bool/tristate symbols, and a string for other symbol
+      types.
 
       Warning: Do not assign directly to this. It will break things. Use
       Symbol.set_value().
@@ -2178,8 +2171,7 @@ class Symbol(object):
         "ranges",
         "rev_dep",
         "selects",
-        "user_str_value",
-        "user_tri_value",
+        "user_value",
         "weak_rev_dep",
     )
 
@@ -2242,15 +2234,15 @@ class Symbol(object):
             else:
                 has_active_range = False
 
-            if vis and self.user_str_value is not None and \
-               _is_base_n(self.user_str_value, base) and \
+            if vis and self.user_value is not None and \
+               _is_base_n(self.user_value, base) and \
                (not has_active_range or
-                low <= int(self.user_str_value, base) <= high):
+                low <= int(self.user_value, base) <= high):
 
                 # If the user value is well-formed and satisfies range
                 # contraints, it is stored in exactly the same form as
                 # specified in the assignment (with or without "0x", etc.)
-                val = self.user_str_value
+                val = self.user_value
 
             else:
                 # No user value or invalid user value. Look at defaults.
@@ -2291,9 +2283,9 @@ class Symbol(object):
                         val = (hex(low) if self.orig_type == HEX else str(low))
 
         elif self.orig_type == STRING:
-            if vis and self.user_str_value is not None:
+            if vis and self.user_value is not None:
                 # If the symbol is visible and has a user value, use that
-                val = self.user_str_value
+                val = self.user_value
             else:
                 # Otherwise, look at defaults
                 for val_expr, cond in self.defaults:
@@ -2324,9 +2316,9 @@ class Symbol(object):
         if self.choice is None:
             self._write_to_conf = (vis != 0)
 
-            if vis and self.user_tri_value is not None:
+            if vis and self.user_value is not None:
                 # If the symbol is visible and has a user value, use that
-                val = min(self.user_tri_value, vis)
+                val = min(self.user_value, vis)
 
             else:
                 # Otherwise, look at defaults and weak reverse dependencies
@@ -2368,7 +2360,7 @@ class Symbol(object):
 
                     if mode == 2:
                         val = 2 if self.choice.selection is self else 0
-                    elif self.user_tri_value:
+                    elif self.user_value:
                         # mode == 1, user value available and not 0
                         val = 1
 
@@ -2475,7 +2467,7 @@ class Symbol(object):
         Resets the user value of the symbol, as if the symbol had never gotten
         a user value via Kconfig.load_config() or Symbol.set_value().
         """
-        self.user_str_value = self.user_tri_value = None
+        self.user_value = None
         self._rec_invalidate()
 
     def __repr__(self):
@@ -2492,13 +2484,21 @@ class Symbol(object):
             if node.prompt is not None:
                 fields.append('"{}"'.format(node.prompt[0]))
 
-        fields.append('value "{}"'.format(self.str_value))
+        # Only add quotes for non-bool/tristate symbols
+        fields.append("value " +
+                      (self.str_value
+                       if self.orig_type in (BOOL, TRISTATE) else
+                       '"{}"'.format(self.str_value)))
 
         if not self.is_constant:
             # These aren't helpful to show for constant symbols
 
-            if self.user_str_value is not None:
-                fields.append('user value "{}"'.format(self.user_str_value))
+            if self.user_value is not None:
+                # Only add quotes for non-bool/tristate symbols
+                fields.append("user value " +
+                              (TRI_TO_STR[self.user_value]
+                               if self.orig_type in (BOOL, TRISTATE) else
+                               '"{}"'.format(self.user_value)))
 
             fields.append("visibility " + TRI_TO_STR[self.visibility])
 
@@ -2574,7 +2574,7 @@ class Symbol(object):
 
         self.nodes = []
 
-        self.user_str_value = self.user_tri_value = None
+        self.user_value = None
 
         # Populated in Kconfig._build_dep() after parsing. Links the symbol to
         # the symbols that immediately depend on it (in a caching/invalidation
@@ -2683,23 +2683,16 @@ class Symbol(object):
                                    "promptless symbol {} will have no effect"
                                    .format(value, self.name))
 
-        if self.orig_type in (BOOL, TRISTATE):
-            self.user_str_value = TRI_TO_STR[value]
-            self.user_tri_value = value
-        else:
-            self.user_str_value = value
-            self.user_tri_value = 0
+        self.user_value = value
 
         # TODO: assigning automatically changes choice yada yada
 
         if self.choice is not None:
-            if self.user_tri_value == 2:
-                self.choice.user_str_value = "y"
-                self.choice.user_tri_value = 2
+            if self.user_value == 2:
+                self.choice.user_value = 2
                 self.choice.user_selection = self
-            elif self.user_tri_value == 1:
-                self.choice.user_str_value = "m"
-                self.choice.user_tri_value = 1
+            elif self.user_value == 1:
+                self.choice.user_value = 1
 
     def _invalidate(self):
         """
@@ -2844,17 +2837,10 @@ class Choice(object):
       The symbol that would be selected by default, had the user not selected
       any symbol. Can be None for the same reasons as 'selected'.
 
-    user_str_value:
+    user_value:
       The value (mode) selected by the user (through Choice.set_value() or by
-      assigning a value to a symbol within the choice), represented as a
-      string. See Symbol.user_str_value.
-
-      Warning: Do not assign directly to this. It will break things. Use
-      Choice.set_value() or Symbol.set_value() instead.
-
-    user_tri_value:
-      The same value as user_str_value as a tristate (0, 1, 2). See
-      Symbol.user_tri_value.
+      assigning a value to a symbol within the choice). Either 0, 1, or 2, or
+      None if the user hasn't selected a mode. See Symbol.user_value.
 
       Warning: Do not assign directly to this. It will break things. Use
       Choice.set_value() or Symbol.set_value() instead.
@@ -2906,8 +2892,7 @@ class Choice(object):
         "orig_type",
         "syms",
         "user_selection",
-        "user_str_value",
-        "user_tri_value",
+        "user_value",
     )
 
     #
@@ -2936,8 +2921,8 @@ class Choice(object):
         """
         See the class documentation.
         """
-        if self.user_tri_value is not None:
-            val = min(self.user_tri_value, self.visibility)
+        if self.user_value is not None:
+            val = min(self.user_value, self.visibility)
         else:
             val = 0
 
@@ -3023,8 +3008,7 @@ class Choice(object):
                                .format(value, _TYPENAME[self.orig_type]))
             return
 
-        self.user_str_value = TRI_TO_STR[value]
-        self.user_tri_value = value
+        self.user_value = value
 
         if self.syms:
             # Hackish way to invalidate the choice and all the choice symbols
@@ -3035,7 +3019,7 @@ class Choice(object):
         Resets the user value (mode) and user selection of the Choice, as if
         the user had never touched the mode or any of the choice symbols.
         """
-        self.user_str_value = self.user_tri_value = self.user_selection = None
+        self.user_value = self.user_selection = None
         if self.syms:
             # Hackish way to invalidate the choice and all the choice symbols
             self.syms[0]._rec_invalidate()
@@ -3056,8 +3040,8 @@ class Choice(object):
 
         fields.append("mode " + self.str_value)
 
-        if self.user_str_value is not None:
-            fields.append('user mode {}'.format(self.user_str_value))
+        if self.user_value is not None:
+            fields.append('user mode {}'.format(TRI_TO_STR[self.user_value]))
 
         if self.selection is not None:
             fields.append("{} selected".format(self.selection.name))
@@ -3109,7 +3093,7 @@ class Choice(object):
 
         self.nodes = []
 
-        self.user_str_value = self.user_tri_value = self.user_selection = None
+        self.user_value = self.user_selection = None
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
