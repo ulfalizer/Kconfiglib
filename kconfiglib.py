@@ -3288,6 +3288,28 @@ class MenuNode(object):
 
         return "<{}>".format(", ".join(fields))
 
+    def __str__(self):
+        """
+        TODO
+        """
+        if isinstance(self.item, (Symbol, Choice)):
+            return self.item.__str__()
+
+        if self.item in (MENU, COMMENT):
+            s = ("menu" if self.item == MENU else "comment") + \
+                ' "{}"\n'.format(escape(self.prompt[0]))
+
+            if self.dep is not self.kconfig.y:
+                s += "\tdepends on {}\n".format(expr_str(self.dep))
+
+            if self.item == MENU and self.visibility is not self.kconfig.y:
+                s += "\tvisible if {}\n".format(expr_str(self.visibility))
+
+            return s
+
+        # 'if' node. Should never appear in the final tree.
+        return "if " + expr_str(self.dep)
+
 class KconfigSyntaxError(Exception):
     """
     Exception raised for syntax errors.
@@ -3560,7 +3582,7 @@ def _sym_choice_str(sc):
             indent_add(_TYPENAME[sc.orig_type])
 
         if node.prompt is not None:
-            prompt_str = 'prompt "{}"'.format(node.prompt[0])
+            prompt_str = 'prompt "{}"'.format(escape(node.prompt[0]))
             if node.prompt[1] is not sc.kconfig.y:
                 prompt_str += " if " + expr_str(node.prompt[1])
             indent_add(prompt_str)
