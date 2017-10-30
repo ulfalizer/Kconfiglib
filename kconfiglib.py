@@ -662,7 +662,7 @@ class Kconfig(object):
                                  val.startswith(("n", "m", "y")))):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
-                                       .format(val, _TYPENAME[sym.orig_type],
+                                       .format(val, TYPE_TO_STR[sym.orig_type],
                                                sym.name))
                             continue
 
@@ -2470,13 +2470,14 @@ class Symbol(object):
 
     def __repr__(self):
         """
-        Prints some information about the symbol (including its name, value,
-        visibility, and location(s)) when it is evaluated.
+        Returns a string with information about the symbol (including its name,
+        value, visibility, and location(s)) when it is evaluated on e.g. the
+        interactive Python prompt.
         """
         fields = []
 
         fields.append("symbol " + self.name)
-        fields.append(_TYPENAME[self.type])
+        fields.append(TYPE_TO_STR[self.type])
 
         for node in self.nodes:
             if node.prompt is not None:
@@ -2654,7 +2655,7 @@ class Symbol(object):
                                             and _is_base_n(value, 16))):
 
             warning = "the value '{}' is invalid for {}, which has type {}" \
-                      .format(value, self.name, _TYPENAME[self.orig_type])
+                      .format(value, self.name, TYPE_TO_STR[self.orig_type])
 
             if self.orig_type in (BOOL, TRISTATE) and \
                value in ("n", "m", "y"):
@@ -3003,7 +3004,7 @@ class Choice(object):
             self.kconfig._warn("the value {} is invalid for the choice, "
                                "which has type {}. Assignment ignored"
                                .format(TRI_TO_STR[value],
-                                       _TYPENAME[self.orig_type]))
+                                       TYPE_TO_STR[self.orig_type]))
             return
 
         self.user_value = value
@@ -3025,13 +3026,13 @@ class Choice(object):
     def __repr__(self):
         """
         Returns a string with information about the choice when it is evaluated
-        in e.g. the interactive interpreter.
+        on e.g. the interactive Python prompt.
         """
         fields = []
 
         fields.append("choice" if self.name is None else \
                       "choice " + self.name)
-        fields.append(_TYPENAME[self.type])
+        fields.append(TYPE_TO_STR[self.type])
 
         for node in self.nodes:
             if node.prompt is not None:
@@ -3587,7 +3588,7 @@ def _sym_choice_str(sc):
                 lines.append("choice " + sc.name)
 
         if node is sc.nodes[0] and sc.orig_type != UNKNOWN:
-            indent_add(_TYPENAME[sc.orig_type])
+            indent_add(TYPE_TO_STR[sc.orig_type])
 
         if node.prompt is not None:
             prompt_str = 'prompt "{}"'.format(escape(node.prompt[0]))
@@ -3856,6 +3857,17 @@ def _finalize_tree(node):
     COMMENT,
 ) = range(2)
 
+# Converts a symbol/choice type to a string
+TYPE_TO_STR = {
+    UNKNOWN:  "unknown",
+    BOOL:     "bool",
+    TRISTATE: "tristate",
+    STRING:   "string",
+    HEX:      "hex",
+    INT:      "int",
+}
+
+
 # TODO: unpublic?
 TRI_TO_STR = {
     0: "n",
@@ -4002,18 +4014,9 @@ _id_keyword_re_match = re.compile(r"([\w./-]+)\s*").match
 # Regular expression for finding $-references to symbols in strings
 _sym_ref_re_search = re.compile(r"\$([A-Za-z0-9_]+)").search
 
-# TODO
+# Matches a valid right-hand side for an assignment to a string symbol in a
+# .config file, including escaped characters. Extracts the contents.
 _conf_string_re_match = re.compile(r'"((?:[^\\"]|\\.)*)"').match
-
-# Strings to use for types
-_TYPENAME = {
-    UNKNOWN:  "unknown",
-    BOOL:     "bool",
-    TRISTATE: "tristate",
-    STRING:   "string",
-    HEX:      "hex",
-    INT:      "int",
-}
 
 # Token to type mapping
 _TOKEN_TO_TYPE = {
