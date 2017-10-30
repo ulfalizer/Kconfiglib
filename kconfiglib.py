@@ -255,7 +255,7 @@ A && B && C           (AND, A, (AND, B, C))
 A || B                (OR, A, B)
 A || (B && C && D)    (OR, A, (AND, B, (AND, C, D)))
 A = B                 (EQUAL, A, B)
-A != "foo"            (UNEQUAL, A, "foo")
+A != "foo"            (UNEQUAL, A, "foo" (constant symbol))
 A && B = C && D       (AND, A, (AND, (EQUAL, B, C), D))
 n                     Kconfig.n (constant symbol)
 m                     Kconfig.m (constant symbol)
@@ -272,8 +272,10 @@ Manual evaluation examples:
 
   - The value of A || B is max(A.tri_value, B.tri_value)
 
-  - The value of A = B is y if A.str_value == B.str_value, and n otherwise.
-    Note that str_value is used here instead of tri_value.
+  - The value of !A is 2 - A.tri_value
+
+  - The value of A = B is 2 (y) if A.str_value == B.str_value, and 0 (n)
+    otherwise. Note that str_value is used here instead of tri_value.
 
 n/m/y are automatically converted to the corresponding constant symbols
 "n"/"m"/"y" (Kconfig.n/m/y) during parsing.
@@ -549,7 +551,7 @@ class Kconfig(object):
 
         # Parse the Kconfig files
 
-        # These implements a single line of "unget" for the parser
+        # These implement a single line of "unget" for the parser
         self._reuse_line = False
         self._has_tokens = False
 
@@ -615,8 +617,9 @@ class Kconfig(object):
           The file to load. Respects $srctree if set (see the class
           documentation).
 
-        replace (default: True): True if all existing user values should
-          be cleared before loading the .config.
+        replace (default: True):
+          True if all existing user values should be cleared before loading the
+          .config.
         """
 
         with self._open(filename) as f:
