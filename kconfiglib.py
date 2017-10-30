@@ -3785,8 +3785,8 @@ def _finalize_tree(node):
     during parsing instead.
     """
 
-    # The ordering here gets a bit tricky, but it's important to do things in
-    # this order to have everything work out correctly.
+    # The ordering here gets a bit tricky. It's important to do things in this
+    # order to have everything work out correctly.
 
     if node.list is not None:
         # The menu node has children. Finalize them.
