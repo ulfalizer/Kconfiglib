@@ -1336,7 +1336,7 @@ g
 
     verify_value("UNAME_RELEASE", platform.uname()[2])
     ur = c.syms["UNAME_RELEASE"]
-    verify(ur.config is c and
+    verify(ur.kconfig is c and
            ur.type == STRING and
            ur.env_var == "<uname release>",
            "UNAME_RELEASE has wrong fields")
@@ -1433,11 +1433,11 @@ g
     verify((c1_undef is not c2_undef) and (c1_bool is not c2_bool) and
            (c1_choice is not c2_choice) and (c1_menu is not c2_menu) and
            (c1_comment is not c2_comment) and
-           (c1_undef.config   is c1) and (c2_undef.config   is c2) and
-           (c1_bool.config    is c1) and (c2_bool.config    is c2) and
-           (c1_choice.config  is c1) and (c2_choice.config  is c2) and
-           (c1_menu.config    is c1) and (c2_menu.config    is c2) and
-           (c1_comment.config is c1) and (c2_comment.config is c2),
+           (c1_undef.kconfig   is c1) and (c2_undef.kconfig   is c2) and
+           (c1_bool.kconfig    is c1) and (c2_bool.kconfig    is c2) and
+           (c1_choice.kconfig  is c1) and (c2_choice.kconfig  is c2) and
+           (c1_menu.kconfig    is c1) and (c2_menu.kconfig    is c2) and
+           (c1_comment.kconfig is c1) and (c2_comment.kconfig is c2),
            "Config instance state separation or .config is broken")
 
     #

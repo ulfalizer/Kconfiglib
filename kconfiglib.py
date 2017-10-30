@@ -70,8 +70,8 @@ As usual, ARCH=<arch> can be passed to 'make' to select the arch.
 PYTHONCMD=<executable> selects the Python executable to use (default:
 "python").
 
-Tip: IronPython (PYTHONCMD=ipython) autocompletion is handy when figuring out
-the API, as it provides autocompletion for attributes.
+Tip: IronPython (PYTHONCMD=ipython) is handy when figuring out the API, as it
+provides autocompletion for attributes.
 
 
 make scriptconfig SCRIPT=<script> [SCRIPT_ARG=<arg>]
@@ -500,7 +500,7 @@ class Kconfig(object):
 
         for nmy in "n", "m", "y":
             sym = Symbol()
-            sym.config = self
+            sym.kconfig = self
             sym.name = nmy
             sym.is_constant = True
             sym.orig_type = TRISTATE
@@ -538,7 +538,7 @@ class Kconfig(object):
         self.syms["UNAME_RELEASE"] = uname_sym
 
         self.top_node = MenuNode()
-        self.top_node.config = self
+        self.top_node.kconfig = self
         self.top_node.item = MENU
         self.top_node.visibility = self.y
         self.top_node.prompt = ("Linux Kernel Configuration", self.y)
@@ -940,7 +940,7 @@ class Kconfig(object):
             return self.syms[name]
 
         sym = Symbol()
-        sym.config = self
+        sym.kconfig = self
         sym.name = name
         sym.is_constant = False
         sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
@@ -960,7 +960,7 @@ class Kconfig(object):
             return self.const_syms[name]
 
         sym = Symbol()
-        sym.config = self
+        sym.kconfig = self
         sym.name = name
         sym.is_constant = True
         sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
@@ -1190,7 +1190,7 @@ class Kconfig(object):
 
     def _check_token(self, token):
         """
-        Removes the next token if it's 'token' and returns True
+        If the next token is 'token', removes it and returns True.
         """
         if self._tokens[self._tokens_i + 1] == token:
             self._tokens_i += 1
@@ -1293,7 +1293,7 @@ class Kconfig(object):
                 sym = self._next_token()
 
                 node = MenuNode()
-                node.config = self
+                node.kconfig = self
                 node.item = sym
                 node.help = None
                 node.list = None
@@ -1344,7 +1344,7 @@ class Kconfig(object):
 
             elif t0 == _T_MENU:
                 node = MenuNode()
-                node.config = self
+                node.kconfig = self
                 node.item = MENU
                 node.visibility = self.y
                 node.parent = parent
@@ -1366,7 +1366,7 @@ class Kconfig(object):
 
             elif t0 == _T_COMMENT:
                 node = MenuNode()
-                node.config = self
+                node.kconfig = self
                 node.item = COMMENT
                 node.list = None
                 node.parent = parent
@@ -1393,10 +1393,10 @@ class Kconfig(object):
                         choice.name = name
                         self.named_choices[name] = choice
 
-                choice.config = self
+                choice.kconfig = self
 
                 node = MenuNode()
-                node.config = self
+                node.kconfig = self
                 node.item = choice
                 node.help = None
                 node.parent = parent
@@ -1933,7 +1933,9 @@ class Kconfig(object):
             "{}Couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
 
     def _warn(self, msg, filename=None, linenr=None):
-        """For printing general warnings."""
+        """
+        For printing general warnings.
+        """
         if self._print_warnings:
             _stderr_msg("warning: " + msg, filename, linenr)
 
@@ -2092,7 +2094,7 @@ class Symbol(object):
       conditions.
 
     implies:
-      Same format as 'selects', for imply.
+      Like 'selects', for imply.
 
     ranges:
       List of (low, high, cond) tuples for the symbol's 'range' properties. For
@@ -2146,7 +2148,7 @@ class Symbol(object):
     is_constant:
       True if the symbol is a constant (quoted) symbol.
 
-    config:
+    kconfig:
       The Kconfig instance this symbol is from.
     """
 
@@ -2160,13 +2162,13 @@ class Symbol(object):
         "_direct_dependents",
         "_write_to_conf",
         "choice",
-        "config",
         "defaults",
         "direct_dep",
         "env_var",
         "implies",
         "is_allnoconfig_y",
         "is_constant",
+        "kconfig",
         "name",
         "nodes",
         "orig_type",
@@ -2190,7 +2192,7 @@ class Symbol(object):
 
         if self.orig_type == TRISTATE and \
            ((self.choice is not None and self.choice.tri_value == 2) or
-            not self.config.modules.tri_value):
+            not self.kconfig.modules.tri_value):
             return BOOL
 
         return self.orig_type
@@ -2416,19 +2418,19 @@ class Symbol(object):
 
         if self.orig_type in (BOOL, TRISTATE):
             return "{}{}={}\n" \
-                   .format(self.config.config_prefix, self.name, val) \
+                   .format(self.kconfig.config_prefix, self.name, val) \
                    if val != "n" else \
                    "# {}{} is not set\n" \
-                   .format(self.config.config_prefix, self.name)
+                   .format(self.kconfig.config_prefix, self.name)
 
         if self.orig_type in (INT, HEX):
             return "{}{}={}\n" \
-                   .format(self.config.config_prefix, self.name, val)
+                   .format(self.kconfig.config_prefix, self.name, val)
 
         if self.orig_type == STRING:
             # Escape \ and "
             return '{}{}="{}"\n' \
-                   .format(self.config.config_prefix, self.name, escape(val))
+                   .format(self.kconfig.config_prefix, self.name, escape(val))
 
         _internal_error("Internal error while creating .config: unknown "
                         'type "{}".'.format(self.orig_type))
@@ -2459,9 +2461,9 @@ class Symbol(object):
         """
         self._set_value_no_invalidate(value, False)
 
-        if self is self.config.modules:
+        if self is self.kconfig.modules:
             # Changing MODULES has wide-ranging effects
-            self.config._invalidate_all()
+            self.kconfig._invalidate_all()
         else:
             self._rec_invalidate()
 
@@ -2518,13 +2520,13 @@ class Symbol(object):
             if self.is_allnoconfig_y:
                 fields.append("allnoconfig_y")
 
-            if self is self.config.defconfig_list:
+            if self is self.kconfig.defconfig_list:
                 fields.append("is the defconfig_list symbol")
 
             if self.env_var is not None:
                 fields.append("from environment variable " + self.env_var)
 
-            if self is self.config.modules:
+            if self is self.kconfig.modules:
                 fields.append("is the modules symbol")
 
             fields.append("direct deps " +
@@ -2554,7 +2556,7 @@ class Symbol(object):
         # These attributes are always set on the instance from outside and
         # don't need defaults:
         #   _already_written
-        #   config
+        #   kconfig
         #   direct_dep
         #   is_constant
         #   name
@@ -2660,12 +2662,12 @@ class Symbol(object):
                value in ("n", "m", "y"):
                 warning += ' (pass 0, 1, 2 for n, m, y, respectively)'
 
-            self.config._warn(warning)
+            self.kconfig._warn(warning)
 
             return
 
         if not self.nodes:
-            self.config._warn_undef_assign(
+            self.kconfig._warn_undef_assign(
                 'assigning the value "{}" to the undefined symbol {} will '
                 "have no effect".format(value, self.name))
 
@@ -2674,9 +2676,9 @@ class Symbol(object):
                 if node.prompt is not None:
                     break
             else:
-                self.config._warn('assigning the value "{}" to the '
-                                  "promptless symbol {} will have no effect"
-                                  .format(value, self.name))
+                self.kconfig._warn('assigning the value "{}" to the '
+                                   "promptless symbol {} will have no effect"
+                                   .format(value, self.name))
 
         if self.orig_type in (BOOL, TRISTATE):
             self.user_str_value = TRI_TO_STR[value]
@@ -2884,15 +2886,18 @@ class Choice(object):
     is_optional:
       True if the choice has the 'optional' flag set on it and can be in
       n mode.
+
+    kconfig:
+      The Kconfig instance this choice is from.
     """
 
     __slots__ = (
         "_cached_assignable",
         "_cached_selection",
         "_cached_vis",
-        "config",
         "defaults",
         "is_optional",
+        "kconfig",
         "name",
         "nodes",
         "orig_type",
@@ -2911,7 +2916,7 @@ class Choice(object):
         """
         Returns the type of the choice. See Symbol.type.
         """
-        if self.orig_type == TRISTATE and not self.config.modules.tri_value:
+        if self.orig_type == TRISTATE and not self.kconfig.modules.tri_value:
             return BOOL
 
         return self.orig_type
@@ -3010,9 +3015,9 @@ class Choice(object):
         """
         if not ((self.orig_type == BOOL     and value in (0, 2)    ) or
                 (self.orig_type == TRISTATE and value in (0, 1, 2))):
-            self.config._warn("the value '{}' is invalid for the choice, "
-                              "which has type {}. Assignment ignored"
-                              .format(value, _TYPENAME[self.orig_type]))
+            self.kconfig._warn("the value '{}' is invalid for the choice, "
+                               "which has type {}. Assignment ignored"
+                               .format(value, _TYPENAME[self.orig_type]))
             return
 
         self.user_str_value = TRI_TO_STR[value]
@@ -3092,7 +3097,7 @@ class Choice(object):
 
         # These attributes are always set on the instance from outside and
         # don't need defaults:
-        #   config
+        #   kconfig
 
         self.name = None
         self.orig_type = UNKNOWN
@@ -3156,74 +3161,71 @@ class MenuNode(object):
     be viewed as read-only.
 
     item:
-        Either a Symbol, a Choice, or one of the constants MENU and COMMENT.
-        Menus and comments are represented as plain menu nodes. Ifs are
-        collapsed and do not appear in the final menu tree (matching the C
-        implementation).
+      Either a Symbol, a Choice, or one of the constants MENU and COMMENT.
+      Menus and comments are represented as plain menu nodes. Ifs are collapsed
+      and do not appear in the final menu tree (matching the C implementation).
 
     next:
-        The following menu node in the menu tree. None if there is no following
-        node.
+      The following menu node in the menu tree. None if there is no following
+      node.
 
     list:
-        The first child menu node in the menu tree. None if there are no
-        children.
+      The first child menu node in the menu tree. None if there are no
+      children.
 
-        Choices and menus naturally have children, but Symbols can have
-        children too because of menus created automatically from dependencies
-        (see kconfig-language.txt).
+      Choices and menus naturally have children, but Symbols can have children
+      too because of menus created automatically from dependencies (see
+      kconfig-language.txt).
 
     parent:
-        The parent menu node. None if there is no parent.
+      The parent menu node. None if there is no parent.
 
     prompt:
-        A (string, cond) tuple with the prompt for the menu node and its
-        condition. None if there is no prompt. Prompts are always stored in the
-        menu node rather than the Symbol or Choice. For menus and comments, the
-        prompt holds the text.
+      A (string, cond) tuple with the prompt for the menu node and its
+      condition. None if there is no prompt. Prompts are always stored in the
+      menu node rather than the Symbol or Choice. For menus and comments, the
+      prompt holds the text.
 
     help:
-        The help text for the menu node. None if there is no help text. Always
-        stored in the node rather than the Symbol or Choice. It is possible to
-        have a separate help at each location if a symbol is defined in
-        multiple locations.
+      The help text for the menu node. None if there is no help text. Always
+      stored in the node rather than the Symbol or Choice. It is possible to
+      have a separate help at each location if a symbol is defined in multiple
+      locations.
 
     dep:
-        The 'depends on' dependencies for the menu node. None if there are no
-        dependencies. Parent dependencies are propagated to this attribute, and
-        this attribute is then in turn propagated to the properties of symbols
-        and choices.
+      The 'depends on' dependencies for the menu node. None if there are no
+      dependencies. Parent dependencies are propagated to this attribute, and
+      this attribute is then in turn propagated to the properties of symbols
+      and choices.
 
-        If a symbol is defined in multiple locations, only the properties
-        defined at each location get the corresponding MenuNode.dep propagated
-        to them.
+      If a symbol is defined in multiple locations, only the properties defined
+      at each location get the corresponding MenuNode.dep propagated to them.
 
     visibility:
-        The 'visible if' dependencies for the menu node (which must represent a
-        menu). config.y if there are no 'visible if' dependencies. 'visible if'
-        dependencies are recursively propagated to the prompts of symbols and
-        choices within the menu.
+      The 'visible if' dependencies for the menu node (which must represent a
+      menu). kconfig.y if there are no 'visible if' dependencies. 'visible if'
+      dependencies are recursively propagated to the prompts of symbols and
+      choices within the menu.
 
     is_menuconfig:
-        True if the symbol for the menu node (it must be a symbol) was defined
-        with 'menuconfig' rather than 'config' (at this location). This is a
-        hint on how to display the menu entry. It's ignored by Kconfiglib
-        itself.
-
-    config:
-        The Kconfig the menu node is from.
+      True if the symbol for the menu node (it must be a symbol) was defined
+      with 'menuconfig' rather than 'config' (at this location). This is a hint
+      on how to display the menu entry. It's ignored by Kconfiglib itself.
 
     filename/linenr:
         The location where the menu node appears.
+
+    kconfig:
+      The Kconfig instance the menu node is from.
     """
 
     __slots__ = (
-        "config",
         "dep",
         "filename",
         "help",
         "is_menuconfig",
         "item",
+        "kconfig",
         "linenr",
         "list",
         "next",
@@ -3432,7 +3434,7 @@ def _get_visibility(sc):
     # infinite recursion if something really weird is done with MODULES, but
     # it's not a problem in practice.
     if vis == 1 and \
-       (sc.orig_type != TRISTATE or not sc.config.modules.tri_value):
+       (sc.orig_type != TRISTATE or not sc.kconfig.modules.tri_value):
         return 2
 
     return vis
@@ -3556,7 +3558,7 @@ def _sym_choice_str(sc):
 
         if node.prompt is not None:
             prompt_str = 'prompt "{}"'.format(node.prompt[0])
-            if node.prompt[1] is not sc.config.y:
+            if node.prompt[1] is not sc.kconfig.y:
                 prompt_str += " if " + expr_str(node.prompt[1])
             indent_add(prompt_str)
 
@@ -3564,11 +3566,11 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 if sc.is_allnoconfig_y:
                     indent_add("option allnoconfig_y")
-                if sc is sc.config.defconfig_list:
+                if sc is sc.kconfig.defconfig_list:
                     indent_add("option defconfig_list")
                 if sc.env_var is not None:
                     indent_add('option env="{}"'.format(sc.env_var))
-                if sc is sc.config.modules:
+                if sc is sc.kconfig.modules:
                     indent_add("option modules")
 
             if isinstance(sc, Symbol):
@@ -3576,13 +3578,13 @@ def _sym_choice_str(sc):
                     range_string = "range {} {}" \
                                    .format(expr_str(range_[0]),
                                            expr_str(range_[1]))
-                    if range_[2] is not sc.config.y:
+                    if range_[2] is not sc.kconfig.y:
                         range_string += " if " + expr_str(range_[2])
                     indent_add(range_string)
 
             for default in sc.defaults:
                 default_string = "default " + expr_str(default[0])
-                if default[1] is not sc.config.y:
+                if default[1] is not sc.kconfig.y:
                     default_string += " if " + expr_str(default[1])
                 indent_add(default_string)
 
@@ -3592,13 +3594,13 @@ def _sym_choice_str(sc):
             if isinstance(sc, Symbol):
                 for select in sc.selects:
                     select_string = "select " + select[0].name
-                    if select[1] is not sc.config.y:
+                    if select[1] is not sc.kconfig.y:
                         select_string += " if " + expr_str(select[1])
                     indent_add(select_string)
 
                 for imply in sc.implies:
                     imply_string = "imply " + imply[0].name
-                    if imply[1] is not sc.config.y:
+                    if imply[1] is not sc.kconfig.y:
                         imply_string += " if " + expr_str(imply[1])
                     indent_add(imply_string)
 
@@ -3636,9 +3638,9 @@ def _expr_depends_on(expr, sym):
         if left is not sym:
             return False
 
-        return (expr[0] == EQUAL and right is sym.config.m or \
-                                     right is sym.config.y) or \
-               (expr[0] == UNEQUAL and right is sym.config.n)
+        return (expr[0] == EQUAL and right is sym.kconfig.m or \
+                                     right is sym.kconfig.y) or \
+               (expr[0] == UNEQUAL and right is sym.kconfig.n)
 
     if expr[0] == AND:
         return _expr_depends_on(expr[1], sym) or \
