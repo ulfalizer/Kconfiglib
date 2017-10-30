@@ -2357,7 +2357,6 @@ class Symbol(object):
 
             if vis:
                 mode = self.choice.tri_value
-
                 if mode:
                     self._write_to_conf = True
 
@@ -2801,12 +2800,12 @@ class Choice(object):
                 mode is only possible for choices with the 'optional' flag set
                 (see kconfig-language.txt).
 
-        1 (m) - Any number of choice symbols can be set to "m", the rest will
-                be "n".
+        1 (m) - Any number of choice symbols can be set to m, the rest will
+                be n.
 
-        2 (y) - One symbol will be "y", the rest "n".
+        2 (y) - One symbol will be y, the rest n.
 
-      Only tristate choices can be in "m" mode. The visibility of the choice is
+      Only tristate choices can be in m mode. The visibility of the choice is
       an upper bound on the mode.
 
       The mode changes automatically when a value is assigned to a symbol
@@ -2817,10 +2816,12 @@ class Choice(object):
       of symbol, with special-casing in many code paths. This is why there is a
       lot of similarity to Symbol. The value (mode) of a choice is really just
       a normal symbol value, and an implicit reverse dependency forces its
-      lower bound to 'm' for non-optional choices. Kconfiglib uses a separate
-      Choice class only because it makes the code and interface less confusing
-      (especially in a user-facing interface). Corresponding attributes have
-      the same name in the Symbol and Choice classes, for consistency.
+      lower bound to m for non-optional choices.
+
+      Kconfiglib uses a separate Choice class only because it makes the code
+      and interface less confusing (especially in a user-facing interface).
+      Corresponding attributes have the same name in the Symbol and Choice
+      classes, for consistency.
 
     assignable:
       See the symbol class documentation. Gives the assignable values (modes).
@@ -2829,9 +2830,8 @@ class Choice(object):
       See the Symbol class documentation. Acts on the value (mode).
 
     selection:
-      The currently selected symbol. None if the Choice is not in "y" mode or
-      has no selected symbol (due to unsatisfied dependencies on choice
-      symbols).
+      The currently selected symbol. None if the Choice is not in y mode or has
+      no selected symbol (due to unsatisfied dependencies on choice symbols).
 
       Warning: Do not assign directly to this. It will break things. Call
       sym.set_value(2) on the choice symbol you want to select instead.
@@ -2849,23 +2849,24 @@ class Choice(object):
       Choice.set_value() or Symbol.set_value() instead.
 
     user_selection:
-      The symbol selected by the user (by setting it to "y"). Ignored if the
-      choice is not in "y" mode, but still remembered so that the choice "snaps
-      back" to the user selection if the mode is changed back to "y".
+      The symbol selected by the user (by setting it to y). Ignored if the
+      choice is not in y mode, but still remembered so that the choice "snaps
+      back" to the user selection if the mode is changed back to y.
 
     syms:
       List of symbols contained in the choice.
 
       Gotcha: If a symbol depends on the previous symbol within a choice so
       that an implicit menu is created, it won't be a choice symbol, and won't
-      be included in 'syms'. There are real-world examples of this, and it was
-      a PITA in older versions of Kconfiglib that didn't implement the menu
-      structure.
+      be included in 'syms'. There are real-world examples of this (and it was
+      a PITA to support in older versions of Kconfiglib that didn't implement
+      the menu structure).
 
     nodes:
-      A list of MenuNode's for this symbol. In practice, the list will probably
-      always contain a single MenuNode, but it is possible to define a choice
-      in multiple locations by giving it a name, which adds more nodes.
+      A list of MenuNodes for this choice. In practice, the list will probably
+      always contain a single MenuNode, but it is possible to give a choice a
+      name and define it in multiple locations (i've never even seen a named
+      choice though).
 
     defaults:
       List of (symbol, cond) tuples for the choice's 'defaults' properties. For
@@ -2985,6 +2986,7 @@ class Choice(object):
         """
         See the class documentation.
         """
+        # Any default available?
         for sym, cond in self.defaults:
             if expr_value(cond) and sym.visibility:
                 return sym
@@ -3001,14 +3003,15 @@ class Choice(object):
         """
         Sets the user value (mode) of the choice. Like for Symbol.set_value(),
         the visibility might truncate the value. Choices without the 'optional'
-        attribute (is_optional) can never be in "n" mode, but "n" is still
-        accepted (and ignored) since it's not a malformed value.
+        attribute (is_optional) can never be in n mode, but 0 is still accepted
+        (and ignored) since it's not a malformed value.
         """
         if not ((self.orig_type == BOOL     and value in (0, 2)    ) or
                 (self.orig_type == TRISTATE and value in (0, 1, 2))):
-            self.kconfig._warn("the value '{}' is invalid for the choice, "
+            self.kconfig._warn("the value {} is invalid for the choice, "
                                "which has type {}. Assignment ignored"
-                               .format(value, _TYPENAME[self.orig_type]))
+                               .format(TRI_TO_STR[value],
+                                       _TYPENAME[self.orig_type]))
             return
 
         self.user_value = value
@@ -3153,15 +3156,13 @@ class MenuNode(object):
     item:
       Either a Symbol, a Choice, or one of the constants MENU and COMMENT.
       Menus and comments are represented as plain menu nodes. Ifs are collapsed
-      and do not appear in the final menu tree (matching the C implementation).
+      (matching the C implementation) and do not appear in the final menu tree.
 
     next:
-      The following menu node in the menu tree. None if there is no following
-      node.
+      The following menu node. None if there is no following node.
 
     list:
-      The first child menu node in the menu tree. None if there are no
-      children.
+      The first child menu node. None if there are no children.
 
       Choices and menus naturally have children, but Symbols can have children
       too because of menus created automatically from dependencies (see
@@ -3177,30 +3178,31 @@ class MenuNode(object):
       prompt holds the text.
 
     help:
-      The help text for the menu node. None if there is no help text. Always
-      stored in the node rather than the Symbol or Choice. It is possible to
-      have a separate help at each location if a symbol is defined in multiple
-      locations.
+      The help text for the menu node for Symbols and Choices. None if there is
+      no help text. Always stored in the node rather than the Symbol or Choice.
+      It is possible to have a separate help text at each location if a symbol
+      is defined in multiple locations.
 
     dep:
-      The 'depends on' dependencies for the menu node. None if there are no
-      dependencies. Parent dependencies are propagated to this attribute, and
-      this attribute is then in turn propagated to the properties of symbols
-      and choices.
+      The 'depends on' dependencies for the menu node, or self.kconfig.y if
+      there are no dependencies. Parent dependencies are propagated to this
+      attribute, and this attribute is then in turn propagated to the
+      properties of symbols and choices.
 
       If a symbol is defined in multiple locations, only the properties defined
       at each location get the corresponding MenuNode.dep propagated to them.
 
     visibility:
       The 'visible if' dependencies for the menu node (which must represent a
-      menu). kconfig.y if there are no 'visible if' dependencies. 'visible if'
-      dependencies are recursively propagated to the prompts of symbols and
-      choices within the menu.
+      menu), or self.kconfig.y if there are no 'visible if' dependencies.
+      'visible if' dependencies are recursively propagated to the prompts of
+      symbols and choices within the menu.
 
     is_menuconfig:
       True if the symbol for the menu node (it must be a symbol) was defined
       with 'menuconfig' rather than 'config' (at this location). This is a hint
-      on how to display the menu entry. It's ignored by Kconfiglib itself.
+      on how to display the menu entry. It's ignored internally by Kconfiglib
+      (except when printing symbols).
 
     filename/linenr:
         The location where the menu node appears.
