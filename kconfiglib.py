@@ -671,15 +671,20 @@ class Kconfig(object):
                         # We represent tristate values as 0, 1, 2
                         val = STR_TO_TRI[val[0]]
 
-                        if sym.choice is not None:
-                            mode = sym.choice.user_value
-                            if mode is not None and mode != val:
-                                self._warn("assignment to {} changes mode of "
-                                           'containing choice from {} to {}.'
-                                           .format(name,
-                                                   TRI_TO_STR[mode],
-                                                   TRI_TO_STR[val]),
+                        if sym.choice is not None and val:
+                            # During .config loading, we infer the mode of the
+                            # choice from the kind of values that are assigned
+                            # to the choice symbols
+
+                            prev_mode = sym.choice.user_value
+                            if prev_mode is not None and prev_mode != val:
+                                self._warn("both m and y assigned to symbols "
+                                           "within the same choice",
                                            filename, linenr)
+
+                            # Set the choice's mode
+                            # TODO: this causes redundant invalidation
+                            sym.choice.set_value(val)
 
                     elif sym.orig_type == STRING:
                         string_match = _conf_string_re_match(val)
@@ -2691,13 +2696,8 @@ class Symbol(object):
 
         self.user_value = value
 
-        if self.choice is not None:
-            # Change mode of choice
-            if self.user_value == 2:
-                self.choice.user_value = 2
-                self.choice.user_selection = self
-            elif self.user_value == 1:
-                self.choice.user_value = 1
+        if self.choice is not None and value == 2:
+            self.choice.user_selection = self
 
     def _invalidate(self):
         """
@@ -2799,9 +2799,9 @@ class Choice(object):
       The tristate value (mode) of the choice. A choice can be in one of three
       modes:
 
-        0 (n) - The choice is disabled and no symbols can be selected. This
-                mode is only possible for choices with the 'optional' flag set
-                (see kconfig-language.txt).
+        0 (n) - The choice is disabled and no symbols can be selected. For
+                visible choices, this mode is only possible for choices with
+                the 'optional' flag set (see kconfig-language.txt).
 
         1 (m) - Any number of choice symbols can be set to m, the rest will
                 be n.
@@ -2811,20 +2811,32 @@ class Choice(object):
       Only tristate choices can be in m mode. The visibility of the choice is
       an upper bound on the mode.
 
-      The mode changes automatically when a value is assigned to a symbol
-      within the choice (this makes .config loading "just work"), and can also
-      be changed via Choice.set_value().
+      To change the mode, use Choice.set_value().
 
-      Implementation note: The C tools internally represent choices as a type
-      of symbol, with special-casing in many code paths. This is why there is a
-      lot of similarity to Symbol. The value (mode) of a choice is really just
-      a normal symbol value, and an implicit reverse dependency forces its
-      lower bound to m for non-optional choices.
+      Implementation note:
+        The C tools internally represent choices as a type of symbol, with
+        special-casing in many code paths. This is why there is a lot of
+        similarity to Symbol. The value (mode) of a choice is really just a
+        normal symbol value, and an implicit reverse dependency forces its
+        lower bound to m for visible non-optional choices (the reverse
+        dependency is 'm && <visibility>').
 
-      Kconfiglib uses a separate Choice class only because it makes the code
-      and interface less confusing (especially in a user-facing interface).
-      Corresponding attributes have the same name in the Symbol and Choice
-      classes, for consistency.
+        Symbols within choices get the choice propagated as a dependency to
+        their properties. This makes it so that the mode of the choice acts as
+        an upper bound on e.g. the visibility of choice symbols.
+
+        Kconfiglib uses a separate Choice class only because it makes the code
+        and interface less confusing (especially in a user-facing interface).
+        Corresponding attributes have the same name in the Symbol and Choice
+        classes, for consistency and compatibility.
+
+        Gotcha: This means that Choice instances show up in expressions inside
+        choices. This should normally be invisible even if you're doing manual
+        evaluation of expressions, because the value-related interface of
+        Symbol and Choice is identical. It also makes all the expressions have
+        the "expected" value. A choice inside an expression will be printed as
+        "<choice>" (or "<choice NAME>" for named choices, should those ever
+        show up).
 
     assignable:
       See the symbol class documentation. Gives the assignable values (modes).
@@ -2844,12 +2856,12 @@ class Choice(object):
       any symbol. Can be None for the same reasons as 'selected'.
 
     user_value:
-      The value (mode) selected by the user (through Choice.set_value() or by
-      assigning a value to a symbol within the choice). Either 0, 1, or 2, or
-      None if the user hasn't selected a mode. See Symbol.user_value.
+      The value (mode) selected by the user through Choice.set_value(). Either
+      0, 1, or 2, or None if the user hasn't selected a mode. See
+      Symbol.user_value.
 
       Warning: Do not assign directly to this. It will break things. Use
-      Choice.set_value() or Symbol.set_value() instead.
+      Choice.set_value() instead.
 
     user_selection:
       The symbol selected by the user (by setting it to y). Ignored if the
@@ -3015,10 +3027,9 @@ class Choice(object):
         """
         if not ((self.orig_type == BOOL     and value in (0, 2)    ) or
                 (self.orig_type == TRISTATE and value in (0, 1, 2))):
-            self.kconfig._warn("the value {} is invalid for the choice, "
+            self.kconfig._warn("the value '{}' is invalid for the choice, "
                                "which has type {}. Assignment ignored"
-                               .format(TRI_TO_STR[value],
-                                       TYPE_TO_STR[self.orig_type]))
+                               .format(value, TYPE_TO_STR[self.orig_type]))
             return
 
         self.user_value = value
