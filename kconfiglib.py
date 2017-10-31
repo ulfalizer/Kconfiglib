@@ -12,6 +12,8 @@ from Kconfig-based configuration systems. Features include the following:
  - Inspection of symbol properties and expressions: printing a symbol (calling
    Symbol.__str__()) gives output which could be fed back into a Kconfig parser
    to redefine the symbol, and __str__() is implemented with only public APIs.
+TODO: this isn't true anymore by default for choice symbols (though it could
+be arranged by not printing the choice dependency)
 
    A helpful __repr__() is implemented on all objects as well, also implemented
    with public APIs.
@@ -1336,7 +1338,14 @@ class Kconfig(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
-                node.dep = self._make_and(parent.dep, self._parse_expr(True))
+
+                # See similar code in _parse_properties()
+                if isinstance(node.parent.item, Choice):
+                    parent_dep = parent.item
+                else:
+                    parent_dep = parent.dep
+
+                node.dep = self._make_and(parent_dep, self._parse_expr(True))
 
                 self._parse_block(_T_ENDIF,
                                   node,             # parent
@@ -1563,10 +1572,10 @@ class Kconfig(object):
                     node.item.env_var = env_var
 
                     if env_var not in os.environ:
-                        self._warn("'option env=\"{0}\"' on symbol {1} will "
-                                   "have no effect, because the environment "
+                        self._warn("'option env=\"{0}\"' on symbol {1} has "
+                                   "no effect, because the environment "
                                    "variable {0} is not set"
-                                   .format(node.item.name, env_var),
+                                   .format(env_var, node.item.name),
                                    self._filename, self._linenr)
                     else:
                         defaults.append(
@@ -1634,7 +1643,16 @@ class Kconfig(object):
         # from node.dep propagated.
 
         # First propagate parent dependencies to node.dep
-        node.dep = self._make_and(node.dep, node.parent.dep)
+
+        # If the parent node holds a Choice, we use the Choice itself as the
+        # parent dependency. This matches the C implementation, and makes sense
+        # as the value (mode) of the choice limits the visibility of the
+        # contained choice symbols. Due to the similar interface, Choice works
+        # as a drop-in replacement for Symbol here.
+        if isinstance(node.parent.item, Choice):
+            node.dep = self._make_and(node.dep, node.parent.item)
+        else:
+            node.dep = self._make_and(node.dep, node.parent.dep)
 
         if isinstance(node.item, (Symbol, Choice)):
             if isinstance(node.item, Symbol):
@@ -2309,9 +2327,10 @@ class Symbol(object):
 
         val = 0
         vis = self.visibility
+        self._write_to_conf = (vis != 0)
 
         if self.choice is None:
-            self._write_to_conf = (vis != 0)
+            # Non-choice symbol
 
             if vis and self.user_value is not None:
                 # If the symbol is visible and has a user value, use that
@@ -2342,29 +2361,20 @@ class Symbol(object):
                 val = max(rev_dep_val, val)
                 self._write_to_conf = True
 
-        else:
-            # (bool/tristate) symbol in choice. See _get_visibility() for
-            # more choice-related logic.
+            # m is promoted to y for (1) bool symbols and (2) symbols with a
+            # weak_rev_dep (from imply) of y
+            if val == 1 and \
+               (self.type == BOOL or expr_value(self.weak_rev_dep) == 2):
+                val = 2
 
-            # Initially
-            self._write_to_conf = False
-
-            if vis:
-                mode = self.choice.tri_value
-                if mode:
-                    self._write_to_conf = True
-
-                    if mode == 2:
-                        val = 2 if self.choice.selection is self else 0
-                    elif self.user_value:
-                        # mode == 1, user value available and not 0
-                        val = 1
-
-        # m is promoted to y for (1) bool symbols and (2) symbols with a
-        # weak_rev_dep (from imply) of y
-        if val == 1 and \
-           (self.type == BOOL or expr_value(self.weak_rev_dep) == 2):
-            val = 2
+        elif vis:
+            # Visible (bool/tristate) symbol in choice. See _get_visibility()
+            # for the other choice-specific stuff.
+            if self.choice.tri_value == 2:
+                val = 2 if self.choice.selection is self else 0
+            elif self.user_value:
+                # mode == 1, user value available and not 0
+                val = 1
 
         self._cached_tri_val = val
         return val
@@ -2881,7 +2891,9 @@ class Choice(object):
         "_cached_assignable",
         "_cached_selection",
         "_cached_vis",
+        "_direct_dependents",
         "defaults",
+        "is_constant",
         "is_optional",
         "kconfig",
         "name",
@@ -2918,15 +2930,17 @@ class Choice(object):
         """
         See the class documentation.
         """
+        # This emulates a reverse dependency of 'm && visibility' for
+        # non-optional choices, which is how the C implementation does it
+
+        val = 0 if self.is_optional else 1
+
         if self.user_value is not None:
-            val = min(self.user_value, self.visibility)
-        else:
-            val = 0
+            val = max(val, self.user_value)
 
-        if not val and not self.is_optional:
-            val = 1
+        val = min(val, self.visibility)
 
-        # Promote "m" to "y" for boolean choices
+        # Promote m to y for boolean choices
         return 2 if val == 1 and self.type == BOOL else val
 
     @property
@@ -3098,6 +3112,10 @@ class Choice(object):
         self.nodes = []
 
         self.user_value = self.user_selection = None
+
+        # TODO
+        self.is_constant = False
+        self._direct_dependents = set()
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
@@ -3331,7 +3349,7 @@ def expr_value(expr):
     Passing subexpressions of expressions to this function is allowed and works
     as expected.
     """
-    if isinstance(expr, Symbol):
+    if not isinstance(expr, tuple):
         return expr.tri_value
 
     if expr[0] == AND:
@@ -3392,9 +3410,17 @@ def expr_str(expr):
     Passing subexpressions of expressions to this function is allowed and works
     as expected.
     """
-    if isinstance(expr, Symbol):
+    if not isinstance(expr, tuple):
+        if isinstance(expr, Choice):
+            if expr.name is not None:
+                return "<choice {}>".format(expr.name)
+            return "<choice>"
+
+        # Symbol
+
         if expr.is_constant:
             return '"{}"'.format(escape(expr.name))
+
         return expr.name
 
     if expr[0] == NOT:
@@ -3453,16 +3479,12 @@ def _get_visibility(sc):
     if isinstance(sc, Symbol) and sc.choice is not None:
         if sc.choice.orig_type == TRISTATE and sc.orig_type != TRISTATE and \
            sc.choice.tri_value != 2:
-            # Non-tristate choice symbols in tristate choices depend on the
-            # choice being in mode "y"
+            # Non-tristate choice symbols are only visible in y mode
             return 0
 
         if sc.orig_type == TRISTATE and vis == 1 and sc.choice.tri_value == 2:
-            # Choice symbols with visibility "m" are not visible if the
-            # choice has mode "y"
+            # Choice symbols with m visibility are not visible in y mode
             return 0
-
-        vis = min(vis, sc.choice.visibility)
 
     # Promote m to y if we're dealing with a non-tristate. This might lead to
     # infinite recursion if something really weird is done with MODULES, but
@@ -3478,7 +3500,7 @@ def _make_depend_on(sym, expr):
     Adds 'sym' as a dependency to all symbols in 'expr'. Constant symbols in
     'expr' are skipped as they can never change value anyway.
     """
-    if isinstance(expr, Symbol):
+    if not isinstance(expr, tuple):
         if not expr.is_constant:
             expr._direct_dependents.add(sym)
 
@@ -3660,7 +3682,7 @@ def _expr_depends_on(expr, sym):
     determine if a submenu should be implicitly created. This also influences
     what items inside choice statements are considered choice items.
     """
-    if isinstance(expr, Symbol):
+    if not isinstance(expr, tuple):
         return expr is sym
 
     if expr[0] in (EQUAL, UNEQUAL):

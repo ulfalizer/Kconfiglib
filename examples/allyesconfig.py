@@ -80,6 +80,9 @@ while 1:
         # Handle a choice whose visibility allows it to be in y mode
 
         if choice.visibility == 2:
+            # Enable the choice in case it is optional
+            choice.set_value(2)
+
             selection = choice.default_selection
 
             # Does the choice have a default selection that we haven't already
@@ -96,6 +99,9 @@ while 1:
         # example.
 
         elif choice.visibility == 1:
+            # Enable the choice in case it is optional
+            choice.set_value(1)
+
             for sym in choice.symbols:
 
                 # Does the choice have a symbol that can be m that we haven't
