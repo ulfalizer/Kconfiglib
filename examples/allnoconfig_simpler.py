@@ -5,19 +5,6 @@
 # Usage:
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py
-#
-# Implementation/performance note
-# ===============================
-#
-# Kconfiglib immediately invalidates (flags for recalculation) all (possibly)
-# dependent symbols when a value is assigned to a symbol, which slows this down
-# a bit (due to tons of redundant invalidation), but makes any assignment
-# pattern safe ("just works"). Kconfig.load_config() instead invalidates all
-# symbols up front, making it much faster. If you really need to eke out
-# performance, look at how load_config() does things (which involves internal
-# APIs that don't invalidate symbols). This has been fast enough for all cases
-# I've seen so far though (around 3 seconds for this particular script on my
-# Core i7 2600K, including the initial Kconfig parsing).
 
 from kconfiglib import Kconfig, BOOL, TRISTATE
 import sys

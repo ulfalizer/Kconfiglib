@@ -581,7 +581,7 @@ class Kconfig(object):
         # Do various post-processing of the menu tree
         _finalize_tree(self.top_node)
 
-        # Build Symbol._direct_dependents for all symbols
+        # Build Symbol._dependents for all symbols
         self._build_dep()
 
     @property
@@ -1801,58 +1801,69 @@ class Kconfig(object):
 
     def _build_dep(self):
         """
-        Populates the Symbol._direct_dependents sets, which link symbols to the
-        symbols that immediately depend on them in the sense that changing the
-        value of the symbol might affect the values of the dependent symbols.
-        This is used for caching/invalidation.
+        Populates the Symbol/Choice._dependents sets, which contain all other
+        items (symbols and choices) that immediately depend on the item in the
+        sense that changing the value of the item might affect the value of the
+        dependent items. This is used for caching/invalidation.
 
         The calculated sets might be larger than necessary as we don't do any
         complex analysis of the expressions.
         """
-        # The directly dependent symbols of a symbol S are:
-        #
-        #  - Any symbols whose prompts, default values, rev_dep (select
-        #    condition), weak_rev_dep (imply condition), or ranges depend on S
-        #
-        #  - Any symbol that has S as a direct dependency (has S in
-        #    direct_dep). This is needed to get invalidation right for
-        #    'imply'.
-        #
-        #  - Any symbols that belong to the same choice statement as S. These
-        #    won't be included in S._direct_dependents as it creates dependency
-        #    loops, but S._get_dependent() includes them.
-        #
-        #  - Any symbols in a choice statement that depends on S
-
-        # Only calculate _direct_dependents for defined symbols. Constant and
+        # Only calculate _dependents for defined symbols. Constant and
         # undefined symbols could theoretically be selected/implied, but it
-        # shouldn't change their value, so it's not a true dependency.
+        # wouldn't change their value, so it's not a true dependency.
         for sym in self.defined_syms:
+            # Symbols depend on the following:
+
+            # The prompt conditions
             for node in sym.nodes:
                 if node.prompt is not None:
                     _make_depend_on(sym, node.prompt[1])
 
+            # The default values and their conditions
             for value, cond in sym.defaults:
                 _make_depend_on(sym, value)
                 _make_depend_on(sym, cond)
 
+            # The reverse and weak reverse dependencies
             _make_depend_on(sym, sym.rev_dep)
             _make_depend_on(sym, sym.weak_rev_dep)
 
+            # The ranges along with their conditions
             for low, high, cond in sym.ranges:
                 _make_depend_on(sym, low)
                 _make_depend_on(sym, high)
                 _make_depend_on(sym, cond)
 
+            # The direct dependencies. This is usually redundant, as the direct
+            # dependencies get propagated to properties, but it's needed to get
+            # invalidation solid for 'imply', which only checks the direct
+            # dependencies (even if there are no properties to propagate it
+            # to).
             _make_depend_on(sym, sym.direct_dep)
 
-            if sym.choice is not None:
-                for node in sym.choice.nodes:
-                    if node.prompt is not None:
-                        _make_depend_on(sym, node.prompt[1])
+            # In addition to the above, choice symbols depend on the choice
+            # they're in, but that's handled automatically since the Choice is
+            # propagated to the conditions of the properties before
+            # _build_dep() runs.
 
-                for _, cond in sym.choice.defaults:
-                    _make_depend_on(sym, cond)
+        for choice in self._choices:
+            # Choices depend on the following:
+
+            # The prompt conditions
+            for node in choice.nodes:
+                if node.prompt is not None:
+                    _make_depend_on(choice, node.prompt[1])
+
+            # The default symbol conditions
+            for _, cond in choice.defaults:
+                _make_depend_on(choice, cond)
+
+            # The choice symbols themselves, because the y mode selection might
+            # change if a choice symbol's visibility changes
+            for sym in choice.syms:
+                # the default selection depends on the symbols
+                sym._dependents.add(choice)
 
     def _invalidate_all(self):
         # Undefined symbols never change value and don't need to be
@@ -2173,11 +2184,10 @@ class Symbol(object):
     __slots__ = (
         "_already_written",
         "_cached_assignable",
-        "_cached_deps",
         "_cached_str_val",
         "_cached_tri_val",
         "_cached_vis",
-        "_direct_dependents",
+        "_dependents",
         "_write_to_conf",
         "choice",
         "defaults",
@@ -2223,6 +2233,7 @@ class Symbol(object):
             return self._cached_str_val
 
         if self.orig_type in (BOOL, TRISTATE):
+            # Also calculates the visibility, so invalidation safe
             self._cached_str_val = TRI_TO_STR[self.tri_value]
             return self._cached_str_val
 
@@ -2234,6 +2245,8 @@ class Symbol(object):
             return self.name
 
         val = ""
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
         vis = self.visibility
 
         self._write_to_conf = (vis != 0)
@@ -2331,6 +2344,8 @@ class Symbol(object):
             return self._cached_tri_val
 
         val = 0
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
         vis = self.visibility
         self._write_to_conf = (vis != 0)
 
@@ -2589,16 +2604,13 @@ class Symbol(object):
 
         self.user_value = None
 
-        # Populated in Kconfig._build_dep() after parsing. Links the symbol to
-        # the symbols that immediately depend on it (in a caching/invalidation
-        # sense). The total set of dependent symbols for the symbol is
-        # calculated as needed in _get_dependent().
-        self._direct_dependents = set()
+        # See Kconfig._build_dep()
+        self._dependents = set()
 
         # Cached values
 
         self._cached_str_val = self._cached_tri_val = self._cached_vis = \
-            self._cached_deps = self._cached_assignable = None
+            self._cached_assignable = None
 
         # Flags
 
@@ -2617,6 +2629,8 @@ class Symbol(object):
         if self.orig_type not in (BOOL, TRISTATE):
             return ()
 
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
         vis = self.visibility
 
         if not vis:
@@ -2698,6 +2712,7 @@ class Symbol(object):
 
         if self.choice is not None and value == 2:
             self.choice.user_selection = self
+            self.choice._rec_invalidate()
 
     def _invalidate(self):
         """
@@ -2708,8 +2723,7 @@ class Symbol(object):
 
     def _rec_invalidate(self):
         """
-        Invalidates the symbol and all symbols and choices that (possibly
-        indirectly) depend on it
+        Invalidates the symbol and all items that (possibly) depend on it.
         """
         # Constant symbols must never be invalidated, because they lose their
         # value. They never appear as dependencies, but can still be manually
@@ -2717,52 +2731,27 @@ class Symbol(object):
         if not self.is_constant:
             self._invalidate()
 
-            for item in self._get_dependent():
-                item._invalidate()
-
-    def _get_dependent(self):
-        """
-        Returns the set of symbols that should be invalidated if the value of
-        the symbol changes, because they might be affected by the change. Note
-        that this is an internal API and probably of limited usefulness to
-        clients.
-        """
-        if self._cached_deps is not None:
-            return self._cached_deps
-
-        # Less readable version of the following, measured to reduce the the
-        # running time of _get_dependent() on kernel Kconfigs by about 1/3 as
-        # measured by line_profiler.
-        #
-        # res = set(self._direct_dependents)
-        # for s in self._direct_dependents:
-        #     res |= s._get_dependent()
-        res = self._direct_dependents | \
-              {sym for dep in self._direct_dependents
-                   for sym in dep._get_dependent()}
-
-        if self.choice is not None:
-            # Choices depend on their choice symbols
-            res.add(self.choice)
-
-            # Choice symbols also depend (recursively) on their siblings. The
-            # siblings are not included in _direct_dependents to avoid
-            # dependency loops.
-            for sibling in self.choice.syms:
-                if sibling is not self:
-                    res.add(sibling)
-                    # Less readable version of the following:
-                    #
-                    # res |= sibling._direct_dependents
-                    # for s in sibling._direct_dependents:
-                    #     res |= s._get_dependent()
-                    res |= sibling._direct_dependents | \
-                           {sym for dep in sibling._direct_dependents
-                                for sym in dep._get_dependent()}
-
-        # The tuple conversion sped up allnoconfig_simpler.py by 10%
-        self._cached_deps = tuple(res)
-        return self._cached_deps
+            for item in self._dependents:
+                # _cached_vis doubles as a flag that tells us whether 'item'
+                # has cached values, because it's calculated as a side effect
+                # of calculating all other (non-constant) cached values.
+                #
+                # If item._cached_vis is None, it means there can't be cached
+                # values on other items that depend on 'item', because if there
+                # were, some value on 'item' would have been calculated and
+                # item._cached_vis set as a side effect. It's therefore safe to
+                # stop the invalidation at symbols with _cached_vis None.
+                #
+                # This approach massively speeds up scripts that set a lot of
+                # values, vs simply invalidating all possibly dependent symbols
+                # (even when you already have a list of all the dependent
+                # symbols, because some symbols get huge dependency trees).
+                #
+                # This gracefully handles dependency loops too, which is nice
+                # for choices, where the choice depends on the choice symbols
+                # and vice versa.
+                if item._cached_vis is not None:
+                    item._rec_invalidate()
 
 class Choice(object):
     """
@@ -2903,7 +2892,7 @@ class Choice(object):
         "_cached_assignable",
         "_cached_selection",
         "_cached_vis",
-        "_direct_dependents",
+        "_dependents",
         "defaults",
         "is_constant",
         "is_optional",
@@ -2950,6 +2939,8 @@ class Choice(object):
         if self.user_value is not None:
             val = max(val, self.user_value)
 
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
         val = min(val, self.visibility)
 
         # Promote m to y for boolean choices
@@ -3033,10 +3024,7 @@ class Choice(object):
             return
 
         self.user_value = value
-
-        if self.syms:
-            # Hackish way to invalidate the choice and all the choice symbols
-            self.syms[0]._rec_invalidate()
+        self._rec_invalidate()
 
     def unset_value(self):
         """
@@ -3044,9 +3032,7 @@ class Choice(object):
         the user had never touched the mode or any of the choice symbols.
         """
         self.user_value = self.user_selection = None
-        if self.syms:
-            # Hackish way to invalidate the choice and all the choice symbols
-            self.syms[0]._rec_invalidate()
+        self._rec_invalidate()
 
     def __repr__(self):
         """
@@ -3124,9 +3110,11 @@ class Choice(object):
 
         self.user_value = self.user_selection = None
 
-        # TODO
+        # Checked by _make_depend_on(). Just set it to avoid having to
+        # special-case choices.
         self.is_constant = False
-        self._direct_dependents = set()
+        # See Kconfig._build_dep()
+        self._dependents = set()
 
         # The prompts and default values without any dependencies from
         # enclosing menus and ifs propagated
@@ -3142,7 +3130,8 @@ class Choice(object):
         """
         Worker function for the 'assignable' attribute.
         """
-
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
         vis = self.visibility
 
         if not vis:
@@ -3160,6 +3149,16 @@ class Choice(object):
     def _invalidate(self):
         self._cached_vis = self._cached_assignable = None
         self._cached_selection = _NO_CACHED_SELECTION
+
+    def _rec_invalidate(self):
+        """
+        See Symbol._rec_invalidate()
+        """
+        self._invalidate()
+
+        for item in self._dependents:
+            if item._cached_vis is not None:
+                item._rec_invalidate()
 
 class MenuNode(object):
     """
@@ -3513,7 +3512,7 @@ def _make_depend_on(sym, expr):
     """
     if not isinstance(expr, tuple):
         if not expr.is_constant:
-            expr._direct_dependents.add(sym)
+            expr._dependents.add(sym)
 
     elif expr[0] in (AND, OR):
         _make_depend_on(sym, expr[1])
@@ -3524,9 +3523,9 @@ def _make_depend_on(sym, expr):
 
     elif expr[0] in _RELATIONS:
         if not expr[1].is_constant:
-            expr[1]._direct_dependents.add(sym)
+            expr[1]._dependents.add(sym)
         if not expr[2].is_constant:
-            expr[2]._direct_dependents.add(sym)
+            expr[2]._dependents.add(sym)
 
     else:
         _internal_error("Internal error while fetching symbols from an "

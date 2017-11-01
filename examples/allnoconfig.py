@@ -1,8 +1,8 @@
 # Works like 'make allnoconfig'. Verified by the test suite to generate
 # identical output to 'make allnoconfig' for all ARCHes.
 #
-# See allnoconfig_simpler.py for a much simpler version. This version
-# demonstrates some tree walking and value processing.
+# See allnoconfig_simpler.py for a much simpler version. This more roundabout
+# version demonstrates some tree walking and value processing.
 #
 # Usage:
 #
