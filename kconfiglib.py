@@ -260,7 +260,7 @@ A && B && C           (AND, A, (AND, B, C))
 A || B                (OR, A, B)
 A || (B && C && D)    (OR, A, (AND, B, (AND, C, D)))
 A = B                 (EQUAL, A, B)
-A != "foo"            (UNEQUAL, A, "foo" (constant symbol))
+A != "foo"            (UNEQUAL, A, foo (constant symbol))
 A && B = C && D       (AND, A, (AND, (EQUAL, B, C), D))
 n                     Kconfig.n (constant symbol)
 m                     Kconfig.m (constant symbol)
@@ -302,7 +302,6 @@ Feedback
 Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service, or open a ticket on the GitHub page.
 """
-
 import errno
 import os
 import platform
@@ -2216,7 +2215,6 @@ class Symbol(object):
         """
         See the class documentation.
         """
-
         if self.orig_type == TRISTATE and \
            ((self.choice is not None and self.choice.tri_value == 2) or
             not self.kconfig.modules.tri_value):
@@ -2887,7 +2885,6 @@ class Choice(object):
     kconfig:
       The Kconfig instance this choice is from.
     """
-
     __slots__ = (
         "_cached_assignable",
         "_cached_selection",
@@ -3096,7 +3093,6 @@ class Choice(object):
         Choice constructor -- not intended to be called directly by Kconfiglib
         clients.
         """
-
         # These attributes are always set on the instance from outside and
         # don't need defaults:
         #   kconfig
@@ -3236,7 +3232,6 @@ class MenuNode(object):
     kconfig:
       The Kconfig instance the menu node is from.
     """
-
     __slots__ = (
         "dep",
         "filename",
@@ -3464,8 +3459,8 @@ def escape(s):
 
 def unescape(s):
     r"""
-    Unescapes the string 's'. Any character preceded by a \ is replaced with
-    just that character. Used internally when reading .config files.
+    Unescapes the string 's'. \ followed by any character is replaced with just
+    that character. Used internally when reading .config files.
     """
     return _unescape_re_sub(r"\1", s)
 
@@ -3690,7 +3685,7 @@ def _expr_depends_on(expr, sym):
     """
     Reimplementation of expr_depends_symbol() from mconf.c. Used to
     determine if a submenu should be implicitly created. This also influences
-    what items inside choice statements are considered choice items.
+    which items inside choice statements are considered choice items.
     """
     if not isinstance(expr, tuple):
         return expr is sym
@@ -3736,7 +3731,6 @@ def _check_auto_menu(node):
     menu rooted at 'node' with the nodes as the children if such nodes are
     found. The recursive call to _finalize_tree() makes this work recursively.
     """
-
     cur = node
     while cur.next is not None and \
           _has_auto_menu_dep(node, cur.next):
@@ -3756,7 +3750,6 @@ def _flatten(node):
     appear after them instead. This gives a clean menu structure with no
     unexpected "jumps" in the indentation.
     """
-
     while node is not None:
         if node.list is not None and \
            (node.prompt is None or node.prompt == ""):
@@ -3828,7 +3821,6 @@ def _finalize_tree(node):
     menu_finalize() from the C implementation, though we propagate dependencies
     during parsing instead.
     """
-
     # The ordering here gets a bit tricky. It's important to do things in this
     # order to have everything work out correctly.
 
