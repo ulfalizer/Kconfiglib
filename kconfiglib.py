@@ -2250,6 +2250,11 @@ class Symbol(object):
         self._write_to_conf = (vis != 0)
 
         if self.orig_type in (INT, HEX):
+            # The C implementation checks the user value against the range in a
+            # separate code path (post-processing after loading a .config).
+            # Checking all values here instead makes more sense for us. It
+            # requires that we check for a range first.
+
             base = _TYPE_TO_BASE[self.orig_type]
 
             # Check if a range is in effect
@@ -2257,6 +2262,8 @@ class Symbol(object):
                 if expr_value(cond):
                     has_active_range = True
 
+                    # The zeros are from the C implementation running strtoll()
+                    # on empty strings
                     low = int(low_expr.str_value, base) if \
                       _is_base_n(low_expr.str_value, base) else 0
                     high = int(high_expr.str_value, base) if \
@@ -2283,36 +2290,31 @@ class Symbol(object):
                     if expr_value(cond):
                         self._write_to_conf = True
 
-                        # Similarly to above, well-formed defaults are
-                        # preserved as is. Defaults that do not satisfy a range
-                        # constraints are clamped and take on a standard form.
-
                         val = val_expr.str_value
 
                         if _is_base_n(val, base):
                             val_num = int(val, base)
-                            # TODO: move outside?
-                            if has_active_range:
-                                clamped_val = None
+                        else:
+                            val_num = 0  # strtoll() on empty string
 
-                                if val_num < low:
-                                    clamped_val = low
-                                elif val_num > high:
-                                    clamped_val = high
-
-                                if clamped_val is not None:
-                                    val = (hex(clamped_val)
-                                           if self.orig_type == HEX else
-                                           str(clamped_val))
-
-                            break
-
+                        break
                 else:
-                    # No default kicked in. If there is an active range
-                    # constraint, then the low end of the range is used,
-                    # provided it's > 0, with "0x" prepended as appropriate.
-                    if has_active_range and low > 0:
-                        val = (hex(low) if self.orig_type == HEX else str(low))
+                    val_num = 0  # strtoll() on empty string
+
+                # This clamping procedure runs even if there's no default
+                if has_active_range:
+                    clamp = None
+                    if val_num < low:
+                        clamp = low
+                    elif val_num > high:
+                        clamp = high
+
+                    if clamp is not None:
+                        # The value is rewritten to a standard form if it is
+                        # clamped
+                        val = str(clamp) \
+                              if self.orig_type == INT else \
+                              hex(clamp)
 
         elif self.orig_type == STRING:
             if vis and self.user_value is not None:
