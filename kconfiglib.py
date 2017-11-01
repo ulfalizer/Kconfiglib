@@ -3256,18 +3256,23 @@ class MenuNode(object):
 
         if isinstance(self.item, Symbol):
             fields.append("menu node for symbol " + self.item.name)
+
         elif isinstance(self.item, Choice):
             s = "menu node for choice"
             if self.item.name is not None:
                 s += " " + self.item.name
             fields.append(s)
+
         elif self.item == MENU:
             fields.append("menu node for menu")
+
         elif self.item == COMMENT:
             fields.append("menu node for comment")
+
         elif self.item is None:
             fields.append("menu node for if (should not appear in the final "
                           " tree)")
+
         else:
             raise InternalError("unable to determine type in "
                                 "MenuNode.__repr__()")
@@ -3618,9 +3623,10 @@ def _sym_choice_str(sc):
             indent_add(TYPE_TO_STR[sc.orig_type])
 
         if node.prompt is not None:
-            prompt_str = 'prompt "{}"'.format(escape(node.prompt[0]))
-            if node.prompt[1] is not sc.kconfig.y:
-                prompt_str += " if " + expr_str(node.prompt[1])
+            prompt, cond = node.prompt
+            prompt_str = 'prompt "{}"'.format(escape(prompt))
+            if cond is not sc.kconfig.y:
+                prompt_str += " if " + expr_str(cond)
             indent_add(prompt_str)
 
         if node is sc.nodes[0]:
@@ -3638,34 +3644,33 @@ def _sym_choice_str(sc):
                     indent_add("option modules")
 
             if isinstance(sc, Symbol):
-                for range_ in sc.ranges:
+                for low, high, cond in sc.ranges:
                     range_string = "range {} {}" \
-                                   .format(expr_str(range_[0]),
-                                           expr_str(range_[1]))
-                    if range_[2] is not sc.kconfig.y:
-                        range_string += " if " + expr_str(range_[2])
+                                   .format(expr_str(low), expr_str(high))
+                    if cond is not sc.kconfig.y:
+                        range_string += " if " + expr_str(cond)
                     indent_add(range_string)
 
-            for default in sc.defaults:
-                default_string = "default " + expr_str(default[0])
-                if default[1] is not sc.kconfig.y:
-                    default_string += " if " + expr_str(default[1])
+            for default, cond in sc.defaults:
+                default_string = "default " + expr_str(default)
+                if cond is not sc.kconfig.y:
+                    default_string += " if " + expr_str(cond)
                 indent_add(default_string)
 
             if isinstance(sc, Choice) and sc.is_optional:
                 indent_add("optional")
 
             if isinstance(sc, Symbol):
-                for select in sc.selects:
-                    select_string = "select " + select[0].name
-                    if select[1] is not sc.kconfig.y:
-                        select_string += " if " + expr_str(select[1])
+                for select, cond in sc.selects:
+                    select_string = "select " + select.name
+                    if cond is not sc.kconfig.y:
+                        select_string += " if " + expr_str(cond)
                     indent_add(select_string)
 
-                for imply in sc.implies:
-                    imply_string = "imply " + imply[0].name
-                    if imply[1] is not sc.kconfig.y:
-                        imply_string += " if " + expr_str(imply[1])
+                for imply, cond in sc.implies:
+                    imply_string = "imply " + imply.name
+                    if cond is not sc.kconfig.y:
+                        imply_string += " if " + expr_str(cond)
                     indent_add(imply_string)
 
         if node.help is not None:
