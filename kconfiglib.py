@@ -420,11 +420,11 @@ class Kconfig(object):
     """
     __slots__ = (
         "_choices",
-        "_loading_config",
         "_print_undef_assign",
         "_print_warnings",
         "_set_re_match",
         "_unset_re_match",
+        "_warn_no_prompt",
         "config_prefix",
         "const_syms",
         "defconfig_list",
@@ -584,7 +584,7 @@ class Kconfig(object):
         # Build Symbol._dependents for all symbols
         self._build_dep()
 
-        self._loading_config = False
+        self._warn_no_prompt = False
 
     @property
     def mainmenu_text(self):
@@ -627,14 +627,15 @@ class Kconfig(object):
           True if all existing user values should be cleared before loading the
           .config.
         """
-        # Are we currently loading a .config file? This disables a warning.
-        self._loading_config = True
+        # Disable the warning about assigning to symbols without prompts. This
+        # is normal and expected within a .config file.
+        self._warn_no_prompt = False
 
-        # This stub only exists to make sure _loading_config gets unset
+        # This stub only exists to make sure _warn_no_prompt gets reenabled
         try:
             self._load_config(filename, replace)
         finally:
-            self._loading_config = False
+            self._warn_no_prompt = True
 
     def _load_config(self, filename, replace):
         with self._open(filename) as f:
@@ -821,14 +822,18 @@ class Kconfig(object):
         Resets the user values of all symbols, as if Kconfig.load_config() or
         Symbol.set_value() had never been called.
         """
-        # set_value() already rejects undefined symbols, and they don't need to
-        # be invalidated (because their value never changes), so we can just
-        # iterate over defined symbols
-        for sym in self.defined_syms:
-            sym.unset_value()
+        self._warn_no_prompt = False
+        try:
+            # set_value() already rejects undefined symbols, and they don't
+            # need to be invalidated (because their value never changes), so we
+            # can just iterate over defined symbols
+            for sym in self.defined_syms:
+                sym.unset_value()
 
-        for choice in self._choices:
-            choice.unset_value()
+            for choice in self._choices:
+                choice.unset_value()
+        finally:
+            self._warn_no_prompt = True
 
     def enable_warnings(self):
         """
@@ -2537,35 +2542,20 @@ class Symbol(object):
 
             return
 
-        if not self.nodes:
-            self.kconfig._warn_undef_assign(
-                "{} is constant or undefined. '{}' assignment ignored."
-                .format(self.name, value))
-            return
-
-        for node in self.nodes:
-            if node.prompt is not None:
-                break
-        else:
-            # Assignments to promptless symbols are expected when loading a
-            # .config
-            if not self.kconfig._loading_config:
-                self.kconfig._warn("{} has no prompt. '{}' assignment ignored."
-                                   .format(self.name, value))
-            return
-
         if self.choice is not None and value == 2:
             # Remember this as a choice selection only. Makes switching back
             # and forth between choice modes work as expected, and makes the
             # check for whether the user value is the same as before above
             # safe.
             self.choice.user_selection = self
-            self.choice._rec_invalidate()
             self.choice._was_set = True
+            if self._is_user_assignable():
+                self.choice._rec_invalidate()
         else:
             self.user_value = value
-            self._rec_invalidate()
             self._was_set = True
+            if self._is_user_assignable():
+                self._rec_invalidate()
 
     def unset_value(self):
         """
@@ -2574,7 +2564,8 @@ class Symbol(object):
         """
         if self.user_value is not None:
             self.user_value = None
-            self._rec_invalidate()
+            if self._is_user_assignable():
+                self._rec_invalidate()
 
     def __repr__(self):
         """
@@ -2744,6 +2735,25 @@ class Symbol(object):
         # vis == rev_dep_val == 1
 
         return (1,)
+
+    def _is_user_assignable(self):
+        """
+        Returns True if the symbol has a prompt, meaning a user value might
+        have an effect on it. Used as an optimization to skip invalidation when
+        promptless symbols are assigned to (given a user value).
+
+        Prints a warning if the symbol has no prompt. In some contexts (e.g.
+        when loading a .config files) assignments to promptless symbols are
+        normal and expected, so the warning can be disabled.
+        """
+        for node in self.nodes:
+            if node.prompt is not None:
+                return True
+
+        if self.kconfig._warn_no_prompt:
+            self.kconfig._warn(self.name + " has no prompt, meaning user "
+                               "values have no effect on it")
+        return False
 
     def _invalidate(self):
         """

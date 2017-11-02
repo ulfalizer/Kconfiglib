@@ -39,13 +39,13 @@ config BOOL
     bool "bool" if NOT_DEFINED_1
 
 config TRISTATE
-    tristate "A"
+    tristate # Visibility should not affect user value
 
 config STRING
     string "string"
 
 config INT
-    int "INT"
+    int # Visibility should not affect user value
 
 config HEX
     hex "hex"

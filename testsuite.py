@@ -1933,11 +1933,11 @@ def test_sanity(conf, arch):
         conf.disable_warnings()
         sym.set_value(2)
         sym.set_value("foo")
+        sym.unset_value()
         conf.enable_warnings()
         sym.str_value
         sym.tri_value
         sym.type
-        sym.unset_value()
         sym.user_value
         sym.visibility
 
@@ -1971,11 +1971,11 @@ def test_sanity(conf, arch):
         conf.disable_warnings()
         sym.set_value(2)
         sym.set_value("foo")
+        sym.unset_value()
         conf.enable_warnings()
         sym.str_value
         sym.tri_value
         sym.type
-        sym.unset_value()
         sym.visibility
 
     # Cheat with internals
