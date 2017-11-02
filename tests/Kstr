@@ -74,4 +74,5 @@ endchoice
 
 choice
     tristate "no name"
+    optional
 endchoice

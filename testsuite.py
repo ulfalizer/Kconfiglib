@@ -584,6 +584,7 @@ choice CHOICE
 choice
 	tristate
 	prompt "no name"
+	optional
 """)
 
 
@@ -1052,7 +1053,6 @@ g
     verify_value("INACTIVE_RANGE", "2")
     verify_value("ACTIVE_RANGE", "1")
 
-    # TODO: test symbol references in some other way?
     # TODO: test selects in some other way?
     # TODO: test implies in some other way?
 
@@ -1096,9 +1096,6 @@ g
     verify(c.defconfig_filename == "Kconfiglib/tests/sub/defconfig_in_sub",
            "defconfig_filename gave wrong file with $srctree set")
 
-    #
-    # mainmenu_text
-    #
 
     print("Testing mainmenu_text...")
 
@@ -1112,29 +1109,18 @@ g
     verify(c.mainmenu_text == "---bar baz---",
            "Wrong mainmenu text")
 
-    #
-    # Misc. minor APIs
-    #
-
-    os.environ["ENV_VAR"] = "foo"
-    # Contains reference to undefined environment variable, so disable warnings
-    c = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
-
-    print("Testing is_optional...")
-
-    verify(not get_choices(c)[0].is_optional,
-           "First choice should not be optional")
-    verify(get_choices(c)[1].is_optional,
-           "Second choice should be optional")
 
     print("Testing user_value...")
+
+    # References undefined env. var. Disable warnings.
+    c = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
 
     # Avoid warnings from assigning invalid user values and assigning user
     # values to symbols without prompts
     c.disable_warnings()
 
-    syms = [c.syms[name] for name in \
-      ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
+    syms = [c.syms[name] for name in
+            "BOOL", "TRISTATE", "STRING", "INT", "HEX"]
 
     for sym in syms:
         verify(sym.user_value is None,
@@ -1183,6 +1169,7 @@ g
         verify(not c.syms[name].nodes,
                "{} should not be defined".format(name))
 
+
     print("Testing Symbol.choice...")
 
     for name in "A", "B", "C", "D":
@@ -1211,9 +1198,6 @@ g
            ur.env_var == "<uname release>",
            "UNAME_RELEASE has wrong fields")
 
-    #
-    # .config reading and writing
-    #
 
     print("Testing .config reading and writing...")
 
