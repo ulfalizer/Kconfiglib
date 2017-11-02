@@ -104,33 +104,13 @@ def run_tests():
     run_selftests()
     run_compatibility_tests()
 
-def get_items(config, type_):
-    items = []
-    def rec(node):
-        if node is not None:
-             if isinstance(node.item, type_):
-                 items.append(node.item)
-             rec(node.list)
-             rec(node.next)
-    rec(config.top_node)
-    return items
-
-def get_choices(config):
-    choices = get_items(config, Choice)
-    unique_choices = []
-    for choice in choices:
-        if choice not in unique_choices:
-            unique_choices.append(choice)
-    return unique_choices
-
-STR_TO_TRI = {"n": 0, "m": 1, "y": 2}
-TRI_TO_STR = {0: "n", 1: "m", 2: "y"}
-
 def run_selftests():
     #
     # Common helper functions. These all expect 'c' to hold the current
     # configuration.
     #
+
+    TRI_TO_STR = {0: "n", 1: "m", 2: "y"}
 
     def verify_value(sym_name, val):
         """
@@ -436,7 +416,7 @@ def run_selftests():
             pass
         else:
             fail('expected eval_string("{}") to throw KconfigSyntaxError, ' \
-                 'didn\'t'.format(expr))
+                 "didn't".format(expr))
 
     # The C implementation's parser can be pretty lax about syntax. Kconfiglib
     # sometimes needs to emulate that. Verify that some bad stuff throws
@@ -954,6 +934,7 @@ g
         that assigning values outside this range reverts the value back to
         'default' (None if it should revert back to "")."""
         is_hex = (c.syms[sym_name].type == HEX)
+
         for i in range(low, high + 1):
             assign_and_verify_user_value(sym_name, str(i), str(i))
             if is_hex:
@@ -1015,9 +996,6 @@ g
 
     verify_value("INACTIVE_RANGE", "2")
     verify_value("ACTIVE_RANGE", "1")
-
-    # TODO: test selects in some other way?
-    # TODO: test implies in some other way?
 
     #
     # defconfig_filename
@@ -1345,20 +1323,13 @@ g
 
     c = Kconfig("Kconfiglib/tests/Kchoice")
 
-    choice_bool, choice_bool_opt, choice_tristate, choice_tristate_opt, \
-      choice_bool_m, choice_tristate_m, choice_defaults, \
-      choice_defaults_not_visible, choice_no_type_bool, \
-      choice_no_type_tristate, choice_missing_member_type_1, \
-      choice_missing_member_type_2, choice_weird_syms = get_choices(c)
+    for name in "BOOL", "BOOL_OPT", "BOOL_M", "DEFAULTS":
+        verify(c.named_choices[name].orig_type == BOOL,
+               "choice {} should have type bool".format(name))
 
-    for choice in choice_bool, choice_bool_opt, choice_bool_m, choice_defaults:
-        verify(choice.type == BOOL,
-               "choice {} should have type bool".format(choice.name))
-
-    for choice in choice_tristate, choice_tristate_opt, choice_tristate_m:
-        verify(choice.orig_type == TRISTATE,
-               "choice {} should have type tristate"
-               .format(choice.name))
+    for name in "TRISTATE", "TRISTATE_OPT", "TRISTATE_M":
+        verify(c.named_choices[name].orig_type == TRISTATE,
+               "choice {} should have type tristate".format(name))
 
     def select_and_verify(sym):
         choice = sym.nodes[0].parent.item
@@ -1385,7 +1356,9 @@ g
                 verify(sibling.tri_value == 0,
                        sibling.name + " should be n when not selected")
 
-    def select_and_verify_all(choice):
+    def select_and_verify_all(choice_name):
+        choice = c.named_choices[choice_name]
+
         # Select in forward order
         for sym in choice.syms:
             select_and_verify(sym)
@@ -1394,7 +1367,9 @@ g
         for sym in reversed(choice.syms):
             select_and_verify(sym)
 
-    def verify_mode(choice, no_modules_mode, modules_mode):
+    def verify_mode(choice_name, no_modules_mode, modules_mode):
+        choice = c.named_choices[choice_name]
+
         c.modules.set_value(0)
         verify(choice.tri_value == no_modules_mode,
                'Wrong mode for choice {} with no modules. Expected {}, got {}.'
@@ -1405,26 +1380,31 @@ g
                'Wrong mode for choice {} with modules. Expected {}, got {}.'
                .format(choice.name, modules_mode, choice.tri_value))
 
-    verify_mode(choice_bool,         2, 2)
-    verify_mode(choice_bool_opt,     0, 0)
-    verify_mode(choice_tristate,     2, 1)
-    verify_mode(choice_tristate_opt, 0, 0)
-    verify_mode(choice_bool_m,       0, 2)
-    verify_mode(choice_tristate_m,   0, 1)
+    verify_mode("BOOL",         2, 2)
+    verify_mode("BOOL_OPT",     0, 0)
+    verify_mode("TRISTATE",     2, 1)
+    verify_mode("TRISTATE_OPT", 0, 0)
+    verify_mode("BOOL_M",       0, 2)
+    verify_mode("TRISTATE_M",   0, 1)
 
     # Test defaults
 
+    choice = c.named_choices["DEFAULTS"]
+
     c.syms["TRISTATE_SYM"].set_value(0)
-    verify(choice_defaults.selection is c.syms["OPT_4"],
+    verify(choice.selection is c.syms["OPT_4"],
            "Wrong choice default with TRISTATE_SYM = n")
+
     c.syms["TRISTATE_SYM"].set_value(2)
-    verify(choice_defaults.selection is c.syms["OPT_2"],
+    verify(choice.selection is c.syms["OPT_2"],
            "Wrong choice default with TRISTATE_SYM = y")
+
     c.syms["OPT_1"].set_value(2)
-    verify(choice_defaults.selection is c.syms["OPT_1"],
+    verify(choice.selection is c.syms["OPT_1"],
            "User selection should override defaults")
 
-    verify(choice_defaults_not_visible.selection is c.syms["OPT_8"],
+    verify(c.named_choices["DEFAULTS_NOT_VISIBLE"].selection
+           is c.syms["OPT_8"],
            "Non-visible choice symbols should cause the next default to be "
            "considered")
 
@@ -1432,34 +1412,34 @@ g
 
     c.modules.set_value(2)
 
-    select_and_verify_all(choice_bool)
-    select_and_verify_all(choice_bool_opt)
-    select_and_verify_all(choice_tristate)
-    select_and_verify_all(choice_tristate_opt)
+    select_and_verify_all("BOOL")
+    select_and_verify_all("BOOL_OPT")
+    select_and_verify_all("TRISTATE")
+    select_and_verify_all("TRISTATE_OPT")
     # For BOOL_M, the mode should have been promoted
-    select_and_verify_all(choice_bool_m)
+    select_and_verify_all("BOOL_M")
 
     # Test m mode selection
 
-    choice_tristate.set_value(1)
+    c.named_choices["TRISTATE"].set_value(1)
     assign_and_verify_value("T_1", 1, 1)
     assign_and_verify_value("T_2", 1, 1)
 
     c.syms["T_1"].set_value(0)  # Check that this is remembered later
 
     # Switching to y mode should cause T_1 to become selected
-    choice_tristate.set_value(2)
+    c.named_choices["TRISTATE"].set_value(2)
     verify_value("T_1", 2)
     verify_value("T_2", 0)
 
     # Switching back to m mode should restore the old values
-    choice_tristate.set_value(1)
+    c.named_choices["TRISTATE"].set_value(1)
     verify_value("T_1", 0)
     verify_value("T_2", 1)
 
     assign_and_verify_value("TM_1", 1, 1)
     assign_and_verify_value("TM_1", 2, 1)  # Ignored
-    verify(choice_tristate_m.tri_value == 1,
+    verify(c.named_choices["TRISTATE"].tri_value == 1,
            "m-visible choice got invalid mode")
 
     assign_and_verify_value("TM_1", 0, 0)
@@ -1468,37 +1448,39 @@ g
     # Verify that choices with no explicitly specified type get the type of the
     # first contained symbol with a type
 
-    verify(choice_no_type_bool.orig_type == BOOL,
+    verify(c.named_choices["NO_TYPE_BOOL"].orig_type == BOOL,
            "Expected first choice without explicit type to have type bool")
-    verify(choice_no_type_tristate.orig_type == TRISTATE,
+
+    verify(c.named_choices["NO_TYPE_TRISTATE"].orig_type == TRISTATE,
            "Expected second choice without explicit type to have type "
            "tristate")
 
     # Verify that symbols without a type in the choice get the type of the
     # choice
 
-    verify((c.syms["MMT_1"].orig_type, c.syms["MMT_2"].orig_type,
-            c.syms["MMT_3"].orig_type) == (BOOL, BOOL, TRISTATE),
-           "Wrong types for first choice with missing member types")
+    for name in "MMT_1", "MMT_2", "MMT_4", "MMT_5":
+        verify(c.syms[name].orig_type == BOOL,
+               "Expected {} to get type bool".format(name))
 
-    verify((c.syms["MMT_4"].orig_type, c.syms["MMT_5"].orig_type) ==
-             (BOOL, BOOL),
-           "Wrong types for second choice with missing member types")
+    verify(c.syms["MMT_3"].orig_type == TRISTATE,
+           "Expected MMT_3 to have type tristate")
 
     # Verify that symbols in choices that depend on the preceding symbol aren't
     # considered choice symbols
 
+    weird_choice = c.named_choices["WEIRD_SYMS"]
+
     def verify_is_normal_choice_symbol(name):
         sym = c.syms[name]
         verify(sym.choice is not None and
-               sym in choice_weird_syms.syms and
-               sym.nodes[0].parent.item is choice_weird_syms,
+               sym in weird_choice.syms and
+               sym.nodes[0].parent.item is weird_choice,
                "{} should be a normal choice symbol".format(sym.name))
 
     def verify_is_weird_choice_symbol(name):
         sym = c.syms[name]
         verify(sym.choice is None and
-               sym not in choice_weird_syms.syms,
+               sym not in weird_choice.syms,
                "{} should be a weird (non-)choice symbol"
                .format(sym.name))
 
