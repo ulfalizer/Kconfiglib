@@ -1261,27 +1261,18 @@ g
     verify_value("IGNOREME", "y")
 
 
-    print("Testing Kconfig separation")
+    print("Testing Kconfig fetching and separation")
 
-    c1 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
-    c2 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
-
-    c1_undef, c1_bool, c1_choice, c1_menu, c1_comment = c1.syms["BOOL"], \
-        c1.syms["NOT_DEFINED_1"], get_choices(c1)[0], get_menus(c1)[0], \
-        get_comments(c1)[0]
-    c2_undef, c2_bool, c2_choice, c2_menu, c2_comment = c2.syms["BOOL"], \
-        c2.syms["NOT_DEFINED_1"], get_choices(c2)[0], get_menus(c2)[0], \
-        get_comments(c2)[0]
-
-    verify((c1_undef is not c2_undef) and (c1_bool is not c2_bool) and
-           (c1_choice is not c2_choice) and (c1_menu is not c2_menu) and
-           (c1_comment is not c2_comment) and
-           (c1_undef.kconfig   is c1) and (c2_undef.kconfig   is c2) and
-           (c1_bool.kconfig    is c1) and (c2_bool.kconfig    is c2) and
-           (c1_choice.kconfig  is c1) and (c2_choice.kconfig  is c2) and
-           (c1_menu.kconfig    is c1) and (c2_menu.kconfig    is c2) and
-           (c1_comment.kconfig is c1) and (c2_comment.kconfig is c2),
-           "Config instance state separation or .config is broken")
+    for c in Kconfig("Kconfiglib/tests/Kmisc", warn=False), \
+             Kconfig("Kconfiglib/tests/Kmisc", warn=False):
+        for item in c.syms["BOOL"], \
+                    c.syms["BOOL"].nodes[0], \
+                    c.named_choices["OPTIONAL"], \
+                    c.named_choices["OPTIONAL"].nodes[0], \
+                    c.syms["MENU_HOOK"].nodes[0].next, \
+                    c.syms["COMMENT_HOOK"].nodes[0].next:
+            verify(item.kconfig is c,
+                   ".kconfig not properly set for " + repr(item))
 
 
     print("Testing imply semantics")

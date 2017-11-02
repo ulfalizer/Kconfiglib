@@ -51,7 +51,10 @@ config HEX
     hex "hex"
     depends on NOT_DEFINED_2
 
+config COMMENT_HOOK
 comment "comment"
+
+config MENU_HOOK
 menu "menu"
     depends on NOT_DEFINED_3 || NOT_DEFINED_2
     depends on !NOT_DEFINED_4
