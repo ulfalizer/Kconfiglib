@@ -2543,15 +2543,16 @@ class Symbol(object):
                 .format(self.name, value))
             return
 
-        # Assignments to promptless symbols are expected when loading a .config
-        if not self.kconfig._loading_config:
-            for node in self.nodes:
-                if node.prompt is not None:
-                    break
-            else:
+        for node in self.nodes:
+            if node.prompt is not None:
+                break
+        else:
+            # Assignments to promptless symbols are expected when loading a
+            # .config
+            if not self.kconfig._loading_config:
                 self.kconfig._warn("{} has no prompt. '{}' assignment ignored."
                                    .format(self.name, value))
-                return
+            return
 
         if self.choice is not None and value == 2:
             # Remember this as a choice selection only. Makes switching back
