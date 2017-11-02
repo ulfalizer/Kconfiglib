@@ -115,28 +115,6 @@ def get_items(config, type_):
     rec(config.top_node)
     return items
 
-def get_comments(config):
-    items = []
-    def rec(node):
-        if node is not None:
-             if node.item == COMMENT:
-                 items.append(node)
-             rec(node.list)
-             rec(node.next)
-    rec(config.top_node)
-    return items
-
-def get_menus(config):
-    items = []
-    def rec(node):
-        if node is not None:
-             if node.item == MENU:
-                 items.append(node)
-             rec(node.list)
-             rec(node.next)
-    rec(config.top_node)
-    return items
-
 def get_choices(config):
     choices = get_items(config, Choice)
     unique_choices = []
@@ -144,13 +122,6 @@ def get_choices(config):
         if choice not in unique_choices:
             unique_choices.append(choice)
     return unique_choices
-
-def get_prompts(item):
-    prompts = []
-    for node in item.nodes:
-        if node.prompt is not None:
-            prompts.append(node.prompt[0])
-    return prompts
 
 STR_TO_TRI = {"n": 0, "m": 1, "y": 2}
 TRI_TO_STR = {0: "n", 1: "m", 2: "y"}
