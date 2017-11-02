@@ -265,11 +265,11 @@ def run_selftests():
     verify_eval("M", 1)
     verify_eval("(Y || N) && (m && y)", 1)
 
-    # Non-bool/non-tristate symbols are always "n" in a tristate sense
+    # Non-bool/non-tristate symbols are always n in a tristate sense
     verify_eval("Y_STRING", 0)
     verify_eval("Y_STRING || m", 1)
 
-    # As are all constants besides "y" and "m"
+    # As are all constants besides y and m
     verify_eval('"foo"', 0)
     verify_eval('"foo" || "bar"', 0)
     verify_eval('"foo" || m', 1)
@@ -1098,6 +1098,7 @@ g
                "{} should not have a user value after being reset".
                format(s.name))
 
+
     print("Testing defined vs undefined symbols")
 
     for name in "A", "B", "C", "D", "BOOL", "TRISTATE", "STRING", "INT", "HEX":
@@ -1122,6 +1123,7 @@ g
                 "NOT_DEFINED_2", "NOT_DEFINED_3", "NOT_DEFINED_4":
         verify(c.syms[name].choice is None,
                "{} should not be a choice symbol".format(name))
+
 
     print("Testing is_allnoconfig_y")
 
@@ -1268,7 +1270,7 @@ g
     assign_and_verify("DIRECT_DEP", 2)
 
     # Verify that IMPLIED_TRISTATE can be set to anything when IMPLY has value
-    # "n", and that it gets the value "n" by default (for non-imply-related
+    # n, and that it gets the value n by default (for non-imply-related
     # reasons)
 
     assign_and_verify("IMPLY", 0)
@@ -1278,7 +1280,7 @@ g
     c.syms["IMPLIED_TRISTATE"].unset_value()
     verify_value("IMPLIED_TRISTATE", "n")
 
-    # Same as above for "m". Anything still goes, but "m" by default now.
+    # Same as above for m. Anything still goes, but m by default now.
 
     assign_and_verify("IMPLY", 1)
     assign_and_verify("IMPLIED_TRISTATE", 0)
@@ -1287,8 +1289,8 @@ g
     c.syms["IMPLIED_TRISTATE"].unset_value()
     verify_value("IMPLIED_TRISTATE", 1)
 
-    # Same as above for "y". Only "n" and "y" should be accepted. "m" gets
-    # promoted to "y". Default should be "y".
+    # Same as above for y. Only n and y should be accepted. m gets promoted to
+    # y. Default should be y.
 
     assign_and_verify("IMPLY", 2)
     assign_and_verify("IMPLIED_TRISTATE", 0)
@@ -1297,7 +1299,7 @@ g
     c.syms["IMPLIED_TRISTATE"].unset_value()
     verify_value("IMPLIED_TRISTATE", 2)
 
-    # Being implied to either "m" or "y" should give a bool the value "y"
+    # Being implied to either m or y should give a bool the value y
 
     c.syms["IMPLY"].unset_value()
     verify_value("IMPLIED_BOOL", 0)
@@ -1308,7 +1310,7 @@ g
     assign_and_verify("IMPLY", 2)
     verify_value("IMPLIED_BOOL", 2)
 
-    # A bool implied to "m" or "y" can take the values "n" and "y"
+    # A bool implied to m or y can take the values n and y
 
     c.syms["IMPLY"].set_value(1)
     assign_and_verify("IMPLIED_BOOL", 0)
