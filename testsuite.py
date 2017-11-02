@@ -145,13 +145,6 @@ def get_choices(config):
             unique_choices.append(choice)
     return unique_choices
 
-def get_parent(item):
-    if isinstance(item, (Symbol, Choice)):
-        if not item.nodes:
-            return None
-        return item.nodes[0].parent.item
-    return item.node.parent.item
-
 def get_prompts(item):
     prompts = []
     for node in item.nodes:
@@ -896,105 +889,12 @@ g
     verify_visibility(c.named_choices["TRISTATE_CHOICE_IF_M_AND_Y"],   0, 1)
     verify_visibility(c.named_choices["TRISTATE_CHOICE_MENU_N_AND_Y"], 0, 0)
 
-    # Menu visibility
-
-    def verify_menu_visibility(menu, no_module_vis, module_vis):
-        c.modules.set_value(0)
-        menu_vis = expr_value(menu.node.dep)
-        verify(menu_vis == no_module_vis,
-               "menu \"{}\" should have visibility '{}' without modules, "
-               "has visibility '{}'"
-               .format(menu.title, no_module_vis, menu_vis))
-
-        c.modules.set_value(2)
-        menu_vis = expr_value(menu.node.dep)
-        verify(menu_vis == module_vis,
-               "menu \"{}\" should have visibility '{}' with modules, "
-               "has visibility '{}'".
-               format(menu.title, module_vis, menu_vis))
-
-    # TODO: does this make sense anymore?
-
-    #menu_n, menu_m, menu_y, menu_if_n, menu_if_m, menu_if_y, \
-    #  menu_if_m_and_y = get_menus(c)[5:-5]
-
-    #verify_menu_visibility(menu_n, "n", "n")
-    #verify_menu_visibility(menu_m, "n", "m")
-    #verify_menu_visibility(menu_y, "y", "y")
-    #verify_menu_visibility(menu_if_n, "n", "n")
-    #verify_menu_visibility(menu_if_m, "n", "m")
-    #verify_menu_visibility(menu_if_y, "y", "y")
-    #verify_menu_visibility(menu_if_m_and_y, "n", "m")
-
-    # Menu 'visible if' visibility
-
-    menu_visible_if_n, menu_visible_if_m, menu_visible_if_y, \
-      menu_visible_if_m_2 = get_menus(c)[13:]
-
-    def verify_visible_if_visibility(menu, no_module_vis, module_vis):
-        c.modules.set_value(0)
-        menu_vis = menu.get_visible_if_visibility()
-        verify(menu_vis == no_module_vis,
-               "menu \"{}\" should have 'visible if' visibility '{}' "
-               "without modules, has 'visible if' visibility '{}'".
-               format(menu.title, no_module_vis, menu_vis))
-
-        c.modules.set_value(2)
-        menu_vis = menu.get_visible_if_visibility()
-        verify(menu_vis == module_vis,
-               "menu \"{}\" should have 'visible if' visibility '{}' "
-               "with modules, has 'visible if' visibility '{}'".
-               format(menu.title, module_vis, menu_vis))
-
-    # TODO: verify the visible if stuff after unclassing
-
-    # Ordinary visibility should not affect 'visible if' visibility
-    #verify_visible_if_visibility(menu_n, "y", "y")
-    #verify_visible_if_visibility(menu_if_n, "y", "y")
-    #verify_visible_if_visibility(menu_m, "y", "y")
-    #verify_visible_if_visibility(menu_if_m, "y", "y")
-
-    #verify_visible_if_visibility(menu_visible_if_n, "n", "n")
-    #verify_visible_if_visibility(menu_visible_if_m, "n", "m")
-    #verify_visible_if_visibility(menu_visible_if_y, "y", "y")
-    #verify_visible_if_visibility(menu_visible_if_m_2, "n", "m")
-
     # Verify that 'visible if' visibility gets propagated to prompts
+
     verify_visibility(c.syms["VISIBLE_IF_N"], 0, 0)
     verify_visibility(c.syms["VISIBLE_IF_M"], 0, 1)
     verify_visibility(c.syms["VISIBLE_IF_Y"], 2, 2)
     verify_visibility(c.syms["VISIBLE_IF_M_2"], 0, 1)
-
-    # Comment visibility
-
-    def verify_comment_visibility(comment, no_module_vis, module_vis):
-        c.modules.set_value(0)
-        # TODO: uninternalize
-        comment_vis = expr_value(comment.node.dep)
-        verify(comment_vis == no_module_vis,
-               "comment \"{}\" should have visibility '{}' without "
-               "modules, has visibility '{}'".
-               format(comment.text, no_module_vis, comment_vis))
-
-        c.modules.set_value(2)
-        comment_vis = expr_value(comment.node.dep)
-        verify(comment_vis == module_vis,
-               "comment \"{}\" should have visibility '{}' with "
-               "modules, has visibility '{}'".
-               format(comment.text, module_vis, comment_vis))
-
-    # TODO: verify the visibility stuff for comments
-
-    #comment_n, comment_m, comment_y, comment_if_n, comment_if_m, \
-    #  comment_if_y, comment_m_nested = get_comments(c)
-
-    #verify_comment_visibility(comment_n, "n", "n")
-    #verify_comment_visibility(comment_m, "n", "m")
-    #verify_comment_visibility(comment_y, "y", "y")
-    #verify_comment_visibility(comment_if_n, "n", "n")
-    #verify_comment_visibility(comment_if_m, "n", "m")
-    #verify_comment_visibility(comment_if_y, "y", "y")
-    #verify_comment_visibility(comment_m_nested, "n", "m")
 
     # Verify that string/int/hex symbols with m visibility accept a user value
 
@@ -1002,47 +902,36 @@ g
     assign_and_verify("INT_m", "123")
     assign_and_verify("HEX_m", "0x123")
 
-    #
-    # Object relations
-    #
-
-    c = Kconfig("Kconfiglib/tests/Krelation")
-
-    UNDEFINED, A, B, C, D, E, F, G, H, I = \
-        c.syms["UNDEFINED"], c.syms["A"], c.syms["B"], c.syms["C"], \
-        c.syms["D"], c.syms["E"], c.syms["F"], c.syms["G"], c.syms["H"], \
-        c.syms["I"]
-    choice_1, choice_2 = get_choices(c)
-
-    # TODO: test new prompts
-    #verify([menu.title for menu in get_menus(c)[1:]] ==
-    #       ["m1", "m2", "m3", "m4"],
-    #       "menu ordering is broken")
-    #menu_1, menu_2, menu_3, menu_4 = get_menus(c)[1:]
 
     print("Testing object relations...")
 
-    # TODO: check parents for menus
+    c = Kconfig("Kconfiglib/tests/Krelation")
 
-    verify(get_parent(UNDEFINED) is None,
-           "Undefined symbols should have no parent")
-    # TODO: update this test (should be the main menu)
-    # TODO: test parents when automatic menus are involved
-    #verify(A.get_parent() is None, "A should not have a parent")
-    verify(get_parent(B) is choice_1, "B's parent should be the first choice")
-    # TODO: no longer true due to auto menus
-    #verify(get_parent(C) is choice_1, "C's parent should be the first choice")
-    #verify(get_parent(E) is menu_1, "E's parent should be the first menu")
-    # TODO: update this test
-    #verify(E.get_parent().get_parent() is None,
-    #       "E's grandparent should be None")
-    verify(get_parent(G) is choice_2,
+    A, B, C, D, E, F, G, H, I = \
+        c.syms["A"], c.syms["B"], c.syms["C"], c.syms["D"], c.syms["E"], \
+        c.syms["F"], c.syms["G"], c.syms["H"], c.syms["I"]
+    choice_1, choice_2 = get_choices(c)
+
+    verify(A.nodes[0].parent is c.top_node,
+           "A's parent should be the top node")
+
+    verify(B.nodes[0].parent.item is choice_1,
+           "B's parent should be the first choice")
+
+    verify(C.nodes[0].parent.item is B,
+           "C's parent should be B (due to auto menus)")
+
+    verify(E.nodes[0].parent.item == MENU,
+           "E's parent should be a menu")
+
+    verify(E.nodes[0].parent.parent is c.top_node,
+           "E's grandparent should be the top node")
+
+    verify(G.nodes[0].parent.item is choice_2,
            "G's parent should be the second choice")
-    #verify(get_parent(get_parent(G)) is menu_2,
-    #       "G's grandparent should be the second menu")
 
-    # TODO: test parents of comments
-    # TODO: test top node
+    verify(G.nodes[0].parent.parent.item == MENU,
+           "G's grandparent should be a menu")
 
     #
     # hex/int ranges
@@ -1668,7 +1557,7 @@ g
         sym = c.syms[name]
         verify(sym.choice is not None and
                sym in choice_weird_syms.syms and
-               get_parent(sym) is choice_weird_syms,
+               sym.nodes[0].parent.item is choice_weird_syms,
                "{} should be a normal choice symbol".format(sym.name))
 
     # TODO: parent stuff
