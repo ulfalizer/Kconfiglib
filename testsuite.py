@@ -1284,11 +1284,8 @@ g
     c.load_config("Kconfiglib/tests/config_indented")
     verify_value("IGNOREME", "y")
 
-    #
-    # .config
-    #
 
-    print("Testing Config separation...")
+    print("Testing Kconfig separation...")
 
     c1 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
     c2 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
@@ -1310,9 +1307,6 @@ g
            (c1_comment.kconfig is c1) and (c2_comment.kconfig is c2),
            "Config instance state separation or .config is broken")
 
-    #
-    # Imply semantics
-    #
 
     print("Testing imply semantics...")
 
@@ -1408,9 +1402,6 @@ g
     assign_and_verify("IMPLIED_BOOL", 0)
     assign_and_verify("IMPLIED_BOOL", 2)
 
-    #
-    # Choice semantics
-    #
 
     print("Testing choice semantics...")
 
@@ -1422,60 +1413,66 @@ g
       choice_no_type_tristate, choice_missing_member_type_1, \
       choice_missing_member_type_2, choice_weird_syms = get_choices(c)
 
-    for choice in (choice_bool, choice_bool_opt, choice_bool_m,
-                   choice_defaults):
+    for choice in choice_bool, choice_bool_opt, choice_bool_m, choice_defaults:
         verify(choice.type == BOOL,
                "choice {} should have type bool".format(choice.name))
 
-    # TODO: Assignment to choice symbols is less magic now. Update these tests.
+    for choice in choice_tristate, choice_tristate_opt, choice_tristate_m:
+        verify(choice.orig_type == TRISTATE,
+               "choice {} should have type tristate"
+               .format(choice.name))
 
-    # TODO: fix this laters. type automatically changed.
-    #for choice in (choice_tristate, choice_tristate_opt, choice_tristate_m):
-    #    verify(choice.type == TRISTATE,
-    #           "choice {} should have type tristate"
-    #           .format(choice.name))
+    def select_and_verify(sym):
+        choice = sym.nodes[0].parent.item
+        choice.set_value(2)
 
-    #def select_and_verify(sym):
-    #    choice = get_parent(sym)
-    #    sym.set_value(2)
-    #    verify(choice.str_value == "y",
-    #           "The mode of the choice should be y after selecting a symbol")
-    #    verify(sym.choice.selection is sym,
-    #           "{} should be the selected choice symbol"
-    #           .format(sym.name))
-    #    verify(choice.selection is sym,
-    #           "{} should be the selected symbol".format(sym.name))
-    #    verify(choice.user_selection is sym,
-    #           "{} should be the user selection of the choice"
-    #           .format(sym.name))
+        sym.set_value(2)
 
-    #def select_and_verify_all(choice):
-    #    # Select in forward order
-    #    for sym in choice.syms:
-    #        select_and_verify(sym)
-    #    # Select in reverse order
-    #    for i in range(len(choice.syms) - 1, 0, -1):
-    #        select_and_verify(choice.syms[i])
+        verify(sym.choice.selection is sym,
+               sym.name + " should be the selected symbol")
 
-    #def verify_mode(choice, no_modules_mode, modules_mode):
-    #    c.modules.set_value(0)
-    #    choice_mode = choice.tri_value
-    #    verify(choice_mode == no_modules_mode,
-    #           'Wrong mode for choice {} with no modules. Expected {}, got {}.'
-    #           .format(choice.name, no_modules_mode, choice_mode))
+        verify(choice.user_selection is sym,
+               sym.name + " should be the user selection of the choice")
 
-    #    c.modules.set_value(2)
-    #    choice_mode = choice.tri_value
-    #    verify(choice_mode == modules_mode,
-    #           'Wrong mode for choice {} with modules. Expected {}, got {}.'
-    #           .format(choice.name, modules_mode, choice_mode))
+        verify(sym.tri_value == 2,
+               sym.name + " should be y when selected")
 
-    #verify_mode(choice_bool,         2, 2)
-    #verify_mode(choice_bool_opt,     0, 0)
-    #verify_mode(choice_tristate,     2, 1)
-    #verify_mode(choice_tristate_opt, 0, 0)
-    #verify_mode(choice_bool_m,       0, 2)
-    #verify_mode(choice_tristate_m,   0, 1)
+        verify(sym.user_value != 2,
+               sym.name + " should not have user value y, because choice "
+                          "y mode selections are remembered on the choice "
+                          "itself")
+
+        for sibling in choice.syms:
+            if sibling is not sym:
+                verify(sibling.tri_value == 0,
+                       sibling.name + " should be n when not selected")
+
+    def select_and_verify_all(choice):
+        # Select in forward order
+        for sym in choice.syms:
+            select_and_verify(sym)
+
+        # Select in reverse order
+        for sym in reversed(choice.syms):
+            select_and_verify(sym)
+
+    def verify_mode(choice, no_modules_mode, modules_mode):
+        c.modules.set_value(0)
+        verify(choice.tri_value == no_modules_mode,
+               'Wrong mode for choice {} with no modules. Expected {}, got {}.'
+               .format(choice.name, no_modules_mode, choice.tri_value))
+
+        c.modules.set_value(2)
+        verify(choice.tri_value == modules_mode,
+               'Wrong mode for choice {} with modules. Expected {}, got {}.'
+               .format(choice.name, modules_mode, choice.tri_value))
+
+    verify_mode(choice_bool,         2, 2)
+    verify_mode(choice_bool_opt,     0, 0)
+    verify_mode(choice_tristate,     2, 1)
+    verify_mode(choice_tristate_opt, 0, 0)
+    verify_mode(choice_bool_m,       0, 2)
+    verify_mode(choice_tristate_m,   0, 1)
 
     # Test defaults
 
@@ -1493,42 +1490,42 @@ g
            "Non-visible choice symbols should cause the next default to be "
            "considered")
 
-    # Test "y" mode selection
+    # Test y mode selection
 
-    #c.modules.set_value(2)
+    c.modules.set_value(2)
 
-    #select_and_verify_all(choice_bool)
-    #select_and_verify_all(choice_bool_opt)
-    #select_and_verify_all(choice_tristate)
-    #select_and_verify_all(choice_tristate_opt)
+    select_and_verify_all(choice_bool)
+    select_and_verify_all(choice_bool_opt)
+    select_and_verify_all(choice_tristate)
+    select_and_verify_all(choice_tristate_opt)
     # For BOOL_M, the mode should have been promoted
-    #select_and_verify_all(choice_bool_m)
+    select_and_verify_all(choice_bool_m)
 
-    # Test "m" mode selection...
+    # Test m mode selection
 
-    # ...for a choice that can also be in "y" mode
+    choice_tristate.set_value(1)
+    assign_and_verify_value("T_1", 1, 1)
+    assign_and_verify_value("T_2", 1, 1)
 
-    #for sym_name in ("T_1", "T_2"):
-    #    assign_and_verify_value(sym_name, 1, 1)
-    #    verify(choice_tristate.tri_value == 1,
-    #           'Selecting {} to "m" should have changed the mode of the '
-    #           'choice to "m"'.format(sym_name))
+    c.syms["T_1"].set_value(0)  # Check that this is remembered later
 
-    #    assign_and_verify_value(sym_name, 2, 2)
-    #    verify(choice_tristate.tri_value == 2 and
-    #           choice_tristate.selection is c.syms[sym_name],
-    #           'Selecting {} to "y" should have changed the mode of the '
-    #           'choice to "y" and made it the selection'.format(sym_name))
+    # Switching to y mode should cause T_1 to become selected
+    choice_tristate.set_value(2)
+    verify_value("T_1", 2)
+    verify_value("T_2", 0)
 
-    # ...for a choice that can only be in "m" mode
+    # Switching back to m mode should restore the old values
+    choice_tristate.set_value(1)
+    verify_value("T_1", 0)
+    verify_value("T_2", 1)
 
-    #for sym_name in ("TM_1", "TM_2"):
-    #    assign_and_verify_value(sym_name, 1, 1)
-    #    assign_and_verify_value(sym_name, 0, 0)
-    #    # "y" should be truncated
-    #    assign_and_verify_value(sym_name, 2, 1)
-    #    verify(choice_tristate_m.tri_value == 1,
-    #           'A choice that can only be in m mode was not')
+    assign_and_verify_value("TM_1", 1, 1)
+    assign_and_verify_value("TM_1", 2, 1)  # Ignored
+    verify(choice_tristate_m.tri_value == 1,
+           "m-visible choice got invalid mode")
+
+    assign_and_verify_value("TM_1", 0, 0)
+    assign_and_verify_value("TM_1", 2, 0)  # Ignored
 
     # Verify that choices with no explicitly specified type get the type of the
     # first contained symbol with a type
@@ -1560,8 +1557,6 @@ g
                sym.nodes[0].parent.item is choice_weird_syms,
                "{} should be a normal choice symbol".format(sym.name))
 
-    # TODO: parent stuff
-
     def verify_is_weird_choice_symbol(name):
         sym = c.syms[name]
         verify(sym.choice is None and
@@ -1579,51 +1574,6 @@ g
     verify_is_weird_choice_symbol("WS8")
     verify_is_normal_choice_symbol("WS9")
 
-    #
-    # Object dependencies
-    #
-
-    print("Testing object dependencies...")
-
-    # Note: This tests an internal API
-
-    c = Kconfig("Kconfiglib/tests/Kdep")
-
-    # TODO: reintroduce these somehow
-
-    #def verify_dependent(sym_name, deps_names):
-    #    sym = c.syms[sym_name]
-    #    deps = [c.syms[name] for name in deps_names]
-    #    sym_deps = sym._get_dependent()
-    #    verify(len(sym_deps) == len(set(sym_deps)),
-    #           "{}'s dependencies contains duplicates".format(sym_name))
-    #    sym_deps = [item for item in sym_deps
-    #                     if not isinstance(item, Choice)]
-    #    verify(len(sym_deps) == len(deps),
-    #           "Wrong number of dependent symbols for {}".format(sym_name))
-    #    for dep in deps:
-    #        verify(dep in sym_deps, "{} should depend on {}".
-    #                                format(dep.name, sym_name))
-
-    ## Test twice to cover dependency caching
-    #for i in range(0, 2):
-    #    n_deps = 39
-    #    # Verify that D1, D2, .., D<n_deps> are dependent on D
-    #    verify_dependent("D", ("D{}".format(i) for i in range(1, n_deps + 1)))
-    #    # Choices
-    #    verify_dependent("A", ("B", "C"))
-    #    verify_dependent("B", ("A", "C"))
-    #    verify_dependent("C", ("A", "B"))
-    #    verify_dependent("S", ("A", "B", "C"))
-
-    # Verify that the last symbol depends on the first in a long chain of
-    # dependencies. Test twice to cover dependency caching.
-
-    #c = Kconfig("Kconfiglib/tests/Kchain")
-
-    #for i in range(0, 2):
-    #    verify(c.syms["CHAIN_26"] in c.syms["CHAIN_1"]._get_dependent(),
-    #           "Dependency chain broken")
 
     print("Testing compatibility with weird selects/implies...")
 
