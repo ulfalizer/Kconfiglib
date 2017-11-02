@@ -904,41 +904,33 @@ g
     assign_and_verify("HEX_m", "0x123")
 
 
-    print("Testing object relations...")
+    print("Testing object relations")
 
     c = Kconfig("Kconfiglib/tests/Krelation")
 
-    A, B, C, D, E, F, G, H, I = \
-        c.syms["A"], c.syms["B"], c.syms["C"], c.syms["D"], c.syms["E"], \
-        c.syms["F"], c.syms["G"], c.syms["H"], c.syms["I"]
-    choice_1, choice_2 = get_choices(c)
-
-    verify(A.nodes[0].parent is c.top_node,
+    verify(c.syms["A"].nodes[0].parent is c.top_node,
            "A's parent should be the top node")
 
-    verify(B.nodes[0].parent.item is choice_1,
+    verify(c.syms["B"].nodes[0].parent.item is c.named_choices["CHOICE_1"],
            "B's parent should be the first choice")
 
-    verify(C.nodes[0].parent.item is B,
+    verify(c.syms["C"].nodes[0].parent.item is c.syms["B"],
            "C's parent should be B (due to auto menus)")
 
-    verify(E.nodes[0].parent.item == MENU,
+    verify(c.syms["E"].nodes[0].parent.item == MENU,
            "E's parent should be a menu")
 
-    verify(E.nodes[0].parent.parent is c.top_node,
+    verify(c.syms["E"].nodes[0].parent.parent is c.top_node,
            "E's grandparent should be the top node")
 
-    verify(G.nodes[0].parent.item is choice_2,
+    verify(c.syms["G"].nodes[0].parent.item is c.named_choices["CHOICE_2"],
            "G's parent should be the second choice")
 
-    verify(G.nodes[0].parent.parent.item == MENU,
+    verify(c.syms["G"].nodes[0].parent.parent.item == MENU,
            "G's grandparent should be a menu")
 
-    #
-    # hex/int ranges
-    #
 
-    print("Testing hex/int ranges...")
+    print("Testing hex/int ranges")
 
     c = Kconfig("Kconfiglib/tests/Krange")
 
@@ -1060,7 +1052,7 @@ g
     # defconfig_filename
     #
 
-    print("Testing defconfig_filename...")
+    print("Testing defconfig_filename")
 
     c = Kconfig("Kconfiglib/tests/empty")
     verify(c.defconfig_filename is None,
@@ -1097,7 +1089,7 @@ g
            "defconfig_filename gave wrong file with $srctree set")
 
 
-    print("Testing mainmenu_text...")
+    print("Testing mainmenu_text")
 
     c = Kconfig("Kconfiglib/tests/empty")
     verify(c.mainmenu_text == "Linux Kernel Configuration",
@@ -1110,7 +1102,7 @@ g
            "Wrong mainmenu text")
 
 
-    print("Testing user_value...")
+    print("Testing user_value")
 
     # References undefined env. var. Disable warnings.
     c = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
@@ -1157,7 +1149,7 @@ g
                "{} should not have a user value after being reset".
                format(s.name))
 
-    print("Testing defined vs undefined symbols...")
+    print("Testing defined vs undefined symbols")
 
     for name in "A", "B", "C", "D", "BOOL", "TRISTATE", "STRING", "INT", "HEX":
         verify(c.syms[name].nodes,
@@ -1170,7 +1162,7 @@ g
                "{} should not be defined".format(name))
 
 
-    print("Testing Symbol.choice...")
+    print("Testing Symbol.choice")
 
     for name in "A", "B", "C", "D":
         verify(c.syms[name].choice is not None,
@@ -1182,14 +1174,14 @@ g
         verify(c.syms[name].choice is None,
                "{} should not be a choice symbol".format(name))
 
-    print("Testing is_allnoconfig_y...")
+    print("Testing is_allnoconfig_y")
 
     verify(not c.syms["NOT_ALLNOCONFIG_Y"].is_allnoconfig_y,
            "NOT_ALLNOCONFIG_Y should not be allnoconfig_y")
     verify(c.syms["ALLNOCONFIG_Y"].is_allnoconfig_y,
            "ALLNOCONFIG_Y should be allnoconfig_y")
 
-    print("Testing UNAME_RELEASE...")
+    print("Testing UNAME_RELEASE")
 
     verify_value("UNAME_RELEASE", platform.uname()[2])
     ur = c.syms["UNAME_RELEASE"]
@@ -1199,7 +1191,7 @@ g
            "UNAME_RELEASE has wrong fields")
 
 
-    print("Testing .config reading and writing...")
+    print("Testing .config reading and writing")
 
     config_test_file = "Kconfiglib/tests/config_test"
 
@@ -1269,7 +1261,7 @@ g
     verify_value("IGNOREME", "y")
 
 
-    print("Testing Kconfig separation...")
+    print("Testing Kconfig separation")
 
     c1 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
     c2 = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
@@ -1292,7 +1284,7 @@ g
            "Config instance state separation or .config is broken")
 
 
-    print("Testing imply semantics...")
+    print("Testing imply semantics")
 
     c = Kconfig("Kconfiglib/tests/Kimply")
 
@@ -1387,7 +1379,7 @@ g
     assign_and_verify("IMPLIED_BOOL", 2)
 
 
-    print("Testing choice semantics...")
+    print("Testing choice semantics")
 
     c = Kconfig("Kconfiglib/tests/Kchoice")
 
@@ -1559,7 +1551,7 @@ g
     verify_is_normal_choice_symbol("WS9")
 
 
-    print("Testing compatibility with weird selects/implies...")
+    print("Testing compatibility with weird selects/implies")
 
     # Check that Kconfiglib doesn't crash for stuff like 'select n' (seen in
     # U-Boot). These probably originate from misunderstandings of how Kconfig
