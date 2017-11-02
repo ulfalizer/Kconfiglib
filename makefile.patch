@@ -27,10 +27,10 @@ index 8c12c20c55a6..88c618b34915 100644
 +scriptconfig:
 +ifdef SCRIPT_ARG
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" \
-+	  "$(PYTHONCMD)" "$(SCRIPT)" "$(srctree)/$(Kconfig)" "$(SCRIPT_ARG)"
++	  "$(PYTHONCMD)" "$(SCRIPT)" $(Kconfig) "$(SCRIPT_ARG)"
 +else
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" \
-+	  "$(PYTHONCMD)" "$(SCRIPT)" "$(srctree)/$(Kconfig)"
++	  "$(PYTHONCMD)" "$(SCRIPT)" $(Kconfig)
 +endif
 +
 +iscriptconfig:
@@ -39,13 +39,13 @@ index 8c12c20c55a6..88c618b34915 100644
 +	   import sys; \
 +	   c = kconfiglib.Kconfig(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
 +	   print(\"A Kconfig instance 'c' for the architecture $(ARCH) has been created.\")" \
-+	  $(srctree)/$(Kconfig)
++	  $(Kconfig)
 +
 +# Used by testsuite.py to be able to compare output for nonsensical
 +# arch/defconfig combinations, which has proven effective for finding obscure
 +# bugs
 +kconfiglibtestconfig: $(obj)/conf
-+	$(Q)$< --defconfig=.config $(srctree)/$(Kconfig)
++	$(Q)$< --defconfig=.config $(Kconfig)
 +
  menuconfig: $(obj)/mconf
 -- 
