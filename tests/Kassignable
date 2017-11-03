@@ -201,3 +201,29 @@ config MY_CHOICE_N_VIS_TRISTATE
 	tristate "m/y-mode choice tristate invisible" if n
 
 endchoice
+
+
+# Choices with some other possible modes
+
+choice NMY_CHOICE
+	tristate "n/m/y-mode choice"
+	optional
+endchoice
+
+choice NY_CHOICE
+	bool "n/y-mode choice"
+	optional
+endchoice
+
+choice NM_CHOICE
+	tristate "n/m-mode choice" if m
+	optional
+endchoice
+
+choice M_CHOICE
+	tristate "m-mode choice" if m
+endchoice
+
+choice N_CHOICE
+	tristate "n-mode choice" if n
+endchoice

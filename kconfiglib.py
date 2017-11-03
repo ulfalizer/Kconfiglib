@@ -3190,7 +3190,7 @@ class Choice(object):
         if vis == 2:
             if not self.is_optional:
                 return (2,) if self.type == BOOL else (1, 2)
-            return (2,)
+            return (0, 2) if self.type == BOOL else (0, 1, 2)
 
         # vis == 1
 

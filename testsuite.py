@@ -879,11 +879,11 @@ g
     def verify_assignable(sym_name, assignable, test_assign=True):
         verify_assignable_imp(c.syms[sym_name], assignable, test_assign)
 
-    def verify_const_unassignable(sym_name):
-        verify_assignable_imp(c.const_syms[sym_name], (), False)
-
     # Test with modules enabled first
     c.modules.set_value(2)
+
+    def verify_const_unassignable(sym_name):
+        verify_assignable_imp(c.const_syms[sym_name], (), False)
 
     # Things that shouldn't be .assignable
     verify_const_unassignable("n")
@@ -953,6 +953,17 @@ g
     verify_assignable("MY_CHOICE_BOOL",           (0, 2), test_assign=False)
     verify_assignable("MY_CHOICE_TRISTATE",       (0, 2), test_assign=False)
     verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ))
+
+    def verify_choice_assignable(choice_name, assignable):
+        verify_assignable_imp(c.named_choices[choice_name], assignable, True)
+
+    verify_choice_assignable("Y_CHOICE",    (      2,))
+    verify_choice_assignable("MY_CHOICE",   (   1, 2 ))
+    verify_choice_assignable("NMY_CHOICE",  (0, 1, 2 ))
+    verify_choice_assignable("NY_CHOICE",   (0,    2 ))
+    verify_choice_assignable("NM_CHOICE",   (0, 1    ))
+    verify_choice_assignable("M_CHOICE",    (   1,   ))
+    verify_choice_assignable("N_CHOICE",    (        ))
 
 
     print("Testing object relations")
