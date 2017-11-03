@@ -415,7 +415,7 @@ def run_selftests():
         except KconfigSyntaxError:
             pass
         else:
-            fail('expected eval_string("{}") to throw KconfigSyntaxError, ' \
+            fail('expected eval_string("{}") to throw KconfigSyntaxError, '
                  "didn't".format(expr))
 
     # The C implementation's parser can be pretty lax about syntax. Kconfiglib
@@ -853,6 +853,70 @@ g
     assign_and_verify("STRING_m", "foo bar")
     assign_and_verify("INT_m", "123")
     assign_and_verify("HEX_m", "0x123")
+
+
+    print("Testing .assignable")
+
+    c = Kconfig("Kconfiglib/tests/Kassignable")
+
+    def verify_assignable_imp(item, assignable):
+        verify(item.assignable == assignable,
+               "Incorrect assignable values for {}. "
+               "Should be {}, was {}."
+               .format(item.name, assignable, item.assignable))
+
+        # Verify that the values can actually be assigned too
+        for val in item.assignable:
+            item.set_value(val)
+            verify(item.tri_value == val,
+                   "Unable to set {} to {}, even though "
+                   "it was in .assignable"
+                   .format(item.name, val))
+
+    def verify_assignable(sym_name, assignable):
+        verify_assignable_imp(c.syms[sym_name], assignable)
+
+    def verify_const_unassignable(sym_name):
+        verify_assignable_imp(c.const_syms[sym_name], ())
+
+    # Test with modules enabled first
+    c.modules.set_value(2)
+
+    # Things that shouldn't be .assignable
+    verify_const_unassignable("n")
+    verify_const_unassignable("m")
+    verify_const_unassignable("y")
+    verify_const_unassignable("const")
+    verify_const_unassignable("UNAME_RELEASE")
+    verify_assignable("UNDEFINED", ())
+    verify_assignable("NO_PROMPT", ())
+    verify_assignable("STRING", ())
+    verify_assignable("INT", ())
+    verify_assignable("HEX", ())
+
+    # Non-selected symbols
+    verify_assignable("Y_VIS_BOOL", (0,    2))
+    verify_assignable("M_VIS_BOOL", (0,    2))  # Visibility promoted
+    verify_assignable("N_VIS_BOOL", (       ))
+    verify_assignable("Y_VIS_TRI",  (0, 1, 2))
+    verify_assignable("M_VIS_TRI",  (0, 1   ))
+    verify_assignable("N_VIS_TRI",  (       ))
+
+    # Symbols selected to y
+    verify_assignable("Y_SEL_Y_VIS_BOOL", (2,))
+    verify_assignable("Y_SEL_M_VIS_BOOL", (2,))  # Visibility promoted
+    verify_assignable("Y_SEL_N_VIS_BOOL", (  ))
+    verify_assignable("Y_SEL_Y_VIS_TRI",  (2,))
+    verify_assignable("Y_SEL_M_VIS_TRI",  (2,))
+    verify_assignable("Y_SEL_N_VIS_TRI",  (  ))
+
+    # Symbols selected to m
+    verify_assignable("M_SEL_Y_VIS_BOOL", (   2,))  # Value promoted
+    verify_assignable("M_SEL_M_VIS_BOOL", (   2,))  # Visibility/value promoted
+    verify_assignable("M_SEL_N_VIS_BOOL", (     ))
+    verify_assignable("M_SEL_Y_VIS_TRI",  (1, 2 ))
+    verify_assignable("M_SEL_M_VIS_TRI",  (1   ,))
+    verify_assignable("M_SEL_N_VIS_TRI",  (     ))
 
 
     print("Testing object relations")

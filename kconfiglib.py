@@ -2726,8 +2726,10 @@ class Symbol(object):
 
         # vis == 1
 
+        # Must be a tristate here, because bool m visibility gets promoted to y
+
         if not rev_dep_val:
-            return (1,) if expr_value(self.weak_rev_dep) != 2 else (2,)
+            return (0, 1) if expr_value(self.weak_rev_dep) != 2 else (0, 2)
 
         if rev_dep_val == 2:
             return (2,)
