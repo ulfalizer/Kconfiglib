@@ -233,8 +233,6 @@ def run_selftests():
     verify_string_bad(r""" "foo """)
     verify_string_bad(r""" 'foo """)
 
-    # TODO: Kmodifiable gone, test assignable
-
 
     print("Testing expression evaluation")
 
