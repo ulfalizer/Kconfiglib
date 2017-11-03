@@ -930,8 +930,8 @@ g
     verify_assignable("M_IMP_Y_VIS_BOOL", (0,    2))
     verify_assignable("M_IMP_M_VIS_BOOL", (0,    2))  # Visibility promoted
     verify_assignable("M_IMP_N_VIS_BOOL", (       ))
-    verify_assignable("M_IMP_Y_VIS_TRI",  (0, 1, 2))  # m removed by imply
-    verify_assignable("M_IMP_M_VIS_TRI",  (0, 1   ))  # m promoted to y by imply
+    verify_assignable("M_IMP_Y_VIS_TRI",  (0, 1, 2))
+    verify_assignable("M_IMP_M_VIS_TRI",  (0, 1   ))
     verify_assignable("M_IMP_N_VIS_TRI",  (       ))
 
 
