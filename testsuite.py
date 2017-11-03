@@ -1147,8 +1147,8 @@ g
            "defconfig_filename should return the existent file "
            "Kconfiglib/tests/defconfig_2")
 
-    # Should also look relative to $srctree if the defconfig is an absolute
-    # path and not found
+    # Should also look relative to $srctree if the specified defconfig is a
+    # relative path and can't be opened
 
     c = Kconfig("Kconfiglib/tests/Kdefconfig_srctree")
     verify(c.defconfig_filename == "Kconfiglib/tests/defconfig_2",
