@@ -859,31 +859,41 @@ g
 
     c = Kconfig("Kconfiglib/tests/Kassignable")
 
-    def verify_assignable_imp(item, assignable, test_assign):
-        verify(item.assignable == assignable,
-               "Incorrect assignable values for {}. "
-               "Should be {}, was {}."
-               .format(item.name, assignable, item.assignable))
+    def verify_assignable_imp(item, assignable_no_modules, assignable_modules):
+        """
+        Verifies the assignable values for 'item', with and without modules.
+        """
+        for modules_val, assignable in (0, assignable_no_modules), \
+                                       (2, assignable_modules):
 
-        # Verify that the values can actually be assigned too, except for
-        # choices in y mode, where setting the user value to n doesn't change
-        # the value
-        if test_assign:
-            for val in item.assignable:
-                item.set_value(val)
-                verify(item.tri_value == val,
-                       "Unable to set {} to {}, even though "
-                       "it was in .assignable"
-                       .format(item.name, val))
+            c.modules.set_value(modules_val)
+            module_msg = "without modules" if modules_val == 0 else \
+                         "with modules"
 
-    def verify_assignable(sym_name, assignable, test_assign=True):
-        verify_assignable_imp(c.syms[sym_name], assignable, test_assign)
+            verify(item.assignable == assignable,
+                   "Incorrect assignable values for {} {}. Should be {}, "
+                   "was {}."
+                   .format(item.name, module_msg, assignable, item.assignable))
 
-    # Test with modules enabled first
-    c.modules.set_value(2)
+            # Verify that the values can actually be assigned too, except for
+            # choice symbols in choices in y mode, where setting the user value
+            # on the choice symbol to n doesn't affect the selection
+
+            if not (isinstance(item, Symbol) and item.choice is not None and
+                    item.choice.tri_value == 2):
+                for val in item.assignable:
+                    item.set_value(val)
+                    verify(item.tri_value == val,
+                           "Unable to set {} to {} {}, even though it was in "
+                           ".assignable".format(item.name, val, module_msg))
+
+    def verify_assignable(sym_name, assignable_no_modules, assignable_modules):
+        verify_assignable_imp(c.syms[sym_name],
+                              assignable_no_modules,
+                              assignable_modules)
 
     def verify_const_unassignable(sym_name):
-        verify_assignable_imp(c.const_syms[sym_name], (), False)
+        verify_assignable_imp(c.const_syms[sym_name], (), ())
 
     # Things that shouldn't be .assignable
     verify_const_unassignable("n")
@@ -891,80 +901,84 @@ g
     verify_const_unassignable("y")
     verify_const_unassignable("const")
     verify_const_unassignable("UNAME_RELEASE")
-    verify_assignable("UNDEFINED", ())
-    verify_assignable("NO_PROMPT", ())
-    verify_assignable("STRING", ())
-    verify_assignable("INT", ())
-    verify_assignable("HEX", ())
+    verify_assignable("UNDEFINED", (), ())
+    verify_assignable("NO_PROMPT", (), ())
+    verify_assignable("STRING", (), ())
+    verify_assignable("INT", (), ())
+    verify_assignable("HEX", (), ())
 
     # Non-selected symbols
-    verify_assignable("Y_VIS_BOOL", (0,    2))
-    verify_assignable("M_VIS_BOOL", (0,    2))  # Visibility promoted
-    verify_assignable("N_VIS_BOOL", (       ))
-    verify_assignable("Y_VIS_TRI",  (0, 1, 2))
-    verify_assignable("M_VIS_TRI",  (0, 1   ))
-    verify_assignable("N_VIS_TRI",  (       ))
+    verify_assignable("Y_VIS_BOOL", (0, 2), (0,    2))
+    verify_assignable("M_VIS_BOOL", (    ), (0,    2))  # Vis. promoted
+    verify_assignable("N_VIS_BOOL", (    ), (       ))
+    verify_assignable("Y_VIS_TRI",  (0, 2), (0, 1, 2))
+    verify_assignable("M_VIS_TRI",  (    ), (0, 1   ))
+    verify_assignable("N_VIS_TRI",  (    ), (       ))
 
     # Symbols selected to y
-    verify_assignable("Y_SEL_Y_VIS_BOOL", (2,))
-    verify_assignable("Y_SEL_M_VIS_BOOL", (2,))  # Visibility promoted
-    verify_assignable("Y_SEL_N_VIS_BOOL", (  ))
-    verify_assignable("Y_SEL_Y_VIS_TRI",  (2,))
-    verify_assignable("Y_SEL_M_VIS_TRI",  (2,))
-    verify_assignable("Y_SEL_N_VIS_TRI",  (  ))
+    verify_assignable("Y_SEL_Y_VIS_BOOL", (2,), (2,))
+    verify_assignable("Y_SEL_M_VIS_BOOL", (  ), (2,))  # Vis. promoted
+    verify_assignable("Y_SEL_N_VIS_BOOL", (  ), (  ))
+    verify_assignable("Y_SEL_Y_VIS_TRI",  (2,), (2,))
+    verify_assignable("Y_SEL_M_VIS_TRI",  (  ), (2,))
+    verify_assignable("Y_SEL_N_VIS_TRI",  (  ), (  ))
 
     # Symbols selected to m
-    verify_assignable("M_SEL_Y_VIS_BOOL", (   2,))  # Value promoted
-    verify_assignable("M_SEL_M_VIS_BOOL", (   2,))  # Visibility/value promoted
-    verify_assignable("M_SEL_N_VIS_BOOL", (     ))
-    verify_assignable("M_SEL_Y_VIS_TRI",  (1, 2 ))
-    verify_assignable("M_SEL_M_VIS_TRI",  (1,   ))
-    verify_assignable("M_SEL_N_VIS_TRI",  (     ))
+    verify_assignable("M_SEL_Y_VIS_BOOL", (2,), (   2,))  # Value promoted
+    verify_assignable("M_SEL_M_VIS_BOOL", (  ), (   2,))  # Vis./value promoted
+    verify_assignable("M_SEL_N_VIS_BOOL", (  ), (     ))
+    verify_assignable("M_SEL_Y_VIS_TRI",  (2,), (1, 2 ))
+    verify_assignable("M_SEL_M_VIS_TRI",  (  ), (1,   ))
+    verify_assignable("M_SEL_N_VIS_TRI",  (  ), (     ))
 
     # Symbols implied to y
-    verify_assignable("Y_IMP_Y_VIS_BOOL", (0, 2))
-    verify_assignable("Y_IMP_M_VIS_BOOL", (0, 2))  # Visibility promoted
-    verify_assignable("Y_IMP_N_VIS_BOOL", (    ))
-    verify_assignable("Y_IMP_Y_VIS_TRI",  (0, 2))  # m removed by imply
-    verify_assignable("Y_IMP_M_VIS_TRI",  (0, 2))  # m promoted to y by imply
-    verify_assignable("Y_IMP_N_VIS_TRI",  (    ))
+    verify_assignable("Y_IMP_Y_VIS_BOOL", (0, 2), (0, 2))
+    verify_assignable("Y_IMP_M_VIS_BOOL", (    ), (0, 2))  # Vis. promoted
+    verify_assignable("Y_IMP_N_VIS_BOOL", (    ), (    ))
+    verify_assignable("Y_IMP_Y_VIS_TRI",  (0, 2), (0, 2))  # m removed by imply
+    verify_assignable("Y_IMP_M_VIS_TRI",  (    ), (0, 2))  # m promoted to y by imply
+    verify_assignable("Y_IMP_N_VIS_TRI",  (    ), (    ))
 
     # Symbols implied to m (never affects assignable values)
-    verify_assignable("M_IMP_Y_VIS_BOOL", (0,    2))
-    verify_assignable("M_IMP_M_VIS_BOOL", (0,    2))  # Visibility promoted
-    verify_assignable("M_IMP_N_VIS_BOOL", (       ))
-    verify_assignable("M_IMP_Y_VIS_TRI",  (0, 1, 2))
-    verify_assignable("M_IMP_M_VIS_TRI",  (0, 1   ))
-    verify_assignable("M_IMP_N_VIS_TRI",  (       ))
+    verify_assignable("M_IMP_Y_VIS_BOOL", (0, 2), (0,    2))
+    verify_assignable("M_IMP_M_VIS_BOOL", (    ), (0,    2))  # Vis. promoted
+    verify_assignable("M_IMP_N_VIS_BOOL", (    ), (       ))
+    verify_assignable("M_IMP_Y_VIS_TRI",  (0, 2), (0, 1, 2))
+    verify_assignable("M_IMP_M_VIS_TRI",  (    ), (0, 1   ))
+    verify_assignable("M_IMP_N_VIS_TRI",  (    ), (       ))
 
     # Symbols in y-mode choice
-    verify_assignable("Y_CHOICE_BOOL",           (0, 2), test_assign=False)
-    verify_assignable("Y_CHOICE_TRISTATE",       (0, 2), test_assign=False)
-    verify_assignable("Y_CHOICE_N_VIS_TRISTATE", (    ))
+    verify_assignable("Y_CHOICE_BOOL",           (0, 2), (0, 2))
+    verify_assignable("Y_CHOICE_TRISTATE",       (0, 2), (0, 2))
+    verify_assignable("Y_CHOICE_N_VIS_TRISTATE", (    ), (    ))
 
-    # Symbols in m/y-mode choice, starting out in m mode
-    verify_assignable("MY_CHOICE_BOOL",           (    ))
-    verify_assignable("MY_CHOICE_TRISTATE",       (0, 1))
-    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ))
+    # Symbols in m/y-mode choice, starting out in m mode, or y mode when
+    # running without modules
+    verify_assignable("MY_CHOICE_BOOL",           (0, 2), (    ))
+    verify_assignable("MY_CHOICE_TRISTATE",       (0, 2), (0, 1))
+    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ), (    ))
 
     c.named_choices["MY_CHOICE"].set_value(2)
 
     # Symbols in m/y-mode choice, now in y mode
-    verify_assignable("MY_CHOICE_BOOL",           (0, 2), test_assign=False)
-    verify_assignable("MY_CHOICE_TRISTATE",       (0, 2), test_assign=False)
-    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ))
+    verify_assignable("MY_CHOICE_BOOL",           (0, 2), (0, 2))
+    verify_assignable("MY_CHOICE_TRISTATE",       (0, 2), (0, 2))
+    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ), (    ))
 
-    def verify_choice_assignable(choice_name, assignable):
-        verify_assignable_imp(c.named_choices[choice_name], assignable, True)
+    def verify_choice_assignable(choice_name, assignable_no_modules,
+                                 assignable_modules):
+        verify_assignable_imp(c.named_choices[choice_name],
+                              assignable_no_modules,
+                              assignable_modules)
 
     # Choices with various possible modes
-    verify_choice_assignable("Y_CHOICE",    (      2,))
-    verify_choice_assignable("MY_CHOICE",   (   1, 2 ))
-    verify_choice_assignable("NMY_CHOICE",  (0, 1, 2 ))
-    verify_choice_assignable("NY_CHOICE",   (0,    2 ))
-    verify_choice_assignable("NM_CHOICE",   (0, 1    ))
-    verify_choice_assignable("M_CHOICE",    (   1,   ))
-    verify_choice_assignable("N_CHOICE",    (        ))
+    verify_choice_assignable("Y_CHOICE",   (2,  ), (      2,))
+    verify_choice_assignable("MY_CHOICE",  (2,  ), (   1, 2 ))
+    verify_choice_assignable("NMY_CHOICE", (0, 2), (0, 1, 2 ))
+    verify_choice_assignable("NY_CHOICE",  (0, 2), (0,    2 ))
+    verify_choice_assignable("NM_CHOICE",  (    ), (0, 1    ))
+    verify_choice_assignable("M_CHOICE",   (    ), (   1,   ))
+    verify_choice_assignable("N_CHOICE",   (    ), (        ))
 
 
     print("Testing object relations")
