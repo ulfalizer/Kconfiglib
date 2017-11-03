@@ -128,7 +128,8 @@ def run_selftests():
     def assign_and_verify_value(sym_name, val, new_val):
         """
         Assigns 'val' to a symbol and verifies that its value becomes
-        'new_val'.
+        'new_val'. Assumes (and tests) that 'val' is valid for the
+        symbol type.
         """
 
         if isinstance(new_val, int):
@@ -136,11 +137,13 @@ def run_selftests():
 
         sym = c.syms[sym_name]
         old_val = sym.str_value
-        sym.set_value(val)
+        verify(sym.set_value(val),
+               "assigning '{}' to {} unexpectedly failed"
+               .format(val, sym_name))
         verify(sym.str_value == new_val,
-               'expected {} to have the value "{}" after being assigned the '
-               'value "{}". Instead, the value is "{}". The old value was '
-               '"{}".'
+               "expected {} to have the value '{}' after being assigned the "
+               "value '{}'. Instead, the value is '{}'. The old value was "
+               "'{}'."
                .format(sym_name, new_val, val, sym.str_value, old_val))
 
     def assign_and_verify(sym_name, user_val):
@@ -150,19 +153,23 @@ def run_selftests():
         """
         assign_and_verify_value(sym_name, user_val, user_val)
 
-    def assign_and_verify_user_value(sym_name, val, user_val):
+    def assign_and_verify_user_value(sym_name, val, user_val, valid):
         """
-        Assigns a user value to the symbol and verifies the new user value.
+        Assigns a user value to the symbol and verifies the new user value. If
+        valid is True, the user value is valid for the type, otherwise not.
+        This is used to test the set_value() return value.
         """
         sym = c.syms[sym_name]
         sym_old_user_val = sym.user_value
 
-        sym.set_value(val)
+        verify(sym.set_value(val) == valid,
+               "expected the user value '{}' to be {} for {}, was not"
+               .format(val, "valid" if valid else "invalid", sym_name))
         verify(sym.user_value == user_val,
                "the assigned user value '{}' wasn't reflected in user_value "
                "on the symbol {}. Instead, the new user_value was '{}'. The "
                "old user value was '{}'."
-               .format(user_val, sym.name, sym.user_value, sym_old_user_val))
+               .format(user_val, sym_name, sym.user_value, sym_old_user_val))
 
     #
     # Selftests
@@ -1052,17 +1059,19 @@ g
     # User values and dependent ranges
 
     def verify_range(sym_name, low, high, default):
-        """Tests that the values in the range 'low'-'high' can be assigned, and
+        """
+        Tests that the values in the range 'low'-'high' can be assigned, and
         that assigning values outside this range reverts the value back to
-        'default' (None if it should revert back to "")."""
+        'default' (None if it should revert back to "").
+        """
         is_hex = (c.syms[sym_name].type == HEX)
 
         for i in range(low, high + 1):
-            assign_and_verify_user_value(sym_name, str(i), str(i))
+            assign_and_verify_user_value(sym_name, str(i), str(i), True)
             if is_hex:
                 # The form of the user value should be preserved for hex
                 # symbols
-                assign_and_verify_user_value(sym_name, hex(i), hex(i))
+                assign_and_verify_user_value(sym_name, hex(i), hex(i), True)
 
         # Verify that assigning a user value just outside the range causes
         # defaults to be used
@@ -1091,7 +1100,6 @@ g
     verify_range("INT_RANGE_10_20_OK_DEFAULT",   10,   20,    15)
 
     verify_range("HEX_RANGE_10_20",              0x10, 0x20,  0x10)
-    verify_range("HEX_RANGE_0_10",               0x0,  0x10,  None)
 
     verify_range("INT_RANGE_10_20",              10,  20,     10)
     verify_range("INT_RANGE_0_10",               0,   10,     None)
@@ -1191,28 +1199,29 @@ g
 
     # Assign valid values for the types
 
-    assign_and_verify_user_value("BOOL", 0, 0)
-    assign_and_verify_user_value("BOOL", 2, 2)
-    assign_and_verify_user_value("TRISTATE", 0, 0)
-    assign_and_verify_user_value("TRISTATE", 1, 1)
-    assign_and_verify_user_value("TRISTATE", 2, 2)
-    assign_and_verify_user_value("STRING", "foo bar", "foo bar")
-    assign_and_verify_user_value("INT", "123", "123")
-    assign_and_verify_user_value("HEX", "0x123", "0x123")
+    assign_and_verify_user_value("BOOL", 0, 0, True)
+    assign_and_verify_user_value("BOOL", 2, 2, True)
+    assign_and_verify_user_value("TRISTATE", 0, 0, True)
+    assign_and_verify_user_value("TRISTATE", 1, 1, True)
+    assign_and_verify_user_value("TRISTATE", 2, 2, True)
+    assign_and_verify_user_value("STRING", "foo bar", "foo bar", True)
+    assign_and_verify_user_value("INT", "123", "123", True)
+    assign_and_verify_user_value("HEX", "0x123", "0x123", True)
 
     # Assign invalid values for the types. They should retain their old user
     # value.
 
-    assign_and_verify_user_value("BOOL", 1, 2)
-    assign_and_verify_user_value("BOOL", "foo", 2)
-    assign_and_verify_user_value("BOOL", "1", 2)
-    assign_and_verify_user_value("TRISTATE", "foo", 2)
-    assign_and_verify_user_value("TRISTATE", "1", 2)
-    assign_and_verify_user_value("STRING", 0, "foo bar")
-    assign_and_verify_user_value("INT", "foo", "123")
-    assign_and_verify_user_value("INT", 0, "123")
-    assign_and_verify_user_value("HEX", "foo", "0x123")
-    assign_and_verify_user_value("HEX", 0, "0x123")
+    assign_and_verify_user_value("BOOL", 1, 2, False)
+    assign_and_verify_user_value("BOOL", "foo", 2, False)
+    assign_and_verify_user_value("BOOL", "1", 2, False)
+    assign_and_verify_user_value("TRISTATE", "foo", 2, False)
+    assign_and_verify_user_value("TRISTATE", "1", 2, False)
+    assign_and_verify_user_value("STRING", 0, "foo bar", False)
+    assign_and_verify_user_value("INT", "foo", "123", False)
+    assign_and_verify_user_value("INT", 0, "123", False)
+    assign_and_verify_user_value("HEX", "foo", "0x123", False)
+    assign_and_verify_user_value("HEX", 0, "0x123", False)
+    assign_and_verify_user_value("HEX", "-0x1", "0x123", False)
 
     for s in syms:
         s.unset_value()

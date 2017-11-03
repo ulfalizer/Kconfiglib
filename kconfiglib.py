@@ -2514,13 +2514,20 @@ class Symbol(object):
 
           Values that are invalid for the type (such as "foo" or 1 (m) for a
           BOOL) are ignored and won't be stored in Symbol.user_str/tri_value.
-          Kconfiglib will print a warning by default for invalid assignments.
+          Kconfiglib will print a warning by default for invalid assignments,
+          and set_value() will return False.
+
+        Returns True if the value is valid for the type of the symbol, and
+        False otherwise. This only looks at the form of the value. For BOOL and
+        TRISTATE symbols, check the Symbol.assignable attribute to see what
+        values are currently in range and would actually be reflected in the
+        value of the symbol.
         """
         if value == self.user_value:
             # We know the value must be valid if it was successfully set
             # previously
             self._was_set = True
-            return
+            return True
 
         # Check if the value is valid for our type
         if not ((self.orig_type == BOOL     and value in (0, 2)       ) or
@@ -2529,7 +2536,8 @@ class Symbol(object):
                 (self.orig_type == INT      and isinstance(value, str)
                                             and _is_base_n(value, 10) ) or
                 (self.orig_type == HEX      and isinstance(value, str)
-                                            and _is_base_n(value, 16))):
+                                            and _is_base_n(value, 16)
+                                            and int(value, 16) >= 0)):
 
             warning = "the value '{}' is invalid for {}, which has type {}" \
                       .format(value, self.name, TYPE_TO_STR[self.orig_type])
@@ -2540,7 +2548,7 @@ class Symbol(object):
 
             self.kconfig._warn(warning)
 
-            return
+            return False
 
         if self.choice is not None and value == 2:
             # Remember this as a choice selection only. Makes switching back
@@ -2556,6 +2564,8 @@ class Symbol(object):
             self._was_set = True
             if self._is_user_assignable():
                 self._rec_invalidate()
+
+        return True
 
     def unset_value(self):
         """
@@ -3058,23 +3068,30 @@ class Choice(object):
         the visibility might truncate the value. Choices without the 'optional'
         attribute (is_optional) can never be in n mode, but 0 is still accepted
         (and ignored) since it's not a malformed value.
+
+        Returns True if the value is valid for the type of the choice, and
+        False otherwise. This only looks at the form of the value. Check the
+        Choice.assignable attribute to see what values are currently in range
+        and would actually be reflected in the mode of the choice.
         """
         if value == self.user_value:
             # We know the value must be valid if it was successfully set
             # previously
             self._was_set = True
-            return
+            return True
 
         if not ((self.orig_type == BOOL     and value in (0, 2)    ) or
                 (self.orig_type == TRISTATE and value in (0, 1, 2))):
             self.kconfig._warn("the value '{}' is invalid for the choice, "
                                "which has type {}. Assignment ignored"
                                .format(value, TYPE_TO_STR[self.orig_type]))
-            return
+            return False
 
         self.user_value = value
         self._rec_invalidate()
         self._was_set = True
+
+        return True
 
     def unset_value(self):
         """
@@ -3951,14 +3968,12 @@ TYPE_TO_STR = {
 }
 
 
-# TODO: unpublic?
 TRI_TO_STR = {
     0: "n",
     1: "m",
     2: "y",
 }
 
-# TODO: unpublic?
 STR_TO_TRI = {
     "n": 0,
     "m": 1,
