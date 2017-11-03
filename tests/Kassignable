@@ -67,10 +67,10 @@ config Y_SEL_Y_VIS_TRI
 	tristate "y-sel y-vis tri"
 
 config Y_SEL_M_VIS_TRI
-	bool "y-sel m-vis tri" if m
+	tristate "y-sel m-vis tri" if m
 
 config Y_SEL_N_VIS_TRI
-	bool "y-sel n-vis tri" if n
+	tristate "y-sel n-vis tri" if n
 
 
 # Symbols selected to m
@@ -103,3 +103,67 @@ config M_SEL_M_VIS_TRI
 
 config M_SEL_N_VIS_TRI
 	tristate "m-sel n-vis tri" if n
+
+
+# Symbols implied to y
+
+config Y_IMPLIER
+	def_tristate y
+
+	imply Y_IMP_Y_VIS_BOOL
+	imply Y_IMP_M_VIS_BOOL
+	imply Y_IMP_N_VIS_BOOL
+
+	imply Y_IMP_Y_VIS_TRI
+	imply Y_IMP_M_VIS_TRI
+	imply Y_IMP_N_VIS_TRI
+
+config Y_IMP_Y_VIS_BOOL
+	bool "y-imp y-vis bool"
+
+config Y_IMP_M_VIS_BOOL
+	bool "y-imp m-vis bool" if m
+
+config Y_IMP_N_VIS_BOOL
+	bool "y-imp n-vis bool" if n
+
+config Y_IMP_Y_VIS_TRI
+	tristate "y-imp y-vis tri"
+
+config Y_IMP_M_VIS_TRI
+	tristate "y-imp m-vis tri" if m
+
+config Y_IMP_N_VIS_TRI
+	tristate "y-imp n-vis tri" if n
+
+
+# Symbols implied to m (never affects assignable values)
+
+config M_IMPLIER
+	def_tristate m
+
+	imply M_IMP_Y_VIS_BOOL
+	imply M_IMP_M_VIS_BOOL
+	imply M_IMP_N_VIS_BOOL
+
+	imply M_IMP_Y_VIS_TRI
+	imply M_IMP_M_VIS_TRI
+	imply M_IMP_N_VIS_TRI
+
+config M_IMP_Y_VIS_BOOL
+	bool "m-imp y-vis bool"
+
+config M_IMP_M_VIS_BOOL
+	bool "m-imp m-vis bool" if m
+
+config M_IMP_N_VIS_BOOL
+	bool "m-imp n-vis bool" if n
+
+config M_IMP_Y_VIS_TRI
+	tristate "m-imp y-vis tri"
+
+config M_IMP_M_VIS_TRI
+	tristate "m-imp m-vis tri" if m
+
+config M_IMP_N_VIS_TRI
+	tristate "m-imp n-vis tri" if n
