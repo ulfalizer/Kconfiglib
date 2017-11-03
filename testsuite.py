@@ -957,6 +957,7 @@ g
     def verify_choice_assignable(choice_name, assignable):
         verify_assignable_imp(c.named_choices[choice_name], assignable, True)
 
+    # Choices with various possible modes
     verify_choice_assignable("Y_CHOICE",    (      2,))
     verify_choice_assignable("MY_CHOICE",   (   1, 2 ))
     verify_choice_assignable("NMY_CHOICE",  (0, 1, 2 ))
