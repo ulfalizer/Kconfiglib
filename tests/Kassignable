@@ -167,3 +167,37 @@ config M_IMP_M_VIS_TRI
 
 config M_IMP_N_VIS_TRI
 	tristate "m-imp n-vis tri" if n
+
+
+# Symbols in y-mode choice
+
+choice Y_CHOICE
+	bool "y-mode choice"
+
+config Y_CHOICE_BOOL
+	bool "y-mode choice bool"
+
+config Y_CHOICE_TRISTATE
+	tristate "y-mode choice tristate"
+
+config Y_CHOICE_N_VIS_TRISTATE
+	tristate "y-mode choice tristate invisible" if n
+
+endchoice
+
+
+# Symbols in m/y-mode choice
+
+choice MY_CHOICE
+	tristate "m/y-mode choice"
+
+config MY_CHOICE_BOOL
+	bool "m/y-mode choice bool"
+
+config MY_CHOICE_TRISTATE
+	tristate "m/y-mode choice tristate"
+
+config MY_CHOICE_N_VIS_TRISTATE
+	tristate "m/y-mode choice tristate invisible" if n
+
+endchoice
