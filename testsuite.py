@@ -503,8 +503,6 @@ config INT
 	range BAZ QAZ if DEP
 """)
 
-    # We still hardcode the modules symbol. Otherwise OPTIONS would have made
-    # more sense as a name here.
     verify_str(c.modules, """
 config MODULES
 	bool
