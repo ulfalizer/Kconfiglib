@@ -906,7 +906,7 @@ class Kconfig(object):
                     e = e2
 
             raise IOError(
-                'Could not open "{}" ({}: {}). Perhaps the $srctree '
+                "Could not open '{}' ({}: {}). Perhaps the $srctree "
                 "environment variable (which was {}) is set incorrectly. Note "
                 "that the current value of $srctree is saved when the Kconfig "
                 "instance is created (for consistency and to cleanly "
@@ -2539,11 +2539,13 @@ class Symbol(object):
                                             and _is_base_n(value, 16)
                                             and int(value, 16) >= 0)):
 
-            warning = "the value '{}' is invalid for {}, which has type {}" \
-                      .format(value, self.name, TYPE_TO_STR[self.orig_type])
+            # Display tristate values as n, m, y in the warning
+            warning = "the value {} is invalid for {}, which has type {}" \
+                      .format(TRI_TO_STR[value] if value in (0, 1, 2) else
+                                 "'{}'".format(value),
+                              self.name, TYPE_TO_STR[self.orig_type])
 
-            if self.orig_type in (BOOL, TRISTATE) and \
-               value in ("n", "m", "y"):
+            if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):
                 warning += ' (pass 0, 1, 2 for n, m, y, respectively)'
 
             self.kconfig._warn(warning)
