@@ -218,7 +218,7 @@ def node_str(node):
 
 def print_menuconfig_nodes(node, indent):
     """
-    Prints a tree with all the menu entries rooted at node. Child menu nodes
+    Prints a tree with all the menu entries rooted at node. Child menu entries
     are indented.
     """
     while node is not None:
@@ -233,7 +233,7 @@ def print_menuconfig_nodes(node, indent):
 
 def print_menuconfig(kconf):
     """
-    Prints all menu entries for the configurations.
+    Prints all menu entries for the configuration.
     """
     # Print the expanded mainmenu text at the top. This is the same as
     # kconf.top_node.prompt[0], but with variable references expanded.
