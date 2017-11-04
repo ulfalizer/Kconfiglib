@@ -878,17 +878,13 @@ g
                    "was {}."
                    .format(item.name, module_msg, assignable, item.assignable))
 
-            # Verify that the values can actually be assigned too, except for
-            # choice symbols in choices in y mode, where setting the user value
-            # on the choice symbol to n doesn't affect the selection
+            # Verify that the values can actually be assigned too
 
-            if not (isinstance(item, Symbol) and item.choice is not None and
-                    item.choice.tri_value == 2):
-                for val in item.assignable:
-                    item.set_value(val)
-                    verify(item.tri_value == val,
-                           "Unable to set {} to {} {}, even though it was in "
-                           ".assignable".format(item.name, val, module_msg))
+            for val in item.assignable:
+                item.set_value(val)
+                verify(item.tri_value == val,
+                       "Unable to set {} to {} {}, even though it was in "
+                       ".assignable".format(item.name, val, module_msg))
 
     def verify_assignable(sym_name, assignable_no_modules, assignable_modules):
         verify_assignable_imp(c.syms[sym_name],
@@ -951,22 +947,22 @@ g
     verify_assignable("M_IMP_N_VIS_TRI",  (    ), (       ))
 
     # Symbols in y-mode choice
-    verify_assignable("Y_CHOICE_BOOL",           (0, 2), (0, 2))
-    verify_assignable("Y_CHOICE_TRISTATE",       (0, 2), (0, 2))
-    verify_assignable("Y_CHOICE_N_VIS_TRISTATE", (    ), (    ))
+    verify_assignable("Y_CHOICE_BOOL",           (2,), (2,))
+    verify_assignable("Y_CHOICE_TRISTATE",       (2,), (2,))
+    verify_assignable("Y_CHOICE_N_VIS_TRISTATE", (  ), (  ))
 
     # Symbols in m/y-mode choice, starting out in m mode, or y mode when
     # running without modules
-    verify_assignable("MY_CHOICE_BOOL",           (0, 2), (    ))
-    verify_assignable("MY_CHOICE_TRISTATE",       (0, 2), (0, 1))
-    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ), (    ))
+    verify_assignable("MY_CHOICE_BOOL",           (2,), (    ))
+    verify_assignable("MY_CHOICE_TRISTATE",       (2,), (0, 1))
+    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (  ), (    ))
 
     c.named_choices["MY_CHOICE"].set_value(2)
 
     # Symbols in m/y-mode choice, now in y mode
-    verify_assignable("MY_CHOICE_BOOL",           (0, 2), (0, 2))
-    verify_assignable("MY_CHOICE_TRISTATE",       (0, 2), (0, 2))
-    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (    ), (    ))
+    verify_assignable("MY_CHOICE_BOOL",           (2,), (2,))
+    verify_assignable("MY_CHOICE_TRISTATE",       (2,), (2,))
+    verify_assignable("MY_CHOICE_N_VIS_TRISTATE", (  ), (  ))
 
     def verify_choice_assignable(choice_name, assignable_no_modules,
                                  assignable_modules):

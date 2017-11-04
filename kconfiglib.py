@@ -2720,6 +2720,9 @@ class Symbol(object):
         rev_dep_val = expr_value(self.rev_dep)
 
         if vis == 2:
+            if self.choice:
+                return (2,)
+
             if not rev_dep_val:
                 if self.type == BOOL or expr_value(self.weak_rev_dep) == 2:
                     return (0, 2)
