@@ -1,4 +1,121 @@
-# TODO: explain, screenshot
+# Implements a simple configuration interface on top of Kconfiglib to
+# demonstrate concepts for building a menuconfig-like. Emulates how the
+# standard menuconfig prints menu entries.
+#
+# Always displays the entire Kconfig tree to keep things as simple as possible
+# (all symbols, choices, menus, and comments).
+#
+# Usage:
+#
+#   $ python(3) Kconfiglib/examples/menuconfig.py <Kconfig file>
+#
+# A sample Kconfig is available in Kconfiglib/examples/Kmenuconfig.
+#
+# Here's a notation guide. The notation matches the one used by menuconfig
+# (scripts/kconfig/mconf):
+#
+#   [ ] prompt      - Bool
+#   < > prompt      - Tristate
+#   {M} prompt      - Tristate selected to m. Can only be set to m or y.
+#   -*- prompt      - Bool/tristate selected to y, pinning it
+#   -M- prompt      - Tristate selected to m that also has m visibility,
+#                     pinning it to m
+#   (foo) prompt    - String/int/hex symbol with value "foo"
+#   --> prompt      - The selected symbol in a choice in y mode. This
+#                     syntax is unique to this example.
+#
+# When modules are disabled, the .type attribute of TRISTATE symbols and
+# choices automatically changes to BOOL. This trick is used by the C
+# implementation as well, and gives the expected behavior without having to do
+# anything extra here. The original type is available in .orig_type if needed.
+#
+# The Kconfiglib/examples/Kmenuconfig example uses named choices to be able to
+# refer to choices by name. Named choices are supported in the C tools too, but
+# I don't think I've ever seen them used in the wild.
+#
+# Sample session:
+#
+#   $ python Kconfiglib/examples/menuconfig.py Kconfiglib/examples/Kmenuconfig
+#
+#   ======== Example Kconfig configuration ========
+#
+#   [*] Enable loadable module support (MODULES)
+#       Bool and tristate symbols
+#           [*] Bool symbol (BOOL)
+#                   [ ] Dependent bool symbol (BOOL_DEP)
+#                   < > Dependent tristate symbol (TRI_DEP)
+#                   [ ] First prompt (TWO_MENU_NODES)
+#           < > Tristate symbol (TRI)
+#           [ ] Second prompt (TWO_MENU_NODES)
+#               *** These are selected by TRI_DEP ***
+#           < > Tristate selected by TRI_DEP (SELECTED_BY_TRI_DEP)
+#           < > Tristate implied by TRI_DEP (IMPLIED_BY_TRI_DEP)
+#       String, int, and hex symbols
+#           (foo) String symbol (STRING)
+#           (747) Int symbol (INT)
+#           (0xABC) Hex symbol (HEX)
+#       Various choices
+#           -*- Bool choice (BOOL_CHOICE)
+#                   --> Bool choice sym 1 (BOOL_CHOICE_SYM_1)
+#                       Bool choice sym 2 (BOOL_CHOICE_SYM_2)
+#           {M} Tristate choice (TRI_CHOICE)
+#                   < > Tristate choice sym 1 (TRI_CHOICE_SYM_1)
+#                   < > Tristate choice sym 2 (TRI_CHOICE_SYM_2)
+#           [ ] Optional bool choice (OPT_BOOL_CHOICE)
+#
+#   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): BOOL
+#   Value for BOOL (available: n, y): n
+#
+#   ======== Example Kconfig configuration ========
+#
+#   [*] Enable loadable module support (MODULES)
+#       Bool and tristate symbols
+#           [ ] Bool symbol (BOOL)
+#           < > Tristate symbol (TRI)
+#           [ ] Second prompt (TWO_MENU_NODES)
+#               *** These are selected by TRI_DEP ***
+#           < > Tristate selected by TRI_DEP (SELECTED_BY_TRI_DEP)
+#           < > Tristate implied by TRI_DEP (IMPLIED_BY_TRI_DEP)
+#       String, int, and hex symbols
+#           (foo) String symbol (STRING)
+#           (747) Int symbol (INT)
+#           (0xABC) Hex symbol (HEX)
+#       Various choices
+#           -*- Bool choice (BOOL_CHOICE)
+#                   --> Bool choice sym 1 (BOOL_CHOICE_SYM_1)
+#                       Bool choice sym 2 (BOOL_CHOICE_SYM_2)
+#           {M} Tristate choice (TRI_CHOICE)
+#                   < > Tristate choice sym 1 (TRI_CHOICE_SYM_1)
+#                   < > Tristate choice sym 2 (TRI_CHOICE_SYM_2)
+#          [ ] Optional bool choice (OPT_BOOL_CHOICE)
+#
+#   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): MODULES
+#   Value for MODULES (available: n, y): n
+#  
+#   ======== Example Kconfig configuration ========
+#  
+#   [ ] Enable loadable module support (MODULES)
+#       Bool and tristate symbols
+#           [ ] Bool symbol (BOOL)
+#           [ ] Tristate symbol (TRI)
+#           [ ] Second prompt (TWO_MENU_NODES)
+#               *** These are selected by TRI_DEP ***
+#           [ ] Tristate selected by TRI_DEP (SELECTED_BY_TRI_DEP)
+#           [ ] Tristate implied by TRI_DEP (IMPLIED_BY_TRI_DEP)
+#       String, int, and hex symbols
+#           (foo) String symbol (STRING)
+#           (747) Int symbol (INT)
+#           (0xABC) Hex symbol (HEX)
+#       Various choices
+#           -*- Bool choice (BOOL_CHOICE)
+#                   --> Bool choice sym 1 (BOOL_CHOICE_SYM_1)
+#                       Bool choice sym 2 (BOOL_CHOICE_SYM_2)
+#           -*- Tristate choice (TRI_CHOICE)
+#                   --> Tristate choice sym 1 (TRI_CHOICE_SYM_1)
+#                       Tristate choice sym 2 (TRI_CHOICE_SYM_2)
+#           [ ] Optional bool choice (OPT_BOOL_CHOICE)
+#  
+#   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): ^D
 
 from kconfiglib import Kconfig, \
                        Symbol, Choice, MENU, COMMENT, \
@@ -16,34 +133,61 @@ def indent_print(s, indent):
     print((" " * indent) + s)
 
 def value_str(sc):
+    """
+    Returns the value part ("[*]", "<M>", "(foo)" etc.) of a menu entry.
+
+    sc: Symbol or Choice.
+    """
     if sc.type in (STRING, INT, HEX):
         return "({})".format(sc.str_value)
 
     # BOOL or TRISTATE
 
-    if isinstance(sc, Symbol) and sc.choice and sc.choice.tri_value == 2:
+    # The choice mode acts as an upper bound on the visibility of choice
+    # symbols, so we can check the choice symbols' own visibility to see if the
+    # choice is in y mode
+    if isinstance(sc, Symbol) and sc.choice and sc.visibility == 2:
         # For choices in y mode, print '-->' next to the selected symbol
         if sc.choice.selection is sc:
             return "-->"
         return "   "
 
-    val_str = {0: " ", 1: "M", 2: "*"}[sc.tri_value]
+    tri_val_str = {0: " ", 1: "M", 2: "*"}[sc.tri_value]
 
     if len(sc.assignable) == 1:
-        return "-{}-".format(val_str)
+        # Pinned to a single value
+        return "-{}-".format(tri_val_str)
 
     if sc.type == BOOL:
-        return "[{}]".format(val_str)
+        return "[{}]".format(tri_val_str)
 
     if sc.type == TRISTATE:
-        if sc.assignable[0] == 1:
-            return "{" + val_str + "}"  # Gets a bit confusing with .format()
-        return "<{}>".format(val_str)
+        if sc.assignable[0] == 1:  # m
+            # m and y available
+            return "{" + tri_val_str + "}"  # Gets a bit confusing with .format()
+        return "<{}>".format(tri_val_str)
 
 def node_str(node):
+    """
+    Returns the complete menu entry text for a menu node, or "" for invisible
+    menu nodes. Invisible menu nodes are those that lack a prompt or don't have
+    a satisfied prompt condition.
+
+    Example return value: "[*] Bool symbol (BOOL)"
+
+    The symbol name is printed in parentheses to the right of the prompt. This
+    is so that symbols can easily be referred to in the configuration
+    interface.
+    """
     if not node.prompt:
         return ""
 
+    # Even for menu nodes for symbols and choices, it's wrong to check
+    # Symbol.visibility / Choice.visibility here. The reason is that a symbol
+    # (and a choice, in theory) can be defined in multiple locations, giving it
+    # multiple menu nodes, which do not necessarily all have the same prompt
+    # visibility. Symbol.visibility / Choice.visibility is calculated as the OR
+    # of the visibility of all the prompts.
     prompt, prompt_cond = node.prompt
     if not expr_value(prompt_cond):
         return ""
@@ -64,9 +208,19 @@ def node_str(node):
 
     # {:3} sets the field width to three. Gives nice alignment for empty string
     # values.
-    return "{:3} {} ({})".format(value_str(sc), prompt, sc.name)
+    res = "{:3} {}".format(value_str(sc), prompt)
+
+    # Don't print the name for unnamed choices (the normal kind)
+    if sc.name is not None:
+        res += " ({})".format(sc.name)
+
+    return res
 
 def print_menuconfig_nodes(node, indent):
+    """
+    Prints a tree with all the menu entries rooted at node. Child menu nodes
+    are indented.
+    """
     while node is not None:
         string = node_str(node)
         if string:
@@ -78,6 +232,9 @@ def print_menuconfig_nodes(node, indent):
         node = node.next
 
 def print_menuconfig(kconf):
+    """
+    Prints all menu entries for the configurations.
+    """
     # Print the expanded mainmenu text at the top. This is the same as
     # kconf.top_node.prompt[0], but with variable references expanded.
     print("\n======== {} ========\n".format(kconf.mainmenu_text))
@@ -86,6 +243,11 @@ def print_menuconfig(kconf):
     print("")
 
 def get_value_from_user(sc):
+    """
+    Prompts the user for a value for the symbol or choice 'sc'. For
+    bool/tristate symbols and choices, provides a list of all the assignable
+    values.
+    """
     if not sc.visibility:
         print(sc.name + " is not currently visible")
         return False
@@ -104,8 +266,8 @@ def get_value_from_user(sc):
 
         # I was thinking of having set_value() accept "n", "m", "y" as well as
         # a convenience for BOOL / TRISTATE symbols. Consistently using 0, 1, 2
-        # makes the format clearer though. That's the best format for
-        # everything except readability (where it isn't horrible either).
+        # makes the format clearer though. That's the best format in all ways
+        # except for readability (where it isn't horrible either).
         val = STR_TO_TRI[val_str]
     else:
         val = val_str
