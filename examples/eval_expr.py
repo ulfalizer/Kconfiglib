@@ -15,7 +15,7 @@ if len(sys.argv) < 3:
 
 conf = kconfiglib.Kconfig(sys.argv[1])
 
-# Enable modules so that 'm' doesn't get demoted to 'n'
+# Enable modules so that m doesn't get demoted to n
 conf.syms["MODULES"].set_value(2)
 
 print("the expression '{}' evaluates to {}"
