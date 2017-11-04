@@ -2383,7 +2383,7 @@ class Symbol(object):
         vis = self.visibility
         self._write_to_conf = (vis != 0)
 
-        if self.choice is None:
+        if not self.choice:
             # Non-choice symbol
 
             if vis and self.user_value is not None:
@@ -2397,17 +2397,16 @@ class Symbol(object):
                 for default, cond in self.defaults:
                     cond_val = expr_value(cond)
                     if cond_val:
-                        val = min(cond_val, expr_value(default))
+                        val = min(expr_value(default), cond_val)
                         self._write_to_conf = True
                         break
 
                 # Weak reverse dependencies are only considered if our
                 # direct dependencies are met
-                if expr_value(self.direct_dep):
-                    weak_rev_dep_val = expr_value(self.weak_rev_dep)
-                    if weak_rev_dep_val:
-                        val = max(weak_rev_dep_val, val)
-                        self._write_to_conf = True
+                weak_rev_dep_val = expr_value(self.weak_rev_dep)
+                if weak_rev_dep_val and expr_value(self.direct_dep):
+                    val = max(weak_rev_dep_val, val)
+                    self._write_to_conf = True
 
             # Reverse (select-related) dependencies take precedence
             rev_dep_val = expr_value(self.rev_dep)
@@ -2421,14 +2420,15 @@ class Symbol(object):
                (self.type == BOOL or expr_value(self.weak_rev_dep) == 2):
                 val = 2
 
-        elif vis:
-            # Visible (bool/tristate) symbol in choice. See _get_visibility()
-            # for the other choice-specific stuff.
-            if self.choice.tri_value == 2:
-                val = 2 if self.choice.selection is self else 0
-            elif self.user_value:
-                # mode == 1, user value available and not 0
-                val = 1
+        elif vis == 2:
+            # Visible choice symbol in y-mode choice. The choice mode limits
+            # the visibility of choice symbols, so it's sufficient to just
+            # check the visibility of the choice symbols themselves.
+            val = 2 if self.choice.selection is self else 0
+
+        elif vis and self.user_value:
+            # Visible choice symbol in m-mode choice, with set non-0 user value
+            val = 1
 
         self._cached_tri_val = val
         return val
