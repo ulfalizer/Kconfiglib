@@ -1187,7 +1187,7 @@ g
     c.disable_warnings()
 
     syms = [c.syms[name] for name in
-            "BOOL", "TRISTATE", "STRING", "INT", "HEX"]
+            ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
 
     for sym in syms:
         verify(sym.user_value is None,
