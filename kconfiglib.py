@@ -598,7 +598,7 @@ class Kconfig(object):
         """
         See the class documentation.
         """
-        if self.defconfig_list is None:
+        if not self.defconfig_list:
             return None
 
         for filename, cond in self.defconfig_list.defaults:
@@ -692,7 +692,7 @@ class Kconfig(object):
                         # We represent tristate values as 0, 1, 2
                         val = STR_TO_TRI[val[0]]
 
-                        if sym.choice is not None and val:
+                        if sym.choice and val:
                             # During .config loading, we infer the mode of the
                             # choice from the kind of values that are assigned
                             # to the choice symbols
@@ -1437,7 +1437,7 @@ class Kconfig(object):
                 else:
                     # Named choice
                     choice = self.named_choices.get(name)
-                    if choice is None:
+                    if not choice:
                         choice = Choice()
                         self._choices.append(choice)
                         choice.name = name
@@ -1620,7 +1620,7 @@ class Kconfig(object):
                              self.y))
 
                 elif self._check_token(_T_DEFCONFIG_LIST):
-                    if self.defconfig_list is None:
+                    if not self.defconfig_list:
                         self.defconfig_list = node.item
                     else:
                         self._warn("'option defconfig_list' set on multiple "
@@ -1698,7 +1698,7 @@ class Kconfig(object):
                     self._make_or(node.item.direct_dep, node.dep)
 
             # Set the prompt, with dependencies propagated
-            if prompt is not None:
+            if prompt:
                 node.prompt = (prompt[0],
                                self._make_and(self._make_and(prompt[1],
                                                              node.dep),
@@ -1849,7 +1849,7 @@ class Kconfig(object):
 
             # The prompt conditions
             for node in sym.nodes:
-                if node.prompt is not None:
+                if node.prompt:
                     _make_depend_on(sym, node.prompt[1])
 
             # The default values and their conditions
@@ -1884,7 +1884,7 @@ class Kconfig(object):
 
             # The prompt conditions
             for node in choice.nodes:
-                if node.prompt is not None:
+                if node.prompt:
                     _make_depend_on(choice, node.prompt[1])
 
             # The default symbol conditions
@@ -1930,7 +1930,7 @@ class Kconfig(object):
             sym._already_written = False
 
         node = self.top_node.list
-        if node is None:
+        if not node:
             # Empty configuration
             return []
 
@@ -1943,7 +1943,7 @@ class Kconfig(object):
                 sym = node.item
                 if not sym._already_written:
                     config_string = sym.config_string
-                    if config_string is not None:
+                    if config_string:
                         add_fn(config_string)
                     sym._already_written = True
 
@@ -1955,14 +1955,14 @@ class Kconfig(object):
 
             # Iterative tree walk using parent pointers
 
-            if node.list is not None:
+            if node.list:
                 node = node.list
-            elif node.next is not None:
+            elif node.next:
                 node = node.next
             else:
-                while node.parent is not None:
+                while node.parent:
                     node = node.parent
-                    if node.next is not None:
+                    if node.next:
                         node = node.next
                         break
                 else:
@@ -1986,7 +1986,7 @@ class Kconfig(object):
             sym = self.syms.get(sym_ref_match.group(1))
 
             s = s[:sym_ref_match.start()] + \
-                (sym.str_value if sym is not None else "") + \
+                (sym.str_value if sym else "") + \
                 s[sym_ref_match.end():]
 
     def _parse_error(self, msg):
@@ -2250,7 +2250,7 @@ class Symbol(object):
         See the class documentation.
         """
         if self.orig_type == TRISTATE and \
-           ((self.choice is not None and self.choice.tri_value == 2) or
+           ((self.choice and self.choice.tri_value == 2) or
             not self.kconfig.modules.tri_value):
             return BOOL
 
@@ -2552,7 +2552,7 @@ class Symbol(object):
 
             return False
 
-        if self.choice is not None and value == 2:
+        if self.choice and value == 2:
             # Remember this as a choice selection only. Makes switching back
             # and forth between choice modes work as expected, and makes the
             # check for whether the user value is the same as before above
@@ -2591,7 +2591,7 @@ class Symbol(object):
         fields.append(TYPE_TO_STR[self.type])
 
         for node in self.nodes:
-            if node.prompt is not None:
+            if node.prompt:
                 fields.append('"{}"'.format(node.prompt[0]))
 
         # Only add quotes for non-bool/tristate symbols
@@ -2612,7 +2612,7 @@ class Symbol(object):
 
             fields.append("visibility " + TRI_TO_STR[self.visibility])
 
-            if self.choice is not None:
+            if self.choice:
                 fields.append("choice symbol")
 
             if self.is_allnoconfig_y:
@@ -2764,7 +2764,7 @@ class Symbol(object):
         normal and expected, so the warning can be disabled.
         """
         for node in self.nodes:
-            if node.prompt is not None:
+            if node.prompt:
                 return True
 
         if self.kconfig._warn_no_prompt:
@@ -3039,8 +3039,7 @@ class Choice(object):
             return None
 
         # User choice available?
-        if self.user_selection is not None and \
-           self.user_selection.visibility == 2:
+        if self.user_selection and self.user_selection.visibility == 2:
             self._cached_selection = self.user_selection
             return self.user_selection
 
@@ -3103,7 +3102,7 @@ class Choice(object):
         Resets the user value (mode) and user selection of the Choice, as if
         the user had never touched the mode or any of the choice symbols.
         """
-        if self.user_value is not None or self.user_selection is not None:
+        if self.user_value is not None or self.user_selection:
             self.user_value = self.user_selection = None
             self._rec_invalidate()
 
@@ -3119,7 +3118,7 @@ class Choice(object):
         fields.append(TYPE_TO_STR[self.type])
 
         for node in self.nodes:
-            if node.prompt is not None:
+            if node.prompt:
                 fields.append('"{}"'.format(node.prompt[0]))
 
         fields.append("mode " + self.str_value)
@@ -3127,10 +3126,10 @@ class Choice(object):
         if self.user_value is not None:
             fields.append('user mode {}'.format(TRI_TO_STR[self.user_value]))
 
-        if self.selection is not None:
+        if self.selection:
             fields.append("{} selected".format(self.selection.name))
 
-        if self.user_selection is not None:
+        if self.user_selection:
             user_sel_str = "{} selected by user" \
                            .format(self.user_selection.name)
 
@@ -3353,7 +3352,7 @@ class MenuNode(object):
             raise InternalError("unable to determine type in "
                                 "MenuNode.__repr__()")
 
-        if self.prompt is not None:
+        if self.prompt:
             fields.append('prompt "{}" (visibility {})'
                           .format(self.prompt[0],
                                   TRI_TO_STR[expr_value(self.prompt[1])]))
@@ -3370,10 +3369,10 @@ class MenuNode(object):
         if isinstance(self.item, (Symbol, Choice)) and self.help is not None:
             fields.append("has help")
 
-        if self.list is not None:
+        if self.list:
             fields.append("has child")
 
-        if self.next is not None:
+        if self.next:
             fields.append("has next")
 
         fields.append("{}:{}".format(self.filename, self.linenr))
@@ -3562,7 +3561,7 @@ def _get_visibility(sc):
         if node.prompt:
             vis = max(vis, expr_value(node.prompt[1]))
 
-    if isinstance(sc, Symbol) and sc.choice is not None:
+    if isinstance(sc, Symbol) and sc.choice:
         if sc.choice.orig_type == TRISTATE and sc.orig_type != TRISTATE and \
            sc.choice.tri_value != 2:
             # Non-tristate choice symbols are only visible in y mode
@@ -3698,7 +3697,7 @@ def _sym_choice_str(sc):
         if node is sc.nodes[0] and sc.orig_type != UNKNOWN:
             indent_add(TYPE_TO_STR[sc.orig_type])
 
-        if node.prompt is not None:
+        if node.prompt:
             prompt, cond = node.prompt
             prompt_str = 'prompt "{}"'.format(escape(prompt))
             if cond is not sc.kconfig.y:
@@ -3803,8 +3802,7 @@ def _has_auto_menu_dep(node1, node2):
         return _expr_depends_on(node2.prompt[1], node1.item)
 
     # If we have no prompt, use the menu node dependencies instead
-    return node2.dep is not None and \
-           _expr_depends_on(node2.dep, node1.item)
+    return _expr_depends_on(node2.dep, node1.item)
 
 def _check_auto_menu(node):
     """
@@ -3813,8 +3811,7 @@ def _check_auto_menu(node):
     found. The recursive call to _finalize_tree() makes this work recursively.
     """
     cur = node
-    while cur.next is not None and \
-          _has_auto_menu_dep(node, cur.next):
+    while cur.next and _has_auto_menu_dep(node, cur.next):
         _finalize_tree(cur.next)
         cur = cur.next
         cur.parent = node
@@ -3831,14 +3828,13 @@ def _flatten(node):
     appear after them instead. This gives a clean menu structure with no
     unexpected "jumps" in the indentation.
     """
-    while node is not None:
-        if node.list is not None and \
-           (node.prompt is None or node.prompt == ""):
+    while node:
+        if node.list and (not node.prompt or node.prompt[0] == ""):
 
             last_node = node.list
             while 1:
                 last_node.parent = node.parent
-                if last_node.next is None:
+                if not last_node.next:
                     break
                 last_node = last_node.next
 
@@ -3856,12 +3852,12 @@ def _remove_ifs(node):
     makes it nicer to work with.
     """
     first = node.list
-    while first is not None and first.item is None:
+    while first and first.item is None:
         first = first.next
 
     cur = first
-    while cur is not None:
-        if cur.next is not None and cur.next.item is None:
+    while cur:
+        if cur.next and cur.next.item is None:
             cur.next = cur.next.next
         cur = cur.next
 
@@ -3905,10 +3901,10 @@ def _finalize_tree(node):
     # The ordering here gets a bit tricky. It's important to do things in this
     # order to have everything work out correctly.
 
-    if node.list is not None:
+    if node.list:
         # The menu node has children. Finalize them.
         cur = node.list
-        while cur is not None:
+        while cur:
             _finalize_tree(cur)
             # Note: _finalize_tree() might have changed cur.next. This is
             # expected, so that we jump over e.g. implicitly created submenus.
@@ -3919,7 +3915,7 @@ def _finalize_tree(node):
         # menu rooted at it (due to menu nodes after it depending on it).
         _check_auto_menu(node)
 
-    if node.list is not None:
+    if node.list:
         # We have a node with finalized children. Do final steps to finalize
         # this node.
         _flatten(node.list)
