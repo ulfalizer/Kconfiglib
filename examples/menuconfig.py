@@ -221,12 +221,12 @@ def print_menuconfig_nodes(node, indent):
     Prints a tree with all the menu entries rooted at node. Child menu entries
     are indented.
     """
-    while node is not None:
+    while node:
         string = node_str(node)
         if string:
             indent_print(string, indent)
 
-        if node.list is not None:
+        if node.list:
             print_menuconfig_nodes(node.list, indent + 8)
 
         node = node.next

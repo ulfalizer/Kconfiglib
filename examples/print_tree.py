@@ -45,7 +45,7 @@ def indent_print(s, indent):
     print((" " * indent) + s)
 
 def print_items(node, indent):
-    while node is not None:
+    while node:
         if isinstance(node.item, Symbol):
             indent_print("config " + node.item.name, indent)
 
@@ -58,7 +58,7 @@ def print_items(node, indent):
         elif node.item == COMMENT:
             indent_print('comment "{0}"'.format(node.prompt[0]), indent)
 
-        if node.list is not None:
+        if node.list:
             print_items(node.list, indent + 2)
 
         node = node.next

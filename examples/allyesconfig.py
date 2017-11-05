@@ -40,19 +40,19 @@ while 1:
     # template for how you can avoid recursing on both. The same logic is found
     # in the C implementation.
 
-    if node.list is not None:
+    if node.list:
         # Jump to child node if available
         node = node.list
 
-    elif node.next is not None:
+    elif node.next:
         # Otherwise, jump to next node if available
         node = node.next
 
     else:
         # Otherwise, look for parents with next nodes to jump to
-        while node.parent is not None:
+        while node.parent:
             node = node.parent
-            if node.next is not None:
+            if node.next:
                 node = node.next
                 break
         else:
@@ -60,7 +60,7 @@ while 1:
             break
 
 # Collect all symbols that are not in choices
-non_choice_syms = [sym for sym in conf.defined_syms if sym.choice is None]
+non_choice_syms = [sym for sym in conf.defined_syms if not sym.choice]
 
 while 1:
     no_changes = True
@@ -87,8 +87,7 @@ while 1:
 
             # Does the choice have a default selection that we haven't already
             # selected?
-            if selection is not None and \
-               selection is not choice.user_selection:
+            if selection and selection is not choice.user_selection:
 
                 # Yup, select it
                 selection.set_value(2)

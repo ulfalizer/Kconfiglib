@@ -18,7 +18,7 @@ def do_allnoconfig(node):
     # entries in the menuconfig interface, setting each to n (or the lowest
     # assignable value).
 
-    while node is not None:
+    while node:
         if isinstance(node.item, Symbol):
             sym = node.item
 
@@ -33,7 +33,7 @@ def do_allnoconfig(node):
                 changed = True
 
         # Recursively lower children
-        if node.list is not None:
+        if node.list:
             do_allnoconfig(node.list)
 
         node = node.next

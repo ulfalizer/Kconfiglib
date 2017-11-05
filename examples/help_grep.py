@@ -44,7 +44,7 @@ if len(sys.argv) < 3:
 search = re.compile(sys.argv[2], re.IGNORECASE).search
 
 def search_tree(node):
-    while node is not None:
+    while node:
         match = False
 
         if isinstance(node.item, (Symbol, Choice)) and \
@@ -63,7 +63,7 @@ def search_tree(node):
         if match:
             print("location: {}:{}\n".format(node.filename, node.linenr))
 
-        if node.list is not None:
+        if node.list:
             search_tree(node.list)
 
         node = node.next
