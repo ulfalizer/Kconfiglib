@@ -3034,6 +3034,8 @@ class Choice(object):
         if self._cached_selection is not _NO_CACHED_SELECTION:
             return self._cached_selection
 
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
         if self.tri_value != 2:
             self._cached_selection = None
             return None
