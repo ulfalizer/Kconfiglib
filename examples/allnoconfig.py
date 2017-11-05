@@ -15,17 +15,16 @@ def do_allnoconfig(node):
     global changed
 
     # Walk the tree of menu nodes. You can imagine this as going down/into menu
-    # entries in the menuconfig interface, setting each to 'n' (or the lowest
+    # entries in the menuconfig interface, setting each to n (or the lowest
     # assignable value).
 
     while node is not None:
         if isinstance(node.item, Symbol):
             sym = node.item
 
-            # Is the symbol a non-choice, non-allnoconfig_y symbol that can be
-            # set to a lower value than its current value?
-            if (sym.choice is None and
-                not sym.is_allnoconfig_y and
+            # Is the symbol a non-allnoconfig_y symbol that can be set to a
+            # lower value than its current value?
+            if (not sym.is_allnoconfig_y and
                 sym.assignable and
                 sym.assignable[0] < sym.tri_value):
 
