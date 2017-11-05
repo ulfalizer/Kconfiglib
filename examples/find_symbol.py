@@ -6,7 +6,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/find_symbol.py SCRIPT_ARG=<name>
 #
-# Example output for SCRIPT_ARG=x86:
+# Example output for SCRIPT_ARG=X86:
 #
 #
 #   Found 452 locations that reference 'X86':
