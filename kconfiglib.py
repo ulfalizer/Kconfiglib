@@ -3,44 +3,70 @@ Overview
 ========
 
 Kconfiglib is a Python 2/3 library for scripting and extracting information
-from Kconfig-based configuration systems. Features include the following:
+from Kconfig configuration systems. Among other things, it can be used to do
+the following:
 
- - Programmatic getting and setting of symbol values
+ - Programmatically get and set symbol values
 
- - Reading/writing of .config files
+   allnoconfig.py and allyesconfig.py examples are provided, automatically
+   verified to produce identical output to the standard 'make allnoconfig' and
+   'make allyesconfig'.
 
- - Inspection of symbol properties and expressions: printing a symbol (calling
-   Symbol.__str__()) gives output which could be fed back into a Kconfig parser
-   to redefine the symbol, and __str__() is implemented with only public APIs.
-TODO: this isn't true anymore by default for choice symbols (though it could
-be arranged by not printing the choice dependency)
+ - Read/write .config files
 
-   A helpful __repr__() is implemented on all objects as well, also implemented
-   with public APIs.
+   The generated .config files are character-for-character identical to what
+   the C implementation would generate (except for the header comment). The
+   test suite relies on this, as it compares the generated files.
 
- - Expressions use a simple tuple-based format and can be processed manually if
-   needed.
+ - Inspect symbols
 
- - Menu tree inspection: The underlying menu tree is exposed, including
-   submenus created implicitly from symbols depending on preceding symbols.
-   This can be used e.g. to implement menuconfig-like functionality.
+   Printing a symbol gives output which could be fed back into a Kconfig parser
+   to redefine it***. The printing function (__str__()) is implemented with
+   public APIs, meaning you can fetch just whatever information you need as
+   well.
+
+   A helpful __repr__() is implemented on all objects too.
+
+   ***Choice symbols get their parent choice as a dependency, which shows up as
+   e.g. 'prompt "choice symbol" if <choice>' when printing the symbol. This
+   could easily be worked around if 100% reparsable output is needed.
+
+ - Inspect expressions
+
+   Expressions use a simple tuple-based format that can be processed manually
+   if needed. Expression printing and evaluation functions are provided,
+   implemented with public APIs.
+
+ - Inspect the menu tree
+
+   The underlying menu tree is exposed, including submenus created implicitly
+   from symbols depending on preceding symbols. This can be used e.g. to
+   implement menuconfig-like functionality. See the menuconfig.py example.
+
+
+Here are some other features:
 
  - Runs under both Python 2 and 3. The code mostly uses basic Python features
    and has no third-party dependencies. The most advanced things used are
-   probably @property and __slots__.
+   probably @property and __slots__. The entire library is contained in this
+   file.
 
  - Robust and highly compatible with the standard Kconfig C tools: The test
-   suite automatically compares output from Kconfiglib and the C tools (by
-   diffing generated .config files) on the real kernel Kconfig and defconfig
-   files, for all ARCHes. All tests are expected to pass.
+   suite automatically compares output from Kconfiglib and the C tools by
+   diffing the generated .config files for the real kernel Kconfig and
+   defconfig files, for all ARCHes. This currently involves comparing the
+   output for 36 ARCHes and 498 defconfig files (or over 18000 ARCH/defconfig
+   combos in "obsessive" test suite mode). All tests are expected to pass.
 
-   A set of selftests is also included.
+ - Not horribly slow despite being a pure Python implementation: The
+   allyesconfig.py example currently runs in about 1.6 seconds on a Core i7
+   2600K (with a warm file cache), where half a second is overhead from
+   'make scriptconfig' (see below).
 
- - Not horribly slow despite being a pure Python implementation: Parses the x86
-   Kconfigs in about a second on a Core i7 2600K (with a warm file cache). For
-   long-running jobs, PyPy gives a big performance boost.
+   For long-running jobs, PyPy gives a big performance boost. CPython is faster
+   for short-running jobs as PyPy needs some time to warm up.
 
- - Internals that (mostly) mirror the C implementation while being simpler to
+ - Internals that (mostly) mirror the C implementation, while being simpler to
    understand.
 
 
@@ -48,8 +74,8 @@ Using Kconfiglib on the Linux kernel with the Makefile targets
 ==============================================================
 
 For the Linux kernel, a handy interface is provided by the
-scripts/kconfig/Makefile patch. See further down for a motivation for the
-Makefile patch and for how to run Kconfiglib without it.
+scripts/kconfig/Makefile patch. Look further down for a motivation for the
+Makefile patch and for instructions on how you can use Kconfiglib without it.
 
 The Makefile patch adds the following targets:
 
@@ -58,24 +84,19 @@ make [ARCH=<arch>] iscriptconfig
 --------------------------------
 
 This target gives an interactive Python prompt where a Kconfig instance has
-been preloaded and is available in 'k'.
+been preloaded and is available in 'kconf'. To change the Python interpreter
+used, pass PYTHONCMD=<executable> to make. The default is "python".
 
 To get a feel for the API, try evaluating and printing the symbols in
-k.defined_syms, and explore the MenuNode menu tree starting at k.top_node by
-following 'next' and 'list' pointers.
+kconf.defined_syms, and explore the MenuNode menu tree starting at
+kconf.top_node by following 'next' and 'list' pointers.
 
-The item contained in a menu node is found in MenuNode.item, and all symbols
-and choices have a 'nodes' attribute containing their menu nodes (usually only
-one). Printing a menu node will print its item.
+The item contained in a menu node is found in MenuNode.item (note that this can
+be one of the constants MENU and COMMENT), and all symbols and choices have a
+'nodes' attribute containing their menu nodes (usually only one). Printing a
+menu node will print its item, in Kconfig format.
 
 If you want to look up a symbol by name, use the kconf.syms dictionary.
-
-
-To change the Python interpreter used, pass PYTHONCMD=<executable> to make. The
-default is "python".
-
-Tip: IronPython (PYTHONCMD=ipython) is handy when figuring out the API, as it
-provides autocompletion for attributes.
 
 
 make scriptconfig SCRIPT=<script> [SCRIPT_ARG=<arg>]
@@ -167,10 +188,10 @@ including prompts, so these two configurations are logically equivalent:
 
   endmenu
 
-In this example, A && B && C && D (the prompt condition) needs to be m or y for
+In this example, A && B && C && D (the prompt condition) needs to be non-n for
 FOO to be visible (assignable). If the value is m, the symbol can only be
 assigned the value m. The visibility sets an upper bound on the value that can
-be assigned by the user. Any higher user value will be truncated down.
+be assigned by the user, and any higher user value will be truncated down.
 
 'default' properties are independent of the visibility, though a 'default' will
 often get the same condition as the prompt due to dependency propagation.
@@ -181,12 +202,12 @@ Symbols with no (active) user value and no (active) 'default' default to n for
 bool/tristate symbols, and to the empty string for other symbols.
 
 'select' works similarly to symbol visibility, but sets a lower bound on the
-value of the symbol instead. The lower bound is determined by the value of the
+value of the symbol. The lower bound is determined by the value of the
 select*ing* symbol. 'select' does not respect visibility, so non-visible
 symbols can be forced to a particular (minimum) value by a select as well.
 
-For non-bool/tristate symbols, only whether the visibility is n or not matters:
-m visibility works the same as y visibility.
+For non-bool/tristate symbols, it only matters whether the visibility is n or
+non-n: m visibility acts the same as y visibility.
 
 Conditions on 'default' and 'select' work in mostly intuitive ways. If the
 condition is n, the 'default' or 'select' is disabled. If it is m, the
@@ -217,34 +238,36 @@ The top node is found in Kconfig.top_node. From there, you can visit child menu
 nodes by following the 'list' pointer, and any following menu nodes by
 following the 'next' pointer. Usually, a non-None 'list' pointer indicates a
 menu or Choice, but menu nodes for symbols can sometimes have a non-None 'list'
-pointer too due to menus created implicitly from dependencies.
+pointer too due to submenus created implicitly from dependencies.
 
 MenuNode.item is either a Symbol or a Choice object, or one of the constants
 MENU and COMMENT. The prompt of the menu node (which also holds the text for
 menus and comments) can be found in MenuNode.prompt. For Symbol and Choice,
 MenuNode.help holds the help text (if any, otherwise None).
 
-This organization mirrors the C implementation. MenuNode is called
-'struct menu' there, but I thought "menu" was a confusing name.
-
 Note that prompts and help texts for symbols and choices are stored in the menu
 node. This makes it possible to define a symbol in multiple locations with a
 different prompt or help text in each location.
+
+This organization mirrors the C implementation. MenuNode is called
+'struct menu' there, but I thought "menu" was a confusing name.
 
 The list of menu nodes for a Symbol or Choice can be found in the
 Symbol/Choice.nodes attribute.
 
 It is possible to give a Choice a name and define it in multiple locations,
-hence why Choice.nodes is a list. You're unlikely to ever see a choice defined
-in multiple locations in practice though (I don't think I've even seen a named
-choice outside of the test suite).
+hence why Choice.nodes is a list. In practice, you're unlikely to ever see a
+choice defined in more than one location. I don't think I've even seen a named
+choice outside of the test suite.
 
 
 Intro to expressions
 ====================
 
 Expressions can be evaluated with the expr_value() function and printed with
-the expr_str() function (these are used internally as well).
+the expr_str() function (these are used internally as well). Evaluating an
+expression always yields a tristate value, where n, m, and y are represented as
+0, 1, and 2, respectively.
 
 The following table should help you figure out how expressions are represented.
 A, B, C, ... are symbols (Symbol instances), NOT is the kconfiglib.NOT
@@ -269,7 +292,12 @@ y                     Kconfig.y (constant symbol)
 
 Strings like "foo" in 'default "foo"' or 'depends on SYM = "foo"' are
 represented as constant symbols, so the only values that appear in expressions
-are symbols (this mirrors the C implementation).
+are symbols***. This mirrors the C implementation.
+
+***For choice symbols, the parent Choice will appear in expressions as well,
+but it's usually invisible as the value interfaces of Symbol and Choice are
+identical. This mirrors the C implementation and makes different choice modes
+"just work".
 
 Manual evaluation examples:
 
@@ -291,7 +319,7 @@ n/m/y are automatically converted to the corresponding constant symbols
 
 Kconfig.const_syms is a dictionary like Kconfig.syms but for constant symbols.
 
-If a condition is "missing" (e.g., <cond> if the 'if <cond>' is removed from
+If a condition is missing (e.g., <cond> when the 'if <cond>' is removed from
 'default A if <cond>'), it is actually Kconfig.y. The standard __str__()
 functions just avoid printing 'if y' conditions to give cleaner output.
 
@@ -358,7 +386,7 @@ class Kconfig(object):
       'option modules' support.
 
       'modules' is never None. If the MODULES symbol is not explicitly defined,
-      it will get the value n as expected.
+      its tri_value will be 0 (n), as expected.
 
       A simple way to enable modules is to do 'kconf.modules.set_value(2)'
       (provided the MODULES symbol is defined and visible). Modules are
@@ -766,13 +794,13 @@ class Kconfig(object):
 
     def write_config(self, filename,
                      header="# Generated by Kconfiglib (https://github.com/ulfalizer/Kconfiglib)\n"):
-        """
+        r"""
         Writes out symbol values in the .config format.
 
         filename:
           Self-explanatory.
 
-        header (default: "# Generated by Kconfiglib (https://github.com/ulfalizer/Kconfiglib)\\n"):
+        header (default: "# Generated by Kconfiglib (https://github.com/ulfalizer/Kconfiglib)\n"):
           Text that will be inserted verbatim at the beginning of the file. You
           would usually want each line to start with '#' to make it a comment,
           and include a final terminating newline.
@@ -783,10 +811,10 @@ class Kconfig(object):
 
     def eval_string(self, s):
         """
-        Returns the tristate value of the expression 's' represented as an
-        integer, where 0, 1, 2 correspond to n, m, and y, respectively. Raises
-        KconfigSyntaxError if syntax errors are detected in 's'. Warns if
-        undefined symbols are referenced.
+        Returns the tristate value of the expression 's', represented as 0, 1,
+        and 2 for n, m, and y, respectively. Raises KconfigSyntaxError if
+        syntax errors are detected in 's'. Warns if undefined symbols are
+        referenced.
 
         As an example, if FOO and BAR are tristate symbols at least one of
         which has the value y, then config.eval_string("y && (FOO || BAR)")
