@@ -3523,7 +3523,7 @@ def expr_str(expr):
 
     # Relation
     return "{} {} {}".format(expr_str(expr[1]),
-                             _RELATION_TO_STR[expr[0]],
+                             _REL_TO_STR[expr[0]],
                              expr_str(expr[2]))
 
 # escape()/unescape() helpers
@@ -4165,7 +4165,7 @@ _TOKEN_TO_REL = {
     _T_UNEQUAL:       UNEQUAL,
 }
 
-_RELATION_TO_STR = {
+_REL_TO_STR = {
     EQUAL:         "=",
     GREATER:       ">",
     GREATER_EQUAL: ">=",
