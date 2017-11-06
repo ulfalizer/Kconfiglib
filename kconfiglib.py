@@ -3888,9 +3888,9 @@ def _finalize_choice(node):
                 break
 
     # Each choice item of UNKNOWN type gets the type of the choice
-    for item in choice.syms:
-        if item.orig_type == UNKNOWN:
-            item.orig_type = choice.orig_type
+    for sym in choice.syms:
+        if sym.orig_type == UNKNOWN:
+            sym.orig_type = choice.orig_type
 
 def _finalize_tree(node):
     """
