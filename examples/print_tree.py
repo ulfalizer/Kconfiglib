@@ -63,5 +63,5 @@ def print_items(node, indent):
 
         node = node.next
 
-conf = Kconfig(sys.argv[1])
-print_items(conf.top_node, 0)
+kconf = Kconfig(sys.argv[1])
+print_items(kconf.top_node, 0)

@@ -40,8 +40,8 @@ if len(sys.argv) < 3:
     print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
     sys.exit(1)
 
-conf = Kconfig(sys.argv[1])
-sym = conf.syms[sys.argv[2]]
+kconf = Kconfig(sys.argv[1])
+sym = kconf.syms[sys.argv[2]]
 
 print(sym)
 print("value = " + sym.str_value)

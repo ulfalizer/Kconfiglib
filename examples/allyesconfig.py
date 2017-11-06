@@ -2,7 +2,8 @@
 # identical to 'make allyesconfig', for all ARCHES.
 #
 # This example is implemented a bit differently from allnoconfig.py to
-# demonstrate some other possibilities.
+# demonstrate some other possibilities. A variant similar to
+# allnoconfig_simpler.py could be constructed too.
 #
 # In theory, we need to handle choices in two different modes:
 #
@@ -39,7 +40,7 @@ def all_choices(node):
 
     (I was thinking of making a list of choices available directly in the API,
     but I'm not sure it will always be needed internally, and I'm trying to
-    spam the API with less seldom-used stuff compared to Kconfiglib 1.)
+    spam the API with less seldomly-used stuff compared to Kconfiglib 1.)
     """
     res = []
 
@@ -75,8 +76,9 @@ while True:
             choice.set_value(choice.assignable[-1])
             changed = True
 
+            # For y-mode choices, we just let the choice get its default
+            # selection. For m-mode choices, we set all choice symbols to m.
             if choice.tri_value == 1:
-                # For m-mode choices, set all choice symbols to m
                 for sym in choice.syms:
                     sym.set_value(1)
 

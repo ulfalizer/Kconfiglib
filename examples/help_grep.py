@@ -68,5 +68,5 @@ def search_tree(node):
 
         node = node.next
 
-conf = Kconfig(sys.argv[1])
-search_tree(conf.top_node)
+kconf = Kconfig(sys.argv[1])
+search_tree(kconf.top_node)
