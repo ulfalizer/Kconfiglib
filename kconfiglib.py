@@ -1936,7 +1936,7 @@ class Kconfig(object):
 
         config_strings = []
         # Small optimization
-        add_fn = config_strings.append
+        append = config_strings.append
 
         while 1:
             if isinstance(node.item, Symbol):
@@ -1944,14 +1944,14 @@ class Kconfig(object):
                 if not sym._already_written:
                     config_string = sym.config_string
                     if config_string:
-                        add_fn(config_string)
+                        append(config_string)
                     sym._already_written = True
 
             elif expr_value(node.dep) and \
                  ((node.item == MENU and expr_value(node.visibility)) or
                    node.item == COMMENT):
 
-                add_fn("\n#\n# {}\n#\n".format(node.prompt[0]))
+                append("\n#\n# {}\n#\n".format(node.prompt[0]))
 
             # Iterative tree walk using parent pointers
 
