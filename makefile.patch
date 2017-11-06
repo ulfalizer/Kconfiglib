@@ -37,8 +37,8 @@ index 8c12c20c55a6..88c618b34915 100644
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" "$(PYTHONCMD)" -i -c \
 +	  "import kconfiglib; \
 +	   import sys; \
-+	   c = kconfiglib.Kconfig(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
-+	   print(\"A Kconfig instance 'c' for the architecture $(ARCH) has been created.\")" \
++	   kconf = kconfiglib.Kconfig(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
++	   print(\"A Kconfig instance 'kconf' for the architecture $(ARCH) has been created.\")" \
 +	  $(Kconfig)
 +
 +# Used by testsuite.py to be able to compare output for nonsensical
