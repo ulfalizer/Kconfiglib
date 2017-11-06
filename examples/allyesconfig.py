@@ -34,9 +34,9 @@ import sys
 
 def all_choices(node):
     """
-    Returns all choices in the menu tree rooted at 'node'. See
-    print_tree_iter.py for an example of how the menu tree can be walked
-    iteratively.
+    Returns all choices in the menu tree rooted at 'node'. See the
+    Kconfig.write_config() implementation in kconfiglib.py for an example of
+    how the tree can be walked iteratively instead.
 
     (I was thinking of making a list of choices available directly in the API,
     but I'm not sure it will always be needed internally, and I'm trying to
