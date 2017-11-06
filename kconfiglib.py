@@ -1107,7 +1107,7 @@ class Kconfig(object):
                         # ...except we translate n, m, and y into the
                         # corresponding constant symbols, like the C
                         # implementation
-                        token = self._lookup_const_sym(name)
+                        token = self.const_syms[name]
                     else:
                         token = self._lookup_sym(name)
 
