@@ -2925,10 +2925,6 @@ class Choice(object):
       WARNING: Do not assign directly to this. It will break things. Call
       sym.set_value(2) on the choice symbol you want to select instead.
 
-    default_selection:
-      The symbol that would be selected by default, had the user not selected
-      any symbol. Can be None for the same reasons as 'selected'.
-
     user_value:
       The value (mode) selected by the user through Choice.set_value(). Either
       0, 1, or 2, or None if the user hasn't selected a mode. See
@@ -3067,32 +3063,26 @@ class Choice(object):
             self._cached_selection = None
             return None
 
-        # User choice available?
+        # Use the user selection if it's visible
         if self.user_selection and self.user_selection.visibility == 2:
             self._cached_selection = self.user_selection
             return self.user_selection
 
-        # Look at defaults
-
-        self._cached_selection = self.default_selection
-        return self._cached_selection
-
-    @property
-    def default_selection(self):
-        """
-        See the class documentation.
-        """
-        # Any default available?
+        # Otherwise, check if we have a default
         for sym, cond in self.defaults:
+            # The default symbol must be visible too
             if expr_value(cond) and sym.visibility:
+                self._cached_selection = sym
                 return sym
 
         # Otherwise, pick the first visible symbol, if any
         for sym in self.syms:
             if sym.visibility:
+                self._cached_selection = sym
                 return sym
 
-        # Couldn't find a default
+        # Couldn't find a selection
+        self._cached_selection = None
         return None
 
     def set_value(self, value):

@@ -1884,7 +1884,6 @@ def test_sanity(conf, arch):
         choice.user_value
         choice.assignable
         choice.selection
-        choice.default_selection
         choice.type
         choice.visibility
 
