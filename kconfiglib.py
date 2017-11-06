@@ -2089,7 +2089,8 @@ class Symbol(object):
 
       Gotcha: For int/hex symbols, the exact format of the value must often be
       preserved (e.g., when writing a .config file), hence why you can't get it
-      directly as an int. Do int(sym.str_value) to get the integer value.
+      directly as an int. Do int(int_sym.str_value) or
+      int(hex_sym.str_value, 16) to get the integer value.
 
     tri_value:
       The tristate value of the symbol as an integer. One of 0, 1, 2,
@@ -2108,9 +2109,8 @@ class Symbol(object):
       Returns the empty set for non-bool/tristate symbols and for symbols with
       visibility n. The other possible values are (0, 2), (0, 1, 2), (1, 2),
       (1,), and (2,). A (1,) or (2,) result means the symbol is visible but
-      "locked" to that particular tristate value (through a select, perhaps in
-      combination with a prompt condition). menuconfig represents this as -M-
-      and -*-, respectively.
+      "locked" to m or y through a select, perhaps in combination with the
+      visibility. menuconfig represents this as -M- and -*-, respectively.
 
       For string/hex/int symbols, check if Symbol.visibility is non-0 (non-n)
       instead to determine if the value can be changed.
@@ -2142,10 +2142,10 @@ class Symbol(object):
       The user value of the symbol. None if no user value has been assigned
       (via Kconfig.load_config() or Symbol.set_value()).
 
-      0, 1, or 2 for bool/tristate symbols, and a string for the other symbol
-      types.
+      Holds 0, 1, or 2 for bool/tristate symbols, and a string for the other
+      symbol types.
 
-      Warning: Do not assign directly to this. It will break things. Use
+      WARNING: Do not assign directly to this. It will break things. Use
       Symbol.set_value().
 
     config_string:
@@ -2167,15 +2167,15 @@ class Symbol(object):
       List of (default, cond) tuples for the symbol's 'default' properties. For
       example, 'default A && B if C || D' is represented as
       ((AND, A, B), (OR, C, D)). If no condition was given, 'cond' is
-      self.config.y.
+      self.kconfig.y.
 
       Note that 'depends on' and parent dependencies are propagated to
       'default' conditions.
 
     selects:
       List of (symbol, cond) tuples for the symbol's 'select' properties. For
-      example, 'select A if B' is represented as (A, B). If no condition was
-      given, 'cond' is self.config.y.
+      example, 'select A if B && C' is represented as (A, (AND, B, C)). If no
+      condition was given, 'cond' is self.kconfig.y.
 
       Note that 'depends on' and parent dependencies are propagated to 'select'
       conditions.
@@ -2211,8 +2211,9 @@ class Symbol(object):
       locations, the dependencies at each location are ORed together.
 
       Internally, this is only used to implement 'imply', which only applies if
-      the implied symbol has expr_value(self.direct_dep) != 0. 'depends on' is
-      automatically propagated to the conditions of all properties.
+      the implied symbol has expr_value(self.direct_dep) != 0. 'depends on' and
+      parent dependencies are automatically propagated to the conditions of
+      properties, so normally it's redundant to check the direct dependencies.
 
     env_var:
       If the Symbol has an 'option env="FOO"' option, this contains the name
@@ -2526,10 +2527,11 @@ class Symbol(object):
         'assignable' will cause Symbol.user_str/tri_value to differ from
         Symbol.str/tri_value (be truncated down or up).
 
-        Assigning a 1 (m) or 2 (y) value to a choice symbol automatically
-        changes the mode of the choice (see the Choice class). Setting a choice
-        symbol to 2 (y) makes it the currently selected choice symbol, which is
-        significant for choices in y mode.
+        Setting a choice symbol to 2 (y) only updates Choice.user_selection on
+        the parent choice and not Symbol.user_value itself. This gives the
+        expected behavior when a choice is switched between different modes.
+        Choice.user_selection is considered when the choice is in y mode (the
+        "normal" mode).
 
         Other symbols that depend (possibly indirectly) on this symbol are
         automatically recalculated to reflect the assigned value.
@@ -2548,7 +2550,8 @@ class Symbol(object):
         False otherwise. This only looks at the form of the value. For BOOL and
         TRISTATE symbols, check the Symbol.assignable attribute to see what
         values are currently in range and would actually be reflected in the
-        value of the symbol.
+        value of the symbol. For other symbol types, check whether the
+        visibility is non-n.
         """
         if value == self.user_value:
             # We know the value must be valid if it was successfully set
@@ -2677,9 +2680,10 @@ class Symbol(object):
 
         The output is designed so that feeding it back to a Kconfig parser
         redefines the symbol as is. This also works for symbols defined in
-        multiple locations, where all the definitions are output.
+        multiple locations, where all the definitions are output. See the
+        module documentation for a small gotcha related to choice symbols.
 
-        An empty string is returned for undefined symbols.
+        An empty string is returned for undefined and constant symbols.
         """
         return _sym_choice_str(self)
 
@@ -2883,7 +2887,8 @@ class Choice(object):
         2 (y) - One symbol will be y, the rest n.
 
       Only tristate choices can be in m mode. The visibility of the choice is
-      an upper bound on the mode.
+      an upper bound on the mode, and the mode in turn is an upper bound on the
+      visibility of the choice symbols.
 
       To change the mode, use Choice.set_value().
 
@@ -2897,20 +2902,14 @@ class Choice(object):
 
         Symbols within choices get the choice propagated as a dependency to
         their properties. This makes it so that the mode of the choice acts as
-        an upper bound on e.g. the visibility of choice symbols.
+        an upper bound on e.g. the visibility of choice symbols, and explains
+        the gotcha related to printing choice symbols mentioned in the module
+        docstring.
 
         Kconfiglib uses a separate Choice class only because it makes the code
         and interface less confusing (especially in a user-facing interface).
         Corresponding attributes have the same name in the Symbol and Choice
         classes, for consistency and compatibility.
-
-        Gotcha: This means that Choice instances show up in expressions inside
-        choices. This should normally be invisible even if you're doing manual
-        evaluation of expressions, because the value-related interface of
-        Symbol and Choice is identical. It also makes all the expressions have
-        the "expected" value. A choice inside an expression will be printed as
-        "<choice>" (or "<choice NAME>" for named choices, should those ever
-        show up).
 
     assignable:
       See the symbol class documentation. Gives the assignable values (modes).
@@ -2919,10 +2918,11 @@ class Choice(object):
       See the Symbol class documentation. Acts on the value (mode).
 
     selection:
-      The currently selected symbol. None if the Choice is not in y mode or has
-      no selected symbol (due to unsatisfied dependencies on choice symbols).
+      The Symbol instance of the currently selected symbol. None if the Choice
+      is not in y mode or has no selected symbol (due to unsatisfied
+      dependencies on choice symbols).
 
-      Warning: Do not assign directly to this. It will break things. Call
+      WARNING: Do not assign directly to this. It will break things. Call
       sym.set_value(2) on the choice symbol you want to select instead.
 
     default_selection:
