@@ -3874,7 +3874,7 @@ def _finalize_choice(node):
     choice = node.item
 
     cur = node.list
-    while cur is not None:
+    while cur:
         if isinstance(cur.item, Symbol):
             cur.item.choice = choice
             choice.syms.append(cur.item)
