@@ -511,7 +511,6 @@ class Kconfig(object):
             sym.is_constant = True
             sym.orig_type = TRISTATE
             sym._cached_tri_val = STR_TO_TRI[nmy]
-            sym._cached_str_val = nmy
 
             self.const_syms[nmy] = sym
 
