@@ -1,18 +1,28 @@
-# Works like 'make allyesconfig'. Verified by the test suite to generate
-# identical output to 'make allyesconfig' for all ARCHES.
+# Works like 'make allyesconfig'. Verified by the test suite to generate output
+# identical to 'make allyesconfig', for all ARCHES.
 #
-# This could be implemented as a straightforward tree walk just like
-# allnoconfig.py (or even simpler like allnoconfig_simpler.py), but do it a bit
-# differently (roundabout) just to demonstrate some other possibilities.
+# This example is implemented a bit differently from allnoconfig.py to
+# demonstrate some other possibilities.
 #
-# allyesconfig is a bit more involved than allnoconfig as we need to handle
-# choices in two different modes:
+# In theory, we need to handle choices in two different modes:
 #
 #   y: One symbol is y, the rest are n
 #   m: Any number of symbols are m, the rest are n
 #
-# Only tristate choices can be in m mode. No m mode choices seem to appear for
-# allyesconfig on the kernel Kconfigs as of 4.14, but we still handle it.
+# Only tristate choices can be in m mode.
+#
+# In practice, no m mode choices appear for allyesconfig as of 4.14, as
+# expected, but we still handle them here for completeness. Here's a convoluted
+# example of how you might get an m-mode choice even during allyesconfig:
+#
+#   choice
+#           tristate "weird choice"
+#           depends on m
+#
+#   ...
+#
+#   endchoice
+#
 #
 # Usage:
 #
@@ -21,97 +31,58 @@
 from kconfiglib import Kconfig, Choice, STR_TO_TRI
 import sys
 
-conf = Kconfig(sys.argv[1])
+def all_choices(node):
+    """
+    Returns all choices in the menu tree rooted at 'node'. See
+    print_tree_iter.py for an example of how the menu tree can be walked
+    iteratively.
 
-# Collect all the choices in the configuration. Demonstrates how the menu node
-# tree can be walked iteratively by using the parent pointers.
+    (I was thinking of making a list of choices available directly in the API,
+    but I'm not sure it will always be needed internally, and I'm trying to
+    spam the API with less seldom-used stuff compared to Kconfiglib 1.)
+    """
+    res = []
 
-choices = []
-node = conf.top_node
+    while node:
+        if isinstance(node.item, Choice):
+            res.append(node.item)
 
-while 1:
-    if isinstance(node.item, Choice):
-        choices.append(node.item)
+        if node.list:
+            res.extend(all_choices(node.list))
 
-    # Iterative tree walking by using parent pointers.
-    #
-    # Recursing on next pointers can blow the Python stack. Recursing on child
-    # pointers is safe (as is done in the other examples). This gives a
-    # template for how you can avoid recursing on both. The same logic is found
-    # in the C implementation.
-
-    if node.list:
-        # Jump to child node if available
-        node = node.list
-
-    elif node.next:
-        # Otherwise, jump to next node if available
         node = node.next
 
-    else:
-        # Otherwise, look for parents with next nodes to jump to
-        while node.parent:
-            node = node.parent
-            if node.next:
-                node = node.next
-                break
-        else:
-            # No parents with next nodes, all nodes visited
-            break
+    return res
 
-# Collect all symbols that are not in choices
-non_choice_syms = [sym for sym in conf.defined_syms if not sym.choice]
+kconf = Kconfig(sys.argv[1])
 
-while 1:
-    no_changes = True
+non_choice_syms = [sym for sym in kconf.defined_syms if not sym.choice]
+choices = all_choices(kconf.top_node)  # All choices in the configuration
 
-    # Handle symbols outside of choices
+while True:
+    changed = False
 
     for sym in non_choice_syms:
-        # See allnoconfig example. [-1] gives the last (highest) assignable
-        # value.
+        # Set the symbol to the highest assignable value, unless it already has
+        # that value. sym.assignable[-1] gives the last element in assignable.
         if sym.assignable and sym.tri_value < sym.assignable[-1]:
             sym.set_value(sym.assignable[-1])
-            no_changes = False
-
-    # Handle choices
+            changed = True
 
     for choice in choices:
-        # Handle a choice whose visibility allows it to be in y mode
+        # Same logic as above for choices
+        if choice.assignable and choice.tri_value < choice.assignable[-1]:
+            choice.set_value(choice.assignable[-1])
+            changed = True
 
-        if choice.visibility == 2:
-            # Enable the choice in case it is optional
-            choice.set_value(2)
-
-            selection = choice.default_selection
-
-            # Does the choice have a default selection that we haven't already
-            # selected?
-            if selection and selection is not choice.user_selection:
-
-                # Yup, select it
-                selection.set_value(2)
-                no_changes = False
-
-        # Handle a choice whose visibility only allows it to be in m mode. This
-        # might happen if a choice depends on a symbol that can only be m, for
-        # example.
-
-        elif choice.visibility == 1:
-            # Enable the choice in case it is optional
-            choice.set_value(1)
-
-            for sym in choice.symbols:
-
-                # Does the choice have a symbol that can be m that we haven't
-                # already set to m?
-                if sym.user_value != 1 and 1 in sym.assignable:
-
-                    # Yup, set it
+            if choice.tri_value == 1:
+                # For m-mode choices, set all choice symbols to m
+                for sym in choice.syms:
                     sym.set_value(1)
-                    no_changes = False
 
-    if no_changes:
+    # Do multiple passes until we longer manage to raise any symbols or
+    # choices, like in allnoconfig.py
+    if not changed:
         break
 
-conf.write_config(".config")
+kconf.write_config(".config")

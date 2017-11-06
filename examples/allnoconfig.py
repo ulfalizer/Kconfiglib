@@ -38,10 +38,11 @@ def do_allnoconfig(node):
 
         node = node.next
 
-conf = Kconfig(sys.argv[1])
+# Parse the Kconfig files
+kconf = Kconfig(sys.argv[1])
 
-# Do an initial pass to set 'option allnoconfig_y' symbols to 'y'
-for sym in conf.defined_syms:
+# Do an initial pass to set 'option allnoconfig_y' symbols to y
+for sym in kconf.defined_syms:
     if sym.is_allnoconfig_y:
         sym.set_value(2)
 
@@ -52,10 +53,10 @@ while 1:
     # until we're no longer able to change the value of any symbol in a pass.
     changed = False
 
-    do_allnoconfig(conf.top_node)
+    do_allnoconfig(kconf.top_node)
 
     # Did the pass change any symbols?
     if not changed:
         break
 
-conf.write_config(".config")
+kconf.write_config(".config")
