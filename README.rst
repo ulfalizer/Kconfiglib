@@ -202,6 +202,21 @@ I'm not currently interested in implementing a (more usable) menuconfig myself, 
 for a great one should be there if you want to give it a go. I'll help you out with any questions you might
 have.
 
+Real-world examples
+~~~~~~~~~~~~~~~~~~~
+
+These use the older Kconfiglib 1 API, which was a bit clunkier and not as general (functions instead of properties, and no direct access to the menu structure or expressions):
+
+- `genboardscfg.py <http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD>`_ from `Das U-Boot <http://www.denx.de/wiki/U-Boot>`_ generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
+
+- `gen-manual-lists.py <https://git.busybox.net/buildroot/tree/support/scripts/gen-manual-lists.py?id=5676a2deea896f38123b99781da0a612865adeb0>`_ generated listings for an appendix in the `Buildroot <https://buildroot.org>`_ manual. (The listing has since been removed.)
+
+- `SConf <https://github.com/CoryXie/SConf>`_ builds an interactive configuration interface (like ``menuconfig``) on top of Kconfiglib, for use e.g. with `SCons <scons.org>`_.
+
+- `kconfig-diff.py <https://gist.github.com/dubiousjim/5638961>`_ -- a script by `dubiousjim <https://github.com/dubiousjim>`_ that compares kernel configurations.
+
+- Originally, Kconfiglib was used in chapter 4 of my `master's thesis <http://liu.diva-portal.org/smash/get/diva2:473038/FULLTEXT01.pdf>`_ to automatically generate a "minimal" kernel for a given system. Parts of it bother me a bit now, but that's how it goes with old work.
+
 Sample ``make iscriptconfig`` session
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -286,18 +301,6 @@ The following log should give some idea of the functionality available in the AP
     CONFIG_STACKTRACE_SUPPORT=y
     CONFIG_MMU=y
     ...
-
-* The `examples/ <https://github.com/ulfalizer/Kconfiglib/tree/master/examples>`_ directory contains simple example scripts. See the documentation for how to run them.
-
-* `genboardscfg.py <http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD>`_ from `Das U-Boot <http://www.denx.de/wiki/U-Boot>`_ generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
-
-* `gen-manual-lists.py <https://git.busybox.net/buildroot/tree/support/scripts/gen-manual-lists.py?id=5676a2deea896f38123b99781da0a612865adeb0>`_ generated listings for an appendix in the `Buildroot <https://buildroot.org>`_ manual. (The listing has since been removed.)
-
-* `SConf <https://github.com/CoryXie/SConf>`_ builds an interactive configuration interface (like ``menuconfig``) on top of Kconfiglib, for use e.g. with `SCons <scons.org>`_.
-
-* `kconfig-diff.py <https://gist.github.com/dubiousjim/5638961>`_ -- a script by `dubiousjim <https://github.com/dubiousjim>`_ that compares kernel configurations.
-
-* Originally, Kconfiglib was used in chapter 4 of my `master's thesis <http://liu.diva-portal.org/smash/get/diva2:473038/FULLTEXT01.pdf>`_ to automatically generate a "minimal" kernel for a given system. Parts of it bother me a bit now, but that's how it goes with old work.
  
 Test suite
 ----------
