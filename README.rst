@@ -1,17 +1,88 @@
-Kconfiglib
-==========
-
-A Python library for doing stuff with `Kconfig <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_-based
-configuration systems. Can extract information, query and set symbol values,
-and read and write ``.config`` files. Highly compatible with the
-``scripts/kconfig/*conf`` utilities in the kernel, usually invoked via make
-targets such as ``menuconfig`` and ``defconfig``.
-
-Supports both Python 2 and Python 3 without modification, and should also run
-on non-\*nix platforms
-
 .. contents:: Table of contents
    :backlinks: none
+
+Overview
+--------
+
+Kconfiglib is a Python 2/3 library for scripting and extracting information
+from `Kconfig
+<https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
+configuration systems. It can do the following, among other things:
+
+- **Programmatically get and set symbol values**
+
+  `allnoconfig.py <examples/allnoconfig.py>`_ and `allyesconfig.py
+  <examples/allyesconfig.py>`_ examples are provided, automatically verified to
+  produce identical output to the standard ``make allnoconfig`` and ``make
+  allyesconfig``.
+
+- **Read and write .config files**
+
+  The generated ``.config`` files are character-for-character identical to what
+  the C implementation would generate (except for the header comment). The test
+  suite relies on this, as it compares the generated files.
+
+- **Inspect symbols**
+
+  Printing a symbol gives output which could be fed back into a Kconfig parser
+  to redefine it***. The printing function (``__str__()``) is implemented with
+  public APIs, meaning you can fetch just whatever information you need as
+  well.
+
+  A helpful ``__repr__()`` is implemented on all objects too, also implemented
+  with public APIs.
+
+  ***Choice symbols get their parent choice as a dependency, which shows up as
+  e.g. ``prompt "choice symbol" if <choice>`` when printing the symbol. This
+  could easily be worked around if 100% reparsable output is needed.
+
+- **Inspect expressions**
+
+  Expressions use a simple tuple-based format that can be processed manually
+  if needed. Expression printing and evaluation functions are provided,
+  implemented with public APIs.
+
+- **Inspect the menu tree**
+
+  The underlying menu tree is exposed, including submenus created implicitly
+  from symbols depending on preceding symbols. This can be used e.g. to
+  implement menuconfig-like functionality.
+  
+  See the `menuconfig.py <examples/menuconfig.py>`_ example.
+
+
+Here are some other features:
+
+- Single-file implementation. The entire library is contained in `kconfiglib.py
+  <kconfiglib.py>`_.
+
+- Runs unmodified under both Python 2 and 3. The code mostly uses basic Python
+  features and has no third-party dependencies. The most advanced things used
+  are probably ``@property`` and ``__slots__``.
+
+- Robust and highly compatible with the standard Kconfig C tools: The test
+  suite automatically compares output from Kconfiglib and the C tools by
+  diffing the generated ``.config`` files for the real kernel Kconfig and
+  defconfig files, for all ARCHes.
+  
+  This currently involves comparing the output for 36 ARCHes and 498 defconfig
+  files (or over 18000 ARCH/defconfig combinations in "obsessive" test suite
+  mode). All tests are expected to pass.
+
+  A suite of selftests is included as well.
+
+- Reasonably optimized and not horribly slow despite being a pure Python
+  implementation: The `allyesconfig.py <examples/allyesconfig.py>`_ example
+  currently runs in about 1.6 seconds on a Core i7 2600K (with a warm file
+  cache), where half a second is overhead from ``make scriptconfig`` (see below).
+
+  For long-running jobs, `PyPy <https://pypy.org/>`_ gives a big performance
+  boost. CPython is faster for short-running jobs as PyPy needs some time to
+  warm up.
+
+- Internals that (mostly) mirror the C implementation while being simpler to
+  understand.
+
 
 Installation
 ------------
