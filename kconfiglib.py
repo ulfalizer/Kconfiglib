@@ -2059,9 +2059,9 @@ class Symbol(object):
     and some are implemented through @property magic (but are still efficient
     to access due to internal caching).
 
-    Note: Prompts and help texts are stored in the Symbol's MenuNode(s) rather
-    than the Symbol itself. Check the 'nodes' attribute. This matches the C
-    tools.
+    Note: Prompts, help texts, and locations are stored in the Symbol's
+    MenuNode(s) rather than in the Symbol itself. Check the MenuNode class and
+    the Symbol.nodes attribute. This organization matches the C tools.
 
     name:
       The name of the symbol, e.g. "FOO" for 'config FOO'.
@@ -2854,6 +2854,10 @@ class Choice(object):
     treated as read-only, and some are implemented through @property magic (but
     are still efficient to access due to internal caching).
 
+    Note: Prompts, help texts, and locations are stored in the Choice's
+    MenuNode(s) rather than in the Choice itself. Check the MenuNode class and
+    the Choice.nodes attribute. This organization matches the C tools.
+
     name:
       The name of the choice, e.g. "FOO" for 'choice FOO', or None if the
       Choice has no name. I can't remember ever seeing named choices in
@@ -2901,10 +2905,9 @@ class Choice(object):
         dependency is 'm && <visibility>').
 
         Symbols within choices get the choice propagated as a dependency to
-        their properties. This makes it so that the mode of the choice acts as
-        an upper bound on e.g. the visibility of choice symbols, and explains
-        the gotcha related to printing choice symbols mentioned in the module
-        docstring.
+        their properties. This turns the mode of the choice into an upper bound
+        on e.g. the visibility of choice symbols, and explains the gotcha
+        related to printing choice symbols mentioned in the module docstring.
 
         Kconfiglib uses a separate Choice class only because it makes the code
         and interface less confusing (especially in a user-facing interface).
@@ -2930,13 +2933,17 @@ class Choice(object):
       0, 1, or 2, or None if the user hasn't selected a mode. See
       Symbol.user_value.
 
-      Warning: Do not assign directly to this. It will break things. Use
+      WARNING: Do not assign directly to this. It will break things. Use
       Choice.set_value() instead.
 
     user_selection:
       The symbol selected by the user (by setting it to y). Ignored if the
       choice is not in y mode, but still remembered so that the choice "snaps
-      back" to the user selection if the mode is changed back to y.
+      back" to the user selection if the mode is changed back to y. This might
+      differ from 'selection' due to unsatisfied dependencies.
+
+      WARNING: Do not assign directly to this. It will break things. Call
+      sym.set_value(2) on the choice symbol to be selected instead.
 
     syms:
       List of symbols contained in the choice.
@@ -3090,7 +3097,7 @@ class Choice(object):
         Sets the user value (mode) of the choice. Like for Symbol.set_value(),
         the visibility might truncate the value. Choices without the 'optional'
         attribute (is_optional) can never be in n mode, but 0 is still accepted
-        (and ignored) since it's not a malformed value.
+        since it's not a malformed value (though it will have no effect).
 
         Returns True if the value is valid for the type of the choice, and
         False otherwise. This only looks at the form of the value. Check the
@@ -3111,8 +3118,8 @@ class Choice(object):
             return False
 
         self.user_value = value
-        self._rec_invalidate()
         self._was_set = True
+        self._rec_invalidate()
 
         return True
 
@@ -3253,18 +3260,17 @@ class Choice(object):
 class MenuNode(object):
     """
     Represents a menu node in the configuration. This corresponds to an entry
-    in e.g. the 'make menuconfig' interface, though non-visible,
-    non-user-assignable symbols, choices, menus, and comments also get menu
-    nodes. If a symbol or choice is defined in multiple locations, it gets one
-    menu node for each location.
+    in e.g. the 'make menuconfig' interface, though non-visible choices, menus,
+    and comments also get menu nodes. If a symbol or choice is defined in
+    multiple locations, it gets one menu node for each location.
 
     The top-level menu node, corresponding to the implicit top-level menu, is
     available in Kconfig.top_node.
 
-    For symbols and choices, the menu nodes are available in the 'nodes'
-    attribute. Menus and comments are represented as plain menu nodes, with
-    their text stored in the prompt attribute (prompt[0]). This mirrors the C
-    implementation.
+    The menu nodes for a Symbol or Choice can be found in the
+    Symbol/Choice.nodes attribute. Menus and comments are represented as plain
+    menu nodes, with their text stored in the prompt attribute (prompt[0]).
+    This mirrors the C implementation.
 
     The following attributes are available on MenuNode instances. They should
     be viewed as read-only.
@@ -3280,8 +3286,8 @@ class MenuNode(object):
     list:
       The first child menu node. None if there are no children.
 
-      Choices and menus naturally have children, but Symbols can have children
-      too because of menus created automatically from dependencies (see
+      Choices and menus naturally have children, but Symbols can also have
+      children because of menus created automatically from dependencies (see
       kconfig-language.txt).
 
     parent:
@@ -3289,9 +3295,12 @@ class MenuNode(object):
 
     prompt:
       A (string, cond) tuple with the prompt for the menu node and its
-      condition. None if there is no prompt. Prompts are always stored in the
-      menu node rather than the Symbol or Choice. For menus and comments, the
-      prompt holds the text.
+      conditional expression (which is self.kconfig.y if there is no
+      condition). None if there is no prompt.
+
+      For symbols and choices, the prompt is stored in the MenuNode rather than
+      the Symbol or Choice instance. For menus and comments, the prompt holds
+      the text.
 
     help:
       The help text for the menu node for Symbols and Choices. None if there is
@@ -3306,7 +3315,8 @@ class MenuNode(object):
       properties of symbols and choices.
 
       If a symbol is defined in multiple locations, only the properties defined
-      at each location get the corresponding MenuNode.dep propagated to them.
+      at a particular location get the corresponding MenuNode.dep dependencies
+      propagated to them.
 
     visibility:
       The 'visible if' dependencies for the menu node (which must represent a
@@ -3317,11 +3327,12 @@ class MenuNode(object):
     is_menuconfig:
       True if the symbol for the menu node (it must be a symbol) was defined
       with 'menuconfig' rather than 'config' (at this location). This is a hint
-      on how to display the menu entry. It's ignored internally by Kconfiglib
-      (except when printing symbols).
+      on how to display the menu entry (display the children in a separate menu
+      rather than indenting them). It's ignored internally by Kconfiglib,
+      except when printing symbols.
 
     filename/linenr:
-        The location where the menu node appears.
+      The location where the menu node appears.
 
     kconfig:
       The Kconfig instance the menu node is from.
@@ -3447,11 +3458,10 @@ def expr_value(expr):
     or 2 (y).
 
     'expr' must be an already-parsed expression from a Symbol, Choice, or
-    MenuNode. To evaluate an expression represented as a string, use
+    MenuNode property. To evaluate an expression represented as a string, use
     Kconfig.eval_string().
 
-    Passing subexpressions of expressions to this function is allowed and works
-    as expected.
+    Passing subexpressions of expressions to this function works as expected.
     """
     if not isinstance(expr, tuple):
         return expr.tri_value
@@ -3511,8 +3521,7 @@ def expr_str(expr):
     Returns the string representation of the expression 'expr', as in a Kconfig
     file.
 
-    Passing subexpressions of expressions to this function is allowed and works
-    as expected.
+    Passing subexpressions of expressions to this function works as expected.
     """
     if not isinstance(expr, tuple):
         if isinstance(expr, Choice):
