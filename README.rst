@@ -147,6 +147,61 @@ Just drop it somewhere.
 Examples
 --------
 
+Example scripts
+~~~~~~~~~~~~~~~
+
+The ``examples/`` subdirectory contains some simple example. Among these are the following ones:
+
+- `allnoconfig.py <examples/allnoconfig.py>`_, `allnoconfig_simpler.py <examples/allnoconfig_simpler.py>`_, and `allyesconfig.py <examples/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig`` in various ways. Demonstrates menu tree walking and value setting.
+
+- `defconfig.py <examples/defconfig.py>`_ has the same effect as going into ``make menuconfig`` and immediately saving and exiting.
+
+- `eval_expr.py <examples/eval_expr.py>`_ evaluates an expression in the context of a configuration.
+
+- `find_symbol.py <examples/find_symbol.py>`_ searches through expressions to find references to a symbol, also printing a "backtrace" with parents for each reference found.
+
+- `help_grep.py <examples/help_grep.py>`_ searches for a string in all help texts.
+
+- `print_tree.py <examples/print_tree.py>`_ prints a tree of all configuration items.
+
+- `menuconfig.py <examples/menuconfig.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts, and isn't something you'd actually want to use. Here's a screenshot:
+
+.. code-block::
+
+    ======== Example Kconfig configuration ========
+
+    [*] Enable loadable module support (MODULES)
+        Bool and tristate symbols
+            [*] Bool symbol (BOOL)
+                    [ ] Dependent bool symbol (BOOL_DEP)
+                    < > Dependent tristate symbol (TRI_DEP)
+                    [ ] First prompt (TWO_MENU_NODES)
+            < > Tristate symbol (TRI)
+            [ ] Second prompt (TWO_MENU_NODES)
+                *** These are selected by TRI_DEP ***
+            < > Tristate selected by TRI_DEP (SELECTED_BY_TRI_DEP)
+            < > Tristate implied by TRI_DEP (IMPLIED_BY_TRI_DEP)
+        String, int, and hex symbols
+            (foo) String symbol (STRING)
+            (747) Int symbol (INT)
+            (0xABC) Hex symbol (HEX)
+        Various choices
+            -*- Bool choice (BOOL_CHOICE)
+                    --> Bool choice sym 1 (BOOL_CHOICE_SYM_1)
+                        Bool choice sym 2 (BOOL_CHOICE_SYM_2)
+            {M} Tristate choice (TRI_CHOICE)
+                    < > Tristate choice sym 1 (TRI_CHOICE_SYM_1)
+                    < > Tristate choice sym 2 (TRI_CHOICE_SYM_2)
+            [ ] Optional bool choice (OPT_BOOL_CHOICE)
+
+    Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): BOOL
+    Value for BOOL (available: n, y): n
+    ...
+    
+I'm not currently interested in implementing a (more usable) menuconfig myself, but all the infrastructure
+for a great one should be there if you want to give it a go. I'll help you out with any questions you might
+have.
+
 Sample ``make iscriptconfig`` session
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
