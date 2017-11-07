@@ -135,33 +135,7 @@ All releases have a corresponding tag in the git repository, e.g. ``v1.0.6``.
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-After installing with ``pip(3)``, apply ``makefile.patch``
-by running e.g. the following commands in the kernel root:
-
-.. code:: sh
-
-    $ wget https://raw.githubusercontent.com/ulfalizer/Kconfiglib/master/makefile.patch
-    $ git am makefile.patch
-
-If you do not wish to install anything, the following manual approach will work as well:
-
-.. code:: sh
-
-    $ git clone git://github.com/ulfalizer/Kconfiglib.git  
-    $ git am Kconfiglib/makefile.patch
-
-(Warning: The directory name ``Kconfiglib/`` is significant in this case, because it's added to ``PYTHONPATH`` by the new targets in ``makefile.patch``.)
-
-In addition to creating a handy interface, the make targets created by the
-patch (``scriptconfig`` and ``iscriptconfig``) are needed to pick up environment
-variables set in the kernel makefiles and later referenced in the Kconfig files
-(``ARCH``, ``SRCARCH``, and ``KERNELVERSION`` as of Linux v4.14.0-rc1).
-The documentation explains how the make targets are used. The compatibility
-tests in the test suite also needs them.
-
-Please tell me if the patch does not apply. It should be trivial to apply
-manually, as it's just a block of text that needs to be inserted near the other
-``*conf:`` targets.
+See the module docstring at the top of `kconfiglib.py <kconfiglib.py>`_.
 
 Manual installation
 ~~~~~~~~~~~~~~~~~~~
