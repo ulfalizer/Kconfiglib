@@ -3,8 +3,8 @@ Overview
 ========
 
 Kconfiglib is a Python 2/3 library for scripting and extracting information
-from Kconfig configuration systems. Among other things, it can be used to do
-the following:
+from Kconfig configuration systems. It can be used for the following, among
+other things:
 
  - Programmatically get and set symbol values
 
@@ -12,7 +12,7 @@ the following:
    verified to produce identical output to the standard 'make allnoconfig' and
    'make allyesconfig'.
 
- - Read/write .config files
+ - Read and write .config files
 
    The generated .config files are character-for-character identical to what
    the C implementation would generate (except for the header comment). The
@@ -25,7 +25,8 @@ the following:
    public APIs, meaning you can fetch just whatever information you need as
    well.
 
-   A helpful __repr__() is implemented on all objects too.
+   A helpful __repr__() is implemented on all objects too, also implemented
+   with public APIs.
 
    ***Choice symbols get their parent choice as a dependency, which shows up as
    e.g. 'prompt "choice symbol" if <choice>' when printing the symbol. This
@@ -46,36 +47,64 @@ the following:
 
 Here are some other features:
 
- - Runs under both Python 2 and 3. The code mostly uses basic Python features
-   and has no third-party dependencies. The most advanced things used are
-   probably @property and __slots__. The entire library is contained in this
-   file.
+ - Single-file implementation
 
- - Robust and highly compatible with the standard Kconfig C tools: The test
-   suite automatically compares output from Kconfiglib and the C tools by
-   diffing the generated .config files for the real kernel Kconfig and
-   defconfig files, for all ARCHes. This currently involves comparing the
-   output for 36 ARCHes and 498 defconfig files (or over 18000 ARCH/defconfig
-   combos in "obsessive" test suite mode). All tests are expected to pass.
+   The entire library is contained in this file.
 
- - Not horribly slow despite being a pure Python implementation: The
-   allyesconfig.py example currently runs in about 1.6 seconds on a Core i7
-   2600K (with a warm file cache), where half a second is overhead from
-   'make scriptconfig' (see below).
+ - Runs unmodified under both Python 2 and Python 3
+
+   The code mostly uses basic Python features and has no third-party
+   dependencies. The most advanced things used are probably @property and
+   __slots__.
+
+ - Robust and highly compatible with the standard Kconfig C tools
+
+   The test suite automatically compares output from Kconfiglib and the C tools
+   by diffing the generated .config files for the real kernel Kconfig and
+   defconfig files, for all ARCHes.
+
+   This currently involves comparing the output for 36 ARCHes and 498 defconfig
+   files (or over 18000 ARCH/defconfig combinations in "obsessive" test suite
+   mode). All tests are expected to pass.
+
+ - **Not horribly slow despite being a pure Python implementation**
+
+   The allyesconfig.py example currently runs in about 1.6 seconds on a Core i7
+   2600K (with a warm file cache), where half a second is overhead from 'make
+   scriptconfig' (see below).
 
    For long-running jobs, PyPy gives a big performance boost. CPython is faster
    for short-running jobs as PyPy needs some time to warm up.
 
- - Internals that (mostly) mirror the C implementation, while being simpler to
-   understand.
+ - Internals that (mostly) mirror the C implementation
+
+   While being simpler to understand.
 
 
 Using Kconfiglib on the Linux kernel with the Makefile targets
 ==============================================================
 
 For the Linux kernel, a handy interface is provided by the
-scripts/kconfig/Makefile patch. Look further down for a motivation for the
-Makefile patch and for instructions on how you can use Kconfiglib without it.
+scripts/kconfig/Makefile patch. It can be applied by running the following
+command in the kernel root:
+
+  $ wget -qO- https://raw.githubusercontent.com/ulfalizer/Kconfiglib/master/makefile.patch | git am
+
+Please tell me if the patch does not apply. It should be trivial to apply
+manually, as it's just a block of text that needs to be inserted near the other
+``*conf:`` targets in scripts/kconfig/Makefile.
+
+If you do not wish to install Kconfiglib via pip, the Makefile patch is set up
+so that you can also just clone Kconfiglib into the kernel root:
+
+  $ git clone git://github.com/ulfalizer/Kconfiglib.git
+  $ git am Kconfiglib/makefile.patch
+
+(Warning: The directory name Kconfiglib/ is significant in this case, because
+it's added to PYTHONPATH by the new targets in makefile.patch.)
+
+Look further down for a motivation for the Makefile patch and for instructions
+on how you can use Kconfiglib without it.
 
 The Makefile patch adds the following targets:
 
@@ -103,8 +132,9 @@ make scriptconfig SCRIPT=<script> [SCRIPT_ARG=<arg>]
 ----------------------------------------------------
 
 This target runs the Python script given by the SCRIPT parameter on the
-configuration. sys.argv[1] holds the name of the top-level Kconfig file, and
-sys.argv[2] the SCRIPT_ARG argument, if given.
+configuration. sys.argv[1] holds the name of the top-level Kconfig file
+(currently always "Kconfig" in practice), and sys.argv[2] holds the SCRIPT_ARG
+argument, if given.
 
 See the examples/ subdirectory for example scripts.
 
@@ -2101,7 +2131,7 @@ class Symbol(object):
 
     assignable:
       A tuple containing the tristate user values that can currently be
-      assigned to the symbol (that will be respected), ordered from lowest (0,
+      assigned to the symbol (that would be respected), ordered from lowest (0,
       representing n) to highest (2, representing y). This corresponds to the
       selections available in the menuconfig interface. The set of assignable
       values is calculated from the symbol's visibility and selects/implies.
@@ -2950,9 +2980,9 @@ class Choice(object):
 
       Gotcha: If a symbol depends on the previous symbol within a choice so
       that an implicit menu is created, it won't be a choice symbol, and won't
-      be included in 'syms'. There are real-world examples of this (and it was
+      be included in 'syms'. There are real-world examples of this, and it was
       a PITA to support in older versions of Kconfiglib that didn't implement
-      the menu structure).
+      the menu structure.
 
     nodes:
       A list of MenuNodes for this choice. In practice, the list will probably
@@ -3995,7 +4025,6 @@ TYPE_TO_STR = {
     HEX:      "hex",
     INT:      "int",
 }
-
 
 TRI_TO_STR = {
     0: "n",
