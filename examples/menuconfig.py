@@ -162,7 +162,7 @@ def value_str(sc):
         return "[{}]".format(tri_val_str)
 
     if sc.type == TRISTATE:
-        if sc.assignable[0] == 1:  # m
+        if sc.assignable == (1, 2):
             # m and y available
             return "{" + tri_val_str + "}"  # Gets a bit confusing with .format()
         return "<{}>".format(tri_val_str)
