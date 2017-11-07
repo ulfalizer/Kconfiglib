@@ -205,11 +205,13 @@ have.
 Real-world examples
 ~~~~~~~~~~~~~~~~~~~
 
-These use the older Kconfiglib 1 API, which was a bit clunkier and not as general (functions instead of properties, and no direct access to the menu structure or expressions):
+These use the older Kconfiglib 1 API, which was clunkier and not as general (functions instead of properties, no direct access to the menu structure or properties, uglier ``__str__()`` output):
 
 - `genboardscfg.py <http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD>`_ from `Das U-Boot <http://www.denx.de/wiki/U-Boot>`_ generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
 
 - `gen-manual-lists.py <https://git.busybox.net/buildroot/tree/support/scripts/gen-manual-lists.py?id=5676a2deea896f38123b99781da0a612865adeb0>`_ generated listings for an appendix in the `Buildroot <https://buildroot.org>`_ manual. (The listing has since been removed.)
+
+- `gen_kconfig_doc.py <https://github.com/espressif/esp-idf/blob/master/docs/gen-kconfig-doc.py>`_ from the `esp-idf <https://github.com/espressif/esp-idf>`_ project generates documentation from Kconfig files.
 
 - `SConf <https://github.com/CoryXie/SConf>`_ builds an interactive configuration interface (like ``menuconfig``) on top of Kconfiglib, for use e.g. with `SCons <scons.org>`_.
 
