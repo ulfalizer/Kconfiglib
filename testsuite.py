@@ -618,6 +618,12 @@ choice
 <choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_2 selected, CHOICE_2 selected by user, visibility y, Kconfiglib/tests/Krepr:30>
 """)
 
+    c.named_choices["CHOICE"].set_value(1)
+
+    verify_repr(c.named_choices["CHOICE"], """
+<choice CHOICE, tristate, "choice", mode m, user mode m, CHOICE_2 selected by user (overridden), visibility y, Kconfiglib/tests/Krepr:30>
+""")
+
     verify_repr(c.syms["CHOICE_HOOK"].nodes[0].next.item, """
 <choice, tristate, "optional choice", mode n, visibility n, optional, Kconfiglib/tests/Krepr:43>
 """)

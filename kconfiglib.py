@@ -3160,7 +3160,7 @@ class Choice(object):
                            .format(self.user_selection.name)
 
             if self.selection is not self.user_selection:
-                user_sel_str += " (overriden)"
+                user_sel_str += " (overridden)"
 
             fields.append(user_sel_str)
 
