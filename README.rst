@@ -194,54 +194,11 @@ to the test suite would make sense.
 Notes
 -----
 
-* **Useful information can be extracted from internal data structures.** The
-  expression format is pretty simple for example: ``A && B && (!C || D == 3)`` is
-  represented as the tuple structure
-  ``(_AND, A, (_AND, B, (_OR, (_NOT, C), (_EQUAL, D, 3))))``; see the
-  ``Config._parse_expr()`` docstring.
-
-  It's hard to come up with good APIs for dealing with expressions given how
-  general they are, so feel free to look at them directly if none of the
-  exposed APIs will suffice (modifying them is dangerous though, because it
-  breaks dependency tracking). Maybe I'll officially document the expression
-  format and add a bunch of accessors later. The internal format is unlikely
-  to change in either case, and would probably be returned directly.
-
-  If you come up with some good generally-usable APIs involving
-  expressions, please tell me. Make sure they also make sense for expressions
-  involving ``||`` (or) and ``!`` (not).
-
-* Kconfiglib works well with `PyPy <http://pypy.org>`_. It gives a nice speedup
-  over CPython when batch processing a large number of configurations (like
-  the test suite does).
-
-* Kconfiglib assumes the modules symbol is ``MODULES`` and will warn if
-  ``option modules`` is set on some other symbol. Let me know if this is a
-  problem for you. Adding proper ``option modules`` support should be pretty
-  easy.
-
-* At least two things make it awkward to replicate a ``menuconfig``-like
-  interface in Kconfiglib at the moment (but see
-  `SConf <https://github.com/CoryXie/SConf>`_, as mentioned above).
-
-  * There are no good APIs for figuring out what other symbols change in value
-    when the value of some symbol is changed, to allow for "live" updates
-    in the configuration interface. The simplest workaround is to refetch the
-    value of each currently visible symbol every time a symbol value is
-    changed.
-
-  * ``menuconfig`` sometimes creates cosmetic menus implicitly by looking at
-    dependencies. For example, a list of symbols where all symbols depend on
-    the first symbol creates a cosmetic menu rooted at the first symbol.
-    Recreating such menus is awkward.
-
-    There is already basic support internally though, because it's needed to
-    get obscure ``choice`` behavior right. See ``_determine_actual_symbols()`` and
-    its helper ``_has_auto_menu_dep_on()``.
-
-* Using `__slots__ <https://docs.python.org/3.1/reference/datamodel.html#slots>`_
-  on classes would speed things up a bit and save memory. It'd remove some
-  flexibility though.
+* Kconfiglib assumes the modules symbol is ``MODULES``, which is backwards-compatible.
+  A warning is printed by default if ``option modules`` is set on some other symbol.
+  
+  Let me know if you need proper ``option modules`` support. It wouldn't be that
+  hard to add.
 
 * `fpemud <https://github.com/fpemud>`_ has put together
   `Python bindings <https://github.com/fpemud/pylkc>`_ to internal functions in the C
