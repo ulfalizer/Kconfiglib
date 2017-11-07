@@ -32,7 +32,7 @@ configuration systems. It can do the following, among other things:
   A helpful ``__repr__()`` is implemented on all objects too, also implemented
   with public APIs.
 
-  ***Choice symbols get their parent choice as a dependency, which shows up as
+  \***Choice symbols get their parent choice as a dependency, which shows up as
   e.g. ``prompt "choice symbol" if <choice>`` when printing the symbol. This
   could easily be worked around if 100% reparsable output is needed.
 
@@ -53,35 +53,41 @@ configuration systems. It can do the following, among other things:
 
 Here are some other features:
 
-- Single-file implementation. The entire library is contained in `kconfiglib.py
-  <kconfiglib.py>`_.
+- **Single-file implementation**
+  
+  The entire library is contained in `kconfiglib.py <kconfiglib.py>`_.
 
-- Runs unmodified under both Python 2 and 3. The code mostly uses basic Python
-  features and has no third-party dependencies. The most advanced things used
-  are probably ``@property`` and ``__slots__``.
+- **Runs unmodified under both Python 2 and Python 3**
+  
+  The code mostly uses basic Python features and has no third-party
+  dependencies. The most advanced things used are probably ``@property`` and
+  ``__slots__``.
 
-- Robust and highly compatible with the standard Kconfig C tools: The test
-  suite automatically compares output from Kconfiglib and the C tools by
-  diffing the generated ``.config`` files for the real kernel Kconfig and
+- **Robust and highly compatible with the standard Kconfig C tools**
+  
+  The test suite automatically compares output from Kconfiglib and the C tools
+  by diffing the generated ``.config`` files for the real kernel Kconfig and
   defconfig files, for all ARCHes.
   
   This currently involves comparing the output for 36 ARCHes and 498 defconfig
   files (or over 18000 ARCH/defconfig combinations in "obsessive" test suite
   mode). All tests are expected to pass.
 
-  A suite of selftests is included as well.
+  A comprehensive suite of selftests is included as well.
 
-- Reasonably optimized and not horribly slow despite being a pure Python
-  implementation: The `allyesconfig.py <examples/allyesconfig.py>`_ example
-  currently runs in about 1.6 seconds on a Core i7 2600K (with a warm file
-  cache), where half a second is overhead from ``make scriptconfig`` (see below).
+- **Not horribly slow despite being a pure Python implementation**
+  
+  The `allyesconfig.py <examples/allyesconfig.py>`_ example currently runs in
+  about 1.6 seconds on a Core i7 2600K (with a warm file cache), where half a
+  second is overhead from ``make scriptconfig`` (see below).
 
   For long-running jobs, `PyPy <https://pypy.org/>`_ gives a big performance
   boost. CPython is faster for short-running jobs as PyPy needs some time to
   warm up.
 
-- Internals that (mostly) mirror the C implementation while being simpler to
-  understand.
+- **Internals that (mostly) mirror the C implementation**
+  
+  While being simpler to understand.
 
 
 Installation
