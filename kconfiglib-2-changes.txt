@@ -47,6 +47,10 @@ API changes:
     APIs, which indirectly ensures that all Kconfig object properties can be
     fetched separately.
 
+  - The Item base class had gotten kinda pointless and has been removed.
+    Instead of is_symbol(), etc., just use isinstance() to check what kind of
+    object you're dealing with. There's fewer of them now too.
+
   - Probably lots of other stuff I forgot to mention.
 
 
