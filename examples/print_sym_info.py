@@ -4,7 +4,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/print_sym_info.py SCRIPT_ARG=<name>
 #
-# Example output for SCRIPT_ARG=modules:
+# Example output for SCRIPT_ARG=MODULES:
 #
 # menuconfig MODULES
 # 	bool

@@ -1705,6 +1705,7 @@ def run_compatibility_tests():
         print("{} arch/defconfig pairs tested".format(nconfigs))
     else:
         print("Some tests failed")
+        sys.exit(1)
 
 def get_arch_srcarch_list():
     """
