@@ -76,7 +76,9 @@ New features:
     In Kconfiglib 1, choices magically changed mode when values were assigned
     to choice symbols, which was meant to make .config loading just work. In
     Kconfiglib 2, the mode must be assigned manually (though most choices can
-    only be in n or y mode anyway and take care of themselves).
+    only be in n or y mode anyway and take care of themselves). load_config()
+    was updated to infer the mode from the types of values assigned to choice
+    symbols and set it explicitly.
 
     Choices now have an .assignable attribute too, which makes the API
     perfectly consistent between symbols and choices. The choice mode acts as
