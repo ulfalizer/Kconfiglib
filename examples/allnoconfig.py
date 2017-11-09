@@ -46,7 +46,7 @@ for sym in kconf.defined_syms:
     if sym.is_allnoconfig_y:
         sym.set_value(2)
 
-while 1:
+while True:
     # Changing later symbols in the configuration can sometimes allow earlier
     # symbols to be lowered, e.g. if a later symbol 'select's an earlier
     # symbol. To handle such situations, we do additional passes over the tree
