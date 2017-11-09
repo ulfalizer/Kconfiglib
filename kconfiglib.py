@@ -3243,8 +3243,6 @@ class Choice(object):
         # See Kconfig._build_dep()
         self._dependents = set()
 
-        # The prompts and default values without any dependencies from
-        # enclosing menus and ifs propagated
         self.defaults = []
 
         # Cached values
