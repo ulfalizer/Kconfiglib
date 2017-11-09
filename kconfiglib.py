@@ -641,7 +641,7 @@ class Kconfig(object):
         # Build Symbol._dependents for all symbols
         self._build_dep()
 
-        self._warn_no_prompt = False
+        self._warn_no_prompt = True
 
     @property
     def mainmenu_text(self):
