@@ -86,7 +86,7 @@ Here are some other features:
   
   The `allyesconfig.py <examples/allyesconfig.py>`_ example currently runs in
   about 1.6 seconds on a Core i7 2600K (with a warm file cache), where half a
-  second is overhead from ``make scriptconfig`` (see below).
+  second is overhead from ``make scriptconfig``.
 
   For long-running jobs, `PyPy <https://pypy.org/>`_ gives a big performance
   boost. CPython is faster for short-running jobs as PyPy needs some time to
