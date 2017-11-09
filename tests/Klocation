@@ -1,73 +1,32 @@
-# Include some line continuations to make sure they don't mess up line numbers
+if UNDEFINED
+endif
 
-# Defined and referenced in multiple locations
-config A
-    bool
+config SINGLE_DEF
+
+config MULTI_DEF
 
 # Throw in some line continuations too to make sure it doesn't mess up the line
 # numbers
-menu "menu 1"
-    depends on A
-    visible if A && \
-      NOT_DEFINED
+if y && \
+   y
+if y && \
+   y && \
+   y
 
-# Also defined in Klocation_included
-choice B
-    bool "b" if A
+config MULTI_DEF
 
-config C
-    bool "c"
+endif
+endif
 
-config D
-    bool "d"
-
-\
-
-endchoice
-
-config A
-    def_bool NOT_DEFINED
-
-comment "comment 1"
-
-config E
-    bool "E" if A
-    depends on A
-
-endmenu
-
-config \
- FOO
+config EXPANDED_FROM_ENV
     string
-    option \
-    env\
-    =\
-    "FOO"
+    option env="EXPANDED_FROM_ENV"
 
-\
-\
-
-config BAR
+config _INCLUDED
     string
-    default \
-      "_included"
+    default "_included"
 
 # Expands to "tests/Klocation_included"
-source \
-"$FOO/Klocation$BAR"
+source "$EXPANDED_FROM_ENV/Klocation$_INCLUDED"
 
-\
-\
-\
-
-config I
-    int
-    range A 0
-    range 0 A
-    range 0 1 if A
-    default J if A < 0
-    default K if 0 < A
-    default L if 0 <= A
-    default M if 0 > A
-    default N if 0 >= A
-    default N if y && 0 < A
+config MULTI_DEF

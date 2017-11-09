@@ -1,0 +1,18 @@
+config A
+    bool
+    select n
+    select m
+    select y
+    select UNAME_RELEASE
+    select "n"
+    select "m"
+    select "y"
+    select "UNAME_RELEASE"
+    imply n
+    imply m
+    imply y
+    imply UNAME_RELEASE
+    imply "n"
+    imply "m"
+    imply "y"
+    imply "UNAME_RELEASE"

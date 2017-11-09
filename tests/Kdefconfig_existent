@@ -2,6 +2,7 @@
 # Should produce "Kconfiglib/tests/defconfig_2"
 
 config FOO
+    string
     option env="BAR"
 
 config A

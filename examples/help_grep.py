@@ -1,49 +1,72 @@
-# Does a case-insensitive search for a string in the help texts for symbols and
-# choices and the titles of menus and comments. Prints the matching items
-# together with their locations and the matching text. Used like
+# Does a case-insensitive search for a regular expression in the help texts of
+# symbols and choices and the prompts of menus and comments. Prints the
+# matching items together with their locations and the matching text.
 #
-#  $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/help_grep.py SCRIPT_ARG=<search text>
+# Usage:
+#
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/help_grep.py SCRIPT_ARG=<regex>
+#
+# Shortened example output for SCRIPT_ARG=general:
+#
+#   menu "General setup"
+#   location: init/Kconfig:39
+#   
+#   config SYSVIPC
+#       bool
+#   	prompt "System V IPC"
+#   	help
+#	  ...
+#   	  exchange information. It is generally considered to be a good thing,
+#	  ...
+#   
+#   location: init/Kconfig:233
+#   
+#   config BSD_PROCESS_ACCT
+#   	bool
+#   	prompt "BSD Process Accounting" if MULTIUSER
+#   	help
+#	  ...
+#	  information.  This is generally a good idea, so say Y.
+#
+#   location: init/Kconfig:403
+#
+#   ...
 
-import kconfiglib
+
+from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
+import re
 import sys
 
 if len(sys.argv) < 3:
-    print('Pass search string with SCRIPT_ARG="search string"')
+    print('Pass the regex with SCRIPT_ARG=regex')
     sys.exit(1)
-search_string = sys.argv[2].lower()
 
-conf = kconfiglib.Config(sys.argv[1])
+search = re.compile(sys.argv[2], re.IGNORECASE).search
 
-for item in conf.get_symbols() + \
-            conf.get_choices() + conf.get_menus() + conf.get_comments():
-    if item.is_symbol() or item.is_choice():
-        text = item.get_help()
-    elif item.is_menu():
-        text = item.get_title()
-    else:
-        # Comment
-        text = item.get_text()
+def search_tree(node):
+    while node:
+        match = False
 
-    # Case-insensitive search
-    if text is not None and search_string in text.lower():
-        if item.is_symbol() or item.is_choice():
-            # Indent lines in help text. (There might be a nicer way. :)
-            text = "\n".join(["  " + s for s in text.splitlines()])
+        if isinstance(node.item, (Symbol, Choice)) and \
+           node.help is not None and search(node.help):
+            print(node.item)
+            match = True
 
-            # Don't worry about symbols/choices defined in multiple locations to
-            # keep things simple
-            fname, linenr = item.get_def_locations()[0]
-            if item.is_symbol():
-                print("config {0} at {1}:{2}:\n{3}"
-                      .format(item.get_name(), fname, linenr, text))
-            elif item.is_choice():
-                print("choice at {0}:{1}:\n{2}".format(fname, linenr, text))
+        elif node.item == MENU and search(node.prompt[0]):
+            print('menu "{}"'.format(node.prompt[0]))
+            match = True
 
-        else:
-            # Menu or comment
-            fname, linenr = item.get_location()
-            if item.is_menu():
-                print('menu "{0}" at {1}:{2}'.format(text, fname, linenr))
-            else:
-                # Comment
-                print('comment "{0}" at {1}:{2}'.format(text, fname, linenr))
+        elif node.item == COMMENT and search(node.prompt[0]):
+            print('comment "{}"'.format(node.prompt[0]))
+            match = True
+
+        if match:
+            print("location: {}:{}\n".format(node.filename, node.linenr))
+
+        if node.list:
+            search_tree(node.list)
+
+        node = node.next
+
+kconf = Kconfig(sys.argv[1])
+search_tree(kconf.top_node)

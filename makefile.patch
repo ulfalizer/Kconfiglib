@@ -1,4 +1,4 @@
-From 6ced956acfe037b0c303780487be86ec71fa2942 Mon Sep 17 00:00:00 2001
+From 01899aa5e6d1f33e1965d7934bea2ff97a48bc89 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
 Date: Tue, 9 Jun 2015 13:01:34 +0200
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
@@ -8,10 +8,10 @@ Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch.
  1 file changed, 35 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index d9b1fef..e6311ed 100644
+index 8c12c20c55a6..88c618b34915 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -62,1 +62,36 @@ else
+@@ -27,1 +27,36 @@ gconfig: $(obj)/gconf
 +PHONY += scriptconfig iscriptconfig kconfiglibtestconfig
 +
 +ifneq ($(filter scriptconfig iscriptconfig,$(MAKECMDGOALS)),)
@@ -27,27 +27,27 @@ index d9b1fef..e6311ed 100644
 +scriptconfig:
 +ifdef SCRIPT_ARG
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" \
-+	  "$(PYTHONCMD)" "$(SCRIPT)" "$(srctree)/$(Kconfig)" "$(SCRIPT_ARG)"
++	  "$(PYTHONCMD)" "$(SCRIPT)" $(Kconfig) "$(SCRIPT_ARG)"
 +else
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" \
-+	  "$(PYTHONCMD)" "$(SCRIPT)" "$(srctree)/$(Kconfig)"
++	  "$(PYTHONCMD)" "$(SCRIPT)" $(Kconfig)
 +endif
 +
 +iscriptconfig:
 +	$(Q)PYTHONPATH="$(srctree)/Kconfiglib:$$PYTHONPATH" "$(PYTHONCMD)" -i -c \
 +	  "import kconfiglib; \
 +	   import sys; \
-+	   c = kconfiglib.Config(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
-+	   print(\"A Config instance 'c' for the architecture ({0}) has been created.\".format(c.get_arch()))" \
-+	  $(srctree)/$(Kconfig)
++	   kconf = kconfiglib.Kconfig(sys.argv[4 if \"$(PYTHONCMD)\".startswith(\"ipython\") else 1]); \
++	   print(\"A Kconfig instance 'kconf' for the architecture $(ARCH) has been created.\")" \
++	  $(Kconfig)
 +
 +# Used by testsuite.py to be able to compare output for nonsensical
 +# arch/defconfig combinations, which has proven effective for finding obscure
 +# bugs
 +kconfiglibtestconfig: $(obj)/conf
-+	$(Q)$< --defconfig=.config $(srctree)/$(Kconfig)
++	$(Q)$< --defconfig=.config $(Kconfig)
 +
  menuconfig: $(obj)/mconf
 -- 
-2.1.4
+2.14.1
 
