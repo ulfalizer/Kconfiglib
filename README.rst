@@ -156,7 +156,7 @@ Examples
 Example scripts
 ~~~~~~~~~~~~~~~
 
-The ``examples/`` subdirectory contains some simple example scripts. Among these are the following ones:
+The `examples/ <examples/>`_ subdirectory contains some simple example scripts. Among these are the following ones:
 
 - `allnoconfig.py <examples/allnoconfig.py>`_, `allnoconfig_simpler.py <examples/allnoconfig_simpler.py>`_, and `allyesconfig.py <examples/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig`` in various ways. Demonstrates menu tree walking and value setting.
 
