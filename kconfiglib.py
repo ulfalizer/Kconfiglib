@@ -92,7 +92,7 @@ command in the kernel root:
 
 Please tell me if the patch does not apply. It should be trivial to apply
 manually, as it's just a block of text that needs to be inserted near the other
-``*conf:`` targets in scripts/kconfig/Makefile.
+*conf: targets in scripts/kconfig/Makefile.
 
 If you do not wish to install Kconfiglib via pip, the Makefile patch is set up
 so that you can also just clone Kconfiglib into the kernel root:
