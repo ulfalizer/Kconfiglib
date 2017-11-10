@@ -1977,8 +1977,8 @@ class Kconfig(object):
         # fetched, so that symbols defined in multiple locations only get one
         # .config entry. We reset it prior to writing out a new .config. It
         # only needs to be reset for defined symbols, because undefined symbols
-        # will never be written out (because they do not appear structure
-        # rooted at Kconfig.top_node).
+        # will never be written out (because they do not appear in the menu
+        # tree rooted at Kconfig.top_node).
         #
         # The C tools reuse _write_to_conf for this, but we cache
         # _write_to_conf together with the value and don't invalidate cached

@@ -116,7 +116,6 @@ def run_selftests():
         """
         Verifies that a symbol has a particular value.
         """
-
         if isinstance(val, int):
             val = TRI_TO_STR[val]
 
@@ -131,7 +130,6 @@ def run_selftests():
         'new_val'. Assumes (and tests) that 'val' is valid for the
         symbol type.
         """
-
         if isinstance(new_val, int):
             new_val = TRI_TO_STR[new_val]
 
@@ -1645,7 +1643,6 @@ def run_compatibility_tests():
     Runs tests on configurations from the kernel. Tests compability with the
     C implementation by comparing outputs.
     """
-
     os.environ.pop("ARCH", None)
     os.environ.pop("SRCARCH", None)
     os.environ.pop("srctree", None)
@@ -1747,7 +1744,6 @@ def test_all_no(conf, arch):
     as 'make allnoconfig', for each architecture. Runs the script via
     'make scriptconfig', so kinda slow even in speedy mode.
     """
-
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
@@ -1763,7 +1759,6 @@ def test_all_no_simpler(conf, arch):
     .config as 'make allnoconfig', for each architecture. Runs the script via
     'make scriptconfig', so kinda slow even in speedy mode.
     """
-
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py "
           "PYTHONCMD='{}'".format(sys.executable))
@@ -1779,7 +1774,6 @@ def test_all_yes(conf, arch):
     as 'make allyesconfig', for each architecture. Runs the script via
     'make scriptconfig', so kinda slow even in speedy mode.
     """
-
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
@@ -1943,7 +1937,6 @@ def test_defconfig(conf, arch):
     With logging enabled, this test appends any failures to a file
     test_defconfig_fails in the root.
     """
-
     global nconfigs
     defconfigs = []
 

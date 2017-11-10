@@ -218,8 +218,8 @@ def node_str(node):
 
 def print_menuconfig_nodes(node, indent):
     """
-    Prints a tree with all the menu entries rooted at node. Child menu entries
-    are indented.
+    Prints a tree with all the menu entries rooted at 'node'. Child menu
+    entries are indented.
     """
     while node:
         string = node_str(node)

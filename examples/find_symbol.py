@@ -144,8 +144,8 @@ def node_references_sym(node, sym_name):
         return expr_contains_sym(node.visibility, sym_name)
 
     # Comments are already handled by searching the prompt condition, because
-    # 'depends on' gets propagated to its condition. This is why we don't need
-    # to look at the direct dependencies for MENU either.
+    # 'depends on' gets propagated to it. This is why we don't need to look at
+    # the direct dependencies for MENU either.
 
 def nodes_referencing_sym(node, sym_name):
     """
