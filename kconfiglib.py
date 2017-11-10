@@ -3627,11 +3627,9 @@ def _get_visibility(sc):
             # Choice symbols with m visibility are not visible in y mode
             return 0
 
-    # Promote m to y if we're dealing with a non-tristate. This might lead to
-    # infinite recursion if something really weird is done with MODULES, but
-    # it's not a problem in practice.
-    if vis == 1 and \
-       (sc.orig_type != TRISTATE or not sc.kconfig.modules.tri_value):
+    # Promote m to y if we're dealing with a non-tristate (possibly due to
+    # modules being disabled)
+    if vis == 1 and sc.type != TRISTATE:
         return 2
 
     return vis
