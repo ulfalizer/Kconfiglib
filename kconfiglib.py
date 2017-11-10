@@ -699,10 +699,9 @@ class Kconfig(object):
             if replace:
                 # If we're replacing the configuration, keep track of which
                 # symbols and choices got set so that we can unset the rest
-                # later. This avoids invalidating everything and is a tiny bit
-                # faster in the test suite. The main benefit though is that
-                # invalidation must be rock solid for it to work, making it a
-                # good test.
+                # later. This avoids invalidating everything and is faster.
+                # Another benefit is that invalidation must be rock solid for
+                # it to work, making it a good test.
 
                 for sym in self.defined_syms:
                     sym._was_set = False
