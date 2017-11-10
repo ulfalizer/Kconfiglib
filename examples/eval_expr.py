@@ -18,7 +18,7 @@ expr = sys.argv[2]
 kconf = kconfiglib.Kconfig(sys.argv[1])
 
 # Enable modules so that m doesn't get demoted to n
-kconf.syms["MODULES"].set_value(2)
+kconf.modules.set_value(2)
 
 print("the expression '{}' evaluates to {}"
       .format(expr, kconf.eval_string(expr)))
