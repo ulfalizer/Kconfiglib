@@ -760,7 +760,6 @@ class Kconfig(object):
                                            filename, linenr)
 
                             # Set the choice's mode
-                            # TODO: this causes redundant invalidation
                             sym.choice.set_value(val)
 
                     elif sym.orig_type == STRING:
