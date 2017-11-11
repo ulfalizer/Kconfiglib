@@ -840,18 +840,18 @@ class Kconfig(object):
 
             write(header)
 
-            # Symbol._already_written is set to True when a symbol config
-            # string is fetched, so that symbols defined in multiple locations
-            # only get one .config entry. We reset it prior to writing out a
-            # new .config. It only needs to be reset for defined symbols,
-            # because undefined symbols will never be written out (because they
-            # do not appear in the menu tree rooted at Kconfig.top_node).
+            # Symbol._written is set to True when a symbol config string is
+            # fetched, so that symbols defined in multiple locations only get
+            # one .config entry. We reset it prior to writing out a new
+            # .config. It only needs to be reset for defined symbols, because
+            # undefine symbols will never be written out (because they do not
+            # appear in the menu tree rooted at Kconfig.top_node).
             #
             # The C tools reuse _write_to_conf for this, but we cache
             # _write_to_conf together with the value and don't invalidate
             # cached values when writing .config files, so that won't work.
             for sym in self.defined_syms:
-                sym._already_written = False
+                sym._written = False
 
             node = self.top_node.list
             if not node:
@@ -861,11 +861,11 @@ class Kconfig(object):
             while 1:
                 if isinstance(node.item, Symbol):
                     sym = node.item
-                    if not sym._already_written:
+                    if not sym._written:
                         config_string = sym.config_string
                         if config_string:
                             write(config_string)
-                        sym._already_written = True
+                        sym._written = True
 
                 elif expr_value(node.dep) and \
                      ((node.item == MENU and expr_value(node.visibility)) or
@@ -2260,7 +2260,6 @@ class Symbol(object):
       The Kconfig instance this symbol is from.
     """
     __slots__ = (
-        "_already_written",
         "_cached_assignable",
         "_cached_str_val",
         "_cached_tri_val",
@@ -2268,6 +2267,7 @@ class Symbol(object):
         "_dependents",
         "_was_set",
         "_write_to_conf",
+        "_written",
         "choice",
         "defaults",
         "direct_dep",
@@ -2716,7 +2716,7 @@ class Symbol(object):
         """
         # These attributes are always set on the instance from outside and
         # don't need defaults:
-        #   _already_written
+        #   _written
         #   kconfig
         #   direct_dep
         #   is_constant
