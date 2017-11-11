@@ -8,7 +8,7 @@ with open(os.path.join(here_dir, "README.rst")) as f:
 setuptools.setup(
     name="kconfiglib",
     # MAJOR.MINOR.MAINTENANCE per http://semver.org
-    version="2.0.1",
+    version="2.0.2",
     description="A flexible Python Kconfig parser",
     long_description=long_description,
     url="https://github.com/ulfalizer/Kconfiglib",
