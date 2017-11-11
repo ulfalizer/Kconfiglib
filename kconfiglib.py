@@ -859,17 +859,17 @@ class Kconfig(object):
                 return
 
             while 1:
-                if isinstance(node.item, Symbol):
-                    sym = node.item
-                    if not sym._written:
-                        config_string = sym.config_string
+                item = node.item
+                if isinstance(item, Symbol):
+                    if not item._written:
+                        config_string = item.config_string
                         if config_string:
                             write(config_string)
-                        sym._written = True
+                        item._written = True
 
                 elif expr_value(node.dep) and \
-                     ((node.item == MENU and expr_value(node.visibility)) or
-                       node.item == COMMENT):
+                     ((item == MENU and expr_value(node.visibility)) or
+                       item == COMMENT):
 
                     write("\n#\n# {}\n#\n".format(node.prompt[0]))
 
