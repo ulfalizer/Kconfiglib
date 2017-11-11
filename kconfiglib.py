@@ -67,7 +67,7 @@ Here are some other features:
    files (or over 18000 ARCH/defconfig combinations in "obsessive" test suite
    mode). All tests are expected to pass.
 
- - **Not horribly slow despite being a pure Python implementation**
+ - Not horribly slow despite being a pure Python implementation
 
    The allyesconfig.py example currently runs in about 1.6 seconds on a Core i7
    2600K (with a warm file cache), where half a second is overhead from 'make
