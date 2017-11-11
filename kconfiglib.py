@@ -835,8 +835,58 @@ class Kconfig(object):
           and include a final terminating newline.
         """
         with open(filename, "w") as f:
-            f.write(header)
-            f.writelines(self._get_config_strings())
+            # Small optimization
+            write = f.write
+
+            write(header)
+
+            # Symbol._already_written is set to True when a symbol config
+            # string is fetched, so that symbols defined in multiple locations
+            # only get one .config entry. We reset it prior to writing out a
+            # new .config. It only needs to be reset for defined symbols,
+            # because undefined symbols will never be written out (because they
+            # do not appear in the menu tree rooted at Kconfig.top_node).
+            #
+            # The C tools reuse _write_to_conf for this, but we cache
+            # _write_to_conf together with the value and don't invalidate
+            # cached values when writing .config files, so that won't work.
+            for sym in self.defined_syms:
+                sym._already_written = False
+
+            node = self.top_node.list
+            if not node:
+                # Empty configuration
+                return
+
+            while 1:
+                if isinstance(node.item, Symbol):
+                    sym = node.item
+                    if not sym._already_written:
+                        config_string = sym.config_string
+                        if config_string:
+                            write(config_string)
+                        sym._already_written = True
+
+                elif expr_value(node.dep) and \
+                     ((node.item == MENU and expr_value(node.visibility)) or
+                       node.item == COMMENT):
+
+                    write("\n#\n# {}\n#\n".format(node.prompt[0]))
+
+                # Iterative tree walk using parent pointers
+
+                if node.list:
+                    node = node.list
+                elif node.next:
+                    node = node.next
+                else:
+                    while node.parent:
+                        node = node.parent
+                        if node.next:
+                            node = node.next
+                            break
+                    else:
+                        return
 
     def eval_string(self, s):
         """
@@ -1962,67 +2012,6 @@ class Kconfig(object):
 
         for choice in self._choices:
             choice._invalidate()
-
-
-    #
-    # .config writing
-    #
-
-    def _get_config_strings(self):
-        """
-        Returns a list containing all .config strings for the configuration.
-        """
-        # Symbol._already_written is set to True when a symbol config string is
-        # fetched, so that symbols defined in multiple locations only get one
-        # .config entry. We reset it prior to writing out a new .config. It
-        # only needs to be reset for defined symbols, because undefined symbols
-        # will never be written out (because they do not appear in the menu
-        # tree rooted at Kconfig.top_node).
-        #
-        # The C tools reuse _write_to_conf for this, but we cache
-        # _write_to_conf together with the value and don't invalidate cached
-        # values when writing .config files, so that won't work.
-        for sym in self.defined_syms:
-            sym._already_written = False
-
-        node = self.top_node.list
-        if not node:
-            # Empty configuration
-            return []
-
-        config_strings = []
-        # Small optimization
-        append = config_strings.append
-
-        while 1:
-            if isinstance(node.item, Symbol):
-                sym = node.item
-                if not sym._already_written:
-                    config_string = sym.config_string
-                    if config_string:
-                        append(config_string)
-                    sym._already_written = True
-
-            elif expr_value(node.dep) and \
-                 ((node.item == MENU and expr_value(node.visibility)) or
-                   node.item == COMMENT):
-
-                append("\n#\n# {}\n#\n".format(node.prompt[0]))
-
-            # Iterative tree walk using parent pointers
-
-            if node.list:
-                node = node.list
-            elif node.next:
-                node = node.next
-            else:
-                while node.parent:
-                    node = node.parent
-                    if node.next:
-                        node = node.next
-                        break
-                else:
-                    return config_strings
 
 
     #
