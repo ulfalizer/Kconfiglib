@@ -1708,9 +1708,11 @@ class Kconfig(object):
                                self._parse_cond()))
 
             elif t0 == _T_OPTION:
-                if self._check_token(_T_ENV) and self._check_token(_T_EQUAL):
-                    env_var = self._next_token()
+                if self._check_token(_T_ENV):
+                    if not self._check_token(_T_EQUAL):
+                        self._parse_error("expected '=' after 'env'")
 
+                    env_var = self._next_token()
                     node.item.env_var = env_var
 
                     if env_var not in os.environ:
