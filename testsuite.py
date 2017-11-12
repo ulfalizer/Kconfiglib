@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2017, Ulf Magnusson
+# SPDX-License-Identifier: ISC
+
 # This is the Kconfiglib test suite. It runs selftests on Kconfigs provided by
 # us and tests compatibility with the C Kconfig implementation by comparing the
 # output of Kconfiglib with the output of the scripts/kconfig/*conf utilities

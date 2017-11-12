@@ -375,3 +375,9 @@ support for the ``allnoconfig_y`` option and fixing an obscure issue
 with ``comment``\s inside ``choice``\s (that didn't affect correctness but
 made outputs differ). ``allnoconfig_y`` is used to force certain symbols
 to ``y`` during ``make allnoconfig`` to improve coverage.
+
+License
+-------
+
+See `LICENSE.txt <LICENSE.txt>`_. SPDX license identifiers are used in the
+source code.

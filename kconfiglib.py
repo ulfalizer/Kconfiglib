@@ -1,3 +1,6 @@
+# Copyright (c) 2011-2017, Ulf Magnusson
+# SPDX-License-Identifier: ISC
+
 """
 Overview
 ========
