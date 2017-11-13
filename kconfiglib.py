@@ -3086,33 +3086,8 @@ class Choice(object):
         if self._cached_selection is not _NO_CACHED_SELECTION:
             return self._cached_selection
 
-        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
-        # function call (property magic)
-        if self.tri_value != 2:
-            self._cached_selection = None
-            return None
-
-        # Use the user selection if it's visible
-        if self.user_selection and self.user_selection.visibility == 2:
-            self._cached_selection = self.user_selection
-            return self.user_selection
-
-        # Otherwise, check if we have a default
-        for sym, cond in self.defaults:
-            # The default symbol must be visible too
-            if expr_value(cond) and sym.visibility:
-                self._cached_selection = sym
-                return sym
-
-        # Otherwise, pick the first visible symbol, if any
-        for sym in self.syms:
-            if sym.visibility:
-                self._cached_selection = sym
-                return sym
-
-        # Couldn't find a selection
-        self._cached_selection = None
-        return None
+        self._cached_selection = self._get_selection()
+        return self._cached_selection
 
     def set_value(self, value):
         """
@@ -3262,6 +3237,33 @@ class Choice(object):
         # vis == 1
 
         return (0, 1) if self.is_optional else (1,)
+
+    def _get_selection(self):
+        """
+        Worker function for the 'selection' attribute.
+        """
+        # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
+        # function call (property magic)
+        if self.tri_value != 2:
+            return None
+
+        # Use the user selection if it's visible
+        if self.user_selection and self.user_selection.visibility == 2:
+            return self.user_selection
+
+        # Otherwise, check if we have a default
+        for sym, cond in self.defaults:
+            # The default symbol must be visible too
+            if expr_value(cond) and sym.visibility:
+                return sym
+
+        # Otherwise, pick the first visible symbol, if any
+        for sym in self.syms:
+            if sym.visibility:
+                return sym
+
+        # Couldn't find a selection
+        return None
 
     def _invalidate(self):
         self._cached_vis = self._cached_assignable = None
