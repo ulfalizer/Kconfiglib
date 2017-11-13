@@ -1446,8 +1446,7 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = sym
-                node.help = None
-                node.list = None
+                node.help = node.list = None
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
@@ -1478,8 +1477,7 @@ class Kconfig(object):
 
             elif t0 == _T_IF:
                 node = MenuNode()
-                node.item = None
-                node.prompt = None
+                node.item = node.prompt = None
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
@@ -2736,27 +2734,21 @@ class Symbol(object):
 
         self.nodes = []
 
-        self.user_value = None
+        self.user_value = \
+        self.choice = \
+        self.env_var = \
+        self._cached_str_val = self._cached_tri_val = self._cached_vis = \
+        self._cached_assignable = None
+
+        # _write_to_conf is calculated along with the value. If True, the
+        # Symbol gets a .config entry.
+
+        self.is_allnoconfig_y = \
+        self._was_set = \
+        self._write_to_conf = False
 
         # See Kconfig._build_dep()
         self._dependents = set()
-
-        # Cached values
-
-        self._cached_str_val = self._cached_tri_val = self._cached_vis = \
-            self._cached_assignable = None
-
-        # Flags
-
-        self.choice = None
-        self.env_var = None
-        self.is_allnoconfig_y = False
-
-        self._was_set = False
-
-        # Should the symbol get an entry in .config? Calculated along with the
-        # value.
-        self._write_to_conf = False
 
     def _get_assignable(self):
         """
@@ -3195,28 +3187,24 @@ class Choice(object):
         # don't need defaults:
         #   kconfig
 
-        self.name = None
         self.orig_type = UNKNOWN
         self.syms = []
         self.defaults = []
 
         self.nodes = []
 
-        self.user_value = self.user_selection = None
-
-        # Checked by _make_depend_on(). Just set it to avoid having to
-        # special-case choices.
-        self.is_constant = False
-        # See Kconfig._build_dep()
-        self._dependents = set()
-
-        self.defaults = []
-
-        # Cached values
+        self.name = \
+        self.user_value = self.user_selection = \
         self._cached_vis = self._cached_assignable = None
+
         self._cached_selection = _NO_CACHED_SELECTION
 
-        self.is_optional = False
+        # is_constant is checked by _make_depend_on(). Just set it to avoid
+        # having to special-case choices.
+        self.is_constant = self.is_optional = False
+
+        # See Kconfig._build_dep()
+        self._dependents = set()
 
     def _get_assignable(self):
         """
