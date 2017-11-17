@@ -1614,11 +1614,7 @@ class Kconfig(object):
         # properties above.
         node.dep = self.y
 
-        while 1:
-            # Advance to the next line
-            if not self._next_line():
-                break
-
+        while self._next_line():
             self._tokenize()
 
             t0 = self._next_token()
