@@ -1621,7 +1621,13 @@ class Kconfig(object):
             if t0 is None:
                 continue
 
-            if t0 == _T_DEPENDS:
+            if t0 in _TYPE_TOKENS:
+                node.item.orig_type = _TOKEN_TO_TYPE[t0]
+
+                if self._peek_token() is not None:
+                    prompt = (self._next_token(), self._parse_cond())
+
+            elif t0 == _T_DEPENDS:
                 if not self._check_token(_T_ON):
                     self._parse_error('expected "on" after "depends"')
 
@@ -1679,18 +1685,11 @@ class Kconfig(object):
 
                 implies.append((self._next_token(), self._parse_cond()))
 
-            elif t0 in (_T_BOOL, _T_TRISTATE, _T_INT, _T_HEX, _T_STRING):
-                node.item.orig_type = _TOKEN_TO_TYPE[t0]
-
-                if self._peek_token() is not None:
-                    prompt = (self._next_token(), self._parse_cond())
-
             elif t0 == _T_DEFAULT:
                 defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
                 node.item.orig_type = _TOKEN_TO_TYPE[t0]
-
                 defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 == _T_PROMPT:
@@ -4117,6 +4116,16 @@ _STRING_LEX = frozenset((
     _T_SOURCE,
     _T_STRING,
     _T_TRISTATE,
+))
+
+# Tokens for types, excluding def_bool, def_tristate, etc., for quick
+# checks during parsing
+_TYPE_TOKENS = frozenset((
+    _T_BOOL,
+    _T_TRISTATE,
+    _T_INT,
+    _T_HEX,
+    _T_STRING,
 ))
 
 # Note: This hack is no longer needed as of upstream commit c226456
