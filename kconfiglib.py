@@ -1053,8 +1053,8 @@ class Kconfig(object):
 
     def _next_line(self):
         """
-        Returns the next line in the current file, or the empty string at EOF
-        (like the standard readline() function).
+        Fetches and tokenizes the next line from the current Kconfig file.
+        Returns False at EOF and True otherwise.
         """
         # This provides a single line of "unget" if _reuse_line is set to True
         if not self._reuse_line:
@@ -1068,11 +1068,16 @@ class Kconfig(object):
             self._line = self._line[:-2] + self._file.readline()
             self._linenr += 1
 
-        return self._line
+        if not self._line:
+            return False
 
-    def _next_line_no_join(self):
+        self._tokenize()
+        return True
+
+    def _next_help_line(self):
         """
-        Used for help texts, which don't do line joining.
+        Used for help texts, where lines are not tokenized and no line joining
+        is done.
         """
         self._line = self._file.readline()
         self._linenr += 1
@@ -1415,23 +1420,10 @@ class Kconfig(object):
         Returns the final menu node in the block (or prev_node if the block is
         empty). This allows chaining.
         """
-        while 1:
-            # We might already have tokens from parsing a line to check if it's
-            # a property and discovering it isn't. This is a kind of "unget".
-            if not self._has_tokens:
-                # Advance to the next line
-                if not self._next_line():
-                    if end_token is not None:
-                        raise KconfigSyntaxError("Unexpected end of file " +
-                                                 self._filename)
-
-                    # We have reached the end of the file. Terminate the final
-                    # node and return it.
-                    prev_node.next = None
-                    return prev_node
-
-                self._tokenize()
-
+        # We might already have tokens from parsing a line to check if it's a
+        # property and discovering it isn't. self._has_tokens functions as a
+        # kind of "unget".
+        while self._has_tokens or self._next_line():
             self._has_tokens = False
 
             t0 = self._next_token()
@@ -1578,6 +1570,15 @@ class Kconfig(object):
             else:
                 self._parse_error("unrecognized construct")
 
+        # End of file reached. Terminate the final node and return it.
+
+        if end_token is not None:
+            raise KconfigSyntaxError("Unexpected end of file " +
+                                     self._filename)
+
+        prev_node.next = None
+        return prev_node
+
     def _parse_cond(self):
         """
         Parses an optional 'if <expr>' construct and returns the parsed <expr>,
@@ -1615,8 +1616,6 @@ class Kconfig(object):
         node.dep = self.y
 
         while self._next_line():
-            self._tokenize()
-
             t0 = self._next_token()
             if t0 is None:
                 continue
@@ -1638,7 +1637,7 @@ class Kconfig(object):
                 # indentation
 
                 while 1:
-                    line = self._next_line_no_join()
+                    line = self._next_help_line()
                     if not line or not line.isspace():
                         break
 
@@ -1659,7 +1658,7 @@ class Kconfig(object):
 
                 help_lines = [_deindent(line, indent).rstrip()]
                 while 1:
-                    line = self._next_line_no_join()
+                    line = self._next_help_line()
 
                     if not line or \
                        (not line.isspace() and _indentation(line) < indent):
