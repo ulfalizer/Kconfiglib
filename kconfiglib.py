@@ -1431,8 +1431,7 @@ class Kconfig(object):
                 continue
 
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
-                # The tokenizer allocates a Symbol objects the first time a
-                # symbol is seen
+                # The tokenizer allocates Symbol objects for us
                 sym = self._next_token()
 
                 node = MenuNode()
