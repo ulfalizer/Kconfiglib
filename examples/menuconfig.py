@@ -152,7 +152,7 @@ def value_str(sc):
             return "-->"
         return "   "
 
-    tri_val_str = {0: " ", 1: "M", 2: "*"}[sc.tri_value]
+    tri_val_str = (" ", "M", "*")[sc.tri_value]
 
     if len(sc.assignable) == 1:
         # Pinned to a single value
