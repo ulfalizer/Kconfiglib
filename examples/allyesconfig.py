@@ -29,7 +29,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py
 
-from kconfiglib import Kconfig, Choice, STR_TO_TRI
+from kconfiglib import Kconfig, Choice
 import sys
 
 def all_choices(node):

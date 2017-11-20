@@ -8,7 +8,7 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py
 
-from kconfiglib import Kconfig, Symbol, STR_TO_TRI
+from kconfiglib import Kconfig, Symbol
 import sys
 
 def do_allnoconfig(node):
