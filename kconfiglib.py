@@ -1474,7 +1474,7 @@ class Kconfig(object):
                 node.linenr = self._linenr
 
                 # See similar code in _parse_properties()
-                if isinstance(node.parent.item, Choice):
+                if isinstance(parent.item, Choice):
                     parent_dep = parent.item
                 else:
                     parent_dep = parent.dep
