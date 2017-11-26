@@ -42,7 +42,7 @@ from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
 import sys
 
 def indent_print(s, indent):
-    print((" " * indent) + s)
+    print(" "*indent + s)
 
 def print_items(node, indent):
     while node:
@@ -53,10 +53,11 @@ def print_items(node, indent):
             indent_print("choice", indent)
 
         elif node.item == MENU:
-            indent_print('menu "{0}"'.format(node.prompt[0]), indent)
+            indent_print('menu "{}"'.format(node.prompt[0]), indent)
 
         elif node.item == COMMENT:
-            indent_print('comment "{0}"'.format(node.prompt[0]), indent)
+            indent_print('comment "{}"'.format(node.prompt[0]), indent)
+
 
         if node.list:
             print_items(node.list, indent + 2)
