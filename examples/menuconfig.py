@@ -130,7 +130,7 @@ if sys.version_info[0] < 3:
     input = raw_input
 
 def indent_print(s, indent):
-    print((" " * indent) + s)
+    print(" "*indent + s)
 
 def value_str(sc):
     """
