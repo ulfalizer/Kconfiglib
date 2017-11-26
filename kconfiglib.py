@@ -1091,8 +1091,8 @@ class Kconfig(object):
     def _lookup_sym(self, name):
         """
         Fetches the symbol 'name' from the symbol table, creating and
-        registering it if it does not exist. If '_parsing_configs' is False, it
-        means we're in eval_string(), and new symbols won't be registered.
+        registering it if it does not exist. If '_parsing_kconfigs' is False,
+        it means we're in eval_string(), and new symbols won't be registered.
         """
         if name in self.syms:
             return self.syms[name]
