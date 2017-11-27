@@ -10,7 +10,7 @@ import kconfiglib
 import sys
 
 if len(sys.argv) < 3:
-    print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=NAME')
+    print("Pass the expression to evaluate with SCRIPT_ARG=<expression>")
     sys.exit(1)
 
 expr = sys.argv[2]
