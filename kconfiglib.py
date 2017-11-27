@@ -920,7 +920,7 @@ class Kconfig(object):
         self._tokenize()
         # Remove the "if " to avoid giving confusing error messages
         self._line = s
-        # Remove the T_IF token
+        # Remove the _T_IF token
         del self._tokens[0]
 
         return expr_value(self._parse_expr(True))  # transform_m
