@@ -91,6 +91,10 @@ Here are some other features:
   For long-running jobs, `PyPy <https://pypy.org/>`_ gives a big performance
   boost. CPython is faster for short-running jobs as PyPy needs some time to
   warm up.
+  
+  Kconfiglib also works well with the
+  `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_
+  module. No global state is kept.
 
 - **Internals that (mostly) mirror the C implementation**
   
