@@ -88,10 +88,13 @@ Using Kconfiglib on the Linux kernel with the Makefile targets
 ==============================================================
 
 For the Linux kernel, a handy interface is provided by the
-scripts/kconfig/Makefile patch. It can be applied by running the following
-command in the kernel root:
+scripts/kconfig/Makefile patch. Apply it with either 'git am' or the 'patch'
+utility:
 
   $ wget -qO- https://raw.githubusercontent.com/ulfalizer/Kconfiglib/master/makefile.patch | git am
+  $ wget -qO- https://raw.githubusercontent.com/ulfalizer/Kconfiglib/master/makefile.patch | patch -p1
+
+Warning: Not passing -p1 to patch will cause the wrong file to be patched.
 
 Please tell me if the patch does not apply. It should be trivial to apply
 manually, as it's just a block of text that needs to be inserted near the other
@@ -101,10 +104,10 @@ If you do not wish to install Kconfiglib via pip, the Makefile patch is set up
 so that you can also just clone Kconfiglib into the kernel root:
 
   $ git clone git://github.com/ulfalizer/Kconfiglib.git
-  $ git am Kconfiglib/makefile.patch
+  $ git am Kconfiglib/makefile.patch  (or 'patch -p1 < Kconfiglib/makefile.patch')
 
-(Warning: The directory name Kconfiglib/ is significant in this case, because
-it's added to PYTHONPATH by the new targets in makefile.patch.)
+Warning: The directory name Kconfiglib/ is significant in this case, because
+it's added to PYTHONPATH by the new targets in makefile.patch.
 
 Look further down for a motivation for the Makefile patch and for instructions
 on how you can use Kconfiglib without it.
