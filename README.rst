@@ -174,6 +174,8 @@ The `examples/ <examples/>`_ directory contains some simple example scripts. Amo
 
 - `print_tree.py <examples/print_tree.py>`_ prints a tree of all configuration items.
 
+- `merge_config.py <examples/merge_config.py>`_ merges configuration fragments to produce a complete .config, similarly to ``scripts/kconfig/merge_config.sh`` from the kernel.
+
 - `menuconfig.py <examples/menuconfig.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts, and isn't something you'd actually want to use. Here's a screenshot:
 
 .. code-block::
