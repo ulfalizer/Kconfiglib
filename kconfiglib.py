@@ -354,6 +354,7 @@ Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service, or open a ticket on the GitHub page.
 """
 import errno
+import glob
 import os
 import platform
 import re
@@ -1253,33 +1254,45 @@ class Kconfig(object):
     # File reading
     #
 
-    def _open(self, filename):
-        # First tries to open 'filename', then '$srctree/filename' if $srctree
-        # was set when the configuration was loaded
+    def _resolve(self, filename, globbing):
+        # First tries with 'filename', then '$srctree/filename' if $srctree
+        # was set when the configuration was loaded.
+        if os.path.isfile(filename):
+            return [filename]
 
+        if not os.path.isabs(filename) and self.srctree is not None:
+                filename = os.path.join(self.srctree, filename)
+
+        if os.path.isfile(filename):
+            return [filename]
+
+        if globbing:
+            # Try globbing
+            files =  glob.glob(filename)
+
+            # Glob results have an arbitrary order, so sort them to
+            # have consistent results across platforms.
+            return sorted(files)
+
+        raise IOError(
+            "Could not find '{}'. Perhaps the $srctree "
+            "environment variable (which was {}) is set incorrectly. Note "
+            "that the current value of $srctree is saved when the Kconfig "
+            "instance is created (for consistency and to cleanly "
+            "separate instances)."
+            .format(filename,
+                    "unset" if self.srctree is None else
+                    '"{}"'.format(self.srctree)))
+
+    def _open(self, filename):
+        # Normalize the filename based on $srctree
+        filename = self._resolve(filename, False)[0]
         try:
             return open(filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
-            if not os.path.isabs(filename) and self.srctree is not None:
-                filename = os.path.join(self.srctree, filename)
-                try:
-                    return open(filename, _UNIVERSAL_NEWLINES_MODE)
-                except IOError as e2:
-                    # This is needed for Python 3, because e2 is deleted after
-                    # the try block:
-                    #
-                    # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
-                    e = e2
-
             raise IOError(
-                "Could not open '{}' ({}: {}). Perhaps the $srctree "
-                "environment variable (which was {}) is set incorrectly. Note "
-                "that the current value of $srctree is saved when the Kconfig "
-                "instance is created (for consistency and to cleanly "
-                "separate instances)."
-                .format(filename, errno.errorcode[e.errno], e.strerror,
-                        "unset" if self.srctree is None else
-                        '"{}"'.format(self.srctree)))
+                "Could not open '{}' ({}: {})."
+                .format(filename, errno.errorcode[e.errno], e.strerror))
 
     def _enter_file(self, filename):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
@@ -1765,12 +1778,15 @@ class Kconfig(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_SOURCE:
-                self._enter_file(self._expand_syms(self._expect_str_and_eol()))
-                prev_node = self._parse_block(None,            # end_token
-                                              parent,
-                                              visible_if_deps,
-                                              prev_node)
-                self._leave_file()
+                f = self._expand_syms(self._expect_str_and_eol())
+                f = self._resolve(f, True)
+                for s in f:
+                    self._enter_file(s)
+                    prev_node = self._parse_block(None,            # end_token
+                                                  parent,
+                                                  visible_if_deps,
+                                                  prev_node)
+                    self._leave_file()
 
             elif t0 == _T_RSOURCE:
                 self._enter_file(os.path.join(
