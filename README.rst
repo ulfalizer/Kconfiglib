@@ -28,6 +28,11 @@ configuration systems. It can do the following, among other things:
   The generated ``.config`` files are character-for-character identical to what
   the C implementation would generate (except for the header comment). The test
   suite relies on this, as it compares the generated files.
+  
+- **Write C headers**
+
+  The generated headers use the same format as ``include/generated/autoconf.h``
+  from the Linux kernel.
 
 - **Inspect symbols**
 
