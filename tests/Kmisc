@@ -61,12 +61,18 @@ menu "menu"
 endmenu
 
 config FROM_ENV
-    string
+    string "from env"
     option env="ENV_VAR"
 
 config FROM_ENV_MISSING
-    string
+    string "from env missing"
     option env="MISSING_ENV_VAR"
+    default "missing"
+
+config FROM_ENV_WEIRD
+    string
+    default "weird"
+    option env="ENV_VAR"
 
 config NOT_ALLNOCONFIG_Y
     bool "not allnoconfig_y"

@@ -2474,6 +2474,10 @@ class Symbol(object):
                         val = val_expr.str_value
                         break
 
+        # Corresponds to SYMBOL_AUTO in the C implementation
+        if self.env_var is not None:
+            self._write_to_conf = False
+
         self._cached_str_val = val
         return val
 
@@ -2572,10 +2576,6 @@ class Symbol(object):
         """
         See the class documentation.
         """
-        if self.env_var is not None:
-            # Corresponds to SYMBOL_AUTO being set in the C implementation
-            return None
-
         # Note: _write_to_conf is determined when the value is calculated. This
         # is a hidden function call due to property magic.
         val = self.str_value
@@ -2664,6 +2664,12 @@ class Symbol(object):
 
             self.kconfig._warn(warning)
 
+            return False
+
+        if self.env_var is not None:
+            self.kconfig._warn("ignored attempt to assign user value to "
+                               "{}, which gets its value from the environment"
+                               .format(self.name))
             return False
 
         if self.choice and value == 2:

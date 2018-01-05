@@ -1233,6 +1233,24 @@ g
                format(s.name))
 
 
+    print("Testing 'option env' semantics")
+
+    os.environ["ENV_VAR"] = "ENV_VAR value"
+
+    # References undefined env. var. and tries to assign 'option env' variable,
+    # so disable warnings
+    c = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
+
+    # Verify that 'option env' symbols can't be assigned user values, and that
+    # 'option env' is treated like a default
+    assign_and_verify_user_value("FROM_ENV", "foo", None, False)
+    assign_and_verify_user_value("FROM_ENV_MISSING", "foo", None, False)
+    verify_value("FROM_ENV", "ENV_VAR value")
+    verify_value("FROM_ENV_MISSING", "missing")
+
+    verify_value("FROM_ENV_WEIRD", "weird")
+
+
     print("Testing defined vs undefined symbols")
 
     for name in "A", "B", "C", "D", "BOOL", "TRISTATE", "STRING", "INT", "HEX":
