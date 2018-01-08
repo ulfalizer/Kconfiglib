@@ -100,6 +100,10 @@ Here are some other features:
   Kconfiglib also works well with the
   `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_
   module. No global state is kept.
+  
+- **Windows support**
+
+  Nothing Linux-specific is used.
 
 - **Internals that (mostly) mirror the C implementation**
   
