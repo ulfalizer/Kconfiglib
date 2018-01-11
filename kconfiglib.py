@@ -476,8 +476,9 @@ class Kconfig(object):
 
     config_prefix:
       The value of the $CONFIG_ environment variable when the configuration was
-      loaded. This is the prefix used (and expected) in .config files. Defaults
-      to "CONFIG_". Used in the same way in the C tools.
+      loaded. This is the prefix used (and expected) on symbol names in .config
+      files and C headers. Defaults to "CONFIG_". Used in the same way in the C
+      tools.
 
       Like for srctree, only the value of $CONFIG_ when the configuration is
       loaded matters.
@@ -843,7 +844,6 @@ class Kconfig(object):
           and include a final terminating newline.
         """
         with open(filename, "w") as f:
-
             # Small optimization
             write = f.write
 
@@ -2058,7 +2058,6 @@ class Kconfig(object):
             # The choice symbols themselves, because the y mode selection might
             # change if a choice symbol's visibility changes
             for sym in choice.syms:
-                # the default selection depends on the symbols
                 sym._dependents.add(choice)
 
     def _invalidate_all(self):
@@ -2462,8 +2461,8 @@ class Symbol(object):
                 # Otherwise, look at defaults
                 for val_expr, cond in self.defaults:
                     if expr_value(cond):
-                        self._write_to_conf = True
                         val = val_expr.str_value
+                        self._write_to_conf = True
                         break
 
         # Corresponds to SYMBOL_AUTO in the C implementation
@@ -2586,7 +2585,6 @@ class Symbol(object):
                    .format(self.kconfig.config_prefix, self.name, val)
 
         if self.orig_type == STRING:
-            # Escape \ and "
             return '{}{}="{}"\n' \
                    .format(self.kconfig.config_prefix, self.name, escape(val))
 

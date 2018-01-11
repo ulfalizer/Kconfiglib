@@ -1284,6 +1284,7 @@ g
     verify(c.syms["ALLNOCONFIG_Y"].is_allnoconfig_y,
            "ALLNOCONFIG_Y should be allnoconfig_y")
 
+
     print("Testing UNAME_RELEASE")
 
     verify_value("UNAME_RELEASE", platform.uname()[2])
