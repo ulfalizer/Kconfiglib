@@ -340,6 +340,8 @@ the scripts are run via ``make scriptconfig``.
 The test suite must be run from the top-level kernel directory. It requires that the
 Kconfiglib git repository has been cloned into it and that the makefile patch has been applied.
 
+**NOTE: Forgetting to apply the Makefile patch will cause some tests that compare generated configurations to fail**
+
 **NOTE: The test suite overwrites .config in the kernel root, so make sure to back it up.**
 
 The test suite consists of a set of selftests and a set of compatibility tests that
