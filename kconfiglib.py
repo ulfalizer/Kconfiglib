@@ -2508,7 +2508,7 @@ class Symbol(object):
 
         if self.orig_type not in (BOOL, TRISTATE):
             self._cached_tri_val = 0
-            return self._cached_tri_val
+            return 0
 
         val = 0
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
