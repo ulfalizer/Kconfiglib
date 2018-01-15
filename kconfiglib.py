@@ -1233,20 +1233,19 @@ class Kconfig(object):
             self._tokens_i = -1
             return
 
-        keyword = _get_keyword(initial_token_match.group(1))
+        token = _get_keyword(initial_token_match.group(1))
 
-        if keyword == _T_HELP:
+        if token == _T_HELP:
             # Avoid junk after "help", e.g. "---", being registered as a
             # symbol
-            self._tokens = (_T_HELP, None)
+            self._tokens = (token, None)
             self._tokens_i = -1
             return
 
-        if keyword is None:
+        if token is None:
             self._parse_error("expected keyword as first token")
 
-        token = keyword
-        self._tokens = [keyword]
+        self._tokens = [token]
         # The current index in the string being tokenized
         i = initial_token_match.end()
 
