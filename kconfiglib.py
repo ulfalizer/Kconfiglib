@@ -2571,10 +2571,9 @@ class Symbol(object):
         """
         See the class documentation.
         """
-        if self._cached_assignable is not None:
-            return self._cached_assignable
+        if self._cached_assignable is None:
+            self._cached_assignable = self._get_assignable()
 
-        self._cached_assignable = self._get_assignable()
         return self._cached_assignable
 
     @property
@@ -2582,10 +2581,9 @@ class Symbol(object):
         """
         See the class documentation.
         """
-        if self._cached_vis is not None:
-            return self._cached_vis
+        if self._cached_vis is None:
+            self._cached_vis = _get_visibility(self)
 
-        self._cached_vis = _get_visibility(self)
         return self._cached_vis
 
     @property
@@ -3139,10 +3137,9 @@ class Choice(object):
         """
         See the class documentation.
         """
-        if self._cached_assignable is not None:
-            return self._cached_assignable
+        if self._cached_assignable is None:
+            self._cached_assignable = self._get_assignable()
 
-        self._cached_assignable = self._get_assignable()
         return self._cached_assignable
 
     @property
@@ -3150,10 +3147,9 @@ class Choice(object):
         """
         See the class documentation.
         """
-        if self._cached_vis is not None:
-            return self._cached_vis
+        if self._cached_vis is None:
+            self._cached_vis = _get_visibility(self)
 
-        self._cached_vis = _get_visibility(self)
         return self._cached_vis
 
     @property
@@ -3161,10 +3157,9 @@ class Choice(object):
         """
         See the class documentation.
         """
-        if self._cached_selection is not _NO_CACHED_SELECTION:
-            return self._cached_selection
+        if self._cached_selection is _NO_CACHED_SELECTION:
+            self._cached_selection = self._get_selection()
 
-        self._cached_selection = self._get_selection()
         return self._cached_selection
 
     def set_value(self, value):
