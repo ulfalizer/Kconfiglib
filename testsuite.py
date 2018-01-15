@@ -676,7 +676,7 @@ choice
     print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
-<configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree not set, config symbol prefix "CONFIG_", warnings disabled, undef. symbol assignment warnings disabled>
+<configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree not set, config symbol prefix "CONFIG_", warnings disabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
 """)
 
     os.environ["srctree"] = "srctree value"
@@ -684,10 +684,11 @@ choice
 
     c = Kconfig("Kconfiglib/tests/Krepr", warn=False)
     c.enable_warnings()
+    c.disable_redun_warnings()
     c.enable_undef_warnings()
 
     verify_repr(c, """
-<configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, undef. symbol assignment warnings enabled>
+<configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
 """)
 
     os.environ.pop("srctree", None)
@@ -1816,6 +1817,8 @@ def test_sanity(conf, arch):
     conf.modules
     conf.defconfig_list
     conf.defconfig_filename
+    conf.enable_redun_warnings()
+    conf.disable_redun_warnings()
     conf.enable_undef_warnings()
     conf.disable_undef_warnings()
     conf.enable_warnings()
