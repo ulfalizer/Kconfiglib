@@ -2139,7 +2139,7 @@ class Kconfig(object):
         Special version for load_config().
         """
         self._warn_undef_assign(
-            'attempt to assign the value "{}" to the undefined symbol {}' \
+            'attempt to assign the value "{}" to the undefined symbol {}'
             .format(val, name), filename, linenr)
 
     def _warn_redun_assign(self, msg, filename=None, linenr=None):
