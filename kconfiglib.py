@@ -552,9 +552,9 @@ class Kconfig(object):
         if self.config_prefix is None:
             self.config_prefix = "CONFIG_"
 
-        # Regular expressions for parsing .config files, with the get() method
-        # assigned directly as a small optimization (microscopic in this case,
-        # but it's consistent with the other regexes)
+        # Regular expressions for parsing .config files, with the match()
+        # method assigned directly as a small optimization (microscopic in this
+        # case, but it's consistent with the other regexes)
         self._set_re_match = re.compile(r"{}(\w+)=(.*)"
                                         .format(self.config_prefix)).match
         self._unset_re_match = re.compile(r"# {}(\w+) is not set"
@@ -1481,9 +1481,8 @@ class Kconfig(object):
           for files.
 
         parent:
-          The parent menu node, corresponding to e.g. a menu or Choice. Can
-          also be a Symbol, due to automatic submenu creation from
-          dependencies.
+          The parent menu node, corresponding to menu, Choice, or 'if'. 'if's
+          are flattened after parsing.
 
         visible_if_deps:
           'visible if' dependencies from enclosing menus. Propagated to Symbol
