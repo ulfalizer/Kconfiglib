@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2017, Ulf Magnusson
+# Copyright (c) 2011-2018, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
 # This is the Kconfiglib test suite. It runs selftests on Kconfigs provided by

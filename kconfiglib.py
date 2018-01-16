@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2017, Ulf Magnusson
+# Copyright (c) 2011-2018, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
 """
@@ -2693,8 +2693,7 @@ class Symbol(object):
             # safe.
             self.choice.user_selection = self
             self.choice._was_set = True
-            if self._is_user_assignable():
-                self.choice._rec_invalidate()
+            self.choice._rec_invalidate()
         else:
             self.user_value = value
             self._was_set = True
