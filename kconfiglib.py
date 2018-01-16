@@ -1223,23 +1223,23 @@ class Kconfig(object):
         """
         s = self._line
 
-        # Tricky implementation detail: While parsing a token, 'token' refers
-        # to the previous token. See _STRING_LEX for why this is needed.
+        # Token index (minus one). Set for later -- not further updated here.
+        self._tokens_i = -1
 
         # See comment at _initial_token_re_match definition
         initial_token_match = _initial_token_re_match(s)
         if not initial_token_match:
             self._tokens = (None,)
-            self._tokens_i = -1
             return
 
+        # Tricky implementation detail: While parsing a token, 'token' refers
+        # to the previous token. See _STRING_LEX for why this is needed.
         token = _get_keyword(initial_token_match.group(1))
 
         if token == _T_HELP:
             # Avoid junk after "help", e.g. "---", being registered as a
             # symbol
             self._tokens = (token, None)
-            self._tokens_i = -1
             return
 
         if token is None:
@@ -1419,7 +1419,6 @@ class Kconfig(object):
         # None-terminating token streams makes the token fetching functions
         # simpler/faster
         self._tokens.append(None)
-        self._tokens_i = -1
 
     def _next_token(self):
         self._tokens_i += 1
