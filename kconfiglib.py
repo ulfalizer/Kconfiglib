@@ -2693,8 +2693,7 @@ class Symbol(object):
         else:
             self.user_value = value
             self._was_set = True
-            if self._is_user_assignable():
-                self._rec_invalidate()
+            self._rec_invalidate_if_has_prompt()
 
         return True
 
@@ -2705,8 +2704,7 @@ class Symbol(object):
         """
         if self.user_value is not None:
             self.user_value = None
-            if self._is_user_assignable():
-                self._rec_invalidate()
+            self._rec_invalidate_if_has_prompt()
 
     def __repr__(self):
         """
@@ -2877,11 +2875,11 @@ class Symbol(object):
 
         return (1,)
 
-    def _is_user_assignable(self):
+    def _rec_invalidate_if_has_prompt(self):
         """
-        Returns True if the symbol has a prompt, meaning a user value might
-        have an effect on it. Used as an optimization to skip invalidation when
-        promptless symbols are assigned to (given a user value).
+        Invalidates the symbol and its dependent symbols, but only if the
+        symbol has a prompt. User values never have an effect on promptless
+        symbols, so we skip invalidation for them as an optimization.
 
         Prints a warning if the symbol has no prompt. In some contexts (e.g.
         when loading a .config files) assignments to promptless symbols are
@@ -2889,12 +2887,12 @@ class Symbol(object):
         """
         for node in self.nodes:
             if node.prompt:
-                return True
+                self._rec_invalidate()
+                return
 
         if self.kconfig._warn_no_prompt:
             self.kconfig._warn(self.name + " has no prompt, meaning user "
                                "values have no effect on it")
-        return False
 
     def _invalidate(self):
         """
