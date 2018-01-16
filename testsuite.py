@@ -40,6 +40,7 @@
 
 from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, \
                        BOOL, TRISTATE, HEX, STRING, \
+                       TRI_TO_STR, \
                        KconfigSyntaxError, expr_value
 import difflib
 import errno
@@ -112,8 +113,6 @@ def run_selftests():
     # Common helper functions. These all expect 'c' to hold the current
     # configuration.
     #
-
-    TRI_TO_STR = {0: "n", 1: "m", 2: "y"}
 
     def verify_value(sym_name, val):
         """
