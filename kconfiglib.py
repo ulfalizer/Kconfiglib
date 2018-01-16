@@ -1271,14 +1271,12 @@ class Kconfig(object):
                     token = keyword
 
                 elif token not in _STRING_LEX:
-                    # It's a non-const symbol...
-                    if name in ("n", "m", "y"):
-                        # ...except we translate n, m, and y into the
-                        # corresponding constant symbols, like the C
-                        # implementation
-                        token = self.const_syms[name]
-                    else:
-                        token = self._lookup_sym(name)
+                    # It's a non-const symbol, except we translate n, m, and y
+                    # into the corresponding constant symbols, like the C
+                    # implementation
+                    token = self.const_syms[name] \
+                            if name in ("n", "m", "y") else \
+                            self._lookup_sym(name)
 
                 else:
                     # It's a case of missing quotes. For example, the
