@@ -107,7 +107,7 @@ Here are some other features:
 
 - **Internals that (mostly) mirror the C implementation**
   
-  While being simpler to understand.
+  While being simpler to understand and tweak.
   
 Documentation
 -------------
