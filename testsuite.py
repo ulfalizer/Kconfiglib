@@ -779,6 +779,17 @@ g
     verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
                      "tests/Klocation_included:15")
 
+    # Test recursive 'source' detection
+
+    got_syntax_exception = False
+    try:
+        Kconfig("Kconfiglib/tests/Krecursive1")
+    except KconfigSyntaxError:
+        got_syntax_exception = True
+
+    verify(got_syntax_exception,
+           "recursive 'source' did not raise KconfigSyntaxError")
+
 
     print("Testing visibility")
 

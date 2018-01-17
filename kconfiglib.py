@@ -1112,6 +1112,19 @@ class Kconfig(object):
         Jumps to the beginning of a sourced Kconfig file, saving the previous
         position and file object.
         """
+        # Check for recursive 'source'
+        for _, name, _ in self._filestack:
+            if name == filename:
+                # KconfigParseError might have been a better name, but too late
+                raise KconfigSyntaxError(
+                    "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
+                    "environment variables are set correctly.\n"
+                    "Backtrace:\n{}"
+                    .format(self._filename, self._linenr, filename,
+                            "\n".join("{}:{}".format(name, linenr)
+                                      for _, name, linenr
+                                      in reversed(self._filestack))))
+
         self._filestack.append((self._file, self._filename, self._linenr))
         try:
             self._file = self._open(filename)
