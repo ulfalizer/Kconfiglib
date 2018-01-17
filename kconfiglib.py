@@ -915,7 +915,7 @@ class Kconfig(object):
             # fetched, so that symbols defined in multiple locations only get
             # one .config entry. We reset it prior to writing out a new
             # .config. It only needs to be reset for defined symbols, because
-            # undefine symbols will never be written out (because they do not
+            # undefined symbols will never be written out (because they do not
             # appear in the menu tree rooted at Kconfig.top_node).
             #
             # The C tools reuse _write_to_conf for this, but we cache
@@ -3061,7 +3061,7 @@ class Choice(object):
     nodes:
       A list of MenuNodes for this choice. In practice, the list will probably
       always contain a single MenuNode, but it is possible to give a choice a
-      name and define it in multiple locations (i've never even seen a named
+      name and define it in multiple locations (I've never even seen a named
       choice though).
 
     defaults:
