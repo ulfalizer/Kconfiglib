@@ -781,15 +781,14 @@ g
 
     # Test recursive 'source' detection
 
-    got_syntax_exception = False
     try:
         Kconfig("Kconfiglib/tests/Krecursive1")
     except KconfigSyntaxError:
-        got_syntax_exception = True
-
-    verify(got_syntax_exception,
-           "recursive 'source' did not raise KconfigSyntaxError")
-
+        pass
+    except:
+        fail("recursive 'source' raised wrong exception")
+    else:
+        fail("recursive 'source' did not raise exception")
 
     print("Testing visibility")
 
