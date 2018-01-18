@@ -1525,6 +1525,7 @@ class Kconfig(object):
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer allocates Symbol objects for us
                 sym = self._next_token()
+                self.defined_syms.append(sym)
 
                 node = MenuNode()
                 node.kconfig = self
@@ -1535,10 +1536,9 @@ class Kconfig(object):
                 node.linenr = self._linenr
                 node.is_menuconfig = (t0 == _T_MENUCONFIG)
 
-                self._parse_properties(node, visible_if_deps)
-
                 sym.nodes.append(node)
-                self.defined_syms.append(sym)
+
+                self._parse_properties(node, visible_if_deps)
 
                 # Tricky Python semantics: This assign prev_node.next before
                 # prev_node
