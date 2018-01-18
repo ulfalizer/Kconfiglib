@@ -18,8 +18,8 @@ configuration systems. It can do the following, among other things:
 
 - **Programmatically get and set symbol values**
 
-  `allnoconfig.py <examples/allnoconfig.py>`_ and `allyesconfig.py
-  <examples/allyesconfig.py>`_ examples are provided, automatically verified to
+  `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig.py>`_ and `allyesconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ examples are provided, automatically verified to
   produce identical output to the standard ``make allnoconfig`` and ``make
   allyesconfig``.
 
@@ -60,14 +60,14 @@ configuration systems. It can do the following, among other things:
   from symbols depending on preceding symbols. This can be used e.g. to
   implement menuconfig-like functionality.
   
-  See the `menuconfig.py <examples/menuconfig.py>`_ example.
+  See the `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig.py>`_ example.
 
 
 Here are some other features:
 
 - **Single-file implementation**
   
-  The entire library is contained in `kconfiglib.py <kconfiglib.py>`_.
+  The entire library is contained in `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
 
 - **Runs unmodified under both Python 2 and Python 3**
   
@@ -89,7 +89,7 @@ Here are some other features:
 
 - **Not horribly slow despite being a pure Python implementation**
   
-  The `allyesconfig.py <examples/allyesconfig.py>`_ example currently runs in
+  The `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ example currently runs in
   about 1.6 seconds on a Core i7 2600K (with a warm file cache), where half a
   second is overhead from ``make scriptconfig``.
 
@@ -126,7 +126,7 @@ For HTML output, add ``-w``:
     $ pydoc -w kconfiglib
     
 A good starting point is to read the module docstring (which you could also just read directly
-at the beginning of `kconfiglib.py <kconfiglib.py>`_). It gives an introduction to symbol
+at the beginning of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_). It gives an introduction to symbol
 values, the menu tree, and expressions.
 
 After reading the module docstring, a good next step is to read the ``Kconfig`` class
@@ -154,7 +154,7 @@ All releases have a corresponding tag in the git repository, e.g. ``v2.2.0``.
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the module docstring at the top of `kconfiglib.py <kconfiglib.py>`_.
+See the module docstring at the top of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
 
 Manual installation
 ~~~~~~~~~~~~~~~~~~~
@@ -169,23 +169,23 @@ Examples
 Example scripts
 ~~~~~~~~~~~~~~~
 
-The `examples/ <examples/>`_ directory contains some simple example scripts. Among these are the following ones:
+The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ directory contains some simple example scripts. Among these are the following ones:
 
-- `allnoconfig.py <examples/allnoconfig.py>`_, `allnoconfig_simpler.py <examples/allnoconfig_simpler.py>`_, and `allyesconfig.py <examples/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig`` in various ways. Demonstrates menu tree walking and value setting.
+- `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig.py>`_, `allnoconfig_simpler.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig_simpler.py>`_, and `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig`` in various ways. Demonstrates menu tree walking and value setting.
 
-- `defconfig.py <examples/defconfig.py>`_ has the same effect as going into ``make menuconfig`` and immediately saving and exiting.
+- `defconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/defconfig.py>`_ has the same effect as going into ``make menuconfig`` and immediately saving and exiting.
 
-- `eval_expr.py <examples/eval_expr.py>`_ evaluates an expression in the context of a configuration.
+- `eval_expr.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/eval_expr.py>`_ evaluates an expression in the context of a configuration.
 
-- `find_symbol.py <examples/find_symbol.py>`_ searches through expressions to find references to a symbol, also printing a "backtrace" with parents for each reference found.
+- `find_symbol.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/find_symbol.py>`_ searches through expressions to find references to a symbol, also printing a "backtrace" with parents for each reference found.
 
-- `help_grep.py <examples/help_grep.py>`_ searches for a string in all help texts.
+- `help_grep.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/help_grep.py>`_ searches for a string in all help texts.
 
-- `print_tree.py <examples/print_tree.py>`_ prints a tree of all configuration items.
+- `print_tree.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/print_tree.py>`_ prints a tree of all configuration items.
 
-- `merge_config.py <examples/merge_config.py>`_ merges configuration fragments to produce a complete .config, similarly to ``scripts/kconfig/merge_config.sh`` from the kernel.
+- `merge_config.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/merge_config.py>`_ merges configuration fragments to produce a complete .config, similarly to ``scripts/kconfig/merge_config.sh`` from the kernel.
 
-- `menuconfig.py <examples/menuconfig.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts, and isn't something you'd actually want to use. Here's a screenshot:
+- `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts, and isn't something you'd actually want to use. Here's a screenshot:
 
 .. code-block::
 
@@ -396,5 +396,5 @@ to ``y`` during ``make allnoconfig`` to improve coverage.
 License
 -------
 
-See `LICENSE.txt <LICENSE.txt>`_. SPDX license identifiers are used in the
+See `LICENSE.txt <https://github.com/ulfalizer/Kconfiglib/blob/master/LICENSE.txt>`_. SPDX license identifiers are used in the
 source code.
