@@ -234,8 +234,9 @@ often get the same condition as the prompt due to dependency propagation.
 'default' properties are used if the symbol is not visible or has no user
 value.
 
-Symbols with no (active) user value and no (active) 'default' default to n for
-bool/tristate symbols, and to the empty string for other symbols.
+Symbols with no user value (or that have a user value but are not visible) and
+no (active) 'default' default to n for bool/tristate symbols, and to the empty
+string for other symbol types.
 
 'select' works similarly to symbol visibility, but sets a lower bound on the
 value of the symbol. The lower bound is determined by the value of the
