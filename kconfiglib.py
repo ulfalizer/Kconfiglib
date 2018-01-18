@@ -1137,7 +1137,7 @@ class Kconfig(object):
                 "variable FOO, but rather to the Kconfig Symbol FOO "
                 "(which would commonly have 'option env=\"FOO\"' in "
                 "its definition)."
-                .format(self._filename, self._linenr, e.message))
+                .format(self._filename, self._linenr, str(e)))
 
         self._filename = filename
         self._linenr = 0
