@@ -334,7 +334,7 @@ The test suite is run with
 
     $ python(3) Kconfiglib/testsuite.py
     
-`pypy <http://pypy.org>`_ works too, and is much speedier for everything except ``allnoconfig.py``/``allnoconfig_simpler.py``/``allyesconfig.py``, where it doesn't have time to warm up since
+`pypy <https://pypy.org/>`_ works too, and is much speedier for everything except ``allnoconfig.py``/``allnoconfig_simpler.py``/``allyesconfig.py``, where it doesn't have time to warm up since
 the scripts are run via ``make scriptconfig``.
 
 The test suite must be run from the top-level kernel directory. It requires that the
