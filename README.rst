@@ -8,7 +8,7 @@ Overview
 Kconfiglib 1. For a summary of changes between Kconfiglib 1 and Kconfiglib 2,
 see* |changes|_.
 
-.. _changes: kconfiglib-2-changes.txt
+.. _changes: https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt
 .. |changes| replace:: *kconfiglib-2-changes.txt*
 
 Kconfiglib is a Python 2/3 library for scripting and extracting information
