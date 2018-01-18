@@ -2934,6 +2934,10 @@ class Symbol(object):
         symbol has a prompt. User values never have an effect on promptless
         symbols, so we skip invalidation for them as an optimization.
 
+        This also prevents constant (quoted) symbols from being invalidated if
+        set_value() is called on them, which would cause them to lose their
+        value and break things.
+
         Prints a warning if the symbol has no prompt. In some contexts (e.g.
         when loading a .config files) assignments to promptless symbols are
         normal and expected, so the warning can be disabled.
