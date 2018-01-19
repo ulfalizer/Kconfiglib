@@ -1745,7 +1745,7 @@ class Kconfig(object):
                     self._reuse_line = True  # "Unget" the line
                     break
 
-                help_lines = [_deindent(line, indent).rstrip()]
+                help_lines = [_dedent_rstrip(line, indent)]
 
                 # The help text goes on till the first non-empty line with less
                 # indent
@@ -1758,7 +1758,7 @@ class Kconfig(object):
                         node.help = "\n".join(help_lines).rstrip() + "\n"
                         break
 
-                    help_lines.append(_deindent(line, indent).rstrip())
+                    help_lines.append(_dedent_rstrip(line, indent))
 
                 if not line:
                     break
@@ -3752,11 +3752,18 @@ def _indentation(line):
     line = line.expandtabs()
     return len(line) - len(line.lstrip())
 
-def _deindent(line, indent):
+def _dedent_rstrip(line, indent):
+    r"""
+    De-indents 'line' by 'indent' spaces and rstrip()s it to remove any
+    newlines (which gets rid of other trailing whitespace too, but that's
+    fine).
+
+    Used to prepare help text lines in a speedy way: The [indent:] might
+    already remove trailing newlines for lines shorter than indent (e.g. empty
+    lines). The rstrip() makes it consistent, meaning we can join the lines
+    with "\n" later.
     """
-    Deindents 'line' by 'indent' spaces.
-    """
-    return line.expandtabs()[indent:]
+    return line.expandtabs()[indent:].rstrip()
 
 def _is_base_n(s, n):
     try:
