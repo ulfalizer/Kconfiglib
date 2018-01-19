@@ -1752,13 +1752,13 @@ class Kconfig(object):
 
                 while 1:
                     line = self._next_help_line()
-
-                    if not line or \
-                       (not line.isspace() and _indentation(line) < indent):
-                        node.help = "\n".join(help_lines).rstrip() + "\n"
+                    if not (line and (line.isspace() or \
+                                      _indentation(line) >= indent)):
                         break
 
                     help_lines.append(_dedent_rstrip(line, indent))
+
+                node.help = "\n".join(help_lines).rstrip() + "\n"
 
                 if not line:
                     break
