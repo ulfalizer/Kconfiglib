@@ -3755,10 +3755,7 @@ def _deindent(line, indent):
     """
     Deindents 'line' by 'indent' spaces.
     """
-    line = line.expandtabs()
-    if len(line) <= indent:
-        return line
-    return line[indent:]
+    return line.expandtabs()[indent:]
 
 def _is_base_n(s, n):
     try:
