@@ -1745,10 +1745,11 @@ class Kconfig(object):
                     self._reuse_line = True  # "Unget" the line
                     break
 
+                help_lines = [_deindent(line, indent).rstrip()]
+
                 # The help text goes on till the first non-empty line with less
                 # indent
 
-                help_lines = [_deindent(line, indent).rstrip()]
                 while 1:
                     line = self._next_help_line()
 
