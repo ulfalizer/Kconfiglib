@@ -1720,8 +1720,11 @@ class Kconfig(object):
                 # Find first non-blank (not all-space) line and get its
                 # indentation
 
+                # Small optimization. This code is pretty hot.
+                readline = self._file.readline
+
                 while 1:
-                    line = self._file.readline()
+                    line = readline()
                     self._linenr += 1
                     if not line or not line.isspace():
                         break
@@ -1739,18 +1742,20 @@ class Kconfig(object):
                     break
 
                 help_lines = [_dedent_rstrip(line, indent)]
+                # Small optimization
+                add_help_line = help_lines.append
 
                 # The help text goes on till the first non-empty line with less
                 # indent
 
                 while 1:
-                    line = self._file.readline()
+                    line = readline()
                     self._linenr += 1
                     if not (line and (line.isspace() or \
                                       _indentation(line) >= indent)):
                         break
 
-                    help_lines.append(_dedent_rstrip(line, indent))
+                    add_help_line(_dedent_rstrip(line, indent))
 
                 node.help = "\n".join(help_lines).rstrip() + "\n"
 
