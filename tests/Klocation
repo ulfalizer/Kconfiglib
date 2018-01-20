@@ -13,6 +13,19 @@ if y && \
    y && \
    y
 
+# Throw in some help texts too
+
+config HELP_1
+    bool "help 1"
+    help
+config HELP_2
+    bool "help 2"
+    help
+      foo
+      bar
+
+        baz
+
 config MULTI_DEF
 
 endif

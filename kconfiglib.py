@@ -507,12 +507,12 @@ class Kconfig(object):
 
         # Parsing-related
         "_parsing_kconfigs",
-        "_reuse_line",
         "_file",
         "_filename",
         "_linenr",
         "_filestack",
         "_line",
+        "_saved_line",
         "_tokens",
         "_tokens_i",
         "_has_tokens",
@@ -623,7 +623,7 @@ class Kconfig(object):
         # Parse the Kconfig files
 
         # These implement a single line of "unget" for the parser
-        self._reuse_line = False
+        self._saved_line = None
         self._has_tokens = False
 
         # Keeps track of the location in the parent Kconfig files. Kconfig
@@ -1154,12 +1154,13 @@ class Kconfig(object):
         Fetches and tokenizes the next line from the current Kconfig file.
         Returns False at EOF and True otherwise.
         """
-        # This provides a single line of "unget" if _reuse_line is set to True
-        if not self._reuse_line:
+        # This provides a single line of "unget" after help texts
+        if self._saved_line:
+            self._line = self._saved_line
+            self._saved_line = None
+        else:
             self._line = self._file.readline()
             self._linenr += 1
-
-        self._reuse_line = False
 
         # Handle line joining
         while self._line.endswith("\\\n"):
@@ -1171,15 +1172,6 @@ class Kconfig(object):
 
         self._tokenize()
         return True
-
-    def _next_help_line(self):
-        """
-        Used for help texts, where lines are not tokenized and no line joining
-        is done.
-        """
-        self._line = self._file.readline()
-        self._linenr += 1
-        return self._line
 
 
     #
@@ -1729,7 +1721,8 @@ class Kconfig(object):
                 # indentation
 
                 while 1:
-                    line = self._next_help_line()
+                    line = self._file.readline()
+                    self._linenr += 1
                     if not line or not line.isspace():
                         break
 
@@ -1742,7 +1735,7 @@ class Kconfig(object):
                     # If the first non-empty lines has zero indent, there is no
                     # help text
                     node.help = ""
-                    self._reuse_line = True  # "Unget" the line
+                    self._saved_line = line  # "Unget" the line
                     break
 
                 help_lines = [_dedent_rstrip(line, indent)]
@@ -1751,7 +1744,8 @@ class Kconfig(object):
                 # indent
 
                 while 1:
-                    line = self._next_help_line()
+                    line = self._file.readline()
+                    self._linenr += 1
                     if not (line and (line.isspace() or \
                                       _indentation(line) >= indent)):
                         break
@@ -1763,7 +1757,7 @@ class Kconfig(object):
                 if not line:
                     break
 
-                self._reuse_line = True  # "Unget" the line
+                self._saved_line = line  # "Unget" the line
 
             elif t0 == _T_SELECT:
                 if not isinstance(node.item, Symbol):

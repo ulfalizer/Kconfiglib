@@ -766,9 +766,9 @@ g
 
     verify_locations(c.syms["MULTI_DEF"].nodes,
       "tests/Klocation:6",
-      "tests/Klocation:16",
+      "tests/Klocation:29",
       "tests/Klocation_included:3",
-      "tests/Klocation:32")
+      "tests/Klocation:45")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_included:5")
