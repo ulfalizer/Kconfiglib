@@ -90,8 +90,8 @@ Here are some other features:
 - **Not horribly slow despite being a pure Python implementation**
   
   The `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ example currently runs in
-  about 1.6 seconds on a Core i7 2600K (with a warm file cache), where half a
-  second is overhead from ``make scriptconfig``.
+  about 1.3 seconds on a Core i7 2600K (with a warm file cache), including the
+  ``make`` overhead from ``make scriptconfig``.
 
   For long-running jobs, `PyPy <https://pypy.org/>`_ gives a big performance
   boost. CPython is faster for short-running jobs as PyPy needs some time to
