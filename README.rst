@@ -77,7 +77,8 @@ Here are some other features:
 
 - **Robust and highly compatible with the standard Kconfig C tools**
   
-  The test suite automatically compares output from Kconfiglib and the C tools
+  The `test suite <https://github.com/ulfalizer/Kconfiglib/blob/master/testsuite.py>`_
+  automatically compares output from Kconfiglib and the C tools
   by diffing the generated ``.config`` files for the real kernel Kconfig and
   defconfig files, for all ARCHes.
   
