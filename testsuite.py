@@ -524,6 +524,7 @@ config OPTIONS
 	option env="ENV"
 """)
 
+
     print("Testing Choice.__str__()")
 
     verify_str(c.named_choices["CHOICE"], """
@@ -789,6 +790,7 @@ g
         fail("recursive 'source' raised wrong exception")
     else:
         fail("recursive 'source' did not raise exception")
+
 
     print("Testing visibility")
 
@@ -1140,9 +1142,6 @@ g
     verify_value("INACTIVE_RANGE", "2")
     verify_value("ACTIVE_RANGE", "1")
 
-    #
-    # defconfig_filename
-    #
 
     print("Testing defconfig_filename")
 
