@@ -41,7 +41,7 @@
 from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, \
                        BOOL, TRISTATE, HEX, STRING, \
                        TRI_TO_STR, \
-                       KconfigSyntaxError, expr_value
+                       KconfigSyntaxError, expr_value, escape, unescape
 import difflib
 import errno
 import os
@@ -239,6 +239,27 @@ def run_selftests():
     verify_string_bad(r""" '\' """)
     verify_string_bad(r""" "foo """)
     verify_string_bad(r""" 'foo """)
+
+
+    print("Testing escape() and unescape()")
+
+    def verify_escape_unescape(s, sesc):
+        # Verify that 's' escapes to 'sesc' and that 'sesc' unescapes to 's'
+        verify_equal(escape(s), sesc)
+        verify_equal(unescape(sesc), s)
+
+    verify_escape_unescape(r''          , r''              )
+    verify_escape_unescape(r'foo'       , r'foo'           )
+    verify_escape_unescape(r'"'         , r'\"'            )
+    verify_escape_unescape(r'""'        , r'\"\"'          )
+    verify_escape_unescape('\\'         , r'\\'            )
+    verify_escape_unescape(r'\\'        , r'\\\\'          )
+    verify_escape_unescape(r'\"'        , r'\\\"'          )
+    verify_escape_unescape(r'"ab\cd"ef"', r'\"ab\\cd\"ef\"')
+
+    # Backslashes before any character should be unescaped, not just before "
+    # and \
+    verify_equal(unescape(r"\afoo\b\c\\d\\\e\\\\f"), r"afoobc\d\e\\f")
 
 
     print("Testing expression evaluation")

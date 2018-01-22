@@ -3671,17 +3671,17 @@ def expr_str(expr):
                              _REL_TO_STR[expr[0]],
                              expr_str(expr[2]))
 
-# escape()/unescape() helpers
-_escape_re_sub = re.compile(r'(["\\])').sub
-_unescape_re_sub = re.compile(r"\\(.)").sub
-
 def escape(s):
     r"""
     Escapes the string 's' in the same fashion as is done for display in
     Kconfig format and when writing strings to a .config file. " and \ are
     replaced by \" and \\, respectively.
     """
-    return _escape_re_sub(r"\\\1", s)
+    # \ must be escaped before " to avoid double escaping
+    return s.replace("\\", r"\\").replace('"', r'\"')
+
+# unescape() helper
+_unescape_re_sub = re.compile(r"\\(.)").sub
 
 def unescape(s):
     r"""
