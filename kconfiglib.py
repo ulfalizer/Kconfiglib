@@ -686,6 +686,11 @@ class Kconfig(object):
         "# CONFIG_FOO is not set" within a .config file sets the user value of
         FOO to n. The C tools work the same way.
 
+        The Symbol.user_value attribute can be inspected afterwards to see what
+        value the symbol was assigned in the .config file (if any). The user
+        value might differ from Symbol.str/tri_value if there are unsatisfied
+        dependencies.
+
         filename:
           The file to load. Respects $srctree if set (see the class
           documentation).
