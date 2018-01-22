@@ -2643,7 +2643,7 @@ class Symbol(object):
         Equal in effect to assigning the value to the symbol within a .config
         file. For bool and tristate symbols, use the 'assignable' attribute to
         check which values can currently be assigned. Setting values outside
-        'assignable' will cause Symbol.user_str/tri_value to differ from
+        'assignable' will cause Symbol.user_value to differ from
         Symbol.str/tri_value (be truncated down or up).
 
         Setting a choice symbol to 2 (y) only updates Choice.user_selection on
@@ -2661,7 +2661,7 @@ class Symbol(object):
           pass a string.
 
           Values that are invalid for the type (such as "foo" or 1 (m) for a
-          BOOL) are ignored and won't be stored in Symbol.user_str/tri_value.
+          BOOL) are ignored and won't be stored in Symbol.user_value.
           Kconfiglib will print a warning by default for invalid assignments,
           and set_value() will return False.
 
