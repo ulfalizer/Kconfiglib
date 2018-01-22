@@ -190,9 +190,12 @@ Symbol.set_value()), but this user value is only respected if the symbol is
 visible, which corresponds to it (currently) being visible in the menuconfig
 interface.
 
-Symbols without prompts are never visible (setting a user value on them is
-pointless). For symbols with prompts, the visibility of the symbol is
-determined by the condition on the prompt.
+For symbols with prompts, the visibility of the symbol is determined by the
+condition on the prompt. Symbols without prompts are never visible, so setting
+a user value on them is pointless. A warning will be printed by default if
+Symbol.set_value() is called on a promptless symbol. Assignments to promptless
+symbols are normal within a .config file, so no similar warning will be printed
+by load_config().
 
 Dependencies from parents and 'if'/'depends on' are propagated to properties,
 including prompts, so these two configurations are logically equivalent:
@@ -225,8 +228,8 @@ including prompts, so these two configurations are logically equivalent:
   endmenu
 
 In this example, A && B && C && D (the prompt condition) needs to be non-n for
-FOO to be visible (assignable). If the value is m, the symbol can only be
-assigned the value m. The visibility sets an upper bound on the value that can
+FOO to be visible (assignable). If its value is m, the symbol can only be
+assigned the value m: The visibility sets an upper bound on the value that can
 be assigned by the user, and any higher user value will be truncated down.
 
 'default' properties are independent of the visibility, though a 'default' will
@@ -259,7 +262,8 @@ character. This eases testing.
 
 In Kconfiglib, the set of (currently) assignable values for a bool/tristate
 symbol appear in Symbol.assignable. For other symbol types, just check if
-sym.visibility is non-0 (non-n).
+sym.visibility is non-0 (non-n) to see whether the user value will have an
+effect.
 
 
 Intro to the menu tree
@@ -278,24 +282,29 @@ menu or Choice, but menu nodes for symbols can sometimes have a non-None 'list'
 pointer too due to submenus created implicitly from dependencies.
 
 MenuNode.item is either a Symbol or a Choice object, or one of the constants
-MENU and COMMENT. The prompt of the menu node (which also holds the text for
-menus and comments) can be found in MenuNode.prompt. For Symbol and Choice,
+MENU and COMMENT. The prompt of the menu node can be found in MenuNode.prompt,
+which also holds the title for menus and comments. For Symbol and Choice,
 MenuNode.help holds the help text (if any, otherwise None).
 
-Note that prompts and help texts for symbols and choices are stored in the menu
-node. This makes it possible to define a symbol in multiple locations with a
-different prompt or help text in each location.
+Most symbols will only have a single menu node. A symbol defined in multiple
+locations will have one menu node for each location. The list of menu nodes for
+a Symbol or Choice can be found in the Symbol/Choice.nodes attribute.
+
+Note that prompts and help texts for symbols and choices are stored in their
+menu node(s) rather than in the Symbol or Choice objects themselves. This makes
+it possible to define a symbol in multiple locations with a different prompt or
+help text in each location. To get the help text or prompt for a symbol with a
+single menu node, do sym.nodes[0].help and sym.nodes[0].prompt, respectively.
+The prompt is a (text, condition) tuple, where condition determines the
+visibility (see 'Intro to expressions' below).
 
 This organization mirrors the C implementation. MenuNode is called
 'struct menu' there, but I thought "menu" was a confusing name.
 
-The list of menu nodes for a Symbol or Choice can be found in the
-Symbol/Choice.nodes attribute.
-
 It is possible to give a Choice a name and define it in multiple locations,
-hence why Choice.nodes is a list. In practice, you're unlikely to ever see a
-choice defined in more than one location. I don't think I've even seen a named
-choice outside of the test suite.
+hence why Choice.nodes is also a list. In practice, you're unlikely to ever see
+a choice defined in more than one location. I don't think I've even seen a
+named choice outside of the test suite.
 
 
 Intro to expressions
