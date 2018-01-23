@@ -1942,6 +1942,7 @@ class Kconfig(object):
                     (target, self._make_and(cond, node.dep)))
 
                 # Modify the dependencies of the selected symbol
+                # Warning: See _warn_select_unsatisfied_deps()
                 target.rev_dep = \
                     self._make_or(target.rev_dep,
                                   self._make_and(node.item,
@@ -2582,6 +2583,9 @@ class Symbol(object):
                 val = max(rev_dep_val, val)
                 self._write_to_conf = True
 
+                if not expr_value(self.direct_dep):
+                    self._warn_select_unsatisfied_deps()
+
             # m is promoted to y for (1) bool symbols and (2) symbols with a
             # weak_rev_dep (from imply) of y
             if val == 1 and \
@@ -2975,6 +2979,74 @@ class Symbol(object):
         if self.kconfig._warn_no_prompt:
             self.kconfig._warn(self.name + " has no prompt, meaning user "
                                "values have no effect on it")
+
+    def _warn_select_unsatisfied_deps(self):
+        """
+        Helper for printing an informative warning when a symbol with
+        unsatisfied direct dependencies (dependencies from 'depends on', ifs,
+        and menus) is selected by some other symbol
+        """
+        def location_str(sym):
+            return "defined at " + \
+                   ", ".join("{}:{}".format(node.filename, node.linenr)
+                             for node in sym.nodes)
+
+        warn_msg = "{} ({}) has unsatisfied direct dependencies ({}), but " \
+                   "is currently being selected by the following symbols:" \
+                   .format(self.name,
+                           location_str(self),
+                           expr_str(self.direct_dep))
+
+        # Returns a warning string if 'select' is actually selecting us, and
+        # the empty string otherwise
+        def check_select(select):
+            # No 'nonlocal' in Python 2. Just return the string to append to
+            # warn_msg instead.
+            select_val = expr_value(select)
+            if not select_val:
+                # Only include selects that are not n
+                return ""
+
+            if isinstance(select, tuple):
+                # (AND, <sym>, <condition>)
+                selecting_sym = select[1]
+            else:
+                # <sym>
+                selecting_sym = select
+
+            msg = "\n{} (value: {}, {}), with direct dependencies {} " \
+                  "(value: {})" \
+                  .format(selecting_sym.name,
+                          selecting_sym.str_value,
+                          location_str(selecting_sym),
+                          expr_str(selecting_sym.direct_dep),
+                          TRI_TO_STR[expr_value(selecting_sym.direct_dep)])
+
+            if isinstance(select, tuple):
+                msg += " and select condition {} (value: {})" \
+                       .format(expr_str(select[2]),
+                               TRI_TO_STR[expr_value(select[2])])
+
+            return msg
+
+        expr = self.rev_dep
+        while 1:
+            # This relies on us using the following format for the select
+            # expression (which is nice in that it preserves the order of the
+            # selecting symbols):
+            #
+            #   (OR, (OR, (OR, <expr 1>, <expr 2>), <expr 3>), <expr 4>)
+            #
+            # We could do fancier expression processing later if needed.
+            if isinstance(expr, tuple) and expr[0] == OR:
+                warn_msg += check_select(expr[2])
+                # Go to the next select
+                expr = expr[1]
+            else:
+                warn_msg += check_select(expr)
+                break
+
+        self.kconfig._warn(warn_msg)
 
 class Choice(object):
     """
