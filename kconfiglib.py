@@ -3684,9 +3684,6 @@ def expr_value(expr):
         # kconfig in 31847b67 (kconfig: allow use of relations other than
         # (in)equality).
 
-        # This mirrors the C tools pretty closely. Perhaps there's a more
-        # pythonic way to structure this.
-
         oper, op1, op2 = expr
 
         # If both operands are strings...
@@ -3694,10 +3691,9 @@ def expr_value(expr):
             # ...then compare them lexicographically
             comp = _strcmp(op1.str_value, op2.str_value)
         else:
-            # Otherwise, try to compare them as numbers...
+            # Otherwise, try to compare them as numbers.
             try:
-                comp = int(op1.str_value, _TYPE_TO_BASE[op1.orig_type]) - \
-                       int(op2.str_value, _TYPE_TO_BASE[op2.orig_type])
+                comp = _sym_to_num(op1) - _sym_to_num(op2)
             except ValueError:
                 # Fall back on a lexicographic comparison if the operands don't
                 # parse as numbers
@@ -3873,6 +3869,17 @@ def _strcmp(s1, s2):
     strcmp()-alike that returns -1, 0, or 1.
     """
     return (s1 > s2) - (s1 < s2)
+
+def _sym_to_num(sym):
+    """
+    expr_value() helper for converting a symbol to a number. Raises ValueError
+    for symbols that can't be converted.
+    """
+    # For BOOL and TRISTATE, n/m/y count as 0/1/2. This mirrors 9059a3493ef
+    # ("kconfig: fix relational operators for bool and tristate symbols") in
+    # the C implementation.
+    return sym.tri_value if sym.orig_type in (BOOL, TRISTATE) else \
+           int(sym.str_value, _TYPE_TO_BASE[sym.orig_type])
 
 def _stderr_msg(msg, filename, linenr):
     if filename is not None:

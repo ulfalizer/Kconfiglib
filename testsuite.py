@@ -418,6 +418,20 @@ def run_selftests():
     verify_eval("INT_37   >  INT_37  ", 0)
     verify_eval("INT_37   <= INT_37  ", 2)
 
+    # Tristate value comparisons
+    verify_eval("n < n", 0)
+    verify_eval("n < m", 2)
+    verify_eval("n < y", 2)
+    verify_eval("n < N", 0)
+    verify_eval("n < M", 2)
+    verify_eval("n < Y", 2)
+    verify_eval("0 > n", 0)
+    verify_eval("1 > n", 2)
+    verify_eval("2 > n", 2)
+    verify_eval("m < n", 0)
+    verify_eval("m < m", 0)
+    verify_eval("m < y", 2)
+
     # Strings compare lexicographically
     verify_eval("'aa' < 'ab'", 2)
     verify_eval("'aa' > 'ab'", 0)
