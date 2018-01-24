@@ -1110,12 +1110,12 @@ class Kconfig(object):
         was set when the configuration was loaded.
         """
         try:
-            return open(filename)
+            return open(filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
             if not os.path.isabs(filename) and self.srctree is not None:
                 filename = os.path.join(self.srctree, filename)
                 try:
-                    return open(filename)
+                    return open(filename, _UNIVERSAL_NEWLINES_MODE)
                 except IOError as e2:
                     # This is needed for Python 3, because e2 is deleted after
                     # the try block:
@@ -4410,3 +4410,31 @@ _REL_TO_STR = {
     LESS_EQUAL:    "<=",
     UNEQUAL:       "!=",
 }
+
+# Enable universal newlines mode on Python 2 to ease interoperability between
+# Linux and Windows. It's already the default on Python 3.
+#
+# The "U" flag would currently work for both Python 2 and 3, but it's
+# deprecated on Python 3, so play it future-safe.
+#
+# A simpler solution would be to use io.open(), which defaults to universal
+# newlines on both Python 2 and 3 (and is an alias for open() on Python 3), but
+# it's appreciably slower on Python 2:
+#
+#   Parsing x86 Kconfigs on Python 2
+#
+#   with open(..., "rU"):
+#
+#     real  0m0.930s
+#     user  0m0.905s
+#     sys   0m0.025s
+#
+#   with io.open():
+#
+#     real  0m1.069s
+#     user  0m1.040s
+#     sys   0m0.029s
+#
+# There's no appreciable performance difference between "r" and "rU" for
+# parsing performance on Python 2.
+_UNIVERSAL_NEWLINES_MODE = "rU" if sys.version_info[0] < 3 else "r"
