@@ -108,7 +108,8 @@ Here are some other features:
   
 - **Windows support**
 
-  Nothing Linux-specific is used.
+  Nothing Linux-specific is used. Universal newlines mode is used for both
+  Python 2 and Python 3.
 
 - **Internals that (mostly) mirror the C implementation**
   
@@ -153,7 +154,7 @@ installed with e.g.
 
     $ pip(3) install kconfiglib --user
 
-All releases have a corresponding tag in the git repository, e.g. ``v2.3.0``.
+All releases have a corresponding tag in the git repository, e.g. ``v2.4.0``.
 `Semantic versioning <http://semver.org/>`_ is used.
 
 Installation for the Linux kernel
