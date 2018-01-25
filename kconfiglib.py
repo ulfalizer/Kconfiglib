@@ -3696,7 +3696,7 @@ def expr_value(expr):
             # ...then compare them lexicographically
             comp = _strcmp(op1.str_value, op2.str_value)
         else:
-            # Otherwise, try to compare them as numbers.
+            # Otherwise, try to compare them as numbers
             try:
                 comp = _sym_to_num(op1) - _sym_to_num(op2)
             except ValueError:
