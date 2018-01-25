@@ -1515,7 +1515,7 @@ class Kconfig(object):
           for files.
 
         parent:
-          The parent menu node, corresponding to menu, Choice, or 'if'. 'if's
+          The parent menu node, corresponding to a menu, Choice, or 'if'. 'if's
           are flattened after parsing.
 
         visible_if_deps:
@@ -2352,8 +2352,8 @@ class Symbol(object):
       The 'depends on' dependencies. If a symbol is defined in multiple
       locations, the dependencies at each location are ORed together.
 
-      Internally, this is only used to implement 'imply', which only applies if
-      the implied symbol has expr_value(self.direct_dep) != 0. 'depends on' and
+      Internally, this is used to implement 'imply', which only applies if the
+      implied symbol has expr_value(self.direct_dep) != 0. 'depends on' and
       parent dependencies are automatically propagated to the conditions of
       properties, so normally it's redundant to check the direct dependencies.
 
