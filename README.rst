@@ -112,7 +112,7 @@ Here are some other features:
   Python 2 and Python 3.
   
   The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib to
-  generate `.config` files and C headers on Linux as well as Windows.
+  generate ``.config`` files and C headers on Linux as well as Windows.
 
 - **Internals that (mostly) mirror the C implementation**
   
