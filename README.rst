@@ -376,6 +376,10 @@ too.
 Notes
 -----
 
+* I sometimes see people add custom output formats, which is pretty straightforward to do (see the implementations of 
+  ``write_autoconf()`` and ``write_config()`` for a template). If you come up with something you think might
+  be useful to other people, I'm happy to take it in upstream. Batteries included and all that.
+
 * Kconfiglib assumes the modules symbol is ``MODULES``, which is backwards-compatible.
   A warning is printed by default if ``option modules`` is set on some other symbol.
   
