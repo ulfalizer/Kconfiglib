@@ -565,10 +565,15 @@ class Kconfig(object):
         # Regular expressions for parsing .config files, with the match()
         # method assigned directly as a small optimization (microscopic in this
         # case, but it's consistent with the other regexes)
-        self._set_re_match = re.compile(r"{}(\w+)=(.*)"
-                                        .format(self.config_prefix)).match
-        self._unset_re_match = re.compile(r"# {}(\w+) is not set"
-                                          .format(self.config_prefix)).match
+
+        self._set_re_match = \
+            re.compile(r"{}([^=]+)=(.*)".format(self.config_prefix),
+                       _RE_ASCII).match
+
+        self._unset_re_match = \
+            re.compile(r"# {}([^ ]+) is not set".format(self.config_prefix),
+                       _RE_ASCII).match
+
 
         self._print_warnings = warn
         self._print_undef_assign = False
@@ -4333,6 +4338,9 @@ _TYPE_TOKENS = frozenset((
     _T_STRING,
 ))
 
+# Use ASCII regex matching on Python 3. It's already the default on Python 2.
+_RE_ASCII = 0 if sys.version_info[0] < 3 else re.ASCII
+
 # Note: This hack is no longer needed as of upstream commit c226456
 # (kconfig: warn of unhandled characters in Kconfig commands). It
 # is kept around for backwards compatibility.
@@ -4350,17 +4358,18 @@ _TYPE_TOKENS = frozenset((
 #
 # As an optimization, this regex fails to match for lines containing just a
 # comment.
-_initial_token_re_match = re.compile(r"[^\w#]*(\w+)\s*").match
+_initial_token_re_match = \
+    re.compile(r"[^A-Za-z0-9_#]*([A-Za-z0-9_]+)\s*", _RE_ASCII).match
 
 # Matches an identifier/keyword, also eating trailing whitespace
-_id_keyword_re_match = re.compile(r"([\w./-]+)\s*").match
+_id_keyword_re_match = re.compile(r"([A-Za-z0-9_/.-]+)\s*", _RE_ASCII).match
 
 # Regular expression for finding $-references to symbols in strings
-_sym_ref_re_search = re.compile(r"\$([A-Za-z0-9_]+)").search
+_sym_ref_re_search = re.compile(r"\$([A-Za-z0-9_]+)", _RE_ASCII).search
 
 # Matches a valid right-hand side for an assignment to a string symbol in a
 # .config file, including escaped characters. Extracts the contents.
-_conf_string_re_match = re.compile(r'"((?:[^\\"]|\\.)*)"').match
+_conf_string_re_match = re.compile(r'"((?:[^\\"]|\\.)*)"', _RE_ASCII).match
 
 # Token to type mapping
 _TOKEN_TO_TYPE = {
