@@ -6,90 +6,18 @@ Overview
 ========
 
 Kconfiglib is a Python 2/3 library for scripting and extracting information
-from Kconfig configuration systems. It can be used for the following, among
-other things:
+from Kconfig (https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt)
+configuration systems.
 
- - Programmatically get and set symbol values
-
-   allnoconfig.py and allyesconfig.py examples are provided, automatically
-   verified to produce identical output to the standard 'make allnoconfig' and
-   'make allyesconfig'.
-
- - Read and write .config files
-
-   The generated .config files are character-for-character identical to what
-   the C implementation would generate (except for the header comment). The
-   test suite relies on this, as it compares the generated files.
-
- - Inspect symbols
-
-   Printing a symbol gives output which could be fed back into a Kconfig parser
-   to redefine it***. The printing function (__str__()) is implemented with
-   public APIs, meaning you can fetch just whatever information you need as
-   well.
-
-   A helpful __repr__() is implemented on all objects too, also implemented
-   with public APIs.
-
-   ***Choice symbols get their parent choice as a dependency, which shows up as
-   e.g. 'prompt "choice symbol" if <choice>' when printing the symbol. This
-   could easily be worked around if 100% reparsable output is needed.
-
- - Inspect expressions
-
-   Expressions use a simple tuple-based format that can be processed manually
-   if needed. Expression printing and evaluation functions are provided,
-   implemented with public APIs.
-
- - Inspect the menu tree
-
-   The underlying menu tree is exposed, including submenus created implicitly
-   from symbols depending on preceding symbols. This can be used e.g. to
-   implement menuconfig-like functionality. See the menuconfig.py example.
-
-
-Here are some other features:
-
- - Single-file implementation
-
-   The entire library is contained in this file.
-
- - Runs unmodified under both Python 2 and Python 3
-
-   The code mostly uses basic Python features and has no third-party
-   dependencies. The most advanced things used are probably @property and
-   __slots__.
-
- - Robust and highly compatible with the standard Kconfig C tools
-
-   The test suite automatically compares output from Kconfiglib and the C tools
-   by diffing the generated .config files for the real kernel Kconfig and
-   defconfig files, for all ARCHes.
-
-   This currently involves comparing the output for 36 ARCHes and 498 defconfig
-   files (or over 18000 ARCH/defconfig combinations in "obsessive" test suite
-   mode). All tests are expected to pass.
-
- - Not horribly slow despite being a pure Python implementation
-
-   The allyesconfig.py example currently runs in about 1.6 seconds on a Core i7
-   2600K (with a warm file cache), where half a second is overhead from 'make
-   scriptconfig' (see below).
-
-   For long-running jobs, PyPy gives a big performance boost. CPython is faster
-   for short-running jobs as PyPy needs some time to warm up.
-
- - Internals that (mostly) mirror the C implementation
-
-   While being simpler to understand.
-
+See the homepage at https://github.com/ulfalizer/Kconfiglib for a longer
+overview.
 
 Using Kconfiglib on the Linux kernel with the Makefile targets
 ==============================================================
 
 For the Linux kernel, a handy interface is provided by the
-scripts/kconfig/Makefile patch. Apply it with either 'git am' or the 'patch'
-utility:
+scripts/kconfig/Makefile patch, which can be applied with either 'git am' or
+the 'patch' utility:
 
   $ wget -qO- https://raw.githubusercontent.com/ulfalizer/Kconfiglib/master/makefile.patch | git am
   $ wget -qO- https://raw.githubusercontent.com/ulfalizer/Kconfiglib/master/makefile.patch | patch -p1
@@ -100,6 +28,9 @@ Please tell me if the patch does not apply. It should be trivial to apply
 manually, as it's just a block of text that needs to be inserted near the other
 *conf: targets in scripts/kconfig/Makefile.
 
+Look further down for a motivation for the Makefile patch and for instructions
+on how you can use Kconfiglib without it.
+
 If you do not wish to install Kconfiglib via pip, the Makefile patch is set up
 so that you can also just clone Kconfiglib into the kernel root:
 
@@ -109,10 +40,8 @@ so that you can also just clone Kconfiglib into the kernel root:
 Warning: The directory name Kconfiglib/ is significant in this case, because
 it's added to PYTHONPATH by the new targets in makefile.patch.
 
-Look further down for a motivation for the Makefile patch and for instructions
-on how you can use Kconfiglib without it.
-
-The Makefile patch adds the following targets:
+The targets added by the Makefile patch are described in the following
+sections.
 
 
 make [ARCH=<arch>] iscriptconfig
@@ -127,9 +56,10 @@ kconf.defined_syms, and explore the MenuNode menu tree starting at
 kconf.top_node by following 'next' and 'list' pointers.
 
 The item contained in a menu node is found in MenuNode.item (note that this can
-be one of the constants MENU and COMMENT), and all symbols and choices have a
-'nodes' attribute containing their menu nodes (usually only one). Printing a
-menu node will print its item, in Kconfig format.
+be one of the constants kconfiglib.MENU and kconfiglib.COMMENT), and all
+symbols and choices have a 'nodes' attribute containing their menu nodes
+(usually only one). Printing a menu node will print its item, in Kconfig
+format.
 
 If you want to look up a symbol by name, use the kconf.syms dictionary.
 
