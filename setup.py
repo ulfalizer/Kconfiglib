@@ -1,30 +1,22 @@
 import os
 import setuptools
 
-here_dir = os.path.dirname(__file__)
-with open(os.path.join(here_dir, "README.rst")) as f:
-    long_description = f.read()
-
 setuptools.setup(
     name="kconfiglib",
-    # MAJOR.MINOR.MAINTENANCE per http://semver.org
+    # MAJOR.MINOR.PATCH, per http://semver.org
     version="2.5.0",
     description="A flexible Python Kconfig parser",
-    long_description=long_description,
+    long_description=
+        open(os.path.join(os.path.dirname(__file__), "README.rst")).read(),
     url="https://github.com/ulfalizer/Kconfiglib",
     author='Ulf "Ulfalizer" Magnusson',
     author_email="ulfalizer@gmail.com",
     keywords="kconfig, kbuild",
     license="ISC",
-    py_modules=["kconfiglib"],
-    # This python_requires should be correct, but my setuptools is too old to
-    # test it, so play it safe and leave it out for now. It's unlikely that
-    # anyone's running ancient Python versions anyway, and the problem should
-    # be obvious.
-    #
-    # 2.7+ for Python 2, 3.1+ for Python 3 (for unnumbered {} with format())
-    # python_requires=">=2.7,!=3.0.*",
-    classifiers=[
+    py_modules=("kconfiglib",),
+    # Needs support for unnumbered {} in format()
+    python_requires=">=2.7,!=3.0.*",
+    classifiers=(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Build Tools",
@@ -33,10 +25,8 @@ setuptools.setup(
         "Operating System :: POSIX",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python :: 2",
-        # Needs support for unnumbered {} in format()
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        # Needs support for unnumbered {} in format()
         "Programming Language :: Python :: 3.1",
         "Programming Language :: Python :: 3.2",
         "Programming Language :: Python :: 3.3",
@@ -44,4 +34,4 @@ setuptools.setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: Implementation :: CPython",
-        "Programming Language :: Python :: Implementation :: PyPy"])
+        "Programming Language :: Python :: Implementation :: PyPy"))
