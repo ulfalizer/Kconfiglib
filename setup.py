@@ -16,6 +16,10 @@ setuptools.setup(
     py_modules=("kconfiglib",),
     # Needs support for unnumbered {} in format()
     python_requires=">=2.7,!=3.0.*",
+    project_urls={
+        "GitHub repository": "https://github.com/ulfalizer/Kconfiglib",
+        "Examples": "https://github.com/ulfalizer/Kconfiglib/tree/master/examples"
+    },
     classifiers=(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
