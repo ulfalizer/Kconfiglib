@@ -4388,14 +4388,11 @@ _TOKEN_TO_TYPE = {
 _NO_CACHED_SELECTION = object()
 
 # Used in comparisons. 0 means the base is inferred from the format of the
-# string. The entries for BOOL and TRISTATE are an implementation convenience:
-# They should never convert to valid numbers.
+# string.
 _TYPE_TO_BASE = {
-    BOOL:     0,
     HEX:      16,
     INT:      10,
     STRING:   0,
-    TRISTATE: 0,
     UNKNOWN:  0,
 }
 
