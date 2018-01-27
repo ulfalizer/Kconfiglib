@@ -1388,6 +1388,18 @@ class Kconfig(object):
         self._tokens_i += 1
         return self._tokens[self._tokens_i]
 
+    def _expect_sym(self):
+        token = self._next_token()
+        if not isinstance(token, Symbol):
+            self._parse_error("expected symbol")
+        return token
+
+    def _expect_str(self):
+        token = self._next_token()
+        if not isinstance(token, str):
+            self._parse_error("expected string")
+        return token
+
     def _peek_token(self):
         return self._tokens[self._tokens_i + 1]
 
@@ -1477,7 +1489,7 @@ class Kconfig(object):
 
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer allocates Symbol objects for us
-                sym = self._next_token()
+                sym = self._expect_sym()
                 self.defined_syms.append(sym)
 
                 node = MenuNode()
@@ -1498,7 +1510,7 @@ class Kconfig(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_SOURCE:
-                self._enter_file(self._expand_syms(self._next_token()))
+                self._enter_file(self._expand_syms(self._expect_str()))
                 prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
@@ -1543,7 +1555,7 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
-                prompt = self._next_token()
+                prompt = self._expect_str()
                 self._parse_properties(node, visible_if_deps)
                 node.prompt = (prompt, node.dep)
 
@@ -1565,7 +1577,7 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
-                prompt = self._next_token()
+                prompt = self._expect_str()
                 self._parse_properties(node, visible_if_deps)
                 node.prompt = (prompt, node.dep)
 
@@ -1607,7 +1619,7 @@ class Kconfig(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_MAINMENU:
-                self.top_node.prompt = (self._next_token(), self.y)
+                self.top_node.prompt = (self._expect_str(), self.y)
                 self.top_node.filename = self._filename
                 self.top_node.linenr = self._linenr
 
@@ -1668,7 +1680,7 @@ class Kconfig(object):
                 node.item.orig_type = _TOKEN_TO_TYPE[t0]
 
                 if self._peek_token() is not None:
-                    prompt = (self._next_token(), self._parse_cond())
+                    prompt = (self._expect_str(), self._parse_cond())
 
             elif t0 == _T_DEPENDS:
                 if not self._check_token(_T_ON):
@@ -1728,13 +1740,13 @@ class Kconfig(object):
                 if not isinstance(node.item, Symbol):
                     self._parse_error("only symbols can select")
 
-                selects.append((self._next_token(), self._parse_cond()))
+                selects.append((self._expect_sym(), self._parse_cond()))
 
             elif t0 == _T_IMPLY:
                 if not isinstance(node.item, Symbol):
                     self._parse_error("only symbols can imply")
 
-                implies.append((self._next_token(), self._parse_cond()))
+                implies.append((self._expect_sym(), self._parse_cond()))
 
             elif t0 == _T_DEFAULT:
                 defaults.append((self._parse_expr(False), self._parse_cond()))
@@ -1747,11 +1759,11 @@ class Kconfig(object):
                 # 'prompt' properties override each other within a single
                 # definition of a symbol, but additional prompts can be added
                 # by defining the symbol multiple times
-                prompt = (self._next_token(), self._parse_cond())
+                prompt = (self._expect_str(), self._parse_cond())
 
             elif t0 == _T_RANGE:
-                ranges.append((self._next_token(),
-                               self._next_token(),
+                ranges.append((self._expect_sym(),
+                               self._expect_sym(),
                                self._parse_cond()))
 
             elif t0 == _T_OPTION:
@@ -1759,7 +1771,7 @@ class Kconfig(object):
                     if not self._check_token(_T_EQUAL):
                         self._parse_error("expected '=' after 'env'")
 
-                    env_var = self._next_token()
+                    env_var = self._expect_str()
                     node.item.env_var = env_var
 
                     if env_var not in os.environ:
@@ -1968,7 +1980,7 @@ class Kconfig(object):
 
             # Relation
             return (_TOKEN_TO_REL[self._next_token()], token,
-                    self._next_token())
+                    self._expect_sym())
 
         if token == _T_NOT:
             return (NOT, self._parse_factor(transform_m))
