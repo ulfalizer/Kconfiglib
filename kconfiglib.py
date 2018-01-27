@@ -1391,20 +1391,55 @@ class Kconfig(object):
         self._tokens_i += 1
         return self._tokens[self._tokens_i]
 
+    def _peek_token(self):
+        return self._tokens[self._tokens_i + 1]
+
+    # The functions below are just _next_token() with extra syntax checking.
+    # Inlining _next_token() and _peek_token() into them saves a few % of
+    # parsing time.
+
     def _expect_sym(self):
-        token = self._next_token()
+        self._tokens_i += 1
+        token = self._tokens[self._tokens_i]
+
         if not isinstance(token, Symbol):
             self._parse_error("expected symbol")
+
+        return token
+
+    def _expect_sym_and_eol(self):
+        self._tokens_i += 1
+        token = self._tokens[self._tokens_i]
+
+        if not isinstance(token, Symbol):
+            self._parse_error("expected symbol")
+
+        if self._tokens[self._tokens_i + 1] is not None:
+            self._parse_error("extra tokens at end of line")
+
         return token
 
     def _expect_str(self):
-        token = self._next_token()
+        self._tokens_i += 1
+        token = self._tokens[self._tokens_i]
+
         if not isinstance(token, str):
             self._parse_error("expected string")
+
         return token
 
-    def _peek_token(self):
-        return self._tokens[self._tokens_i + 1]
+    def _expect_str_and_eol(self):
+        self._tokens_i += 1
+        token = self._tokens[self._tokens_i]
+
+        if not isinstance(token, str):
+            self._parse_error("expected string")
+
+        if self._tokens[self._tokens_i + 1] is not None:
+            self._parse_error("extra tokens at end of line")
+
+        return token
+
 
     def _check_token(self, token):
         """
@@ -1492,7 +1527,7 @@ class Kconfig(object):
 
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer allocates Symbol objects for us
-                sym = self._expect_sym()
+                sym = self._expect_sym_and_eol()
                 self.defined_syms.append(sym)
 
                 node = MenuNode()
@@ -1513,7 +1548,7 @@ class Kconfig(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_SOURCE:
-                self._enter_file(self._expand_syms(self._expect_str()))
+                self._enter_file(self._expand_syms(self._expect_str_and_eol()))
                 prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
@@ -1558,7 +1593,7 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
-                prompt = self._expect_str()
+                prompt = self._expect_str_and_eol()
                 self._parse_properties(node, visible_if_deps)
                 node.prompt = (prompt, node.dep)
 
@@ -1580,7 +1615,7 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
-                prompt = self._expect_str()
+                prompt = self._expect_str_and_eol()
                 self._parse_properties(node, visible_if_deps)
                 node.prompt = (prompt, node.dep)
 
@@ -1622,7 +1657,7 @@ class Kconfig(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_MAINMENU:
-                self.top_node.prompt = (self._expect_str(), self.y)
+                self.top_node.prompt = (self._expect_str_and_eol(), self.y)
                 self.top_node.filename = self._filename
                 self.top_node.linenr = self._linenr
 
@@ -1643,7 +1678,10 @@ class Kconfig(object):
         Parses an optional 'if <expr>' construct and returns the parsed <expr>,
         or self.y if the next token is not _T_IF
         """
-        return self._parse_expr(True) if self._check_token(_T_IF) else self.y
+        expr = self._parse_expr(True) if self._check_token(_T_IF) else self.y
+        if self._peek_token() is not None:
+            self._parse_error("extra tokens at end of line")
+        return expr
 
     def _parse_properties(self, node, visible_if_deps):
         """
@@ -1770,7 +1808,7 @@ class Kconfig(object):
                     if not self._check_token(_T_EQUAL):
                         self._parse_error('expected "=" after "env"')
 
-                    env_var = self._expect_str()
+                    env_var = self._expect_str_and_eol()
                     node.item.env_var = env_var
 
                     if env_var not in os.environ:
