@@ -1768,7 +1768,7 @@ class Kconfig(object):
             elif t0 == _T_OPTION:
                 if self._check_token(_T_ENV):
                     if not self._check_token(_T_EQUAL):
-                        self._parse_error("expected '=' after 'env'")
+                        self._parse_error('expected "=" after "env"')
 
                     env_var = self._expect_str()
                     node.item.env_var = env_var
