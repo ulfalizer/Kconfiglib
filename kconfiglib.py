@@ -1114,21 +1114,24 @@ class Kconfig(object):
         Fetches and tokenizes the next line from the current Kconfig file.
         Returns False at EOF and True otherwise.
         """
-        # This provides a single line of "unget" after help texts
+        # _saved_line provides a single line of "unget", currently only used
+        # for help texts.
+        #
+        # This also works as expected if _saved_line is "", indicating EOF:
+        # "" is falsy, and readline() returns "" over and over at EOF.
         if self._saved_line:
             self._line = self._saved_line
             self._saved_line = None
         else:
             self._line = self._file.readline()
+            if not self._line:
+                return False
             self._linenr += 1
 
         # Handle line joining
         while self._line.endswith("\\\n"):
             self._line = self._line[:-2] + self._file.readline()
             self._linenr += 1
-
-        if not self._line:
-            return False
 
         self._tokenize()
         return True
@@ -1730,10 +1733,6 @@ class Kconfig(object):
                     add_help_line(_dedent_rstrip(line, indent))
 
                 node.help = "\n".join(help_lines).rstrip() + "\n"
-
-                if not line:
-                    break
-
                 self._saved_line = line  # "Unget" the line
 
             elif t0 == _T_SELECT:
