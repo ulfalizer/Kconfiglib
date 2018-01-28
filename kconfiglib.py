@@ -1729,7 +1729,15 @@ class Kconfig(object):
                 continue
 
             if t0 in _TYPE_TOKENS:
-                node.item.orig_type = _TOKEN_TO_TYPE[t0]
+                new_type = _TOKEN_TO_TYPE[t0]
+
+                if node.item.orig_type != UNKNOWN and \
+                   node.item.orig_type != new_type:
+                    self._warn("{} defined with multiple types, {} will be used"
+                               .format(_name_and_loc_str(node.item),
+                                       TYPE_TO_STR[new_type]))
+
+                node.item.orig_type = new_type
 
                 if self._peek_token() is not None:
                     prompt = (self._expect_str(), self._parse_cond())
@@ -1807,7 +1815,16 @@ class Kconfig(object):
                 defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
-                node.item.orig_type = _TOKEN_TO_TYPE[t0]
+                new_type = _TOKEN_TO_TYPE[t0]
+
+                if node.item.orig_type != UNKNOWN and \
+                   node.item.orig_type != new_type:
+                    self._warn("{} defined with multiple types, {} will be used"
+                               .format(_name_and_loc_str(node.item),
+                                       TYPE_TO_STR[new_type]))
+
+                node.item.orig_type = new_type
+
                 defaults.append((self._parse_expr(False), self._parse_cond()))
 
             elif t0 == _T_PROMPT:
