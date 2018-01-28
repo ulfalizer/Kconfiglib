@@ -4024,23 +4024,6 @@ def _has_auto_menu_dep(node1, node2):
     # If we have no prompt, use the menu node dependencies instead
     return _expr_depends_on(node2.dep, node1.item)
 
-def _check_auto_menu(node):
-    """
-    Looks for menu nodes after 'node' that depend on it. Creates an implicit
-    menu rooted at 'node' with the nodes as the children if such nodes are
-    found. The recursive call to _finalize_tree() makes this work recursively.
-    """
-    cur = node
-    while cur.next and _has_auto_menu_dep(node, cur.next):
-        _finalize_tree(cur.next)
-        cur = cur.next
-        cur.parent = node
-
-    if cur is not node:
-        node.list = node.next
-        node.next = cur.next
-        cur.next = None
-
 def _flatten(node):
     """
     "Flattens" menu nodes without prompts (e.g. 'if' nodes and non-visible
@@ -4118,26 +4101,37 @@ def _finalize_tree(node):
     menu_finalize() from the C implementation, though we propagate dependencies
     during parsing instead.
     """
-    # The ordering here gets a bit tricky. It's important to do things in this
-    # order to have everything work out correctly.
-
     if node.list:
-        # The menu node has children. Finalize them.
+        # The menu node is a choice, menu, or if. Finalize each child in it.
         cur = node.list
         while cur:
             _finalize_tree(cur)
-            # Note: _finalize_tree() might have changed cur.next. This is
-            # expected, so that we jump over e.g. implicitly created submenus.
             cur = cur.next
 
-    elif node.item is not None:
-        # The menu node has no children (yet). See if we can create an implicit
-        # menu rooted at it (due to menu nodes after it depending on it).
-        _check_auto_menu(node)
+    elif isinstance(node.item, Symbol):
+        # The menu node is a symbol. See if we can create an implicit menu
+        # rooted at it and finalize each child in that menu if so, like for the
+        # choice/menu/if case above.
+        cur = node
+        while cur.next and _has_auto_menu_dep(node, cur.next):
+            # This also makes implicit submenu creation work recursively, with
+            # implicit menus inside implicit menus
+            _finalize_tree(cur.next)
+            cur = cur.next
+            cur.parent = node
+
+        if cur is not node:
+            # Found symbols that should go in an implicit submenu. Tilt them up
+            # above us.
+            node.list = node.next
+            node.next = cur.next
+            cur.next = None
+
 
     if node.list:
-        # We have a node with finalized children. Do final steps to finalize
-        # this node.
+        # We have a node with child nodes where the child nodes are now
+        # individually finalized. Do final steps to finalize this "level" in
+        # the menu tree.
         _flatten(node.list)
         _remove_ifs(node)
 
