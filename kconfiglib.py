@@ -1397,6 +1397,8 @@ class Kconfig(object):
     # The functions below are just _next_token() with extra syntax checking.
     # Inlining _next_token() and _peek_token() into them saves a few % of
     # parsing time.
+    #
+    # See the 'Intro to expressions' section for what a constant symbol is.
 
     def _expect_sym(self):
         self._tokens_i += 1
@@ -1407,12 +1409,21 @@ class Kconfig(object):
 
         return token
 
-    def _expect_sym_and_eol(self):
+    def _expect_nonconst_sym(self):
         self._tokens_i += 1
         token = self._tokens[self._tokens_i]
 
-        if not isinstance(token, Symbol):
-            self._parse_error("expected symbol")
+        if not isinstance(token, Symbol) or token.is_constant:
+            self._parse_error("expected nonconstant symbol")
+
+        return token
+
+    def _expect_nonconst_sym_and_eol(self):
+        self._tokens_i += 1
+        token = self._tokens[self._tokens_i]
+
+        if not isinstance(token, Symbol) or token.is_constant:
+            self._parse_error("expected nonconstant symbol")
 
         if self._tokens[self._tokens_i + 1] is not None:
             self._parse_error("extra tokens at end of line")
@@ -1527,7 +1538,7 @@ class Kconfig(object):
 
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer allocates Symbol objects for us
-                sym = self._expect_sym_and_eol()
+                sym = self._expect_nonconst_sym_and_eol()
                 self.defined_syms.append(sym)
 
                 node = MenuNode()
@@ -1777,13 +1788,15 @@ class Kconfig(object):
                 if not isinstance(node.item, Symbol):
                     self._parse_error("only symbols can select")
 
-                selects.append((self._expect_sym(), self._parse_cond()))
+                selects.append((self._expect_nonconst_sym(),
+                                self._parse_cond()))
 
             elif t0 == _T_IMPLY:
                 if not isinstance(node.item, Symbol):
                     self._parse_error("only symbols can imply")
 
-                implies.append((self._expect_sym(), self._parse_cond()))
+                implies.append((self._expect_nonconst_sym(),
+                                self._parse_cond()))
 
             elif t0 == _T_DEFAULT:
                 defaults.append((self._parse_expr(False), self._parse_cond()))

@@ -1694,13 +1694,6 @@ g
     verify_is_normal_choice_symbol("WS9")
 
 
-    print("Testing compatibility with weird selects/implies")
-
-    # Check that Kconfiglib doesn't crash for stuff like 'select n' (seen in
-    # U-Boot). These probably originate from misunderstandings of how Kconfig
-    # works.
-    Kconfig("Kconfiglib/tests/Kwtf")
-
     print("\nAll selftests passed\n" if all_passed else
           "\nSome selftests failed\n")
 
