@@ -4151,7 +4151,7 @@ def _finalize_tree(node):
             node.next = cur.next
             cur.next = None
 
-        _check_sanity(node.item)
+        _check_sym_sanity(node.item)
 
 
     if node.list:
@@ -4164,46 +4164,55 @@ def _finalize_tree(node):
     # Empty choices (node.list None) are possible, so this needs to go outside
     if isinstance(node.item, Choice):
         _finalize_choice(node)
-        _check_sanity(node.item)
+        _check_choice_sanity(node.item)
 
-def _check_sanity(sc):
-    """
-    Generates warnings or errors for bad things that are easiest to check after
-    parsing.
-
-    sc: Symbol or Choice
-    """
-    if sc.orig_type in (STRING, INT, HEX):
-        for sym, _ in sc.defaults:
-            if not isinstance(sym, Symbol) or \
-               (sc.orig_type in (INT, HEX) and
-                (sym.is_constant or not sym.nodes) and
-                not _is_base_n(sym.str_value, _TYPE_TO_BASE[sc.orig_type])):
+def _check_sym_sanity(sym):
+    if sym.orig_type in (STRING, INT, HEX):
+        for default, _ in sym.defaults:
+            # For constant defaults of int/hex symbols, check that the value is
+            # valid. Not much we can do for nonconstant defaults.
+            #
+            # A constant default is either a constant (quoted) symbol or an
+            # undefined symbol, which will get its name as its value.
+            if not isinstance(default, Symbol) or \
+               (sym.orig_type in (INT, HEX) and
+                (default.is_constant or not default.nodes) and
+                not _is_base_n(default.str_value,
+                               _TYPE_TO_BASE[sym.orig_type])):
 
                 raise KconfigSyntaxError(
                     "the {} symbol {} has a malformed default {}"
-                    .format(TYPE_TO_STR[sc.orig_type],
-                            _name_and_loc_str(sc),
-                            expr_str(sym)))
+                    .format(TYPE_TO_STR[sym.orig_type],
+                            _name_and_loc_str(sym),
+                            expr_str(default)))
 
-    elif sc.orig_type == UNKNOWN:
-        sc.kconfig._warn("{} defined without a type"
-                         .format(_name_and_loc_str(sc)))
+    elif sym.orig_type == UNKNOWN:
+        sym.kconfig._warn("{} defined without a type"
+                          .format(_name_and_loc_str(sym)))
 
-    if isinstance(sc, Choice):
-        for node in sc.nodes:
-            if node.prompt:
-                break
-        else:
-            sc.kconfig._warn("{} defined without a prompt"
-                             .format(_name_and_loc_str(sc)))
+def _check_choice_sanity(choice):
+   if choice.orig_type == UNKNOWN:
+       choice.kconfig._warn("{} defined without a type"
+                            .format(_name_and_loc_str(choice)))
 
-        for sym, _ in sc.defaults:
-            if sym.choice is not sc:
-                sc.kconfig._warn("the default selection {} of {} is not "
-                                 "contained in the choice"
-                                 .format(_name_and_loc_str(sym),
-                                         _name_and_loc_str(sc)))
+   for node in choice.nodes:
+       if node.prompt:
+           break
+   else:
+       choice.kconfig._warn("{} defined without a prompt"
+                            .format(_name_and_loc_str(choice)))
+
+   for default, _ in choice.defaults:
+       if not isinstance(default, Symbol):
+           raise KconfigSyntaxError(
+               "{} has a malformed default {}"
+               .format(_name_and_loc_str(choice), expr_str(default)))
+
+       if default.choice is not choice:
+           choice.kconfig._warn("the default selection {} of {} is not "
+                                "contained in the choice"
+                                .format(_name_and_loc_str(default),
+                                        _name_and_loc_str(choice)))
 
 #
 # Public global constants
