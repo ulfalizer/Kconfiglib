@@ -701,7 +701,7 @@ class Kconfig(object):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
                                        .format(val, TYPE_TO_STR[sym.orig_type],
-                                               sym.name))
+                                               sym._name_and_loc_str()))
                             continue
 
                         # We represent tristate values as 0, 1, 2
@@ -726,7 +726,7 @@ class Kconfig(object):
                         if not string_match:
                             self._warn("Malformed string literal in "
                                        "assignment to {}. Assignment ignored."
-                                       .format(sym.name),
+                                       .format(sym._name_and_loc_str()),
                                        filename, linenr)
                             continue
 
@@ -761,7 +761,7 @@ class Kconfig(object):
                         display_user_val = sym.user_value
 
                     warn_msg = '{} set more than once. Old value: "{}", new value: "{}".'.format(
-                        name, display_user_val, display_val
+                        sym._name_and_loc_str(), display_user_val, display_val
                     )
 
                     if display_user_val == display_val:
@@ -2704,13 +2704,15 @@ class Symbol(object):
                                             and int(value, 16) >= 0)):
 
             # Display tristate values as n, m, y in the warning
-            warning = "the value {} is invalid for {}, which has type {}" \
+            warning = "the value {} is invalid for {}, which has type {}. " \
+                      "Assignment ignored." \
                       .format(TRI_TO_STR[value] if value in (0, 1, 2) else
                                  "'{}'".format(value),
-                              self.name, TYPE_TO_STR[self.orig_type])
+                              self._name_and_loc_str(),
+                              TYPE_TO_STR[self.orig_type])
 
             if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):
-                warning += ' (pass 0, 1, 2 for n, m, y, respectively)'
+                warning += " Pass 0, 1, 2 for n, m, y, respectively."
 
             self.kconfig._warn(warning)
 
@@ -2719,7 +2721,7 @@ class Symbol(object):
         if self.env_var is not None:
             self.kconfig._warn("ignored attempt to assign user value to "
                                "{}, which gets its value from the environment"
-                               .format(self.name))
+                               .format(self._name_and_loc_str()))
             return False
 
         if self.choice and value == 2:
@@ -2974,8 +2976,8 @@ class Symbol(object):
                 return
 
         if self.kconfig._warn_no_prompt:
-            self.kconfig._warn(self.name + " has no prompt, meaning user "
-                               "values have no effect on it")
+            self.kconfig._warn(self._name_and_loc_str() + " has no prompt, "
+                               "meaning user values have no effect on it")
 
     def _warn_select_unsatisfied_deps(self):
         """
@@ -2983,15 +2985,9 @@ class Symbol(object):
         unsatisfied direct dependencies (dependencies from 'depends on', ifs,
         and menus) is selected by some other symbol
         """
-        def location_str(sym):
-            return "defined at " + \
-                   ", ".join("{}:{}".format(node.filename, node.linenr)
-                             for node in sym.nodes)
-
-        warn_msg = "{} ({}) has unsatisfied direct dependencies ({}), but " \
-                   "is currently being selected by the following symbols:" \
-                   .format(self.name,
-                           location_str(self),
+        warn_msg = "{} has unsatisfied direct dependencies ({}), but is " \
+                   "currently being selected by the following symbols:" \
+                   .format(self._name_and_loc_str(),
                            expr_str(self.direct_dep))
 
         # Returns a warning string if 'select' is actually selecting us, and
@@ -3011,16 +3007,15 @@ class Symbol(object):
                 # <sym>
                 selecting_sym = select
 
-            msg = "\n{} (value: {}, {}), with direct dependencies {} " \
+            msg = "\n{}, with value {}, direct dependencies {} " \
                   "(value: {})" \
-                  .format(selecting_sym.name,
+                  .format(selecting_sym._name_and_loc_str(),
                           selecting_sym.str_value,
-                          location_str(selecting_sym),
                           expr_str(selecting_sym.direct_dep),
                           TRI_TO_STR[expr_value(selecting_sym.direct_dep)])
 
             if isinstance(select, tuple):
-                msg += " and select condition {} (value: {})" \
+                msg += ", and select condition {} (value: {})" \
                        .format(expr_str(select[2]),
                                TRI_TO_STR[expr_value(select[2])])
 
@@ -3044,6 +3039,18 @@ class Symbol(object):
                 break
 
         self.kconfig._warn(warn_msg)
+
+    def _name_and_loc_str(self):
+        """
+        Helper for giving the symbol name and location(s) in e.g. warnings
+        """
+        if not self.nodes:
+            return self.name + " (undefined)"
+
+        return "{} (defined at {})".format(
+            self.name,
+            ", ".join("{}:{}".format(node.filename, node.linenr)
+                      for node in self.nodes))
 
 class Choice(object):
     """
