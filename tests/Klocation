@@ -2,8 +2,10 @@ if UNDEFINED
 endif
 
 config SINGLE_DEF
+    bool
 
 config MULTI_DEF
+    bool
 
 # Throw in some line continuations too to make sure it doesn't mess up the line
 # numbers

@@ -801,19 +801,19 @@ g
     verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
 
     verify_locations(c.syms["MULTI_DEF"].nodes,
-      "tests/Klocation:6",
-      "tests/Klocation:29",
+      "tests/Klocation:7",
+      "tests/Klocation:31",
       "tests/Klocation_included:3",
-      "tests/Klocation:45")
+      "tests/Klocation:47")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_included:5")
 
     verify_locations([c.syms["MENU_HOOK"].nodes[0].next],
-                     "tests/Klocation_included:10")
+                     "tests/Klocation_included:12")
 
     verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
-                     "tests/Klocation_included:15")
+                     "tests/Klocation_included:18")
 
     # Test recursive 'source' detection
 
@@ -1520,7 +1520,11 @@ g
 
     print("Testing choice semantics")
 
-    c = Kconfig("Kconfiglib/tests/Kchoice")
+    # Would warn for choice value symbols defined without a type, even
+    # though the type is automatically derived. This is probably more
+    # helpful than ignoring those cases, as this feature isn't used
+    # deliberately anywhere from what I've seen.
+    c = Kconfig("Kconfiglib/tests/Kchoice", warn=False)
 
     for name in "BOOL", "BOOL_OPT", "BOOL_M", "DEFAULTS":
         verify(c.named_choices[name].orig_type == BOOL,

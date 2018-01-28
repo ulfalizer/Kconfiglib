@@ -701,7 +701,7 @@ class Kconfig(object):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
                                        .format(val, TYPE_TO_STR[sym.orig_type],
-                                               sym._name_and_loc_str()))
+                                               _name_and_loc_str(sym)))
                             continue
 
                         # We represent tristate values as 0, 1, 2
@@ -726,7 +726,7 @@ class Kconfig(object):
                         if not string_match:
                             self._warn("Malformed string literal in "
                                        "assignment to {}. Assignment ignored."
-                                       .format(sym._name_and_loc_str()),
+                                       .format(_name_and_loc_str(sym)),
                                        filename, linenr)
                             continue
 
@@ -761,7 +761,7 @@ class Kconfig(object):
                         display_user_val = sym.user_value
 
                     warn_msg = '{} set more than once. Old value: "{}", new value: "{}".'.format(
-                        sym._name_and_loc_str(), display_user_val, display_val
+                        _name_and_loc_str(sym), display_user_val, display_val
                     )
 
                     if display_user_val == display_val:
@@ -2708,7 +2708,7 @@ class Symbol(object):
                       "Assignment ignored." \
                       .format(TRI_TO_STR[value] if value in (0, 1, 2) else
                                  "'{}'".format(value),
-                              self._name_and_loc_str(),
+                              _name_and_loc_str(self),
                               TYPE_TO_STR[self.orig_type])
 
             if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):
@@ -2721,7 +2721,7 @@ class Symbol(object):
         if self.env_var is not None:
             self.kconfig._warn("ignored attempt to assign user value to "
                                "{}, which gets its value from the environment"
-                               .format(self._name_and_loc_str()))
+                               .format(_name_and_loc_str(self)))
             return False
 
         if self.choice and value == 2:
@@ -2976,7 +2976,7 @@ class Symbol(object):
                 return
 
         if self.kconfig._warn_no_prompt:
-            self.kconfig._warn(self._name_and_loc_str() + " has no prompt, "
+            self.kconfig._warn(_name_and_loc_str(self) + " has no prompt, "
                                "meaning user values have no effect on it")
 
     def _warn_select_unsatisfied_deps(self):
@@ -2987,7 +2987,7 @@ class Symbol(object):
         """
         warn_msg = "{} has unsatisfied direct dependencies ({}), but is " \
                    "currently being selected by the following symbols:" \
-                   .format(self._name_and_loc_str(),
+                   .format(_name_and_loc_str(self),
                            expr_str(self.direct_dep))
 
         # Returns a warning string if 'select' is actually selecting us, and
@@ -3009,7 +3009,7 @@ class Symbol(object):
 
             msg = "\n{}, with value {}, direct dependencies {} " \
                   "(value: {})" \
-                  .format(selecting_sym._name_and_loc_str(),
+                  .format(_name_and_loc_str(selecting_sym),
                           selecting_sym.str_value,
                           expr_str(selecting_sym.direct_dep),
                           TRI_TO_STR[expr_value(selecting_sym.direct_dep)])
@@ -3039,18 +3039,6 @@ class Symbol(object):
                 break
 
         self.kconfig._warn(warn_msg)
-
-    def _name_and_loc_str(self):
-        """
-        Helper for giving the symbol name and location(s) in e.g. warnings
-        """
-        if not self.nodes:
-            return self.name + " (undefined)"
-
-        return "{} (defined at {})".format(
-            self.name,
-            ", ".join("{}:{}".format(node.filename, node.linenr)
-                      for node in self.nodes))
 
 class Choice(object):
     """
@@ -3999,6 +3987,22 @@ def _sym_choice_str(sc):
 
     return "\n".join(lines) + "\n"
 
+def _name_and_loc_str(sc):
+    """
+    Helper for giving the symbol/choice name and location(s) in e.g.
+    warnings
+    """
+    name = sc.name or "<choice>"
+
+    if not sc.nodes:
+        return name + " (undefined)"
+
+    return "{} (defined at {})".format(
+        name,
+        ", ".join("{}:{}".format(node.filename, node.linenr)
+                  for node in sc.nodes))
+
+
 # Menu manipulation
 
 def _expr_depends_on(expr, sym):
@@ -4147,6 +4151,8 @@ def _finalize_tree(node):
             node.next = cur.next
             cur.next = None
 
+        _check_sanity(node.item)
+
 
     if node.list:
         # We have a node with child nodes where the child nodes are now
@@ -4158,6 +4164,32 @@ def _finalize_tree(node):
     # Empty choices (node.list None) are possible, so this needs to go outside
     if isinstance(node.item, Choice):
         _finalize_choice(node)
+        _check_sanity(node.item)
+
+def _check_sanity(sc):
+    """
+    Prints warnings for bad things that are easiest to check after parsing
+
+    sc: Symbol or Choice
+    """
+    if sc.type == UNKNOWN:
+        sc.kconfig._warn("{} defined without a type"
+                         .format(_name_and_loc_str(sc)))
+
+    if isinstance(sc, Choice):
+        for node in sc.nodes:
+            if node.prompt:
+                break
+        else:
+            sc.kconfig._warn("{} defined without a prompt"
+                             .format(_name_and_loc_str(sc)))
+
+        for sym, _ in sc.defaults:
+            if sym.choice is not sc:
+                sc.kconfig._warn("the default selection {} of {} is not "
+                                 "contained in the choice"
+                                 .format(_name_and_loc_str(sym),
+                                         _name_and_loc_str(sc)))
 
 #
 # Public global constants

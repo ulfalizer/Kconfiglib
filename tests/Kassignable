@@ -9,6 +9,7 @@ if UNDEFINED && "const"
 endif
 
 config NO_PROMPT
+	bool
 
 config STRING
 	string "string"

@@ -2,6 +2,7 @@
 # Should produce None due to the "depends on n"
 
 config FOO
+    string
     option env="BAR"
 
 config A
