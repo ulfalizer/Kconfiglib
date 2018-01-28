@@ -4168,11 +4168,25 @@ def _finalize_tree(node):
 
 def _check_sanity(sc):
     """
-    Prints warnings for bad things that are easiest to check after parsing
+    Generates warnings or errors for bad things that are easiest to check after
+    parsing.
 
     sc: Symbol or Choice
     """
-    if sc.type == UNKNOWN:
+    if sc.orig_type in (STRING, INT, HEX):
+        for sym, _ in sc.defaults:
+            if not isinstance(sym, Symbol) or \
+               (sc.orig_type in (INT, HEX) and
+                (sym.is_constant or not sym.nodes) and
+                not _is_base_n(sym.str_value, _TYPE_TO_BASE[sc.orig_type])):
+
+                raise KconfigSyntaxError(
+                    "the {} symbol {} has a malformed default {}"
+                    .format(TYPE_TO_STR[sc.orig_type],
+                            _name_and_loc_str(sc),
+                            expr_str(sym)))
+
+    elif sc.orig_type == UNKNOWN:
         sc.kconfig._warn("{} defined without a type"
                          .format(_name_and_loc_str(sc)))
 
