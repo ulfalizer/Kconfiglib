@@ -4190,10 +4190,11 @@ def _check_sym_sanity(sym):
             # valid. Not much we can do for nonconstant defaults.
             #
             # A constant default is either a constant (quoted) symbol or an
-            # undefined symbol, which will get its name as its value.
+            # undefined symbol, which will get its name as its value. Both have
+            # an empty 'nodes' attribute.
             if not isinstance(default, Symbol) or \
                (sym.orig_type in (INT, HEX) and
-                (default.is_constant or not default.nodes) and
+                not default.nodes and
                 not _is_base_n(default.str_value,
                                _TYPE_TO_BASE[sym.orig_type])):
 
