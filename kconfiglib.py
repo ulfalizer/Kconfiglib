@@ -4172,6 +4172,18 @@ def _finalize_tree(node):
         _check_choice_sanity(node.item)
 
 def _check_sym_sanity(sym):
+    """
+    Checks various symbol properties that are handiest to check after parsing.
+    Only generates errors and warnings.
+    """
+    if sym.ranges and sym.orig_type not in (INT, HEX):
+        sym.kconfig._warn(
+            "the {} symbol {} has ranges, but is not int or hex"
+            .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
+
+    _check_select_imply_sanity(sym, sym.selects, "selects")
+    _check_select_imply_sanity(sym, sym.implies, "implies")
+
     if sym.orig_type in (STRING, INT, HEX):
         for default, _ in sym.defaults:
             # For constant defaults of int/hex symbols, check that the value is
@@ -4195,7 +4207,32 @@ def _check_sym_sanity(sym):
         sym.kconfig._warn("{} defined without a type"
                           .format(_name_and_loc_str(sym)))
 
+def _check_select_imply_sanity(sym, selects_or_implies, type_str):
+    """
+    _check_sym_sanity() helper for checking selects and implies
+    """
+    if selects_or_implies:
+        if sym.orig_type not in (BOOL, TRISTATE):
+            sym.kconfig._warn(
+                "the {} symbol {} uses {}, but is not bool or tristate"
+                .format(TYPE_TO_STR[sym.orig_type],
+                        _name_and_loc_str(sym),
+                        type_str))
+
+        for target_sym, _ in selects_or_implies:
+            if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                sym.kconfig._warn("{} {} the {} symbol {}, which is not bool "
+                                  "or tristate"
+                                  .format(_name_and_loc_str(sym),
+                                          type_str,
+                                          TYPE_TO_STR[target_sym.orig_type],
+                                          _name_and_loc_str(target_sym)))
+
 def _check_choice_sanity(choice):
+    """
+    Checks various choice properties that are handiest to check after parsing.
+    Only generates errors and warnings.
+    """
     if choice.orig_type not in (BOOL, TRISTATE):
         choice.kconfig._warn("{} defined with type {}"
                              .format(_name_and_loc_str(choice),
