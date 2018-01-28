@@ -4191,28 +4191,38 @@ def _check_sym_sanity(sym):
                           .format(_name_and_loc_str(sym)))
 
 def _check_choice_sanity(choice):
-   if choice.orig_type == UNKNOWN:
-       choice.kconfig._warn("{} defined without a type"
-                            .format(_name_and_loc_str(choice)))
+    if choice.orig_type not in (BOOL, TRISTATE):
+        choice.kconfig._warn("{} defined with type {}"
+                             .format(_name_and_loc_str(choice),
+                                     TYPE_TO_STR[choice.orig_type]))
 
-   for node in choice.nodes:
-       if node.prompt:
-           break
-   else:
-       choice.kconfig._warn("{} defined without a prompt"
-                            .format(_name_and_loc_str(choice)))
+    for node in choice.nodes:
+        if node.prompt:
+            break
+    else:
+        choice.kconfig._warn("{} defined without a prompt"
+                             .format(_name_and_loc_str(choice)))
 
-   for default, _ in choice.defaults:
-       if not isinstance(default, Symbol):
-           raise KconfigSyntaxError(
-               "{} has a malformed default {}"
-               .format(_name_and_loc_str(choice), expr_str(default)))
+    for default, _ in choice.defaults:
+        if not isinstance(default, Symbol):
+            raise KconfigSyntaxError(
+                "{} has a malformed default {}"
+                .format(_name_and_loc_str(choice), expr_str(default)))
 
-       if default.choice is not choice:
-           choice.kconfig._warn("the default selection {} of {} is not "
-                                "contained in the choice"
-                                .format(_name_and_loc_str(default),
-                                        _name_and_loc_str(choice)))
+        if default.choice is not choice:
+            choice.kconfig._warn("the default selection {} of {} is not "
+                                 "contained in the choice"
+                                 .format(_name_and_loc_str(default),
+                                         _name_and_loc_str(choice)))
+
+    for sym in choice.syms:
+        for node in sym.nodes:
+            if node.prompt:
+                break
+        else:
+            choice.kconfig._warn("the choice symbol {} has no prompt"
+                                 .format(_name_and_loc_str(sym)))
+
 
 #
 # Public global constants
