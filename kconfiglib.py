@@ -1744,6 +1744,11 @@ class Kconfig(object):
                 # Find first non-blank (not all-space) line and get its
                 # indentation
 
+                if node.help is not None:
+                    self._warn("{} defined with more than one help text -- "
+                               "only the last one will be used"
+                               .format(_name_and_loc_str(node.item)))
+
                 # Small optimization. This code is pretty hot.
                 readline = self._file.readline
 
