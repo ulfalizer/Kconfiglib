@@ -4201,23 +4201,6 @@ def _check_sym_sanity(sym):
     Checks various symbol properties that are handiest to check after parsing.
     Only generates errors and warnings.
     """
-    if sym.ranges:
-        if not sym.orig_type in (INT, HEX):
-            sym.kconfig._warn(
-                "the {} symbol {} has ranges, but is not int or hex"
-                .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
-        else:
-            for low, high, _ in sym.ranges:
-                if not _int_hex_value_is_sane(low, sym.orig_type) or \
-                   not _int_hex_value_is_sane(high, sym.orig_type):
-
-                   sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
-                                     "[{2}, {3}]"
-                                     .format(TYPE_TO_STR[sym.orig_type],
-                                             _name_and_loc_str(sym),
-                                             _name_and_loc_str(low),
-                                             _name_and_loc_str(high)))
-
     _check_select_imply_sanity(sym, sym.selects, "selects")
     _check_select_imply_sanity(sym, sym.implies, "implies")
 
@@ -4241,6 +4224,25 @@ def _check_sym_sanity(sym):
     elif sym.orig_type == UNKNOWN:
         sym.kconfig._warn("{} defined without a type"
                           .format(_name_and_loc_str(sym)))
+
+
+    if sym.ranges:
+        if not sym.orig_type in (INT, HEX):
+            sym.kconfig._warn(
+                "the {} symbol {} has ranges, but is not int or hex"
+                .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
+        else:
+            for low, high, _ in sym.ranges:
+                if not _int_hex_value_is_sane(low, sym.orig_type) or \
+                   not _int_hex_value_is_sane(high, sym.orig_type):
+
+                   sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
+                                     "[{2}, {3}]"
+                                     .format(TYPE_TO_STR[sym.orig_type],
+                                             _name_and_loc_str(sym),
+                                             _name_and_loc_str(low),
+                                             _name_and_loc_str(high)))
+
 
 def _int_hex_value_is_sane(sym, type_):
     # 'not sym.nodes' implies a constant or undefined symbol, e.g. a plain
