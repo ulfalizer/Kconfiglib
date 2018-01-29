@@ -1740,6 +1740,10 @@ class Kconfig(object):
                 node.item.orig_type = new_type
 
                 if self._peek_token() is not None:
+                    if prompt:
+                        self._warn("{} defined with multiple prompts in single location"
+                                   .format(_name_and_loc_str(node.item)))
+
                     prompt = (self._expect_str(), self._parse_cond())
 
             elif t0 == _T_DEPENDS:
@@ -1831,6 +1835,10 @@ class Kconfig(object):
                 # 'prompt' properties override each other within a single
                 # definition of a symbol, but additional prompts can be added
                 # by defining the symbol multiple times
+                if prompt:
+                    self._warn("{} defined with multiple prompts in single location"
+                               .format(_name_and_loc_str(node.item)))
+
                 prompt = (self._expect_str(), self._parse_cond())
 
             elif t0 == _T_RANGE:
