@@ -4201,10 +4201,28 @@ def _check_sym_sanity(sym):
     Checks various symbol properties that are handiest to check after parsing.
     Only generates errors and warnings.
     """
-    _check_select_imply_sanity(sym, sym.selects, "selects")
-    _check_select_imply_sanity(sym, sym.implies, "implies")
+    if sym.orig_type in (BOOL, TRISTATE):
+        # A helper function could be factored out here, but keep it
+        # speedy/straightforward for now. bool/tristate symbols are by far the
+        # most common, and most lack selects and implies.
 
-    if sym.orig_type in (STRING, INT, HEX):
+        for target_sym, _ in sym.selects:
+            if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                sym.kconfig._warn("{} selects the {} symbol {}, which is not "
+                                  "bool or tristate"
+                                  .format(_name_and_loc_str(sym),
+                                          TYPE_TO_STR[target_sym.orig_type],
+                                          _name_and_loc_str(target_sym)))
+
+        for target_sym, _ in sym.implies:
+            if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                sym.kconfig._warn("{} implies the {} symbol {}, which is not "
+                                  "bool or tristate"
+                                  .format(_name_and_loc_str(sym),
+                                          TYPE_TO_STR[target_sym.orig_type],
+                                          _name_and_loc_str(target_sym)))
+
+    elif sym.orig_type in (STRING, INT, HEX):
         for default, _ in sym.defaults:
             if not isinstance(default, Symbol):
                 raise KconfigSyntaxError(
@@ -4221,13 +4239,18 @@ def _check_sym_sanity(sym):
                                           _name_and_loc_str(sym),
                                           _name_and_loc_str(default)))
 
-    elif sym.orig_type == UNKNOWN:
+        if sym.selects or sym.implies:
+            sym.kconfig._warn("the {} symbol {} has selects or implies"
+                              .format(TYPE_TO_STR[sym.orig_type],
+                                      _name_and_loc_str(sym)))
+
+    else:  # UNKNOWN
         sym.kconfig._warn("{} defined without a type"
                           .format(_name_and_loc_str(sym)))
 
 
     if sym.ranges:
-        if not sym.orig_type in (INT, HEX):
+        if sym.orig_type not in (INT, HEX):
             sym.kconfig._warn(
                 "the {} symbol {} has ranges, but is not int or hex"
                 .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
@@ -4249,27 +4272,6 @@ def _int_hex_value_is_sane(sym, type_):
     # "123"
     return (not sym.nodes and _is_base_n(sym.name, _TYPE_TO_BASE[type_])) or \
            sym.orig_type == type_
-
-def _check_select_imply_sanity(sym, selects_or_implies, type_str):
-    """
-    _check_sym_sanity() helper for checking selects and implies
-    """
-    if selects_or_implies:
-        if sym.orig_type not in (BOOL, TRISTATE):
-            sym.kconfig._warn(
-                "the {} symbol {} uses {}, but is not bool or tristate"
-                .format(TYPE_TO_STR[sym.orig_type],
-                        _name_and_loc_str(sym),
-                        type_str))
-
-        for target_sym, _ in selects_or_implies:
-            if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
-                sym.kconfig._warn("{} {} the {} symbol {}, which is not bool "
-                                  "or tristate"
-                                  .format(_name_and_loc_str(sym),
-                                          type_str,
-                                          TYPE_TO_STR[target_sym.orig_type],
-                                          _name_and_loc_str(target_sym)))
 
 def _check_choice_sanity(choice):
     """
