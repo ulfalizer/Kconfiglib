@@ -4313,6 +4313,11 @@ def _check_choice_sanity(choice):
                                          _name_and_loc_str(choice)))
 
     for sym in choice.syms:
+        if sym.defaults:
+            choice.kconfig._warn("default on the choice symbol {} will have "
+                                 "no effect"
+                                 .format(_name_and_loc_str(sym)))
+
         for node in sym.nodes:
             if node.prompt:
                 break
