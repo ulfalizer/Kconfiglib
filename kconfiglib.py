@@ -1771,6 +1771,9 @@ class Kconfig(object):
                         break
 
                 if not line:
+                    self._warn("{} has 'help' but empty help text"
+                               .format(_name_and_loc_str(node.item)))
+
                     node.help = ""
                     break
 
@@ -1778,6 +1781,9 @@ class Kconfig(object):
                 if indent == 0:
                     # If the first non-empty lines has zero indent, there is no
                     # help text
+                    self._warn("{} has 'help' but empty help text"
+                               .format(_name_and_loc_str(node.item)))
+
                     node.help = ""
                     self._saved_line = line  # "Unget" the line
                     break
