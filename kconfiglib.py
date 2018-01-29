@@ -4193,10 +4193,22 @@ def _check_sym_sanity(sym):
     Checks various symbol properties that are handiest to check after parsing.
     Only generates errors and warnings.
     """
-    if sym.ranges and sym.orig_type not in (INT, HEX):
-        sym.kconfig._warn(
-            "the {} symbol {} has ranges, but is not int or hex"
-            .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
+    if sym.ranges:
+        if not sym.orig_type in (INT, HEX):
+            sym.kconfig._warn(
+                "the {} symbol {} has ranges, but is not int or hex"
+                .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
+        else:
+            for low, high, _ in sym.ranges:
+                if not _int_hex_value_is_sane(low, sym.orig_type) or \
+                   not _int_hex_value_is_sane(high, sym.orig_type):
+
+                   sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
+                                     "[{2}, {3}]"
+                                     .format(TYPE_TO_STR[sym.orig_type],
+                                             _name_and_loc_str(sym),
+                                             _name_and_loc_str(low),
+                                             _name_and_loc_str(high)))
 
     _check_select_imply_sanity(sym, sym.selects, "selects")
     _check_select_imply_sanity(sym, sym.implies, "implies")
@@ -4210,29 +4222,23 @@ def _check_sym_sanity(sym):
                     .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym),
                             expr_str(default)))
 
-            if sym.orig_type == INT and not _int_value_is_sane(default):
-                sym.kconfig._warn("the int symbol {} has a non-int default {}"
-                                  .format(_name_and_loc_str(sym),
-                                          _name_and_loc_str(default)))
+            if sym.orig_type in (INT, HEX) and \
+               not _int_hex_value_is_sane(default, sym.orig_type):
 
-            if sym.orig_type == HEX and not _hex_value_is_sane(default):
-                sym.kconfig._warn("the hex symbol {} has a non-hex default {}"
-                                  .format(_name_and_loc_str(sym),
+                sym.kconfig._warn("the {0} symbol {1} has a non-{0} default {2}"
+                                  .format(TYPE_TO_STR[sym.orig_type],
+                                          _name_and_loc_str(sym),
                                           _name_and_loc_str(default)))
 
     elif sym.orig_type == UNKNOWN:
         sym.kconfig._warn("{} defined without a type"
                           .format(_name_and_loc_str(sym)))
 
-def _int_value_is_sane(sym):
+def _int_hex_value_is_sane(sym, type_):
     # 'not sym.nodes' implies a constant or undefined symbol, e.g. a plain
     # "123"
-    return (not sym.nodes and _is_base_n(sym.name, 10)) or \
-           sym.orig_type == INT
-
-def _hex_value_is_sane(sym):
-    return (not sym.nodes and _is_base_n(sym.name, 16)) or \
-           sym.orig_type == HEX
+    return (not sym.nodes and _is_base_n(sym.name, _TYPE_TO_BASE[type_])) or \
+           sym.orig_type == type_
 
 def _check_select_imply_sanity(sym, selects_or_implies, type_str):
     """
