@@ -4203,27 +4203,36 @@ def _check_sym_sanity(sym):
 
     if sym.orig_type in (STRING, INT, HEX):
         for default, _ in sym.defaults:
-            # For constant defaults of int/hex symbols, check that the value is
-            # valid. Not much we can do for nonconstant defaults.
-            #
-            # A constant default is either a constant (quoted) symbol or an
-            # undefined symbol, which will get its name as its value. Both have
-            # an empty 'nodes' attribute.
-            if not isinstance(default, Symbol) or \
-               (sym.orig_type in (INT, HEX) and
-                not default.nodes and
-                not _is_base_n(default.str_value,
-                               _TYPE_TO_BASE[sym.orig_type])):
-
+            if not isinstance(default, Symbol):
                 raise KconfigSyntaxError(
-                    "the {} symbol {} has a malformed default {}"
-                    .format(TYPE_TO_STR[sym.orig_type],
-                            _name_and_loc_str(sym),
+                    "the {} symbol {} has a malformed default {} -- expected "
+                    "a single symbol"
+                    .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym),
                             expr_str(default)))
+
+            if sym.orig_type == INT and not _int_value_is_sane(default):
+                sym.kconfig._warn("the int symbol {} has a non-int default {}"
+                                  .format(_name_and_loc_str(sym),
+                                          _name_and_loc_str(default)))
+
+            if sym.orig_type == HEX and not _hex_value_is_sane(default):
+                sym.kconfig._warn("the hex symbol {} has a non-hex default {}"
+                                  .format(_name_and_loc_str(sym),
+                                          _name_and_loc_str(default)))
 
     elif sym.orig_type == UNKNOWN:
         sym.kconfig._warn("{} defined without a type"
                           .format(_name_and_loc_str(sym)))
+
+def _int_value_is_sane(sym):
+    # 'not sym.nodes' implies a constant or undefined symbol, e.g. a plain
+    # "123"
+    return (not sym.nodes and _is_base_n(sym.name, 10)) or \
+           sym.orig_type == INT
+
+def _hex_value_is_sane(sym):
+    return (not sym.nodes and _is_base_n(sym.name, 16)) or \
+           sym.orig_type == HEX
 
 def _check_select_imply_sanity(sym, selects_or_implies, type_str):
     """
