@@ -105,7 +105,18 @@ Here are some other features:
   Kconfiglib also works well with the
   `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_
   module. No global state is kept.
-  
+
+- **Warning parity with the C implementation**
+
+  Generates the same warnings as the C implementation, plus a few extra ones.
+
+  This is less important if the input is assumed to be well-formed, but makes
+  Kconfiglib a viable replacement for the C tools if e.g. a ``menuconfig``
+  interface is added.
+
+  All warnings point out the location(s) in the ``Kconfig`` files where a
+  symbol is defined, where applicable.
+
 - **Windows support**
 
   Nothing Linux-specific is used. Universal newlines mode is used for both
@@ -157,7 +168,7 @@ installed with e.g.
 
     $ pip(3) install kconfiglib --user
 
-All releases have a corresponding tag in the git repository, e.g. ``v2.5.0``.
+All releases have a corresponding tag in the git repository, e.g. ``v2.6.0``.
 `Semantic versioning <http://semver.org/>`_ is used.
 
 Installation for the Linux kernel
