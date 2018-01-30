@@ -793,7 +793,8 @@ g
     os.environ["EXPANDED_FROM_ENV"] = "tests"
     os.environ["srctree"] = "Kconfiglib/"
 
-    c = Kconfig("tests/Klocation")
+    # Has symbol with empty help text, so disable warnings
+    c = Kconfig("tests/Klocation", warn=False)
 
     os.environ.pop("EXPANDED_FROM_ENV", None)
     os.environ.pop("srctree", None)

@@ -11,6 +11,7 @@ config M
 
 menuconfig Y
     def_tristate y
+    prompt "foo"
 
 config Y_STRING
     string
