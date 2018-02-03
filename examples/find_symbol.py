@@ -167,39 +167,42 @@ def nodes_referencing_sym(node, sym_name):
 
     return res
 
-if len(sys.argv) < 3:
-    print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
-    sys.exit(1)
+# find_undefined.py makes use nodes_referencing_sym(), so allow use to be
+# imported
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
+        sys.exit(1)
 
-sym_name = sys.argv[2]
+    sym_name = sys.argv[2]
 
-kconf = Kconfig(sys.argv[1])
-nodes = nodes_referencing_sym(kconf.top_node, sym_name)
+    kconf = Kconfig(sys.argv[1])
+    nodes = nodes_referencing_sym(kconf.top_node, sym_name)
 
-if not nodes:
-    print("No reference to '{}' found".format(sym_name))
-    sys.exit()
+    if not nodes:
+        print("No reference to '{}' found".format(sym_name))
+        sys.exit()
 
-print("Found {} locations that reference '{}':\n".format(len(nodes), sym_name))
+    print("Found {} locations that reference '{}':\n".format(len(nodes), sym_name))
 
-for i, node in enumerate(nodes, 1):
-    print("========== Location {} ({}:{}) ==========\n".format(i, node.filename, node.linenr))
-    print(node)
-
-    parent_i = 0
-
-    # Print the parents of the menu node too
-    while True:
-        node = node.parent
-        if node is kconf.top_node:
-            # Don't print the top node. Would say something like the following,
-            # which isn't that interesting:
-            #
-            #   menu "Linux/$ARCH $KERNELVERSION Kernel Configuration"
-            break
-
-        parent_i += 1
-
-        print("---------- Parent {} ({}:{})  ----------\n"
-              .format(parent_i, node.filename, node.linenr))
+    for i, node in enumerate(nodes, 1):
+        print("========== Location {} ({}:{}) ==========\n".format(i, node.filename, node.linenr))
         print(node)
+
+        parent_i = 0
+
+        # Print the parents of the menu node too
+        while True:
+            node = node.parent
+            if node is kconf.top_node:
+		# Don't print the top node. Would say something like the
+		# following, which isn't that interesting:
+                #
+		#   menu "Linux/$ARCH $KERNELVERSION Kernel Configuration"
+                break
+
+            parent_i += 1
+
+            print("---------- Parent {} ({}:{})  ----------\n"
+                  .format(parent_i, node.filename, node.linenr))
+            print(node)
