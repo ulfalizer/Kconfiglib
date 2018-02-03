@@ -72,11 +72,13 @@ def verify_equal(x, y):
     if x != y:
         fail("'{}' does not equal '{}'".format(x, y))
 
-# Assign this to avoid warnings from Kconfiglib. Nothing in the kernel's
-# Kconfig files seems to actually look at the value as of 3.7.0-rc8. This is
-# only relevant for the test suite, as this will get set by the kernel Makefile
-# when using (i)scriptconfig.
-os.environ["KERNELVERSION"] = "1"
+# Referenced inside the kernel Kconfig files.
+#
+# The str() makes the type of the value 'str' on both Python 2 and Python 3,
+# which is nice for some later dictionary key sanity checks.
+os.environ["KERNELVERSION"] = str(
+    subprocess.check_output(("make", "kernelversion")).decode("utf-8").rstrip()
+)
 
 # Prevent accidental loading of configuration files by removing
 # KCONFIG_ALLCONFIG from the environment
