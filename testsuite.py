@@ -1734,27 +1734,17 @@ def run_compatibility_tests():
                       (test_all_no_simpler, True),
                       (test_all_yes,        True))
 
-    arch_srcarch_list = get_arch_srcarch_list()
-
     for test_fn, compare_configs in all_arch_tests:
         # The test description is taken from the docstring of the corresponding
         # function
         print(textwrap.dedent(test_fn.__doc__))
 
-        for arch, srcarch in arch_srcarch_list:
+        # Previously we used to load all the arches once and keep them
+        # around for the tests. That now uses a huge amount of memory (pypy
+        # helps a bit), so reload them for each test instead.
+        for kconf, arch in all_arch_srcarch_kconfigs():
             rm_configs()
-
-            os.environ["ARCH"] = arch
-            os.environ["SRCARCH"] = srcarch
-            # Previously we used to load all the arches once and keep them
-            # around for the tests. That now uses a huge amount of memory (pypy
-            # helps a bit), so reload them for each test instead.
-            test_fn(Kconfig(), arch)
-
-            # Let kbuild infer SRCARCH from ARCH if we aren't in speedy mode.
-            # This could detect issues with the test suite.
-            if not speedy:
-                del os.environ["SRCARCH"]
+            test_fn(kconf, arch)
 
             if compare_configs:
                 if equal_confs():
@@ -1770,33 +1760,30 @@ def run_compatibility_tests():
         print("Some tests failed")
         sys.exit(1)
 
-def get_arch_srcarch_list():
-    """
-    Returns a list of (ARCH, SRCARCH) tuples to test.
-    """
-    res = []
-
-    def add_arch(arch):
-        res.append((arch, srcarch))
-
+def all_arch_srcarch_pairs():
     for srcarch in os.listdir("arch"):
         if os.path.exists(os.path.join("arch", srcarch, "Kconfig")):
-            add_arch(srcarch)
-            # Some arches define additional ARCH settings with ARCH != SRCARCH
-            # (search for "Additional ARCH settings for" in the Makefile)
-            if srcarch == "x86":
-                add_arch("i386")
-                add_arch("x86_64")
-            elif srcarch == "sparc":
-                add_arch("sparc32")
-                add_arch("sparc64")
-            elif srcarch == "sh":
-                add_arch("sh64")
-            elif srcarch == "tile":
-                add_arch("tilepro")
-                add_arch("tilegx")
+            yield (srcarch, srcarch)
 
-    return res
+    # Some arches define additional ARCH settings with ARCH != SRCARCH
+    # (search for "Additional ARCH settings for" in the top-level Makefile)
+
+    yield ("i386", "x86")
+    yield ("x86_64", "x86")
+
+    yield ("sparc32", "sparc")
+    yield ("sparc64", "sparc")
+
+    yield ("sh64", "sh")
+
+    yield ("tilepro", "tile")
+    yield ("tilegx", "tile")
+
+def all_arch_srcarch_kconfigs():
+    for arch, srcarch in all_arch_srcarch_pairs():
+        os.environ["ARCH"] = arch
+        os.environ["SRCARCH"] = srcarch
+        yield (Kconfig(), arch)
 
 def test_load(conf, arch):
    """
