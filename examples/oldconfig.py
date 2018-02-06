@@ -146,6 +146,9 @@ def do_oldconfig_for_node(node):
     Prompts the user for a value for the menu node item, where applicable in
     oldconfig mode
     """
+    # See do_oldconfig()
+    global conf_changed
+
     # Only symbols and choices can be configured
     if not isinstance(node.item, (Symbol, Choice)):
         return
@@ -198,10 +201,16 @@ def do_oldconfig_for_node(node):
             if sym.type == HEX and not val.startswith(("0x", "0X")):
                 val = "0x" + val
 
+            old_str_val = sym.str_value
+
             # Kconfiglib itself will print a warning here if the value
             # is invalid, so we don't need to bother
             if sym.set_value(val):
                 # Valid value input. We're done with this node.
+
+                if sym.str_value != old_str_val:
+                    conf_changed = True
+
                 return
 
     else:
@@ -253,15 +262,32 @@ def do_oldconfig_for_node(node):
                 continue
 
             # Valid selection
+
+            if options[sel_index - 1].tri_value != 2:
+                conf_changed = True
+
             options[sel_index - 1].set_value(2)
             return
 
 def do_oldconfig(node):
+    # An earlier symbol in the Kconfig files might depend on a later symbol and
+    # become visible if its value changes. This flag is set to True if the
+    # value of any symbol changes, in which case we rerun the oldconfig to
+    # check for new visible symbols.
+    global conf_changed
+
+    while True:
+        conf_changed = False
+        do_oldconfig_rec(node)
+        if not conf_changed:
+            break
+
+def do_oldconfig_rec(node):
     while node:
         do_oldconfig_for_node(node)
 
         if node.list:
-            do_oldconfig(node.list)
+            do_oldconfig_rec(node.list)
 
         node = node.next
 
