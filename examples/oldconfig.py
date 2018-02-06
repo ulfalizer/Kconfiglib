@@ -11,6 +11,9 @@
 # add (look at the parents of each item and print all menu prompts and
 # comments unless they have already been printed).
 #
+# Bonus feature: Inputting '??' on the prompt will display the help text of the
+# item, if any. Hopefully no one will want to use that as a value.
+#
 # Sample session:
 #
 #   OldconfigExample contents:
@@ -106,6 +109,12 @@ if sys.version_info[0] < 3:
 def eprint(*args):
     print(*args, file=sys.stderr)
 
+def print_help(node):
+    if node.help is not None:
+        print("\n" + node.help)
+    else:
+        print("\nNo help text\n")
+
 def name_and_loc_str(sym):
     """
     Helper for printing the symbol name along with the location(s) in the
@@ -184,6 +193,10 @@ def do_oldconfig_for_node(node):
                             node.prompt[0], name_and_loc_str(sym),
                             default_value_str(sym)))
 
+            if val == "??":
+                print_help(node)
+                continue
+
             # Substitute a blank string with the default value the symbol
             # would get
             if not val:
@@ -245,6 +258,10 @@ def do_oldconfig_for_node(node):
                     sym.name))
 
             sel_index = input("choice[1-{}]: ".format(len(options)))
+
+            if sel_index == "??":
+                print_help(node)
+                continue
 
             # Pick the default selection if the string is blank
             if not sel_index:
