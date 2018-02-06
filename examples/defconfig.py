@@ -8,15 +8,15 @@ import kconfiglib
 import os
 import sys
 
-conf = kconfiglib.Kconfig(sys.argv[1])
+kconf = kconfiglib.Kconfig(sys.argv[1])
 
 if os.path.exists(".config"):
     print("using existing .config")
-    conf.load_config(".config")
+    kconf.load_config(".config")
 else:
-    if conf.defconfig_filename is not None:
-        print("using " + conf.defconfig_filename)
-        conf.load_config(conf.defconfig_filename)
+    if kconf.defconfig_filename is not None:
+        print("using " + kconf.defconfig_filename)
+        kconf.load_config(kconf.defconfig_filename)
 
-conf.write_config(".config")
+kconf.write_config(".config")
 print("configuration written to .config")

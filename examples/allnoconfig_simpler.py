@@ -9,14 +9,14 @@
 from kconfiglib import Kconfig, BOOL, TRISTATE
 import sys
 
-conf = Kconfig(sys.argv[1])
+kconf = Kconfig(sys.argv[1])
 
 # Avoid warnings printed by Kconfiglib when assigning a value to a symbol that
 # has no prompt. Such assignments never have an effect.
-conf.disable_warnings()
+kconf.disable_warnings()
 
-for sym in conf.defined_syms:
+for sym in kconf.defined_syms:
     if sym.type in (BOOL, TRISTATE):
         sym.set_value(2 if sym.is_allnoconfig_y else 0)
 
-conf.write_config(".config")
+kconf.write_config(".config")
