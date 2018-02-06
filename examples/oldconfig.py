@@ -269,7 +269,7 @@ def do_oldconfig_for_node(node):
             options[sel_index - 1].set_value(2)
             return
 
-def do_oldconfig(node):
+def do_oldconfig(kconf):
     # An earlier symbol in the Kconfig files might depend on a later symbol and
     # become visible if its value changes. This flag is set to True if the
     # value of any symbol changes, in which case we rerun the oldconfig to
@@ -278,7 +278,7 @@ def do_oldconfig(node):
 
     while True:
         conf_changed = False
-        do_oldconfig_rec(node)
+        do_oldconfig_rec(kconf.top_node)
         if not conf_changed:
             break
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     kconf = Kconfig(sys.argv[1])
 
     kconf.load_config(".config")
-    do_oldconfig(kconf.top_node)
+    do_oldconfig(kconf)
     kconf.write_config(".config")
 
     print("Configuration written to .config")
