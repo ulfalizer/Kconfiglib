@@ -60,7 +60,7 @@
 #
 #     $ touch .config  # Run with empty .config
 #
-#     $ python oldconfig.py Kconfig
+#     $ python(3) oldconfig.py Kconfig
 #     BOOL_SYM prompt (BOOL_SYM, defined at Kconfig:5) [n/Y] foo
 #     Invalid tristate value
 #     BOOL_SYM prompt (BOOL_SYM, defined at Kconfig:5) [n/Y] n
@@ -118,7 +118,7 @@ def print_help(node):
 def name_and_loc_str(sym):
     """
     Helper for printing the symbol name along with the location(s) in the
-    Kconfig files where it is defined
+    Kconfig files where the symbol is defined
     """
     return "{}, defined at {}".format(
         sym.name,
