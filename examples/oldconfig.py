@@ -98,7 +98,7 @@
 #     $ python oldconfig.py Kconfig  # Everything's already up to date
 #     Configuration written to .config
 from __future__ import print_function
-from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX, STR_TO_TRI
+from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX
 import os
 import sys
 
@@ -201,12 +201,6 @@ def do_oldconfig_for_node(node):
             # would get
             if not val:
                 val = sym.str_value
-
-            if sym.type in (BOOL, TRISTATE):
-                if val not in STR_TO_TRI:
-                    eprint("Invalid tristate value")
-                    continue
-                val = STR_TO_TRI[val]
 
             # Automatically add a "0x" prefix for hex symbols, like the
             # menuconfig interface does. This isn't done when loading .config

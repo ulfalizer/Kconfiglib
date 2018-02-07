@@ -258,19 +258,7 @@ def get_value_from_user(sc):
                   .format(", ".join([TRI_TO_STR[val] for val in sc.assignable]))
     prompt += ": "
 
-    val_str = input(prompt).strip()
-    if sc.type in (BOOL, TRISTATE):
-        if val_str not in STR_TO_TRI:
-            print("'{}' is not a valid tristate value".format(val_str))
-            return False
-
-        # I was thinking of having set_value() accept "n", "m", "y" as well as
-        # a convenience for BOOL / TRISTATE symbols. Consistently using 0, 1, 2
-        # makes the format clearer though. That's the best format in all ways
-        # except for readability (where it isn't horrible either).
-        val = STR_TO_TRI[val_str]
-    else:
-        val = val_str
+    val = input(prompt)
 
     # Automatically add a "0x" prefix for hex symbols, like the menuconfig
     # interface does. This isn't done when loading .config files, hence why
