@@ -168,7 +168,7 @@ installed with e.g.
 
     $ pip(3) install kconfiglib --user
 
-All releases have a corresponding tag in the git repository, e.g. ``v2.6.0``.
+All releases have a corresponding tag in the git repository, e.g. ``v2.7.0``.
 `Semantic versioning <http://semver.org/>`_ is used.
 
 Installation for the Linux kernel
@@ -189,7 +189,7 @@ Examples
 Example scripts
 ~~~~~~~~~~~~~~~
 
-The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ directory contains some simple example scripts. Among these are the following ones:
+The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ directory contains some simple example scripts. Among these are the following ones. Make sure you run them with the latest version of Kconfiglib, as they might make use of newly added features.
 
 - `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig.py>`_, `allnoconfig_simpler.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig_simpler.py>`_, and `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig`` in various ways. Demonstrates menu tree walking and value setting.
 
