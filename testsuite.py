@@ -1742,9 +1742,9 @@ def run_compatibility_tests():
         # Previously we used to load all the arches once and keep them
         # around for the tests. That now uses a huge amount of memory (pypy
         # helps a bit), so reload them for each test instead.
-        for kconf, arch in all_arch_srcarch_kconfigs():
+        for kconf, arch, srcarch in all_arch_srcarch_kconfigs():
             rm_configs()
-            test_fn(kconf, arch)
+            test_fn(kconf, arch, srcarch)
 
             if compare_configs:
                 if equal_confs():
@@ -1783,15 +1783,15 @@ def all_arch_srcarch_kconfigs():
     for arch, srcarch in all_arch_srcarch_pairs():
         os.environ["ARCH"] = arch
         os.environ["SRCARCH"] = srcarch
-        yield (Kconfig(), arch)
+        yield (Kconfig(), arch, srcarch)
 
-def test_load(conf, arch):
+def test_load(conf, arch, srcarch):
    """
    Load all arch Kconfigs to make sure we don't throw any errors
    """
    print("{:14}OK".format(arch))
 
-def test_all_no(conf, arch):
+def test_all_no(conf, arch, srcarch):
     """
     Verify that our examples/allnoconfig.py script generates the same .config
     as 'make allnoconfig', for each architecture. Runs the script via
@@ -1806,7 +1806,7 @@ def test_all_no(conf, arch):
     else:
         shell("make allnoconfig")
 
-def test_all_no_simpler(conf, arch):
+def test_all_no_simpler(conf, arch, srcarch):
     """
     Verify that our examples/allnoconfig_simpler.py script generates the same
     .config as 'make allnoconfig', for each architecture. Runs the script via
@@ -1821,7 +1821,7 @@ def test_all_no_simpler(conf, arch):
     else:
         shell("make allnoconfig")
 
-def test_all_yes(conf, arch):
+def test_all_yes(conf, arch, srcarch):
     """
     Verify that our examples/allyesconfig.py script generates the same .config
     as 'make allyesconfig', for each architecture. Runs the script via
@@ -1836,7 +1836,7 @@ def test_all_yes(conf, arch):
     else:
         shell("make allyesconfig")
 
-def test_sanity(conf, arch):
+def test_sanity(conf, arch, srcarch):
     """
     Do sanity checks on each configuration and call all public methods on all
     symbols, choices, and menu nodes for all architectures to make sure we
@@ -1970,7 +1970,7 @@ def test_sanity(conf, arch):
             else:
                 break
 
-def test_alldefconfig(conf, arch):
+def test_alldefconfig(conf, arch, srcarch):
     """
     Verify that Kconfiglib generates the same .config as 'make alldefconfig',
     for each architecture
@@ -1981,7 +1981,7 @@ def test_alldefconfig(conf, arch):
     else:
         shell("make alldefconfig")
 
-def test_defconfig(conf, arch):
+def test_defconfig(conf, arch, srcarch):
     """
     Verify that Kconfiglib generates the same .config as scripts/kconfig/conf,
     for each architecture/defconfig pair. In obsessive mode, this test includes
@@ -1995,18 +1995,18 @@ def test_defconfig(conf, arch):
     global nconfigs
     defconfigs = []
 
-    def add_configs_for_arch(arch_):
-        arch_dir = os.path.join("arch", arch_)
+    def add_configs_for_arch(srcarch):
+        srcarch_dir = os.path.join("arch", srcarch)
 
         # Some arches have a "defconfig" in the root of their arch/<arch>/
         # directory
-        root_defconfig = os.path.join(arch_dir, "defconfig")
+        root_defconfig = os.path.join(srcarch_dir, "defconfig")
         if os.path.exists(root_defconfig):
             defconfigs.append(root_defconfig)
 
         # Assume all files in the arch/<arch>/configs directory (if it
         # exists) are configurations
-        defconfigs_dir = os.path.join(arch_dir, "configs")
+        defconfigs_dir = os.path.join(srcarch_dir, "configs")
         if not os.path.exists(defconfigs_dir):
             return
 
@@ -2025,7 +2025,7 @@ def test_defconfig(conf, arch):
         for arch_ in os.listdir("arch"):
             add_configs_for_arch(arch_)
     else:
-        add_configs_for_arch(arch)
+        add_configs_for_arch(srcarch)
 
     # Test architecture for each defconfig
 
