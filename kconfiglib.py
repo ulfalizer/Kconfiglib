@@ -3472,10 +3472,11 @@ class Choice(object):
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
         # function call (property magic)
         if self.tri_value != 2:
+            # Not in y mode, so no selection
             return None
 
         # Use the user selection if it's visible
-        if self.user_selection and self.user_selection.visibility == 2:
+        if self.user_selection and self.user_selection.visibility:
             return self.user_selection
 
         # Otherwise, check if we have a default
