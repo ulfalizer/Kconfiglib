@@ -2001,7 +2001,7 @@ class Kconfig(object):
     def _parse_expr(self, transform_m):
         """
         Parses an expression from the tokens in Kconfig._tokens using a simple
-        top-down approach. See the module docs for the expression format.
+        top-down approach. See the module docstring for the expression format.
 
         transform_m:
           True if m should be rewritten to m && MODULES. See the
