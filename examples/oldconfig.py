@@ -294,7 +294,7 @@ def do_oldconfig_for_node(node):
         # Give all of the non-selected visible choice symbols the user value n.
         # This makes it so that the choice is no longer considered new once we
         # do additional passes, if the reason that it was considered new was
-        # that it had new choice symbols.
+        # that it had new visible choice symbols.
         #
         # Only giving visible choice symbols the user value n means we will prompt
         # for the choice again if later user selections make more new choice
