@@ -243,8 +243,8 @@ def do_oldconfig_for_node(node):
         # skip choices in n and m mode.
         options = [sym for sym in choice.syms if sym.visibility == 2]
 
-        # No y-visible choice value symbols
         if not options:
+            # No y-visible choice value symbols
             return
 
         # Loop until the user enters a valid selection or a blank string (for
