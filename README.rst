@@ -153,7 +153,7 @@ After reading the module docstring, a good next step is to read the ``Kconfig`` 
 documentation, and then the documentation for the ``Symbol``, ``Choice``, and ``MenuNode``
 classes.
 
-Please tell me if something is unclear to you or can be explained better.
+Please tell me if something is unclear or can be explained better.
 
 Installation
 ------------
