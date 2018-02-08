@@ -2700,9 +2700,8 @@ class Symbol(object):
         'assignable' will cause Symbol.user_value to differ from
         Symbol.str/tri_value (be truncated down or up).
 
-        Setting a choice symbol to 2 (y) only updates Choice.user_selection on
-        the parent choice and not Symbol.user_value itself. This gives the
-        expected behavior when a choice is switched between different modes.
+        Setting a choice symbol to 2 (y) sets Choice.user_selection to the
+        choice symbol in addition to setting Symbol.user_value.
         Choice.user_selection is considered when the choice is in y mode (the
         "normal" mode).
 
@@ -2727,9 +2726,14 @@ class Symbol(object):
         value of the symbol. For other symbol types, check whether the
         visibility is non-n.
         """
-        if value == self.user_value:
-            # We know the value must be valid if it was successfully set
-            # previously
+        # If the new user value matches the old, nothing changes, and we can
+        # save some work.
+        #
+        # This optimization is skipped for choice symbols: Setting a choice
+        # symbol's user value to y might change the state of the choice, so it
+        # wouldn't be safe (symbol user values always match the values set in a
+        # .config file or via set_value(), and are never implicitly updated).
+        if value == self.user_value and not self.choice:
             self._was_set = True
             return True
 
@@ -2763,16 +2767,17 @@ class Symbol(object):
         if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):
             value = STR_TO_TRI[value]
 
+        self.user_value = value
+
         if self.choice and value == 2:
-            # Remember this as a choice selection only. Makes switching back
-            # and forth between choice modes work as expected, and makes the
-            # check for whether the user value is the same as before above
-            # safe.
+            # Setting a choice symbol to y makes it the user selection of the
+            # choice. Like for symbol user values, the user selection is not
+            # guaranteed to match the actual selection of the choice, as
+            # dependencies come into play.
             self.choice.user_selection = self
             self.choice._was_set = True
             self.choice._rec_invalidate()
         else:
-            self.user_value = value
             self._was_set = True
             self._rec_invalidate_if_has_prompt()
 

@@ -1550,12 +1550,10 @@ g
                sym.name + " should be the user selection of the choice")
 
         verify(sym.tri_value == 2,
-               sym.name + " should be y when selected")
+               sym.name + " should have value y when selected")
 
-        verify(sym.user_value != 2,
-               sym.name + " should not have user value y, because choice "
-                          "y mode selections are remembered on the choice "
-                          "itself")
+        verify(sym.user_value == 2,
+               sym.name + " should have user value y when selected")
 
         for sibling in choice.syms:
             if sibling is not sym:
@@ -1628,28 +1626,21 @@ g
     # Test m mode selection
 
     c.named_choices["TRISTATE"].set_value(1)
+
+    verify(c.named_choices["TRISTATE"].tri_value == 1,
+           "TRISTATE choice should have mode m after explicit mode assignment")
+
+    assign_and_verify_value("T_1", 0, 0)
+    assign_and_verify_value("T_2", 0, 0)
     assign_and_verify_value("T_1", 1, 1)
     assign_and_verify_value("T_2", 1, 1)
+    assign_and_verify_value("T_1", 2, 1)
+    assign_and_verify_value("T_2", 2, 1)
 
-    c.syms["T_1"].set_value(0)  # Check that this is remembered later
-
-    # Switching to y mode should cause T_1 to become selected
+    # Switching to y mode should cause T_2 to become selected
     c.named_choices["TRISTATE"].set_value(2)
-    verify_value("T_1", 2)
-    verify_value("T_2", 0)
-
-    # Switching back to m mode should restore the old values
-    c.named_choices["TRISTATE"].set_value(1)
     verify_value("T_1", 0)
-    verify_value("T_2", 1)
-
-    assign_and_verify_value("TM_1", 1, 1)
-    assign_and_verify_value("TM_1", 2, 1)  # Ignored
-    verify(c.named_choices["TRISTATE"].tri_value == 1,
-           "m-visible choice got invalid mode")
-
-    assign_and_verify_value("TM_1", 0, 0)
-    assign_and_verify_value("TM_1", 2, 0)  # Ignored
+    verify_value("T_2", 2)
 
     # Verify that choices with no explicitly specified type get the type of the
     # first contained symbol with a type
