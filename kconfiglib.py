@@ -99,8 +99,8 @@ Gotcha
 ******
 
 It's important to set $SRCARCH even if you don't care about values and only
-want to extract information from Kconfig files, because the top-level Makefile
-does this (as of writing):
+want to extract information from Kconfig files, because the top-level Kconfig
+file does this (as of writing):
 
   source "arch/$SRCARCH/Kconfig"
 
