@@ -168,8 +168,13 @@ installed with e.g.
 
     $ pip(3) install kconfiglib --user
 
-All releases have a corresponding tag in the git repository, e.g. ``v2.7.0``.
-`Semantic versioning <http://semver.org/>`_ is used.
+All releases have a corresponding tag in the git repository, e.g. ``v3.0.0``
+(the latest version).
+
+`Semantic versioning <http://semver.org/>`_ is used. There's been a
+`tiny change <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_
+to the behavior of the API (which I don't think will affect anyone), which is
+why the major version is at 3 rather than 2.
 
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
