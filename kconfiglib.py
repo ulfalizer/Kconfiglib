@@ -341,6 +341,9 @@ class Kconfig(object):
       includes all symbols that are referenced in expressions but never
       defined, except for constant (quoted) symbols.
 
+      Undefined symbols can be recognized by Symbol.nodes being empty -- see
+      the 'Intro to the menu tree' section in the module docstring.
+
     const_syms:
       A dictionary like 'syms' for constant (quoted) symbols.
 
@@ -854,7 +857,7 @@ class Kconfig(object):
         single assignment is written out corresponding to the first location
         where the symbol is defined.
 
-        See the 'Intro to symbol values' section in the modules docstring to
+        See the 'Intro to symbol values' section in the module docstring to
         understand which symbols get written out.
 
         filename:
