@@ -223,9 +223,20 @@ def do_oldconfig_for_node(node):
     else:
         choice = node.item
 
-        # Skip choices that already have a visible user selection
+        # Skip choices that already have a visible user selection...
         if choice.user_selection and choice.user_selection.visibility == 2:
-            return
+            # ...unless there are new visible symbols in the choice. (We know
+            # they have y (2) visibility in that case, because m-visible
+            # symbols get demoted to n-visibility in y-mode choices, and the
+            # user-selected symbol had visibility y.)
+            for sym in choice.syms:
+                if sym is not choice.user_selection and sym.visibility and \
+                   sym.user_value is None:
+                    # New visible symbols in the choice
+                    break
+            else:
+                # No new visible symbols in the choice
+                return
 
         # Get a list of available selections. The mode of the choice limits
         # the visibility of the choice value symbols, so this will indirectly
@@ -260,7 +271,7 @@ def do_oldconfig_for_node(node):
             # Pick the default selection if the string is blank
             if not sel_index:
                 choice.selection.set_value(2)
-                return
+                break
 
             try:
                 sel_index = int(sel_index)
@@ -278,7 +289,19 @@ def do_oldconfig_for_node(node):
                 conf_changed = True
 
             options[sel_index - 1].set_value(2)
-            return
+            break
+
+        # Give all of the non-selected visible choice symbols the user value n.
+        # This makes it so that the choice is no longer considered new once we
+        # do additional passes, if the reason that it was considered new was
+        # that it had new choice symbols.
+        #
+        # Only giving visible choice symbols the user value n means we will prompt
+        # for the choice again if later user selections make more new choice
+        # symbols visible, which is correct.
+        for sym in choice.syms:
+            if sym is not choice.user_selection and sym.visibility:
+                sym.set_value(0)
 
 def do_oldconfig(kconf):
     # An earlier symbol in the Kconfig files might depend on a later symbol and
