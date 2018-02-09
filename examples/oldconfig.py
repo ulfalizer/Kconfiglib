@@ -134,18 +134,8 @@ def default_value_str(sym):
     For string/int/hex, returns the default value as-is.
     """
     if sym.type in (BOOL, TRISTATE):
-        res = []
-
-        if 0 in sym.assignable:
-            res.append("N" if sym.tri_value == 0 else "n")
-
-        if 1 in sym.assignable:
-            res.append("M" if sym.tri_value == 1 else "m")
-
-        if 2 in sym.assignable:
-            res.append("Y" if sym.tri_value == 2 else "y")
-
-        return "/".join(res)
+        return "/".join(("nmy" if sym.tri_value != tri else "NMY")[tri]
+                        for tri in sym.assignable)
 
     # string/int/hex
     return sym.str_value
