@@ -245,7 +245,7 @@ def do_oldconfig_for_node(node):
 
             for i, sym in enumerate(options, 1):
                 print("{} {}. {} ({})".format(
-                    ">" if choice.selection is sym else " ",
+                    ">" if sym is choice.selection else " ",
                     i,
                     # Assume people don't define choice symbols with multiple
                     # prompts. That generates a warning anyway.
@@ -286,9 +286,9 @@ def do_oldconfig_for_node(node):
         # do additional passes, if the reason that it was considered new was
         # that it had new visible choice symbols.
         #
-        # Only giving visible choice symbols the user value n means we will prompt
-        # for the choice again if later user selections make more new choice
-        # symbols visible, which is correct.
+        # Only giving visible choice symbols the user value n means we will
+        # prompt for the choice again if later user selections make more new
+        # choice symbols visible, which is correct.
         for sym in choice.syms:
             if sym is not choice.user_selection and sym.visibility:
                 sym.set_value(0)
