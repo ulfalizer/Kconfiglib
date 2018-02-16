@@ -4035,6 +4035,9 @@ def _sym_choice_str(sc):
                         imply_string += " if " + expr_str(cond)
                     indent_add(imply_string)
 
+        if node.dep is not sc.kconfig.y:
+            indent_add("depends on " + expr_str(node.dep))
+
         if node.help is not None:
             indent_add("help")
             for line in node.help.splitlines():

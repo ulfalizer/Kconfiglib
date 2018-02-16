@@ -524,10 +524,18 @@ config ADVANCED
 
 menuconfig ADVANCED
 	prompt "prompt 3" if DEP2
+	depends on DEP2
 
 config ADVANCED
+	depends on DEP4 && DEP3
 	help
 	  second help text
+""")
+
+    verify_str(c.syms["ONLY_DIRECT_DEPS"], """
+config ONLY_DIRECT_DEPS
+	int
+	depends on DEP1 && DEP2
 """)
 
     verify_str(c.syms["STRING"], """

@@ -33,9 +33,23 @@ menuconfig ADVANCED
     prompt "prompt 3"
     depends on DEP2
 
+if DEP3
+
+menu "foo"
+    depends on DEP4
+
 config ADVANCED
     help
       second help text
+
+endmenu
+
+endif
+
+config ONLY_DIRECT_DEPS
+    int
+    depends on DEP1
+    depends on DEP2
 
 config STRING
     string
