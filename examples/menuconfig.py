@@ -121,7 +121,7 @@ from kconfiglib import Kconfig, \
                        Symbol, Choice, MENU, COMMENT, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        expr_value, \
-                       TRI_TO_STR, STR_TO_TRI
+                       TRI_TO_STR
 import readline
 import sys
 
@@ -203,7 +203,8 @@ def node_str(node):
     sc = node.item
 
     if sc.type == UNKNOWN:
-        # Skip symbols defined without a type
+        # Skip symbols defined without a type (these are obscure and generate
+        # a warning)
         return ""
 
     # {:3} sets the field width to three. Gives nice alignment for empty string
