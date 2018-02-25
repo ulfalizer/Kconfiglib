@@ -300,6 +300,38 @@ If a condition is missing (e.g., <cond> when the 'if <cond>' is removed from
 functions just avoid printing 'if y' conditions to give cleaner output.
 
 
+'source' with relative path
+===========================
+
+The library implements a custom 'rsource' statement that allows to import
+Kconfig file by specifying path relative to directory of the currently parsed
+file, instead of path relative to project root.
+This extension is not supported by Linux kernel tools (yet).
+
+Consider following directory tree:
+
+  Project
+  +--Kconfig
+  |
+  +--src
+     +--Kconfig
+     |
+     +--SubSystem1
+        +--Kconfig
+        |
+        +--ModuleA
+           +--Kconfig
+
+In above example, src/SubSystem1/Kconfig imports Kconfig for ModuleA.
+With default 'source' it looks like:
+
+  source "src/SubSystem1/ModuleA/Kconfig"
+
+Using 'rsource' it can be rewritten as:
+
+  rsource "ModuleA/Kconfig"
+
+
 Feedback
 ========
 
@@ -1070,11 +1102,31 @@ class Kconfig(object):
                         "unset" if self.srctree is None else
                         '"{}"'.format(self.srctree)))
 
-    def _enter_file(self, filename):
+    def _enter_file(self, filename, relative_source=False):
         """
         Jumps to the beginning of a sourced Kconfig file, saving the previous
         position and file object.
         """
+        if relative_source:
+            # For relative 'source' only relative path is accepted
+            if os.path.isabs(filename):
+                raise KconfigSyntaxError(
+                    "\n{}:{}: Relative source allows only relative paths, "
+                    "while '{}' is absolute.\n"
+                    "Backtrace:\n{}"
+                        .format(self._filename, self._linenr, filename,
+                                "\n".join("{}:{}".format(name, linenr)
+                                          for _, name, linenr
+                                          in reversed(self._filestack))))
+            # Prepend directory of current Kconfig file to supplied path
+            #
+            # If current file was sourced through absolute path, the resulting
+            # path is also absolute, so $srctree is not checked for it and all
+            # subsequent 'rsource' invocations
+            #
+            # If current file path is relative, the resulting path is also
+            # relative and subject to $srctree lookup following usual rules
+            filename = os.path.join(os.path.dirname(self._filename), filename)
         # Check for recursive 'source'
         for _, name, _ in self._filestack:
             if name == filename:
@@ -1566,6 +1618,15 @@ class Kconfig(object):
 
             elif t0 == _T_SOURCE:
                 self._enter_file(self._expand_syms(self._expect_str_and_eol()))
+                prev_node = self._parse_block(None,            # end_token
+                                              parent,
+                                              visible_if_deps,
+                                              prev_node)
+                self._leave_file()
+
+            elif t0 == _T_RSOURCE:
+                self._enter_file(self._expand_syms(self._expect_str_and_eol()),
+                                 relative_source=True)
                 prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
@@ -4452,11 +4513,12 @@ STR_TO_TRI = {
     _T_RANGE,
     _T_SELECT,
     _T_SOURCE,
+    _T_RSOURCE,
     _T_STRING,
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(44)
+) = range(45)
 
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
@@ -4492,6 +4554,7 @@ _get_keyword = {
     "range":          _T_RANGE,
     "select":         _T_SELECT,
     "source":         _T_SOURCE,
+    "rsource":        _T_RSOURCE,
     "string":         _T_STRING,
     "tristate":       _T_TRISTATE,
     "visible":        _T_VISIBLE,
@@ -4509,6 +4572,7 @@ _STRING_LEX = frozenset((
     _T_MENU,
     _T_PROMPT,
     _T_SOURCE,
+    _T_RSOURCE,
     _T_STRING,
     _T_TRISTATE,
 ))

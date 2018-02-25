@@ -787,7 +787,7 @@ g
 """)
 
 
-    print("Testing locations and 'source'")
+    print("Testing locations and 'source', 'rsource'")
 
     def verify_locations(nodes, *expected_locs):
         verify(len(nodes) == len(expected_locs),
@@ -801,12 +801,14 @@ g
 
     # Expanded in the 'source' statement in Klocation
     os.environ["EXPANDED_FROM_ENV"] = "tests"
+    os.environ["INCLUDE_DIR_FROM_ENV"] = "include"
     os.environ["srctree"] = "Kconfiglib/"
 
     # Has symbol with empty help text, so disable warnings
     c = Kconfig("tests/Klocation", warn=False)
 
     os.environ.pop("EXPANDED_FROM_ENV", None)
+    os.environ.pop("INCLUDE_DIR_FROM_ENV", None)
     os.environ.pop("srctree", None)
 
     verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
@@ -815,7 +817,8 @@ g
       "tests/Klocation:7",
       "tests/Klocation:31",
       "tests/Klocation_included:3",
-      "tests/Klocation:47")
+      "tests/include/Klocation_included:5",
+      "tests/Klocation:53")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_included:5")

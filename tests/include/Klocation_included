@@ -1,0 +1,6 @@
+
+comment "some comment"
+
+
+config MULTI_DEF
+    bool

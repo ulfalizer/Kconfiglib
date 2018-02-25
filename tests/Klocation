@@ -37,11 +37,17 @@ config EXPANDED_FROM_ENV
     string
     option env="EXPANDED_FROM_ENV"
 
+config INCLUDE_DIR_FROM_ENV
+    string
+    option env="INCLUDE_DIR_FROM_ENV"
+
 config _INCLUDED
     string
     default "_included"
 
 # Expands to "tests/Klocation_included"
 source "$EXPANDED_FROM_ENV/Klocation$_INCLUDED"
+# Expands to "included/Klocation_included"
+rsource "$INCLUDE_DIR_FROM_ENV/Klocation$_INCLUDED"
 
 config MULTI_DEF
