@@ -143,14 +143,12 @@ def value_str(sc):
 
     # BOOL or TRISTATE
 
-    # The choice mode acts as an upper bound on the visibility of choice
-    # symbols, so we can check the choice symbols' own visibility to see if the
-    # choice is in y mode
+    # The choice mode is an upper bound on the visibility of choice symbols, so
+    # we can check the choice symbols' own visibility to see if the choice is
+    # in y mode
     if isinstance(sc, Symbol) and sc.choice and sc.visibility == 2:
         # For choices in y mode, print '-->' next to the selected symbol
-        if sc.choice.selection is sc:
-            return "-->"
-        return "   "
+        return "-->" if sc.choice.selection is sc else "   "
 
     tri_val_str = (" ", "M", "*")[sc.tri_value]
 
