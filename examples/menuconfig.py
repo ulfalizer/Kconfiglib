@@ -168,8 +168,8 @@ def value_str(sc):
 def node_str(node):
     """
     Returns the complete menu entry text for a menu node, or "" for invisible
-    menu nodes. Invisible menu nodes are those that lack a prompt or don't have
-    a satisfied prompt condition.
+    menu nodes. Invisible menu nodes are those that lack a prompt or that do
+    not have a satisfied prompt condition.
 
     Example return value: "[*] Bool symbol (BOOL)"
 
@@ -254,7 +254,7 @@ def get_value_from_user(sc):
     prompt = "Value for {}".format(sc.name)
     if sc.type in (BOOL, TRISTATE):
         prompt += " (available: {})" \
-                  .format(", ".join([TRI_TO_STR[val] for val in sc.assignable]))
+                  .format(", ".join(TRI_TO_STR[val] for val in sc.assignable))
     prompt += ": "
 
     val = input(prompt)
