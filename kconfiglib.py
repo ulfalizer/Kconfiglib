@@ -331,6 +331,8 @@ Using 'rsource' it can be rewritten as:
 
   rsource "ModuleA/Kconfig"
 
+If absolute path is given to 'rsource' then it follows behavior of 'source'.
+
 
 Feedback
 ========
@@ -1102,26 +1104,6 @@ class Kconfig(object):
                         "unset" if self.srctree is None else
                         '"{}"'.format(self.srctree)))
 
-    def _translate_relative_path(self, path):
-        # We expect strictly relative path, not absolute
-        if os.path.isabs(path):
-            raise KconfigSyntaxError(
-                "\n{}:{}: Relative path expected, while '{}' is absolute.\n"
-                "Backtrace:\n{}"
-                    .format(self._filename, self._linenr, path,
-                            "\n".join("{}:{}".format(name, linenr)
-                                      for _, name, linenr
-                                      in reversed(self._filestack))))
-        # Prepend directory of current Kconfig file to supplied path
-        #
-        # If current file was sourced through absolute path, the resulting
-        # path is also absolute, so when it's passed to _open, $srctree is not
-        # checked for it
-        #
-        # If current file path is relative, the resulting path is also
-        # relative and subject to $srctree lookup following usual rules
-        return os.path.join(os.path.dirname(self._filename), path)
-
     def _enter_file(self, filename):
         """
         Jumps to the beginning of a sourced Kconfig file, saving the previous
@@ -1625,7 +1607,8 @@ class Kconfig(object):
                 self._leave_file()
 
             elif t0 == _T_RSOURCE:
-                self._enter_file(self._translate_relative_path(
+                self._enter_file(os.path.join(
+                    os.path.dirname(self._filename),
                     self._expand_syms(self._expect_str_and_eol())
                 ))
                 prev_node = self._parse_block(None,            # end_token
@@ -4512,9 +4495,9 @@ STR_TO_TRI = {
     _T_OR,
     _T_PROMPT,
     _T_RANGE,
+    _T_RSOURCE,
     _T_SELECT,
     _T_SOURCE,
-    _T_RSOURCE,
     _T_STRING,
     _T_TRISTATE,
     _T_UNEQUAL,
@@ -4553,9 +4536,9 @@ _get_keyword = {
     "optional":       _T_OPTIONAL,
     "prompt":         _T_PROMPT,
     "range":          _T_RANGE,
+    "rsource":        _T_RSOURCE,
     "select":         _T_SELECT,
     "source":         _T_SOURCE,
-    "rsource":        _T_RSOURCE,
     "string":         _T_STRING,
     "tristate":       _T_TRISTATE,
     "visible":        _T_VISIBLE,
@@ -4577,8 +4560,8 @@ _STRING_LEX = frozenset((
     _T_MAINMENU,
     _T_MENU,
     _T_PROMPT,
-    _T_SOURCE,
     _T_RSOURCE,
+    _T_SOURCE,
     _T_STRING,
     _T_TRISTATE,
 ))
