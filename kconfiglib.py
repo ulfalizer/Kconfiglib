@@ -1102,31 +1102,31 @@ class Kconfig(object):
                         "unset" if self.srctree is None else
                         '"{}"'.format(self.srctree)))
 
-    def _enter_file(self, filename, relative_source=False):
+    def _translate_relative_path(self, path):
+        # We expect strictly relative path, not absolute
+        if os.path.isabs(path):
+            raise KconfigSyntaxError(
+                "\n{}:{}: Relative path expected, while '{}' is absolute.\n"
+                "Backtrace:\n{}"
+                    .format(self._filename, self._linenr, path,
+                            "\n".join("{}:{}".format(name, linenr)
+                                      for _, name, linenr
+                                      in reversed(self._filestack))))
+        # Prepend directory of current Kconfig file to supplied path
+        #
+        # If current file was sourced through absolute path, the resulting
+        # path is also absolute, so when it's passed to _open, $srctree is not
+        # checked for it
+        #
+        # If current file path is relative, the resulting path is also
+        # relative and subject to $srctree lookup following usual rules
+        return os.path.join(os.path.dirname(self._filename), path)
+
+    def _enter_file(self, filename):
         """
         Jumps to the beginning of a sourced Kconfig file, saving the previous
         position and file object.
         """
-        if relative_source:
-            # For relative 'source' only relative path is accepted
-            if os.path.isabs(filename):
-                raise KconfigSyntaxError(
-                    "\n{}:{}: Relative source allows only relative paths, "
-                    "while '{}' is absolute.\n"
-                    "Backtrace:\n{}"
-                        .format(self._filename, self._linenr, filename,
-                                "\n".join("{}:{}".format(name, linenr)
-                                          for _, name, linenr
-                                          in reversed(self._filestack))))
-            # Prepend directory of current Kconfig file to supplied path
-            #
-            # If current file was sourced through absolute path, the resulting
-            # path is also absolute, so $srctree is not checked for it and all
-            # subsequent 'rsource' invocations
-            #
-            # If current file path is relative, the resulting path is also
-            # relative and subject to $srctree lookup following usual rules
-            filename = os.path.join(os.path.dirname(self._filename), filename)
         # Check for recursive 'source'
         for _, name, _ in self._filestack:
             if name == filename:
@@ -1625,8 +1625,9 @@ class Kconfig(object):
                 self._leave_file()
 
             elif t0 == _T_RSOURCE:
-                self._enter_file(self._expand_syms(self._expect_str_and_eol()),
-                                 relative_source=True)
+                self._enter_file(self._translate_relative_path(
+                    self._expand_syms(self._expect_str_and_eol())
+                ))
                 prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
