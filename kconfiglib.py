@@ -4560,8 +4560,13 @@ _get_keyword = {
     "visible":        _T_VISIBLE,
 }.get
 
-# Tokens after which identifier-like lexemes are treated as strings. _T_CHOICE
-# is included to avoid symbols being registered for named choices.
+# Tokens after which strings are expected. This is used to tell strings from
+# constant symbol references during tokenization, both of which are enclosed in
+# quotes.
+#
+# Identifier-like lexemes ("missing quotes") are also treated as strings after
+# these tokens. _T_CHOICE is included to avoid symbols being registered for
+# named choices.
 _STRING_LEX = frozenset((
     _T_BOOL,
     _T_CHOICE,
