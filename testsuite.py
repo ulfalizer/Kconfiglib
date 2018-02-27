@@ -1357,13 +1357,6 @@ g
 
     config_test_file = "Kconfiglib/tests/config_test"
 
-    def write_and_verify_header(header):
-        c.write_config(config_test_file, header)
-        c.load_config(config_test_file)
-        verify(c.config_header == header,
-               "The header {} morphed into {} on loading"
-               .format(repr(header), repr(c.config_header)))
-
     def verify_file_contents(fname, contents):
         with open(fname, "r") as f:
             file_contents = f.read()
