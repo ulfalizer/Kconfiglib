@@ -300,6 +300,40 @@ If a condition is missing (e.g., <cond> when the 'if <cond>' is removed from
 functions just avoid printing 'if y' conditions to give cleaner output.
 
 
+'source' with relative path
+===========================
+
+The library implements a custom 'rsource' statement that allows to import
+Kconfig file by specifying path relative to directory of the currently parsed
+file, instead of path relative to project root.
+This extension is not supported by Linux kernel tools (yet).
+
+Consider following directory tree:
+
+  Project
+  +--Kconfig
+  |
+  +--src
+     +--Kconfig
+     |
+     +--SubSystem1
+        +--Kconfig
+        |
+        +--ModuleA
+           +--Kconfig
+
+In above example, src/SubSystem1/Kconfig imports Kconfig for ModuleA.
+With default 'source' it looks like:
+
+  source "src/SubSystem1/ModuleA/Kconfig"
+
+Using 'rsource' it can be rewritten as:
+
+  rsource "ModuleA/Kconfig"
+
+If absolute path is given to 'rsource' then it follows behavior of 'source'.
+
+
 Feedback
 ========
 
@@ -1566,6 +1600,17 @@ class Kconfig(object):
 
             elif t0 == _T_SOURCE:
                 self._enter_file(self._expand_syms(self._expect_str_and_eol()))
+                prev_node = self._parse_block(None,            # end_token
+                                              parent,
+                                              visible_if_deps,
+                                              prev_node)
+                self._leave_file()
+
+            elif t0 == _T_RSOURCE:
+                self._enter_file(os.path.join(
+                    os.path.dirname(self._filename),
+                    self._expand_syms(self._expect_str_and_eol())
+                ))
                 prev_node = self._parse_block(None,            # end_token
                                               parent,
                                               visible_if_deps,
@@ -4450,13 +4495,14 @@ STR_TO_TRI = {
     _T_OR,
     _T_PROMPT,
     _T_RANGE,
+    _T_RSOURCE,
     _T_SELECT,
     _T_SOURCE,
     _T_STRING,
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(44)
+) = range(45)
 
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
@@ -4490,6 +4536,7 @@ _get_keyword = {
     "optional":       _T_OPTIONAL,
     "prompt":         _T_PROMPT,
     "range":          _T_RANGE,
+    "rsource":        _T_RSOURCE,
     "select":         _T_SELECT,
     "source":         _T_SOURCE,
     "string":         _T_STRING,
@@ -4513,6 +4560,7 @@ _STRING_LEX = frozenset((
     _T_MAINMENU,
     _T_MENU,
     _T_PROMPT,
+    _T_RSOURCE,
     _T_SOURCE,
     _T_STRING,
     _T_TRISTATE,

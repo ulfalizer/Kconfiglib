@@ -787,7 +787,7 @@ g
 """)
 
 
-    print("Testing locations and 'source'")
+    print("Testing locations and 'source', 'rsource'")
 
     def verify_locations(nodes, *expected_locs):
         verify(len(nodes) == len(expected_locs),
@@ -800,13 +800,15 @@ g
                    .format(repr(node), expected_loc, node_loc))
 
     # Expanded in the 'source' statement in Klocation
-    os.environ["EXPANDED_FROM_ENV"] = "tests"
+    os.environ["TESTS_DIR_FROM_ENV"] = "tests"
+    os.environ["SUB_DIR_FROM_ENV"] = "sub"
     os.environ["srctree"] = "Kconfiglib/"
 
     # Has symbol with empty help text, so disable warnings
     c = Kconfig("tests/Klocation", warn=False)
 
-    os.environ.pop("EXPANDED_FROM_ENV", None)
+    os.environ.pop("TESTS_DIR_FROM_ENV", None)
+    os.environ.pop("SUB_DIR_FROM_ENV", None)
     os.environ.pop("srctree", None)
 
     verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
@@ -814,17 +816,18 @@ g
     verify_locations(c.syms["MULTI_DEF"].nodes,
       "tests/Klocation:7",
       "tests/Klocation:31",
-      "tests/Klocation_included:3",
-      "tests/Klocation:47")
+      "tests/Klocation_sourced:3",
+      "tests/sub/Klocation_rsourced:2",
+      "tests/Klocation:57")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
-                     "tests/Klocation_included:5")
+                     "tests/Klocation_sourced:5")
 
     verify_locations([c.syms["MENU_HOOK"].nodes[0].next],
-                     "tests/Klocation_included:12")
+                     "tests/Klocation_sourced:12")
 
     verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
-                     "tests/Klocation_included:18")
+                     "tests/Klocation_sourced:18")
 
     # Test recursive 'source' detection
 

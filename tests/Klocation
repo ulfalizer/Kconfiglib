@@ -33,15 +33,25 @@ config MULTI_DEF
 endif
 endif
 
-config EXPANDED_FROM_ENV
+config TESTS_DIR_FROM_ENV
     string
-    option env="EXPANDED_FROM_ENV"
+    option env="TESTS_DIR_FROM_ENV"
 
-config _INCLUDED
+config SUB_DIR_FROM_ENV
     string
-    default "_included"
+    option env="SUB_DIR_FROM_ENV"
 
-# Expands to "tests/Klocation_included"
-source "$EXPANDED_FROM_ENV/Klocation$_INCLUDED"
+config _SOURCED
+    string
+    default "_sourced"
+
+config _RSOURCED
+    string
+    default "_rsourced"
+
+# Expands to "tests/Klocation_sourced"
+source "$TESTS_DIR_FROM_ENV/Klocation$_SOURCED"
+# Expands to "sub/Klocation_rsourced"
+rsource "$SUB_DIR_FROM_ENV/Klocation$_RSOURCED"
 
 config MULTI_DEF
