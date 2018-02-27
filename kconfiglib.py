@@ -930,9 +930,7 @@ class Kconfig(object):
                 if isinstance(item, Symbol):
                     if not item._written:
                         item._written = True
-                        config_string = item.config_string
-                        if config_string:
-                            write(config_string)
+                        write(item.config_string)
 
                 elif expr_value(node.dep) and \
                      ((item == MENU and expr_value(node.visibility)) or
@@ -2370,9 +2368,9 @@ class Symbol(object):
 
     config_string:
       The .config assignment string that would get written out for the symbol
-      by Kconfig.write_config(). None if no .config assignment would get
-      written out. In general, visible symbols, symbols with (active) defaults,
-      and selected symbols get written out.
+      by Kconfig.write_config(). Returns the empty string if no .config
+      assignment would get written out. In general, visible symbols, symbols
+      with (active) defaults, and selected symbols get written out.
 
     nodes:
       A list of MenuNodes for this symbol. Will contain a single MenuNode for
@@ -2717,7 +2715,7 @@ class Symbol(object):
         # is a hidden function call due to property magic.
         val = self.str_value
         if not self._write_to_conf:
-            return None
+            return ""
 
         if self.orig_type in (BOOL, TRISTATE):
             return "{}{}={}\n" \
