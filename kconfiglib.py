@@ -838,10 +838,7 @@ class Kconfig(object):
           and include a final terminating newline.
         """
         with open(filename, "w") as f:
-            # Small optimization
-            write = f.write
-
-            write(header)
+            f.write(header)
 
             # Avoid duplicates -- see write_config()
             for sym in self.defined_syms:
@@ -857,22 +854,22 @@ class Kconfig(object):
                     if sym._write_to_conf:
                         if sym.orig_type in (BOOL, TRISTATE):
                             if val != "n":
-                                write("#define {}{}{} 1\n"
-                                      .format(self.config_prefix, sym.name,
-                                              "_MODULE" if val == "m" else ""))
+                                f.write("#define {}{}{} 1\n"
+                                        .format(self.config_prefix, sym.name,
+                                                "_MODULE" if val == "m" else ""))
 
                         elif sym.orig_type == STRING:
-                            write('#define {}{} "{}"\n'
-                                  .format(self.config_prefix, sym.name,
-                                          escape(val)))
+                            f.write('#define {}{} "{}"\n'
+                                    .format(self.config_prefix, sym.name,
+                                            escape(val)))
 
                         elif sym.orig_type in (INT, HEX):
                             if sym.orig_type == HEX and \
                                not val.startswith(("0x", "0X")):
                                 val = "0x" + val
 
-                            write("#define {}{} {}\n"
-                                  .format(self.config_prefix, sym.name, val))
+                            f.write("#define {}{} {}\n"
+                                    .format(self.config_prefix, sym.name, val))
 
                         else:
                             _internal_error("Internal error while creating C "
@@ -902,10 +899,7 @@ class Kconfig(object):
           and include a final terminating newline.
         """
         with open(filename, "w") as f:
-            # Small optimization
-            write = f.write
-
-            write(header)
+            f.write(header)
 
             # Symbol._written is set to True when a symbol config string is
             # fetched, so that symbols defined in multiple locations only get
@@ -930,13 +924,13 @@ class Kconfig(object):
                 if isinstance(item, Symbol):
                     if not item._written:
                         item._written = True
-                        write(item.config_string)
+                        f.write(item.config_string)
 
                 elif expr_value(node.dep) and \
                      ((item == MENU and expr_value(node.visibility)) or
                        item == COMMENT):
 
-                    write("\n#\n# {}\n#\n".format(node.prompt[0]))
+                    f.write("\n#\n# {}\n#\n".format(node.prompt[0]))
 
                 # Iterative tree walk using parent pointers
 
