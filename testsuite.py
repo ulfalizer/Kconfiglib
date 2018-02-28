@@ -47,8 +47,10 @@ import errno
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 
@@ -1850,6 +1852,14 @@ def test_sanity(conf, arch, srcarch):
     conf.disable_warnings()
     conf.mainmenu_text
     conf.unset_values()
+
+    conf.write_autoconf("/dev/null")
+
+    # No tempfile.TemporaryDirectory in Python 2
+    tmpdir = tempfile.mkdtemp()
+    conf.sync_deps(os.path.join(tmpdir, "deps"))  # Create
+    conf.sync_deps(os.path.join(tmpdir, "deps"))  # Update
+    shutil.rmtree(tmpdir)
 
     # Python 2/3 compatible
     for key, sym in conf.syms.items():

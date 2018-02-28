@@ -34,6 +34,15 @@ configuration systems. It can do the following, among other things:
   The generated headers use the same format as ``include/generated/autoconf.h``
   from the Linux kernel.
 
+- **Implement incremental builds**
+
+  This uses the same scheme as the ``include/config`` directory in the kernel:
+  Symbols are translated into files that are touched when the symbol's value
+  changes between builds, which can be used to avoid having to do a full
+  rebuild whenever the configuration is changed.
+
+  See the ``sync_deps()`` function for more information.
+
 - **Inspect symbols**
 
   Printing a symbol gives output which could be fed back into a Kconfig parser

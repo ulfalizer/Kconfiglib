@@ -947,6 +947,166 @@ class Kconfig(object):
                     else:
                         return
 
+    def sync_deps(self, path):
+        """
+        Creates or updates a directory structure that can be used to avoid
+        doing a full rebuild whenever the configuration is changed, mirroring
+        include/config/ in the kernel.
+
+        path:
+          Path to directory
+
+        sync_deps(path) does the following:
+
+          1. If the directory 'path' does not exist, it is first created, and
+             an empty file auto.conf is stored in it.
+
+             auto.conf keeps track of the old symbol values from the previous
+             build. The format mirrors .config.
+
+          2. auto.conf is loaded, and the old symbol values in it are compared
+             against the current symbol values. If a symbol has changed value,
+             the change is signalled by touch'ing a file corresponding to the
+             symbol.
+
+             The path to a symbol's file is calculated from the symbol's name
+             by replacing all '_' with '/' and appending '.h'. For example, the
+             symbol FOO_BAR_BAZ gets the file <path>/foo/bar/baz.h, and FOO
+             gets the file <path>/foo.h.
+
+             This scheme matches the C tools. The point is to avoid having a
+             single directory with a huge number of files, which the underlying
+             filesystem might not handle well.
+
+          3. A new auto.conf is written to keep track of the current symbol
+             values for the next build.
+
+
+        The last piece of the puzzle is knowing what symbols each source file
+        depends on. Knowing that, dependencies can be added from source files
+        to the files corresponding to the symbols they depends on, and the
+        source file will then get recompiled when the symbol value changes
+        (provided sync_deps() is run first during each compilation).
+
+        The tool in the kernel that extracts symbol dependencies from source
+        files is scripts/basic/fixdep.c. Missing symbol files also correspond
+        to "not changed", which it deals with by making use of the $(wildcard)
+        Make function when adding symbol prerequisites to source files.
+
+        In case you need a different scheme for your project, the sync_deps()
+        implementation can be used as a template."""
+        if not os.path.exists(path):
+            os.mkdir(path, 0o755)
+            open(os.path.join(path, "auto.conf"), "w").close()
+
+        # This setup makes sure that at least the current working directory
+        # gets reset if things fail
+        prev_dir = os.getcwd()
+        try:
+            # cd'ing into the symbol file directory simplifies
+            # _sync_sym_files() and saves some work
+            os.chdir(path)
+            self._sync_sym_files()
+        finally:
+            os.chdir(prev_dir)
+
+    def _sync_sym_files(self):
+        # Load old values from auto.conf
+        self._load_old_vals()
+
+        for sym in self.defined_syms:
+            val = sym.str_value
+
+            # Note: n tristate values do not get written to auto.conf and
+            # autoconf.h, making a missing symbol logically equivalent to n
+
+            if sym._write_to_conf:
+                if sym._old_val is None and \
+                   sym.orig_type in (BOOL, TRISTATE) and \
+                   not sym.tri_value:
+                    # No old value (the symbol was missing or n), new value n.
+                    # No change.
+                    continue
+
+                if sym.str_value == sym._old_val:
+                    # New value matches old. No change.
+                    continue
+
+            elif sym._old_val is None:
+                # The symbol wouldn't appear in autoconf.h (because
+                # _write_to_conf is false), and it wouldn't have appeared in
+                # autoconf.h previously either (because it didn't appear in
+                # auto.conf). No change.
+                continue
+
+            # 'sym' has a new value. Flag it.
+
+            sym_path = sym.name.lower().replace("_", os.sep) + ".h"
+            sym_path_dir = os.path.dirname(sym_path)
+            if sym_path_dir and not os.path.exists(sym_path_dir):
+                os.makedirs(sym_path_dir, 0o755)
+
+            # A kind of truncating touch, mirroring the C tools
+            os.close(os.open(
+                sym_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644))
+
+        # Remember the current values as the "new old" values.
+        #
+        # This call could go anywhere after the call to _load_old_vals(), but
+        # putting it last means _sync_sym_files() can be safely rerun if it
+        # fails before this point.
+        self._write_old_vals()
+
+    def _write_old_vals(self):
+        # Helper for writing auto.conf. Basically just a simplified
+        # write_config() that doesn't write any comments (including
+        # '# CONFIG_FOO is not set' comments). The format matches the C
+        # implementation, though the ordering is arbitrary there (depends on
+        # the hash table implementation).
+        #
+        # A separate helper function is neater than complicating write_config()
+        # by passing a flag to it, plus we only need to look at symbols here.
+        with open("auto.conf", "w") as f:
+            for sym in self.defined_syms:
+                sym._written = False
+
+            for sym in self.defined_syms:
+                if not sym._written:
+                    sym._written = True
+                    if not (sym.orig_type in (BOOL, TRISTATE) and
+                            sym.tri_value == 0):
+                        f.write(sym.config_string)
+
+    def _load_old_vals(self):
+        # Loads old symbol values from auto.conf into a dedicated
+        # Symbol._old_val field. Mirrors load_config().
+        #
+        # The extra field could be avoided with some trickery involving dumping
+        # symbol values and restoring them later, but this is simpler and
+        # faster. The C tools also use a dedicated field for this purpose.
+        with open("auto.conf", _UNIVERSAL_NEWLINES_MODE) as f:
+            for sym in self.defined_syms:
+                sym._old_val = None
+
+            for line in f:
+                set_match = self._set_re_match(line)
+                if not set_match:
+                    # We only expect CONFIG_FOO=... (and possibly a header
+                    # comment) in auto.conf
+                    continue
+
+                name, val = set_match.groups()
+                if name in self.syms:
+                    sym = self.syms[name]
+
+                    if sym.orig_type == STRING:
+                        string_match = _conf_string_re_match(val)
+                        if not string_match:
+                            continue
+                        val = unescape(string_match.group(1))
+
+                    self.syms[name]._old_val = val
+
     def eval_string(self, s):
         """
         Returns the tristate value of the expression 's', represented as 0, 1,
@@ -2459,6 +2619,7 @@ class Symbol(object):
         "_cached_tri_val",
         "_cached_vis",
         "_dependents",
+        "_old_val",
         "_was_set",
         "_write_to_conf",
         "_written",
