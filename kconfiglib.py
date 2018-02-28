@@ -958,15 +958,15 @@ class Kconfig(object):
 
         sync_deps(path) does the following:
 
-          1. If the directory 'path' does not exist, it is first created, and
-             an empty file auto.conf is stored in it.
+          1. If the directory 'path' does not exist, it is created, and an
+             empty file auto.conf is stored in it.
 
              auto.conf keeps track of the old symbol values from the previous
              build. The format mirrors .config.
 
           2. auto.conf is loaded, and the old symbol values in it are compared
              against the current symbol values. If a symbol has changed value,
-             the change is signalled by touch'ing a file corresponding to the
+             the change is signaled by touch'ing a file corresponding to the
              symbol.
 
              The path to a symbol's file is calculated from the symbol's name
@@ -984,15 +984,14 @@ class Kconfig(object):
 
         The last piece of the puzzle is knowing what symbols each source file
         depends on. Knowing that, dependencies can be added from source files
-        to the files corresponding to the symbols they depends on, and the
-        source file will then get recompiled when the symbol value changes
-        (provided sync_deps() is run first during each compilation).
+        to the files corresponding to the symbols they depends on. The source
+        file will then get recompiled (only) when the symbol value changes
+        (provided sync_deps() is run first during each build).
 
         The tool in the kernel that extracts symbol dependencies from source
         files is scripts/basic/fixdep.c. Missing symbol files also correspond
-        to "not changed", which fixdep deals with by making use of the
-        $(wildcard) Make function when adding symbol prerequisites to source
-        files.
+        to "not changed", which fixdep deals with by using the $(wildcard) Make
+        function when adding symbol prerequisites to source files.
 
         In case you need a different scheme for your project, the sync_deps()
         implementation can be used as a template."""
