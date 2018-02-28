@@ -1004,13 +1004,13 @@ class Kconfig(object):
         prev_dir = os.getcwd()
         try:
             # cd'ing into the symbol file directory simplifies
-            # _sync_sym_files() and saves some work
+            # _sync_deps() and saves some work
             os.chdir(path)
-            self._sync_sym_files()
+            self._sync_deps()
         finally:
             os.chdir(prev_dir)
 
-    def _sync_sym_files(self):
+    def _sync_deps(self):
         # Load old values from auto.conf
         self._load_old_vals()
 
@@ -1053,8 +1053,8 @@ class Kconfig(object):
         # Remember the current values as the "new old" values.
         #
         # This call could go anywhere after the call to _load_old_vals(), but
-        # putting it last means _sync_sym_files() can be safely rerun if it
-        # fails before this point.
+        # putting it last means _sync_deps() can be safely rerun if it fails
+        # before this point.
         self._write_old_vals()
 
     def _write_old_vals(self):
