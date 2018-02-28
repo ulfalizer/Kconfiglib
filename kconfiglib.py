@@ -990,8 +990,9 @@ class Kconfig(object):
 
         The tool in the kernel that extracts symbol dependencies from source
         files is scripts/basic/fixdep.c. Missing symbol files also correspond
-        to "not changed", which it deals with by making use of the $(wildcard)
-        Make function when adding symbol prerequisites to source files.
+        to "not changed", which fixdep deals with by making use of the
+        $(wildcard) Make function when adding symbol prerequisites to source
+        files.
 
         In case you need a different scheme for your project, the sync_deps()
         implementation can be used as a template."""
