@@ -2269,7 +2269,7 @@ class Kconfig(object):
             # Plain symbol or relation
 
             next_token = self._peek_token()
-            if next_token not in _TOKEN_TO_REL:
+            if next_token not in _RELATIONS:
                 # Plain symbol
 
                 # For conditional expressions ('depends on <expr>',
@@ -2280,18 +2280,21 @@ class Kconfig(object):
                 return token
 
             # Relation
-            return (_TOKEN_TO_REL[self._next_token()], token,
-                    self._expect_sym())
+            #
+            # _T_EQUAL, _T_UNEQUAL, etc., deliberately have the same values as
+            # EQUAL, UNEQUAL, etc., so we can just use the token directly
+            return (self._next_token(), token, self._expect_sym())
 
         if token == _T_NOT:
-            return (NOT, self._parse_factor(transform_m))
+            # token == _T_NOT == NOT
+            return (token, self._parse_factor(transform_m))
 
         if token == _T_OPEN_PAREN:
             expr_parse = self._parse_expr(transform_m)
-            if not self._check_token(_T_CLOSE_PAREN):
-                self._parse_error("missing end parenthesis")
+            if self._check_token(_T_CLOSE_PAREN):
+                return expr_parse
 
-            return expr_parse
+            self._parse_error("missing end parenthesis")
 
         self._parse_error("malformed expression")
 
@@ -4576,19 +4579,6 @@ def _check_choice_sanity(choice):
     UNKNOWN
 ) = range(6)
 
-# Integers representing expression types
-(
-    AND,
-    OR,
-    NOT,
-    EQUAL,
-    UNEQUAL,
-    LESS,
-    LESS_EQUAL,
-    GREATER,
-    GREATER_EQUAL,
-) = range(9)
-
 # Integers representing menu and comment menu nodes
 (
     MENU,
@@ -4618,7 +4608,8 @@ STR_TO_TRI = {
 }
 
 #
-# Internal global constants
+# Internal global constants (plus public expression type
+# constants)
 #
 
 # Tokens
@@ -4669,6 +4660,20 @@ STR_TO_TRI = {
     _T_UNEQUAL,
     _T_VISIBLE,
 ) = range(45)
+
+# Public integers representing expression types
+#
+# Having these match the value of the corresponding tokens removes the need
+# for conversion
+AND           = _T_AND
+OR            = _T_OR
+NOT           = _T_NOT
+EQUAL         = _T_EQUAL
+UNEQUAL       = _T_UNEQUAL
+LESS          = _T_LESS
+LESS_EQUAL    = _T_LESS_EQUAL
+GREATER       = _T_GREATER
+GREATER_EQUAL = _T_GREATER_EQUAL
 
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
@@ -4800,6 +4805,8 @@ _TYPE_TO_BASE = {
     UNKNOWN:  0,
 }
 
+# Note: These constants deliberately equal the corresponding tokens (_T_EQUAL,
+# _T_UNEQUAL, etc.), which removes the need for conversion
 _RELATIONS = frozenset((
     EQUAL,
     UNEQUAL,
@@ -4809,23 +4816,13 @@ _RELATIONS = frozenset((
     GREATER_EQUAL,
 ))
 
-# Token to relation (=, !=, <, ...) mapping
-_TOKEN_TO_REL = {
-    _T_EQUAL:         EQUAL,
-    _T_GREATER:       GREATER,
-    _T_GREATER_EQUAL: GREATER_EQUAL,
-    _T_LESS:          LESS,
-    _T_LESS_EQUAL:    LESS_EQUAL,
-    _T_UNEQUAL:       UNEQUAL,
-}
-
 _REL_TO_STR = {
     EQUAL:         "=",
-    GREATER:       ">",
-    GREATER_EQUAL: ">=",
+    UNEQUAL:       "!=",
     LESS:          "<",
     LESS_EQUAL:    "<=",
-    UNEQUAL:       "!=",
+    GREATER:       ">",
+    GREATER_EQUAL: ">=",
 }
 
 # Enable universal newlines mode on Python 2 to ease interoperability between
