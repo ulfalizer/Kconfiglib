@@ -395,11 +395,12 @@ up a bit.
 The `tests/reltest <https://github.com/ulfalizer/Kconfiglib/blob/master/tests/reltest>`_ script runs the test suite
 and all the example scripts for both Python 2 and Python 3, verifying that everything works.
 
-The test suite might fail for a few configurations for kernels older than April 2016,
-when a fix was added to Kconfig that's also mirrored in Kconfiglib
-(see `this commit <https://github.com/ulfalizer/Kconfiglib/commit/35ea8d5f1d63bdc9f8642f5ce4445e8f7c914385>`_).
-This is harmless, and only counts as a fail since the test suite compares literal
-output from the kconfig version that's bundled with the kernel.
+Rarely, the output from the C tools is changed slightly (most recently due to a
+`change <https://www.spinics.net/lists/linux-kbuild/msg17074.html>`_ I added).
+If you get test suite failures, try running the test suite again against the
+`linux-next tree <https://www.kernel.org/doc/man-pages/linux-next.html>`_,
+which has all the latest changes. I will make it clear if any
+non-backwards-compatible changes appear.
 
 A lot of time is spent waiting around for ``make`` and the C utilities (which need to reparse all the
 Kconfig files for each defconfig test). Adding some multiprocessing to the test suite would make sense

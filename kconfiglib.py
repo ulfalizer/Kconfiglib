@@ -190,6 +190,19 @@ that this includes all symbols that would accept user values). Kconfiglib
 matches the .config format produced by the C implementations down to the
 character. This eases testing.
 
+For a visible bool/tristate symbol FOO with value n, this line is written to
+.config:
+
+    # CONFIG_FOO is not set
+
+The point is to remember the user n selection (which might differ from the
+default value the symbol would get), while at the same sticking to the rule
+that undefined corresponds to n (.config uses Makefile format, making the line
+above a comment). When the .config file is read back in, this line will be
+treated the same as the following assignment:
+
+    CONFIG_FOO=n
+
 In Kconfiglib, the set of (currently) assignable values for a bool/tristate
 symbol appear in Symbol.assignable. For other symbol types, just check if
 sym.visibility is non-0 (non-n) to see whether the user value will have an
@@ -2803,7 +2816,8 @@ class Symbol(object):
                     cond_val = expr_value(cond)
                     if cond_val:
                         val = min(expr_value(default), cond_val)
-                        self._write_to_conf = True
+                        if val:
+                            self._write_to_conf = True
                         break
 
                 # Weak reverse dependencies are only considered if our
