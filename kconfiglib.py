@@ -2295,8 +2295,6 @@ class Kconfig(object):
             if self._check_token(_T_CLOSE_PAREN):
                 return expr_parse
 
-            self._parse_error("missing end parenthesis")
-
         self._parse_error("malformed expression")
 
     #
