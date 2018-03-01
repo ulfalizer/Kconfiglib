@@ -751,7 +751,8 @@ class Kconfig(object):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
                                        .format(val, TYPE_TO_STR[sym.orig_type],
-                                               _name_and_loc_str(sym)))
+                                               _name_and_loc_str(sym)),
+                                       filename, linenr)
                             continue
 
                         val = val[0]
