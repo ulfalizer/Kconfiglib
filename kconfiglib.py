@@ -972,13 +972,15 @@ class Kconfig(object):
 
         sync_deps(path) does the following:
 
-          1. If the directory 'path' does not exist, it is created, and an
-             empty file auto.conf is stored in it.
+          1. If the directory <path> does not exist, it is created.
+
+          2. If no <path>/auto.conf file exists, an initially empty auto.conf
+             is created.
 
              auto.conf keeps track of the old symbol values from the previous
              build. The format mirrors .config.
 
-          2. auto.conf is loaded, and the old symbol values in it are compared
+          3. auto.conf is loaded, and the old symbol values in it are compared
              against the current symbol values. If a symbol has changed value,
              the change is signaled by touch'ing a file corresponding to the
              symbol.
@@ -992,7 +994,7 @@ class Kconfig(object):
              single directory with a huge number of files, which the underlying
              filesystem might not handle well.
 
-          3. A new auto.conf is written to keep track of the current symbol
+          4. A new auto.conf is written to keep track of the current symbol
              values for the next build.
 
 
@@ -1011,7 +1013,10 @@ class Kconfig(object):
         implementation can be used as a template."""
         if not os.path.exists(path):
             os.mkdir(path, 0o755)
-            open(os.path.join(path, "auto.conf"), "w").close()
+
+        auto_conf = os.path.join(path, "auto.conf")
+        if not os.path.exists(auto_conf):
+            open(auto_conf, "w").close()
 
         # This setup makes sure that at least the current working directory
         # gets reset if things fail
