@@ -1092,7 +1092,7 @@ class Kconfig(object):
                 if not sym._written:
                     sym._written = True
                     if not (sym.orig_type in (BOOL, TRISTATE) and
-                            sym.tri_value == 0):
+                            not sym.tri_value):
                         f.write(sym.config_string)
 
     def _load_old_vals(self):
