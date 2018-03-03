@@ -967,6 +967,9 @@ class Kconfig(object):
         doing a full rebuild whenever the configuration is changed, mirroring
         include/config/ in the kernel.
 
+        This function is intended to be called during each build, before
+        compiling source files that depend on configuration symbols.
+
         path:
           Path to directory
 
@@ -974,16 +977,16 @@ class Kconfig(object):
 
           1. If the directory <path> does not exist, it is created.
 
-          2. If no <path>/auto.conf file exists, an initially empty auto.conf
-             is created.
+          2. If <path>/auto.conf exists, old symbol values are loaded from it,
+             which are then compared against the current symbol values. If a
+             symbol has changed value (would generate different output in
+             autoconf.h compared to before), the change is signaled by
+             touch'ing a file corresponding to the symbol.
 
-             auto.conf keeps track of the old symbol values from the previous
-             build. The format mirrors .config.
-
-          3. auto.conf is loaded, and the old symbol values in it are compared
-             against the current symbol values. If a symbol has changed value,
-             the change is signaled by touch'ing a file corresponding to the
-             symbol.
+             The first time sync_deps() is run on a directory, <path>/auto.conf
+             won't exist, and no old symbol values will be available. This
+             logically has the same effect as updating the entire
+             configuration.
 
              The path to a symbol's file is calculated from the symbol's name
              by replacing all '_' with '/' and appending '.h'. For example, the
@@ -994,8 +997,8 @@ class Kconfig(object):
              single directory with a huge number of files, which the underlying
              filesystem might not handle well.
 
-          4. A new auto.conf is written to keep track of the current symbol
-             values for the next build.
+          3. A new auto.conf with the current symbol values is written, to keep
+             track of them for the next build.
 
 
         The last piece of the puzzle is knowing what symbols each source file
@@ -1014,10 +1017,6 @@ class Kconfig(object):
         if not os.path.exists(path):
             os.mkdir(path, 0o755)
 
-        auto_conf = os.path.join(path, "auto.conf")
-        if not os.path.exists(auto_conf):
-            open(auto_conf, "w").close()
-
         # This setup makes sure that at least the current working directory
         # gets reset if things fail
         prev_dir = os.getcwd()
@@ -1030,7 +1029,7 @@ class Kconfig(object):
             os.chdir(prev_dir)
 
     def _sync_deps(self):
-        # Load old values from auto.conf
+        # Load old values from auto.conf, if any
         self._load_old_vals()
 
         for sym in self.defined_syms:
@@ -1103,10 +1102,15 @@ class Kconfig(object):
         # The extra field could be avoided with some trickery involving dumping
         # symbol values and restoring them later, but this is simpler and
         # faster. The C tools also use a dedicated field for this purpose.
-        with open("auto.conf", _UNIVERSAL_NEWLINES_MODE) as f:
-            for sym in self.defined_syms:
-                sym._old_val = None
 
+        for sym in self.defined_syms:
+            sym._old_val = None
+
+        if not os.path.exists("auto.conf"):
+            # No old values
+            return
+
+        with open("auto.conf", _UNIVERSAL_NEWLINES_MODE) as f:
             for line in f:
                 set_match = self._set_re_match(line)
                 if not set_match:
