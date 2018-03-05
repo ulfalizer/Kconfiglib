@@ -2879,7 +2879,7 @@ class Symbol(object):
         See the class documentation.
         """
         if self._cached_assignable is None:
-            self._cached_assignable = self._get_assignable()
+            self._cached_assignable = self._assignable()
 
         return self._cached_assignable
 
@@ -2889,7 +2889,7 @@ class Symbol(object):
         See the class documentation.
         """
         if self._cached_vis is None:
-            self._cached_vis = _get_visibility(self)
+            self._cached_vis = _visibility(self)
 
         return self._cached_vis
 
@@ -3145,7 +3145,7 @@ class Symbol(object):
         # See Kconfig._build_dep()
         self._dependents = set()
 
-    def _get_assignable(self):
+    def _assignable(self):
         """
         Worker function for the 'assignable' attribute.
         """
@@ -3514,7 +3514,7 @@ class Choice(object):
         See the class documentation.
         """
         if self._cached_assignable is None:
-            self._cached_assignable = self._get_assignable()
+            self._cached_assignable = self._assignable()
 
         return self._cached_assignable
 
@@ -3524,7 +3524,7 @@ class Choice(object):
         See the class documentation.
         """
         if self._cached_vis is None:
-            self._cached_vis = _get_visibility(self)
+            self._cached_vis = _visibility(self)
 
         return self._cached_vis
 
@@ -3534,7 +3534,7 @@ class Choice(object):
         See the class documentation.
         """
         if self._cached_selection is _NO_CACHED_SELECTION:
-            self._cached_selection = self._get_selection()
+            self._cached_selection = self._selection()
 
         return self._cached_selection
 
@@ -3674,7 +3674,7 @@ class Choice(object):
         # See Kconfig._build_dep()
         self._dependents = set()
 
-    def _get_assignable(self):
+    def _assignable(self):
         """
         Worker function for the 'assignable' attribute.
         """
@@ -3694,7 +3694,7 @@ class Choice(object):
 
         return (0, 1) if self.is_optional else (1,)
 
-    def _get_selection(self):
+    def _selection(self):
         """
         Worker function for the 'selection' attribute.
         """
@@ -4051,7 +4051,7 @@ def unescape(s):
 # Internal functions
 #
 
-def _get_visibility(sc):
+def _visibility(sc):
     """
     Symbols and Choices have a "visibility" that acts as an upper bound on the
     values a user can set for them, corresponding to the visibility in e.g.
