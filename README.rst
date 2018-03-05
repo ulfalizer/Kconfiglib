@@ -23,11 +23,12 @@ configuration systems. It can do the following, among other things:
   produce identical output to the standard ``make allnoconfig`` and ``make
   allyesconfig``.
 
-- **Read and write .config files**
+- **Read and write .config and defconfig files**
 
-  The generated ``.config`` files are character-for-character identical to what
-  the C implementation would generate (except for the header comment). The test
-  suite relies on this, as it compares the generated files.
+  The generated ``.config`` and ``defconfig`` (minimal configuration) files are
+  character-for-character identical to what the C implementation would generate
+  (except for the header comment). The test suite relies on this, as it
+  compares the generated files.
   
 - **Write C headers**
 

@@ -24,6 +24,9 @@
 #    by an order of magnitude. Occasionally finds (usually obscure) bugs, and I
 #    make sure everything passes with it.
 #
+#  - obsessive-min-config:
+#    Like obsessive, for the minimal configuation (defconfig) tests.
+#
 #  - log:
 #    Log timestamped defconfig test failures to the file test_defconfig_fails.
 #    Handy in obsessive mode.
@@ -87,6 +90,7 @@ os.environ.pop("KCONFIG_ALLCONFIG", None)
 
 speedy = False
 obsessive = False
+obsessive_min_config = False
 log = False
 
 def run_tests():
@@ -98,6 +102,9 @@ def run_tests():
         elif s == "obsessive":
             obsessive = True
             print("Obsessive mode enabled")
+        elif s == "obsessive-min-config":
+            obsessive_min_config = True
+            print("Obsessive minimal config mode enabled")
         elif s == "log":
             log = True
             print("Log mode enabled")
@@ -1715,6 +1722,9 @@ def run_compatibility_tests():
 
     test_fns = (test_alldefconfig,
                 test_defconfig,
+                # Fails for a few defconfigs due to a bug in the C tools. Will
+                # be enabled once patches get in.
+                #test_min_config,
                 test_sanity,
                 test_all_no,
                 test_all_no_simpler,
@@ -2021,6 +2031,37 @@ def test_defconfig(conf, arch, srcarch):
                 with open("test_defconfig_fails", "a") as fail_log:
                     fail_log.write("{} with {} did not match\n"
                                    .format(arch, defconfig))
+
+def test_min_config(conf, arch, srcarch):
+    """
+    Verify that Kconfiglib generates the same .config as 'make savedefconfig'
+    for each architecture/defconfig pair.
+    """
+    if obsessive_min_config:
+        defconfigs = []
+        for srcarch_ in os.listdir("arch"):
+            defconfigs.extend(defconfig_files(srcarch_))
+    else:
+        defconfigs = defconfig_files(srcarch)
+
+    for defconfig in defconfigs:
+        conf.load_config(defconfig)
+        conf.write_min_config("._config")
+
+        shell("cp {} .config".format(defconfig))
+
+        if speedy:
+            shell("scripts/kconfig/conf --savedefconfig=.config Kconfig")
+        else:
+            shell("make savedefconfig")
+            shell("mv defconfig .config")
+
+        arch_defconfig_str = "  {:14}with {:60} ".format(arch, defconfig)
+
+        if equal_configs():
+            print(arch_defconfig_str + "OK")
+        else:
+            print(arch_defconfig_str + "FAIL")
 
 #
 # Helper functions
