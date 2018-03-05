@@ -1087,6 +1087,7 @@ class Kconfig(object):
         #
         # A separate helper function is neater than complicating write_config()
         # by passing a flag to it, plus we only need to look at symbols here.
+
         with open("auto.conf", "w") as f:
             for sym in self.defined_syms:
                 sym._written = False
@@ -1253,10 +1254,9 @@ class Kconfig(object):
     #
 
     def _open(self, filename):
-        """
-        First tries to open 'filename', then '$srctree/filename' if $srctree
-        was set when the configuration was loaded.
-        """
+        # First tries to open 'filename', then '$srctree/filename' if $srctree
+        # was set when the configuration was loaded
+
         try:
             return open(filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
@@ -1282,10 +1282,9 @@ class Kconfig(object):
                         '"{}"'.format(self.srctree)))
 
     def _enter_file(self, filename):
-        """
-        Jumps to the beginning of a sourced Kconfig file, saving the previous
-        position and file object.
-        """
+        # Jumps to the beginning of a sourced Kconfig file, saving the previous
+        # position and file object
+
         # Check for recursive 'source'
         for _, name, _ in self._filestack:
             if name == filename:
@@ -1316,17 +1315,15 @@ class Kconfig(object):
         self._linenr = 0
 
     def _leave_file(self):
-        """
-        Returns from a Kconfig file to the file that sourced it.
-        """
+        # Returns from a Kconfig file to the file that sourced it
+
         self._file.close()
         self._file, self._filename, self._linenr = self._filestack.pop()
 
     def _next_line(self):
-        """
-        Fetches and tokenizes the next line from the current Kconfig file.
-        Returns False at EOF and True otherwise.
-        """
+        # Fetches and tokenizes the next line from the current Kconfig file.
+        # Returns False at EOF and True otherwise.
+
         # _saved_line provides a single line of "unget", currently only used
         # for help texts.
         #
@@ -1355,11 +1352,10 @@ class Kconfig(object):
     #
 
     def _lookup_sym(self, name):
-        """
-        Fetches the symbol 'name' from the symbol table, creating and
-        registering it if it does not exist. If '_parsing_kconfigs' is False,
-        it means we're in eval_string(), and new symbols won't be registered.
-        """
+        # Fetches the symbol 'name' from the symbol table, creating and
+        # registering it if it does not exist. If '_parsing_kconfigs' is False,
+        # it means we're in eval_string(), and new symbols won't be registered.
+
         if name in self.syms:
             return self.syms[name]
 
@@ -1377,9 +1373,8 @@ class Kconfig(object):
         return sym
 
     def _lookup_const_sym(self, name):
-        """
-        Like _lookup_sym(), for constant (quoted) symbols
-        """
+        # Like _lookup_sym(), for constant (quoted) symbols
+
         if name in self.const_syms:
             return self.const_syms[name]
 
@@ -1395,14 +1390,13 @@ class Kconfig(object):
         return sym
 
     def _tokenize(self):
-        """
-        Parses Kconfig._line, putting the tokens in Kconfig._tokens. Registers
-        any new symbols encountered with _lookup(_const)_sym().
+        # Parses Kconfig._line, putting the tokens in Kconfig._tokens.
+        # Registers any new symbols encountered with _lookup(_const)_sym().
+        #
+        # Tries to be reasonably speedy by processing chunks of text via
+        # regexes and string operations where possible. This is the biggest
+        # hotspot during parsing.
 
-        Tries to be reasonably speedy by processing chunks of text via regexes
-        and string operations where possible. This is the biggest hotspot
-        during parsing.
-        """
         s = self._line
 
         # Token index (minus one). Set for later -- not further updated here.
@@ -1666,9 +1660,8 @@ class Kconfig(object):
 
 
     def _check_token(self, token):
-        """
-        If the next token is 'token', removes it and returns True.
-        """
+        # If the next token is 'token', removes it and returns True
+
         if self._tokens[self._tokens_i + 1] == token:
             self._tokens_i += 1
             return True
@@ -1680,9 +1673,8 @@ class Kconfig(object):
     #
 
     def _make_and(self, e1, e2):
-        """
-        Constructs an AND (&&) expression. Performs trivial simplification.
-        """
+        # Constructs an AND (&&) expression. Performs trivial simplification.
+
         if e1 is self.y:
             return e2
 
@@ -1695,9 +1687,8 @@ class Kconfig(object):
         return (AND, e1, e2)
 
     def _make_or(self, e1, e2):
-        """
-        Constructs an OR (||) expression. Performs trivial simplification.
-        """
+        # Constructs an OR (||) expression. Performs trivial simplification.
+
         if e1 is self.n:
             return e2
 
@@ -1710,35 +1701,33 @@ class Kconfig(object):
         return (OR, e1, e2)
 
     def _parse_block(self, end_token, parent, visible_if_deps, prev_node):
-        """
-        Parses a block, which is the contents of either a file or an if, menu,
-        or choice statement.
+        # Parses a block, which is the contents of either a file or an if,
+        # menu, or choice statement.
+        #
+        # end_token:
+        #   The token that ends the block, e.g. _T_ENDIF ("endif") for ifs.
+        #   None for files.
+        #
+        # parent:
+        #   The parent menu node, corresponding to a menu, Choice, or 'if'.
+        #   'if's are flattened after parsing.
+        #
+        # visible_if_deps:
+        #   'visible if' dependencies from enclosing menus. Propagated to
+        #   Symbol and Choice prompts.
+        #
+        # prev_node:
+        #   The previous menu node. New nodes will be added after this one (by
+        #   modifying their 'next' pointer).
+        #
+        #   prev_node is reused to parse a list of child menu nodes (for a menu
+        #   or Choice): After parsing the children, the 'next' pointer is
+        #   assigned to the 'list' pointer to "tilt up" the children above the
+        #   node.
+        #
+        # Returns the final menu node in the block (or prev_node if the block is
+        # empty). This allows chaining.
 
-        end_token:
-          The token that ends the block, e.g. _T_ENDIF ("endif") for ifs. None
-          for files.
-
-        parent:
-          The parent menu node, corresponding to a menu, Choice, or 'if'. 'if's
-          are flattened after parsing.
-
-        visible_if_deps:
-          'visible if' dependencies from enclosing menus. Propagated to Symbol
-          and Choice prompts.
-
-        prev_node:
-          The previous menu node. New nodes will be added after this one (by
-          modifying their 'next' pointer).
-
-          prev_node is reused to parse a list of child menu nodes (for a menu
-          or Choice): After parsing the children, the 'next' pointer is
-          assigned to the 'list' pointer to "tilt up" the children above the
-          node.
-
-
-        Returns the final menu node in the block (or prev_node if the block is
-        empty). This allows chaining.
-        """
         # We might already have tokens from parsing a line to check if it's a
         # property and discovering it isn't. self._has_tokens functions as a
         # kind of "unget".
@@ -1913,31 +1902,29 @@ class Kconfig(object):
         return prev_node
 
     def _parse_cond(self):
-        """
-        Parses an optional 'if <expr>' construct and returns the parsed <expr>,
-        or self.y if the next token is not _T_IF
-        """
+        # Parses an optional 'if <expr>' construct and returns the parsed
+        # <expr>, or self.y if the next token is not _T_IF
+
         expr = self._parse_expr(True) if self._check_token(_T_IF) else self.y
         if self._peek_token() is not None:
             self._parse_error("extra tokens at end of line")
         return expr
 
     def _parse_properties(self, node, visible_if_deps):
-        """
-        Parses properties for symbols, menus, choices, and comments. Also takes
-        care of propagating dependencies from the menu node to the properties
-        of the item (this mirrors the C tools, though they do it after
-        parsing).
+        # Parses properties for symbols, menus, choices, and comments. Also
+        # takes care of propagating dependencies from the menu node to the
+        # properties of the item (this mirrors the C tools, though they do it
+        # after parsing).
+        #
+        # node:
+        #   The menu node we're parsing properties on. Prompt, help text,
+        #   'depends on', and 'visible if' properties apply to the Menu node,
+        #   while other properties apply to the contained item.
+        #
+        # visible_if_deps:
+        #   'visible if' dependencies from enclosing menus. Propagated to
+        #   Symbol and Choice prompts.
 
-        node:
-          The menu node we're parsing properties on. Prompt, help text,
-          'depends on', and 'visible if' properties apply to the Menu node,
-          while the others apply to the contained item.
-
-        visible_if_deps:
-          'visible if' dependencies from enclosing menus. Propagated to Symbol
-          and Choice prompts.
-        """
         # New properties encountered at this location. A local 'depends on'
         # only applies to these, in case a symbol is defined in multiple
         # locations.
@@ -2224,14 +2211,14 @@ class Kconfig(object):
                                                                 node.dep)))
 
     def _parse_expr(self, transform_m):
-        """
-        Parses an expression from the tokens in Kconfig._tokens using a simple
-        top-down approach. See the module docstring for the expression format.
+        # Parses an expression from the tokens in Kconfig._tokens using a
+        # simple top-down approach. See the module docstring for the expression
+        # format.
+        #
+        # transform_m:
+        #   True if m should be rewritten to m && MODULES. See the
+        #   Kconfig.eval_string() documentation.
 
-        transform_m:
-          True if m should be rewritten to m && MODULES. See the
-          Kconfig.eval_string() documentation.
-        """
         # Grammar:
         #
         #   expr:     and_expr ['||' expr]
@@ -2314,15 +2301,14 @@ class Kconfig(object):
     #
 
     def _build_dep(self):
-        """
-        Populates the Symbol/Choice._dependents sets, which contain all other
-        items (symbols and choices) that immediately depend on the item in the
-        sense that changing the value of the item might affect the value of the
-        dependent items. This is used for caching/invalidation.
+        # Populates the Symbol/Choice._dependents sets, which contain all other
+        # items (symbols and choices) that immediately depend on the item in
+        # the sense that changing the value of the item might affect the value
+        # of the dependent items. This is used for caching/invalidation.
+        #
+        # The calculated sets might be larger than necessary as we don't do any
+        # complex analysis of the expressions.
 
-        The calculated sets might be larger than necessary as we don't do any
-        complex analysis of the expressions.
-        """
         # Only calculate _dependents for defined symbols. Constant and
         # undefined symbols could theoretically be selected/implied, but it
         # wouldn't change their value, so it's not a true dependency.
@@ -2394,10 +2380,9 @@ class Kconfig(object):
     #
 
     def _expand_syms(self, s):
-        """
-        Expands $-references to symbols in 's' to symbol values, or to the
-        empty string for undefined symbols.
-        """
+        # Expands $-references to symbols in 's' to symbol values, or to the
+        # empty string for undefined symbols
+
         while 1:
             sym_ref_match = _sym_ref_re_search(s)
             if not sym_ref_match:
@@ -2419,31 +2404,27 @@ class Kconfig(object):
             "{}Couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
 
     def _warn(self, msg, filename=None, linenr=None):
-        """
-        For printing general warnings.
-        """
+        # For printing general warnings
+
         if self._print_warnings:
             _stderr_msg("warning: " + msg, filename, linenr)
 
     def _warn_undef_assign(self, msg, filename=None, linenr=None):
-        """
-        See the class documentation.
-        """
+        # See the class documentation
+
         if self._print_undef_assign:
             _stderr_msg("warning: " + msg, filename, linenr)
 
     def _warn_undef_assign_load(self, name, val, filename, linenr):
-        """
-        Special version for load_config().
-        """
+        # Special version for load_config()
+
         self._warn_undef_assign(
             'attempt to assign the value "{}" to the undefined symbol {}'
             .format(val, name), filename, linenr)
 
     def _warn_redun_assign(self, msg, filename=None, linenr=None):
-        """
-        See the class documentation.
-        """
+        # See the class documentation
+
         if self._print_redun_assign:
             _stderr_msg("warning: " + msg, filename, linenr)
 
@@ -3147,9 +3128,8 @@ class Symbol(object):
         self._dependents = set()
 
     def _assignable(self):
-        """
-        Worker function for the 'assignable' attribute.
-        """
+        # Worker function for the 'assignable' attribute
+
         if self.orig_type not in (BOOL, TRISTATE):
             return ()
 
@@ -3195,16 +3175,14 @@ class Symbol(object):
         return (1,)
 
     def _invalidate(self):
-        """
-        Marks the symbol as needing to be recalculated.
-        """
+        # Marks the symbol as needing to be recalculated
+
         self._cached_str_val = self._cached_tri_val = self._cached_vis = \
             self._cached_assignable = None
 
     def _rec_invalidate(self):
-        """
-        Invalidates the symbol and all items that (possibly) depend on it.
-        """
+        # Invalidates the symbol and all items that (possibly) depend on it
+
         if self is self.kconfig.modules:
             # Invalidating MODULES has wide-ranging effects
             self.kconfig._invalidate_all()
@@ -3234,19 +3212,18 @@ class Symbol(object):
                     item._rec_invalidate()
 
     def _rec_invalidate_if_has_prompt(self):
-        """
-        Invalidates the symbol and its dependent symbols, but only if the
-        symbol has a prompt. User values never have an effect on promptless
-        symbols, so we skip invalidation for them as an optimization.
+        # Invalidates the symbol and its dependent symbols, but only if the
+        # symbol has a prompt. User values never have an effect on promptless
+        # symbols, so we skip invalidation for them as an optimization.
+        #
+        # This also prevents constant (quoted) symbols from being invalidated
+        # if set_value() is called on them, which would cause them to lose
+        # their value and break things.
+        #
+        # Prints a warning if the symbol has no prompt. In some contexts (e.g.
+        # when loading a .config files) assignments to promptless symbols are
+        # normal and expected, so the warning can be disabled.
 
-        This also prevents constant (quoted) symbols from being invalidated if
-        set_value() is called on them, which would cause them to lose their
-        value and break things.
-
-        Prints a warning if the symbol has no prompt. In some contexts (e.g.
-        when loading a .config files) assignments to promptless symbols are
-        normal and expected, so the warning can be disabled.
-        """
         for node in self.nodes:
             if node.prompt:
                 self._rec_invalidate()
@@ -3257,11 +3234,10 @@ class Symbol(object):
                                "meaning user values have no effect on it")
 
     def _warn_select_unsatisfied_deps(self):
-        """
-        Helper for printing an informative warning when a symbol with
-        unsatisfied direct dependencies (dependencies from 'depends on', ifs,
-        and menus) is selected by some other symbol
-        """
+        # Helper for printing an informative warning when a symbol with
+        # unsatisfied direct dependencies (dependencies from 'depends on', ifs,
+        # and menus) is selected by some other symbol
+
         warn_msg = "{} has unsatisfied direct dependencies ({}), but is " \
                    "currently being selected by the following symbols:" \
                    .format(_name_and_loc_str(self),
@@ -3676,9 +3652,8 @@ class Choice(object):
         self._dependents = set()
 
     def _assignable(self):
-        """
-        Worker function for the 'assignable' attribute.
-        """
+        # Worker function for the 'assignable' attribute
+
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
         # function call (property magic)
         vis = self.visibility
@@ -3696,9 +3671,8 @@ class Choice(object):
         return (0, 1) if self.is_optional else (1,)
 
     def _selection(self):
-        """
-        Worker function for the 'selection' attribute.
-        """
+        # Worker function for the 'selection' attribute
+
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
         # function call (property magic)
         if self.tri_value != 2:
@@ -3728,9 +3702,8 @@ class Choice(object):
         self._cached_selection = _NO_CACHED_SELECTION
 
     def _rec_invalidate(self):
-        """
-        See Symbol._rec_invalidate()
-        """
+        # See Symbol._rec_invalidate()
+
         self._invalidate()
 
         for item in self._dependents:
@@ -4053,12 +4026,11 @@ def unescape(s):
 #
 
 def _visibility(sc):
-    """
-    Symbols and Choices have a "visibility" that acts as an upper bound on the
-    values a user can set for them, corresponding to the visibility in e.g.
-    'make menuconfig'. This function calculates the visibility for the Symbol
-    or Choice 'sc' -- the logic is nearly identical.
-    """
+    # Symbols and Choices have a "visibility" that acts as an upper bound on
+    # the values a user can set for them, corresponding to the visibility in
+    # e.g. 'make menuconfig'. This function calculates the visibility for the
+    # Symbol or Choice 'sc' -- the logic is nearly identical.
+
     vis = 0
 
     for node in sc.nodes:
@@ -4083,10 +4055,9 @@ def _visibility(sc):
     return vis
 
 def _make_depend_on(sym, expr):
-    """
-    Adds 'sym' as a dependency to all symbols in 'expr'. Constant symbols in
-    'expr' are skipped as they can never change value anyway.
-    """
+    # Adds 'sym' as a dependency to all symbols in 'expr'. Constant symbols in
+    # 'expr' are skipped as they can never change value anyway.
+
     if not isinstance(expr, tuple):
         if not expr.is_constant:
             expr._dependents.add(sym)
@@ -4109,33 +4080,30 @@ def _make_depend_on(sym, expr):
                         "expression with token stream {}.".format(expr))
 
 def _format_and_op(expr):
-    """
-    expr_str() helper. Returns the string representation of 'expr', which is
-    assumed to be an operand to AND, with parentheses added if needed.
-    """
+    # expr_str() helper. Returns the string representation of 'expr', which is
+    # assumed to be an operand to AND, with parentheses added if needed.
+
     if isinstance(expr, tuple) and expr[0] == OR:
         return "({})".format(expr_str(expr))
     return expr_str(expr)
 
 def _indentation(line):
-    """
-    Returns the length of the line's leading whitespace, treating tab stops as
-    being spaced 8 characters apart.
-    """
+    # Returns the length of the line's leading whitespace, treating tab stops
+    # as being spaced 8 characters apart.
+
     line = line.expandtabs()
     return len(line) - len(line.lstrip())
 
 def _dedent_rstrip(line, indent):
-    r"""
-    De-indents 'line' by 'indent' spaces and rstrip()s it to remove any
-    newlines (which gets rid of other trailing whitespace too, but that's
-    fine).
+    # De-indents 'line' by 'indent' spaces and rstrip()s it to remove any
+    # newlines (which gets rid of other trailing whitespace too, but that's
+    # fine).
+    #
+    # Used to prepare help text lines in a speedy way: The [indent:] might
+    # already remove trailing newlines for lines shorter than indent (e.g.
+    # empty lines). The rstrip() makes it consistent, meaning we can join the
+    # lines with "\n" later.
 
-    Used to prepare help text lines in a speedy way: The [indent:] might
-    already remove trailing newlines for lines shorter than indent (e.g. empty
-    lines). The rstrip() makes it consistent, meaning we can join the lines
-    with "\n" later.
-    """
     return line.expandtabs()[indent:].rstrip()
 
 def _is_base_n(s, n):
@@ -4146,16 +4114,14 @@ def _is_base_n(s, n):
         return False
 
 def _strcmp(s1, s2):
-    """
-    strcmp()-alike that returns -1, 0, or 1.
-    """
+    # strcmp()-alike that returns -1, 0, or 1
+
     return (s1 > s2) - (s1 < s2)
 
 def _sym_to_num(sym):
-    """
-    expr_value() helper for converting a symbol to a number. Raises ValueError
-    for symbols that can't be converted.
-    """
+    # expr_value() helper for converting a symbol to a number. Raises
+    # ValueError for symbols that can't be converted.
+
     # For BOOL and TRISTATE, n/m/y count as 0/1/2. This mirrors 9059a3493ef
     # ("kconfig: fix relational operators for bool and tristate symbols") in
     # the C implementation.
@@ -4178,10 +4144,9 @@ def _internal_error(msg):
 # Printing functions
 
 def _sym_choice_str(sc):
-    """
-    Symbol/choice __str__() implementation. These have many properties in
-    common, so it makes sense to handle them together.
-    """
+    # Symbol/choice __str__() implementation. These have many properties in
+    # common, so it makes sense to handle them together.
+
     lines = []
 
     def indent_add(s):
@@ -4280,10 +4245,8 @@ def _sym_choice_str(sc):
     return "\n".join(lines) + "\n"
 
 def _name_and_loc_str(sc):
-    """
-    Helper for giving the symbol/choice name and location(s) in e.g.
-    warnings
-    """
+    # Helper for giving the symbol/choice name and location(s) in e.g. warnings
+
     name = sc.name or "<choice>"
 
     if not sc.nodes:
@@ -4298,11 +4261,10 @@ def _name_and_loc_str(sc):
 # Menu manipulation
 
 def _expr_depends_on(expr, sym):
-    """
-    Reimplementation of expr_depends_symbol() from mconf.c. Used to
-    determine if a submenu should be implicitly created. This also influences
-    which items inside choice statements are considered choice items.
-    """
+    # Reimplementation of expr_depends_symbol() from mconf.c. Used to determine
+    # if a submenu should be implicitly created. This also influences which
+    # items inside choice statements are considered choice items.
+
     if not isinstance(expr, tuple):
         return expr is sym
 
@@ -4329,11 +4291,10 @@ def _expr_depends_on(expr, sym):
     return False
 
 def _has_auto_menu_dep(node1, node2):
-    """
-    Returns True if node2 has an "automatic menu dependency" on node1. If node2
-    has a prompt, we check its condition. Otherwise, we look directly at
-    node2.dep.
-    """
+    # Returns True if node2 has an "automatic menu dependency" on node1. If
+    # node2 has a prompt, we check its condition. Otherwise, we look directly
+    # at node2.dep.
+
     if node2.prompt:
         return _expr_depends_on(node2.prompt[1], node1.item)
 
@@ -4341,12 +4302,11 @@ def _has_auto_menu_dep(node1, node2):
     return _expr_depends_on(node2.dep, node1.item)
 
 def _flatten(node):
-    """
-    "Flattens" menu nodes without prompts (e.g. 'if' nodes and non-visible
-    symbols with children from automatic menu creation) so that their children
-    appear after them instead. This gives a clean menu structure with no
-    unexpected "jumps" in the indentation.
-    """
+    # "Flattens" menu nodes without prompts (e.g. 'if' nodes and non-visible
+    # symbols with children from automatic menu creation) so that their
+    # children appear after them instead. This gives a clean menu structure
+    # with no unexpected "jumps" in the indentation.
+
     while node:
         if node.list and (not node.prompt or node.prompt[0] == ""):
 
@@ -4364,12 +4324,11 @@ def _flatten(node):
         node = node.next
 
 def _remove_ifs(node):
-    """
-    Removes 'if' nodes (which can be recognized by MenuNode.item being None),
-    which are assumed to already have been flattened. The C implementation
-    doesn't bother to do this, but we expose the menu tree directly, and it
-    makes it nicer to work with.
-    """
+    # Removes 'if' nodes (which can be recognized by MenuNode.item being None),
+    # which are assumed to already have been flattened. The C implementation
+    # doesn't bother to do this, but we expose the menu tree directly, and it
+    # makes it nicer to work with.
+
     first = node.list
     while first and first.item is None:
         first = first.next
@@ -4383,11 +4342,10 @@ def _remove_ifs(node):
     node.list = first
 
 def _finalize_choice(node):
-    """
-    Finalizes a choice, marking each symbol whose menu node has the choice as
-    the parent as a choice symbol, and automatically determining types if not
-    specified.
-    """
+    # Finalizes a choice, marking each symbol whose menu node has the choice as
+    # the parent as a choice symbol, and automatically determining types if not
+    # specified.
+
     choice = node.item
 
     cur = node.list
@@ -4411,12 +4369,11 @@ def _finalize_choice(node):
             sym.orig_type = choice.orig_type
 
 def _finalize_tree(node):
-    """
-    Creates implicit menus from dependencies (see kconfig-language.txt),
-    removes 'if' nodes, and finalizes choices. This pretty closely mirrors
-    menu_finalize() from the C implementation, though we propagate dependencies
-    during parsing instead.
-    """
+    # Creates implicit menus from dependencies (see kconfig-language.txt),
+    # removes 'if' nodes, and finalizes choices. This pretty closely mirrors
+    # menu_finalize() from the C implementation, though we propagate
+    # dependencies during parsing instead.
+
     if node.list:
         # The menu node is a choice, menu, or if. Finalize each child in it.
         cur = node.list
@@ -4459,10 +4416,9 @@ def _finalize_tree(node):
         _check_choice_sanity(node.item)
 
 def _check_sym_sanity(sym):
-    """
-    Checks various symbol properties that are handiest to check after parsing.
-    Only generates errors and warnings.
-    """
+    # Checks various symbol properties that are handiest to check after
+    # parsing. Only generates errors and warnings.
+
     if sym.orig_type in (BOOL, TRISTATE):
         # A helper function could be factored out here, but keep it
         # speedy/straightforward for now. bool/tristate symbols are by far the
@@ -4536,10 +4492,9 @@ def _int_hex_value_is_sane(sym, type_):
            sym.orig_type == type_
 
 def _check_choice_sanity(choice):
-    """
-    Checks various choice properties that are handiest to check after parsing.
-    Only generates errors and warnings.
-    """
+    # Checks various choice properties that are handiest to check after
+    # parsing. Only generates errors and warnings.
+
     if choice.orig_type not in (BOOL, TRISTATE):
         choice.kconfig._warn("{} defined with type {}"
                              .format(_name_and_loc_str(choice),
