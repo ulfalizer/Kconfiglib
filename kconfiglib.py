@@ -2790,8 +2790,12 @@ class Symbol(object):
                         self._write_to_conf = True
                         break
 
-        # Corresponds to SYMBOL_AUTO in the C implementation
-        if self.env_var is not None:
+        # env_var corresponds to SYMBOL_AUTO in the C implementation, and is
+        # also set on the defconfig_list symbol there. Test for the
+        # defconfig_list symbol explicitly instead here, to avoid a nonsensical
+        # env_var setting and the defconfig_list being printed incorrectly.
+        # This code is pretty cold anyway.
+        if self.env_var is not None or self is self.kconfig.defconfig_list:
             self._write_to_conf = False
 
         self._cached_str_val = val
