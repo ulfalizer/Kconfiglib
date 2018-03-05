@@ -1033,6 +1033,9 @@ class Kconfig(object):
         self._load_old_vals()
 
         for sym in self.defined_syms:
+            # Note: _write_to_conf is determined when the value is
+            # calculated. This is a hidden function call due to
+            # property magic.
             val = sym.str_value
 
             # Note: n tristate values do not get written to auto.conf and
@@ -1041,12 +1044,12 @@ class Kconfig(object):
             if sym._write_to_conf:
                 if sym._old_val is None and \
                    sym.orig_type in (BOOL, TRISTATE) and \
-                   not sym.tri_value:
+                   val == "n":
                     # No old value (the symbol was missing or n), new value n.
                     # No change.
                     continue
 
-                if sym.str_value == sym._old_val:
+                if val == sym._old_val:
                     # New value matches old. No change.
                     continue
 
