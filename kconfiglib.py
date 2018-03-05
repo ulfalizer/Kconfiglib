@@ -2813,11 +2813,12 @@ class Symbol(object):
             self._cached_tri_val = 0
             return 0
 
-        val = 0
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
         # function call (property magic)
         vis = self.visibility
         self._write_to_conf = (vis != 0)
+
+        val = 0
 
         if not self.choice:
             # Non-choice symbol
