@@ -52,7 +52,6 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-import time
 
 def shell(cmd):
     with open(os.devnull, "w") as devnull:
@@ -2051,10 +2050,8 @@ def test_defconfig(conf, arch, srcarch):
             fail()
             if log:
                 with open("test_defconfig_fails", "a") as fail_log:
-                    fail_log.write("{}  {} with {} did not match\n"
-                            .format(time.strftime("%d %b %Y %H:%M:%S",
-                                                  time.localtime()),
-                                    arch, defconfig))
+                    fail_log.write("{} with {} did not match\n"
+                                   .format(arch, defconfig))
 
 #
 # Helper functions
