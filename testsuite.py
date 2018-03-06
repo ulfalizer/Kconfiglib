@@ -2015,8 +2015,8 @@ def test_defconfig(conf, arch, srcarch):
     if obsessive:
         # Collect all defconfigs. This could be done once instead, but it's
         # a speedy operation comparatively.
-        for arch_ in os.listdir("arch"):
-            add_configs_for_arch(arch_)
+        for srcarch in os.listdir("arch"):
+            add_configs_for_arch(srcarch)
     else:
         add_configs_for_arch(srcarch)
 
