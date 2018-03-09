@@ -1980,39 +1980,15 @@ def test_defconfig(conf, arch, srcarch):
     With logging enabled, this test appends any failures to a file
     test_defconfig_fails in the root.
     """
-    defconfigs = []
-
-    def add_configs_for_arch(srcarch):
-        srcarch_dir = os.path.join("arch", srcarch)
-
-        # Some arches have a "defconfig" in the root of their arch/<arch>/
-        # directory
-        root_defconfig = os.path.join(srcarch_dir, "defconfig")
-        if os.path.exists(root_defconfig):
-            defconfigs.append(root_defconfig)
-
-        # Assume all files in the arch/<arch>/configs directory (if it
-        # exists) are configurations
-        defconfigs_dir = os.path.join(srcarch_dir, "configs")
-        if not os.path.exists(defconfigs_dir):
-            return
-
-        if not os.path.isdir(defconfigs_dir):
-            print("Warning: '{}' is not a directory - skipping"
-                  .format(defconfigs_dir))
-            return
-
-        for dirpath, _, filenames in os.walk(defconfigs_dir):
-            for filename in filenames:
-                defconfigs.append(os.path.join(dirpath, filename))
-
     if obsessive:
+        defconfigs = []
+
         # Collect all defconfigs. This could be done once instead, but it's
         # a speedy operation comparatively.
         for srcarch_ in os.listdir("arch"):
-            add_configs_for_arch(srcarch_)
+            defconfigs.extend(defconfig_files(srcarch_))
     else:
-        add_configs_for_arch(srcarch)
+        defconfigs = defconfig_files(srcarch)
 
     # Test architecture for each defconfig
 
@@ -2049,6 +2025,28 @@ def test_defconfig(conf, arch, srcarch):
 #
 # Helper functions
 #
+
+def defconfig_files(srcarch):
+    # Yields a list of defconfig file filenames for a particular srcarch
+    # subdirectory (arch/<srcarch>/)
+
+    srcarch_dir = os.path.join("arch", srcarch)
+
+    # Some arches have a defconfig in the root of their arch/<arch>/ directory
+    root_defconfig = os.path.join(srcarch_dir, "defconfig")
+    if os.path.exists(root_defconfig):
+        yield root_defconfig
+
+    # Assume all files in the arch/<arch>/configs/ directory (if it exists) are
+    # configurations
+    defconfigs_dir = os.path.join(srcarch_dir, "configs")
+
+    if not os.path.isdir(defconfigs_dir):
+        return
+
+    for dirpath, _, filenames in os.walk(defconfigs_dir):
+        for filename in filenames:
+            yield os.path.join(dirpath, filename)
 
 def rm_configs():
     """
