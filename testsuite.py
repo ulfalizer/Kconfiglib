@@ -89,9 +89,6 @@ speedy = False
 obsessive = False
 log = False
 
-# Number of arch/defconfig pairs tested so far
-nconfigs = 0
-
 def run_tests():
     global speedy, obsessive, log
     for s in sys.argv[1:]:
@@ -1737,7 +1734,6 @@ def run_compatibility_tests():
 
     if all_passed:
         print("All selftests and compatibility tests passed")
-        print("{} arch/defconfig pairs tested".format(nconfigs))
     else:
         print("Some tests failed")
         sys.exit(1)
@@ -1984,7 +1980,6 @@ def test_defconfig(conf, arch, srcarch):
     With logging enabled, this test appends any failures to a file
     test_defconfig_fails in the root.
     """
-    global nconfigs
     defconfigs = []
 
     def add_configs_for_arch(srcarch):
@@ -2023,8 +2018,6 @@ def test_defconfig(conf, arch, srcarch):
 
     for defconfig in defconfigs:
         rm_configs()
-
-        nconfigs += 1
 
         conf.load_config(defconfig)
         conf.write_config("._config")
