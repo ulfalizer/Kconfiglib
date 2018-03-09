@@ -512,7 +512,7 @@ class Kconfig(object):
     # Public interface
     #
 
-    def __init__(self, filename="Kconfig", warn=True):
+    def __init__(self, filename="Kconfig", warn=True, globbing=False):
         """
         Creates a new Kconfig object by parsing Kconfig files. Raises
         KconfigSyntaxError on syntax errors. Note that Kconfig files are not
@@ -536,6 +536,12 @@ class Kconfig(object):
           stderr. This can be changed later with
           Kconfig.enable/disable_warnings(). It is provided as a constructor
           argument since warnings might be generated during parsing.
+
+        globbing (default: False):
+          Enable the globbing extension. The 'source' statements will
+          now accept Unix style shell pathname patterns such as
+          '*/Kconfig'. Disabled by default for backwards
+          compatibility.
         """
         self.srctree = os.environ.get("srctree")
 
@@ -555,6 +561,8 @@ class Kconfig(object):
             re.compile(r"# {}([^ ]+) is not set".format(self.config_prefix),
                        _RE_ASCII).match
 
+
+        self._globbing = globbing
 
         self._print_warnings = warn
         self._print_undef_assign = False
@@ -1779,7 +1787,7 @@ class Kconfig(object):
 
             elif t0 == _T_SOURCE:
                 f = self._expand_syms(self._expect_str_and_eol())
-                f = self._resolve(f, True)
+                f = self._resolve(f, self._globbing)
                 for s in f:
                     self._enter_file(s)
                     prev_node = self._parse_block(None,            # end_token
