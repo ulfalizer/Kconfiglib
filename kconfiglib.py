@@ -2982,6 +2982,7 @@ class Symbol(object):
             value = STR_TO_TRI[value]
 
         self.user_value = value
+        self._was_set = True
 
         if self.choice and value == 2:
             # Setting a choice symbol to y makes it the user selection of the
@@ -2992,7 +2993,6 @@ class Symbol(object):
             self.choice._was_set = True
             self.choice._rec_invalidate()
         else:
-            self._was_set = True
             self._rec_invalidate_if_has_prompt()
 
         return True
