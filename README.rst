@@ -182,8 +182,8 @@ All releases have a corresponding tag in the git repository, e.g. ``v4.0.0``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been
-two small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>_`,
-`2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>_`)
+two small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
+`2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_)
 to the behavior of the API (which I don't think will affect anyone), which is
 why the major version is at 4 rather than 2.
 
