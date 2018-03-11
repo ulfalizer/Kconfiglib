@@ -354,6 +354,7 @@ Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service, or open a ticket on the GitHub page.
 """
 import errno
+import glob
 import os
 import platform
 import re
@@ -511,7 +512,7 @@ class Kconfig(object):
     # Public interface
     #
 
-    def __init__(self, filename="Kconfig", warn=True):
+    def __init__(self, filename="Kconfig", warn=True, globbing=False):
         """
         Creates a new Kconfig object by parsing Kconfig files. Raises
         KconfigSyntaxError on syntax errors. Note that Kconfig files are not
@@ -535,6 +536,12 @@ class Kconfig(object):
           stderr. This can be changed later with
           Kconfig.enable/disable_warnings(). It is provided as a constructor
           argument since warnings might be generated during parsing.
+
+        globbing (default: False):
+          Enable the globbing extension. The 'source' statements will
+          now accept Unix style shell pathname patterns such as
+          '*/Kconfig'. Disabled by default for backwards
+          compatibility.
         """
         self.srctree = os.environ.get("srctree")
 
@@ -554,6 +561,8 @@ class Kconfig(object):
             re.compile(r"# {}([^ ]+) is not set".format(self.config_prefix),
                        _RE_ASCII).match
 
+
+        self._globbing = globbing
 
         self._print_warnings = warn
         self._print_undef_assign = False
@@ -1309,33 +1318,45 @@ class Kconfig(object):
     # File reading
     #
 
-    def _open(self, filename):
-        # First tries to open 'filename', then '$srctree/filename' if $srctree
-        # was set when the configuration was loaded
+    def _resolve(self, filename, globbing):
+        # First tries with 'filename', then '$srctree/filename' if $srctree
+        # was set when the configuration was loaded.
+        if os.path.isfile(filename):
+            return [filename]
 
+        if not os.path.isabs(filename) and self.srctree is not None:
+                filename = os.path.join(self.srctree, filename)
+
+        if os.path.isfile(filename):
+            return [filename]
+
+        if globbing:
+            # Try globbing
+            files =  glob.glob(filename)
+
+            # Glob results have an arbitrary order, so sort them to
+            # have consistent results across platforms.
+            return sorted(files)
+
+        raise IOError(
+            "Could not find '{}'. Perhaps the $srctree "
+            "environment variable (which was {}) is set incorrectly. Note "
+            "that the current value of $srctree is saved when the Kconfig "
+            "instance is created (for consistency and to cleanly "
+            "separate instances)."
+            .format(filename,
+                    "unset" if self.srctree is None else
+                    '"{}"'.format(self.srctree)))
+
+    def _open(self, filename):
+        # Normalize the filename based on $srctree
+        filename = self._resolve(filename, False)[0]
         try:
             return open(filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
-            if not os.path.isabs(filename) and self.srctree is not None:
-                filename = os.path.join(self.srctree, filename)
-                try:
-                    return open(filename, _UNIVERSAL_NEWLINES_MODE)
-                except IOError as e2:
-                    # This is needed for Python 3, because e2 is deleted after
-                    # the try block:
-                    #
-                    # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
-                    e = e2
-
             raise IOError(
-                "Could not open '{}' ({}: {}). Perhaps the $srctree "
-                "environment variable (which was {}) is set incorrectly. Note "
-                "that the current value of $srctree is saved when the Kconfig "
-                "instance is created (for consistency and to cleanly "
-                "separate instances)."
-                .format(filename, errno.errorcode[e.errno], e.strerror,
-                        "unset" if self.srctree is None else
-                        '"{}"'.format(self.srctree)))
+                "Could not open '{}' ({}: {})."
+                .format(filename, errno.errorcode[e.errno], e.strerror))
 
     def _enter_file(self, filename):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
@@ -1821,12 +1842,15 @@ class Kconfig(object):
                 prev_node.next = prev_node = node
 
             elif t0 == _T_SOURCE:
-                self._enter_file(self._expand_syms(self._expect_str_and_eol()))
-                prev_node = self._parse_block(None,            # end_token
-                                              parent,
-                                              visible_if_deps,
-                                              prev_node)
-                self._leave_file()
+                f = self._expand_syms(self._expect_str_and_eol())
+                f = self._resolve(f, self._globbing)
+                for s in f:
+                    self._enter_file(s)
+                    prev_node = self._parse_block(None,            # end_token
+                                                  parent,
+                                                  visible_if_deps,
+                                                  prev_node)
+                    self._leave_file()
 
             elif t0 == _T_RSOURCE:
                 self._enter_file(os.path.join(
