@@ -313,8 +313,13 @@ If a condition is missing (e.g., <cond> when the 'if <cond>' is removed from
 functions just avoid printing 'if y' conditions to give cleaner output.
 
 
+Kconfig extensions
+==================
+
+Kconfiglib implements two Kconfig extensions related to 'source':
+
 'source' with relative path
-===========================
+---------------------------
 
 The library implements a custom 'rsource' statement that allows to import
 Kconfig file by specifying path relative to directory of the currently parsed
@@ -347,6 +352,26 @@ Using 'rsource' it can be rewritten as:
 If absolute path is given to 'rsource' then it follows behavior of 'source'.
 
 
+Globbed sourcing with 'gsource' and 'grsource'
+----------------------------------------------
+
+The 'gsource' statement works like 'source', but takes a glob pattern and
+sources all matching Kconfig files. For example, the following statement might
+source 'sub1/foofoofoo' and 'sub2/foobarfoo':
+
+  gsource "sub[12]/foo*foo"
+
+The glob patterns accepted are the same as for the standard glob.glob()
+function.
+
+If no file matches the pattern, gsource is a no-op, and hence doubles as an
+include-if-exists function when given a plain filename (similar to '-include'
+in 'make'). It might help to think of the 'g' as "generalized" in that case.
+
+'grsource' is the 'rsource' version of 'gsource' and globs relative to the
+directory of the current Kconfig file.
+
+
 Feedback
 ========
 
@@ -354,6 +379,7 @@ Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service, or open a ticket on the GitHub page.
 """
 import errno
+import glob
 import os
 import platform
 import re
@@ -1822,7 +1848,7 @@ class Kconfig(object):
 
             elif t0 == _T_SOURCE:
                 self._enter_file(self._expand_syms(self._expect_str_and_eol()))
-                prev_node = self._parse_block(None,            # end_token
+                prev_node = self._parse_block(None,  # end_token
                                               parent,
                                               visible_if_deps,
                                               prev_node)
@@ -1833,11 +1859,43 @@ class Kconfig(object):
                     os.path.dirname(self._filename),
                     self._expand_syms(self._expect_str_and_eol())
                 ))
-                prev_node = self._parse_block(None,            # end_token
+                prev_node = self._parse_block(None,  # end_token
                                               parent,
                                               visible_if_deps,
                                               prev_node)
                 self._leave_file()
+
+            elif t0 in (_T_GSOURCE, _T_GRSOURCE):
+                pattern = self._expand_syms(self._expect_str_and_eol())
+                if t0 == _T_GRSOURCE:
+                    # Relative gsource
+                    pattern = os.path.join(os.path.dirname(self._filename),
+                                           pattern)
+
+                # If $srctree is set, glob relative to it
+                if self.srctree is not None:
+                    pattern = os.path.join(self.srctree, pattern)
+
+                # Sort the glob results to ensure a consistent ordering of
+                # Kconfig symbols, which indirectly ensures a consistent
+                # ordering in e.g. .config files
+                for filename in sorted(glob.glob(pattern)):
+                    if self.srctree is not None and not os.path.isabs(filename):
+                        # Strip the $srctree prefix from the filename and let
+                        # the normal $srctree logic find the file. This makes
+                        # the globbed filenames appear without a $srctree
+                        # prefix in MenuNode.filename, which is consistent with
+                        # how 'source' and 'rsource' work. We get the same
+                        # behavior as if the files had been 'source'd one by
+                        # one.
+                        filename = os.path.relpath(filename, self.srctree)
+
+                    self._enter_file(filename)
+                    prev_node = self._parse_block(None,  # end_token
+                                                  parent,
+                                                  visible_if_deps,
+                                                  prev_node)
+                    self._leave_file()
 
             elif t0 == end_token:
                 # We have reached the end of the block. Terminate the final
@@ -4699,6 +4757,8 @@ STR_TO_TRI = {
     _T_EQUAL,
     _T_GREATER,
     _T_GREATER_EQUAL,
+    _T_GRSOURCE,
+    _T_GSOURCE,
     _T_HELP,
     _T_HEX,
     _T_IF,
@@ -4725,7 +4785,7 @@ STR_TO_TRI = {
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(45)
+) = range(47)
 
 # Public integers representing expression types
 #
@@ -4759,6 +4819,8 @@ _get_keyword = {
     "endif":          _T_ENDIF,
     "endmenu":        _T_ENDMENU,
     "env":            _T_ENV,
+    "grsource":       _T_GRSOURCE,
+    "gsource":        _T_GSOURCE,
     "help":           _T_HELP,
     "hex":            _T_HEX,
     "if":             _T_IF,
@@ -4792,6 +4854,8 @@ _STRING_LEX = frozenset((
     _T_BOOL,
     _T_CHOICE,
     _T_COMMENT,
+    _T_GRSOURCE,
+    _T_GSOURCE,
     _T_HEX,
     _T_INT,
     _T_MAINMENU,

@@ -792,7 +792,7 @@ g
 """)
 
 
-    print("Testing locations and 'source', 'rsource'")
+    print("Testing locations and source/rsource/gsource/grsource")
 
     def verify_locations(nodes, *expected_locs):
         verify(len(nodes) == len(expected_locs),
@@ -823,7 +823,11 @@ g
       "tests/Klocation:31",
       "tests/Klocation_sourced:3",
       "tests/sub/Klocation_rsourced:2",
-      "tests/Klocation:57")
+      "tests/sub/Klocation_gsourced1:1",
+      "tests/sub/Klocation_gsourced2:1",
+      "tests/sub/Klocation_grsourced1:1",
+      "tests/sub/Klocation_grsourced2:1",
+      "tests/Klocation:77")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_sourced:5")
