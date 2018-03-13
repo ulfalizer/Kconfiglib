@@ -126,6 +126,13 @@ Here are some other features:
 
   All warnings point out the location(s) in the ``Kconfig`` files where a
   symbol is defined, where applicable.
+  
+- **Kconfig extensions**
+
+  So far, these include a relative ``source`` statement (``rsource``) where Kconfig
+  file paths are specified relative to the directory of
+  the current Kconfig file, and a globbing ``source`` (``gsource``) that doubles
+  as an include-if-exists function.
 
 - **Windows support**
 
@@ -134,6 +141,7 @@ Here are some other features:
   
   The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib to
   generate ``.config`` files and C headers on Linux as well as Windows.
+  
 
 - **Internals that (mostly) mirror the C implementation**
   
