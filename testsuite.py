@@ -827,7 +827,7 @@ g
       "tests/sub/Klocation_gsourced2:1",
       "tests/sub/Klocation_grsourced1:1",
       "tests/sub/Klocation_grsourced2:1",
-      "tests/Klocation:77")
+      "tests/Klocation:78")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_sourced:5")

@@ -71,7 +71,8 @@ gsource "$TESTS_DIR_FROM_ENV/*ub/Klocation$_GSOURCED[12]"
 # tests/sub/Klocation_grsourced{1,2}
 grsource "$SUB_DIR_FROM_ENV/Klocation$_GRSOURCED[12]"
 
-# No-op
-gsource "nonexisting file"
+# No-ops
+gsource "nonexistent file"
+grsource "nonexistent file"
 
 config MULTI_DEF
