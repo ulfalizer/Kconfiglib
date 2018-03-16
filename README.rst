@@ -11,6 +11,17 @@ see* |changes|_.
 .. _changes: https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt
 .. |changes| replace:: *kconfiglib-2-changes.txt*
 
+|RomaVis|_ *has built a portable* |TkInter|_ *menuconfig implementation on top of Kconfiglib. It is still a work-in-progress, but is already functional. See the* |pymenuconfig|_ *project.*
+
+.. _RomaVis: https://github.com/RomaVis
+.. |RomaVis| replace:: *RomaVis*
+
+.. _TkInter: https://wiki.python.org/moin/TkInter
+.. |TkInter| replace:: *TkInter*
+
+.. _pymenuconfig: https://github.com/RomaVis/pymenuconfig
+.. |pymenuconfig| replace:: *pymenuconfig*
+
 Kconfiglib is a Python 2/3 library for scripting and extracting information
 from `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
@@ -267,9 +278,7 @@ The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ 
     Value for BOOL (available: n, y): n
     ...
     
-I'm not currently interested in implementing a (more usable) menuconfig myself, but all the infrastructure
-for a great one should be there if you want to give it a go. I'll help you out with any questions you might
-have.
+See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project for a real-world `menuconfig` implementation built on top of Kconfiglib.
 
 Real-world examples
 ~~~~~~~~~~~~~~~~~~~
