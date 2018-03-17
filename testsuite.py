@@ -1768,9 +1768,6 @@ def all_arch_srcarch_pairs():
 
     yield ("sh64", "sh")
 
-    yield ("tilepro", "tile")
-    yield ("tilegx", "tile")
-
 def all_arch_srcarch_kconfigs():
     for arch, srcarch in all_arch_srcarch_pairs():
         os.environ["ARCH"] = arch
