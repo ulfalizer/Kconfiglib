@@ -4,7 +4,7 @@ import setuptools
 setuptools.setup(
     name="kconfiglib",
     # MAJOR.MINOR.PATCH, per http://semver.org
-    version="4.0.0",
+    version="4.1.0",
     description="A flexible Python Kconfig parser",
     long_description=
         open(os.path.join(os.path.dirname(__file__), "README.rst")).read(),
