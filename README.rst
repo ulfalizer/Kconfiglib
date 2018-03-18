@@ -238,6 +238,8 @@ The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ 
 
 - `print_tree.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/print_tree.py>`_ prints a tree of all configuration items.
 
+- `print_config_tree.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/print_config_tree.py>`_ is similar to ``print_tree.py``, but dumps the tree as it would appear in ``menuconfig``, including values. This can be handy for visually diffing between ``.config`` files and different versions of ``Kconfig`` files.
+
 - `list_undefined.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/list_undefined.py>`_ finds references to symbols that are not defined by any architecture in the Linux kernel.
 
 - `merge_config.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/merge_config.py>`_ merges configuration fragments to produce a complete .config, similarly to ``scripts/kconfig/merge_config.sh`` from the kernel.
