@@ -4443,16 +4443,14 @@ def _expr_depends_on(expr, sym):
 
     return False
 
-def _has_auto_menu_dep(node1, node2):
+def _auto_menu_dep(node1, node2):
     # Returns True if node2 has an "automatic menu dependency" on node1. If
     # node2 has a prompt, we check its condition. Otherwise, we look directly
     # at node2.dep.
 
-    if node2.prompt:
-        return _expr_depends_on(node2.prompt[1], node1.item)
-
-    # If we have no prompt, use the menu node dependencies instead
-    return _expr_depends_on(node2.dep, node1.item)
+    # If node2 has no prompt, use its menu node dependencies instead
+    return _expr_depends_on(node2.prompt[1] if node2.prompt else node2.dep,
+                            node1.item)
 
 def _flatten(node):
     # "Flattens" menu nodes without prompts (e.g. 'if' nodes and non-visible
@@ -4538,7 +4536,7 @@ def _finalize_tree(node):
         # rooted at it and finalize each child in that menu if so, like for the
         # choice/menu/if case above.
         cur = node
-        while cur.next and _has_auto_menu_dep(node, cur.next):
+        while cur.next and _auto_menu_dep(node, cur.next):
             # This also makes implicit submenu creation work recursively, with
             # implicit menus inside implicit menus
             _finalize_tree(cur.next)
