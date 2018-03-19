@@ -4461,8 +4461,7 @@ def _flatten(node):
     # with no unexpected "jumps" in the indentation.
 
     while node:
-        if node.list and (not node.prompt or node.prompt[0] == ""):
-
+        if node.list and not node.prompt:
             last_node = node.list
             while 1:
                 last_node.parent = node.parent
