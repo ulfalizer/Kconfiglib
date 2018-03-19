@@ -4597,7 +4597,7 @@ def _check_sym_sanity(sym):
                             expr_str(default)))
 
             if sym.orig_type in (INT, HEX) and \
-               not _int_hex_value_is_sane(default, sym.orig_type):
+               not _int_hex_ok(default, sym.orig_type):
 
                 sym.kconfig._warn("the {0} symbol {1} has a non-{0} default {2}"
                                   .format(TYPE_TO_STR[sym.orig_type],
@@ -4621,8 +4621,8 @@ def _check_sym_sanity(sym):
                 .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
         else:
             for low, high, _ in sym.ranges:
-                if not _int_hex_value_is_sane(low, sym.orig_type) or \
-                   not _int_hex_value_is_sane(high, sym.orig_type):
+                if not _int_hex_ok(low, sym.orig_type) or \
+                   not _int_hex_ok(high, sym.orig_type):
 
                    sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
                                      "[{2}, {3}]"
@@ -4632,11 +4632,16 @@ def _check_sym_sanity(sym):
                                              _name_and_loc_str(high)))
 
 
-def _int_hex_value_is_sane(sym, type_):
+def _int_hex_ok(sym, type_):
+    # Returns True if the (possibly constant) symbol 'sym' is valid as a value
+    # for a symbol of type type_ (INT or HEX)
+
     # 'not sym.nodes' implies a constant or undefined symbol, e.g. a plain
     # "123"
-    return (not sym.nodes and _is_base_n(sym.name, _TYPE_TO_BASE[type_])) or \
-           sym.orig_type == type_
+    if not sym.nodes:
+        return _is_base_n(sym.name, _TYPE_TO_BASE[type_])
+
+    return sym.orig_type == type_
 
 def _check_choice_sanity(choice):
     # Checks various choice properties that are handiest to check after
