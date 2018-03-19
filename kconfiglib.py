@@ -4429,19 +4429,16 @@ def _expr_depends_on(expr, sym):
 
         if right is sym:
             left, right = right, left
-
-        if left is not sym:
+        elif left is not sym:
             return False
 
         return (expr[0] == EQUAL and right is sym.kconfig.m or \
                                      right is sym.kconfig.y) or \
                (expr[0] == UNEQUAL and right is sym.kconfig.n)
 
-    if expr[0] == AND:
-        return _expr_depends_on(expr[1], sym) or \
-               _expr_depends_on(expr[2], sym)
-
-    return False
+    return expr[0] == AND and \
+           (_expr_depends_on(expr[1], sym) or
+            _expr_depends_on(expr[2], sym))
 
 def _auto_menu_dep(node1, node2):
     # Returns True if node2 has an "automatic menu dependency" on node1. If
