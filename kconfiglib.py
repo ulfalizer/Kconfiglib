@@ -658,8 +658,8 @@ class Kconfig(object):
 
         self._parse_block(None,           # end_token
                           self.top_node,  # parent
-                          self.y,         # visible_if_deps
-                          self.top_node)  # prev_node
+                          self.top_node,  # prev
+                          self.y)         # visible_if_deps
         self.top_node.list = self.top_node.next
         self.top_node.next = None
 
@@ -1782,7 +1782,7 @@ class Kconfig(object):
 
         return (OR, e1, e2)
 
-    def _parse_block(self, end_token, parent, visible_if_deps, prev_node):
+    def _parse_block(self, end_token, parent, prev, visible_if_deps):
         # Parses a block, which is the contents of either a file or an if,
         # menu, or choice statement.
         #
@@ -1794,20 +1794,19 @@ class Kconfig(object):
         #   The parent menu node, corresponding to a menu, Choice, or 'if'.
         #   'if's are flattened after parsing.
         #
+        # prev:
+        #   The previous menu node. New nodes will be added after this one (by
+        #   modifying their 'next' pointer).
+        #
+        #   'prev' is reused to parse a list of child menu nodes (for a menu or
+        #   Choice): After parsing the children, the 'next' pointer is assigned
+        #   to the 'list' pointer to "tilt up" the children above the node.
+        #
         # visible_if_deps:
         #   'visible if' dependencies from enclosing menus. Propagated to
         #   Symbol and Choice prompts.
         #
-        # prev_node:
-        #   The previous menu node. New nodes will be added after this one (by
-        #   modifying their 'next' pointer).
-        #
-        #   prev_node is reused to parse a list of child menu nodes (for a menu
-        #   or Choice): After parsing the children, the 'next' pointer is
-        #   assigned to the 'list' pointer to "tilt up" the children above the
-        #   node.
-        #
-        # Returns the final menu node in the block (or prev_node if the block is
+        # Returns the final menu node in the block (or 'prev' if the block is
         # empty). This allows chaining.
 
         # We might already have tokens from parsing a line to check if it's a
@@ -1842,16 +1841,12 @@ class Kconfig(object):
                     self._warn("the menuconfig symbol {} has no prompt"
                                .format(_name_and_loc_str(node.item)))
 
-                # Tricky Python semantics: This assign prev_node.next before
-                # prev_node
-                prev_node.next = prev_node = node
+                # Tricky Python semantics: This assign prev.next before prev
+                prev.next = prev = node
 
             elif t0 == _T_SOURCE:
                 self._enter_file(self._expand_syms(self._expect_str_and_eol()))
-                prev_node = self._parse_block(None,  # end_token
-                                              parent,
-                                              visible_if_deps,
-                                              prev_node)
+                prev = self._parse_block(None, parent, prev, visible_if_deps)
                 self._leave_file()
 
             elif t0 == _T_RSOURCE:
@@ -1859,10 +1854,7 @@ class Kconfig(object):
                     os.path.dirname(self._filename),
                     self._expand_syms(self._expect_str_and_eol())
                 ))
-                prev_node = self._parse_block(None,  # end_token
-                                              parent,
-                                              visible_if_deps,
-                                              prev_node)
+                prev = self._parse_block(None, parent, prev, visible_if_deps)
                 self._leave_file()
 
             elif t0 in (_T_GSOURCE, _T_GRSOURCE):
@@ -1891,17 +1883,14 @@ class Kconfig(object):
                         filename = os.path.relpath(filename, self.srctree)
 
                     self._enter_file(filename)
-                    prev_node = self._parse_block(None,  # end_token
-                                                  parent,
-                                                  visible_if_deps,
-                                                  prev_node)
+                    prev = self._parse_block(None, parent, prev, visible_if_deps)
                     self._leave_file()
 
             elif t0 == end_token:
                 # We have reached the end of the block. Terminate the final
                 # node and return it.
-                prev_node.next = None
-                return prev_node
+                prev.next = None
+                return prev
 
             elif t0 == _T_IF:
                 node = MenuNode()
@@ -1918,13 +1907,10 @@ class Kconfig(object):
 
                 node.dep = self._make_and(parent_dep, self._parse_expr(True))
 
-                self._parse_block(_T_ENDIF,
-                                  node,             # parent
-                                  visible_if_deps,
-                                  node)             # prev_node
+                self._parse_block(_T_ENDIF, node, node, visible_if_deps)
                 node.list = node.next
 
-                prev_node.next = prev_node = node
+                prev.next = prev = node
 
             elif t0 == _T_MENU:
                 node = MenuNode()
@@ -1939,14 +1925,12 @@ class Kconfig(object):
                 self._parse_properties(node, visible_if_deps)
                 node.prompt = (prompt, node.dep)
 
-                self._parse_block(_T_ENDMENU,
-                                  node,         # parent
+                self._parse_block(_T_ENDMENU, node, node,
                                   self._make_and(visible_if_deps,
-                                                 node.visibility),
-                                  node)         # prev_node
+                                                 node.visibility))
                 node.list = node.next
 
-                prev_node.next = prev_node = node
+                prev.next = prev = node
 
             elif t0 == _T_COMMENT:
                 node = MenuNode()
@@ -1961,7 +1945,7 @@ class Kconfig(object):
                 self._parse_properties(node, visible_if_deps)
                 node.prompt = (prompt, node.dep)
 
-                prev_node.next = prev_node = node
+                prev.next = prev = node
 
             elif t0 == _T_CHOICE:
                 name = self._next_token()
@@ -1988,15 +1972,12 @@ class Kconfig(object):
                 node.linenr = self._linenr
 
                 self._parse_properties(node, visible_if_deps)
-                self._parse_block(_T_ENDCHOICE,
-                                  node,             # parent
-                                  visible_if_deps,
-                                  node)             # prev_node
+                self._parse_block(_T_ENDCHOICE, node, node, visible_if_deps)
                 node.list = node.next
 
                 choice.nodes.append(node)
 
-                prev_node.next = prev_node = node
+                prev.next = prev = node
 
             elif t0 == _T_MAINMENU:
                 self.top_node.prompt = (self._expect_str_and_eol(), self.y)
@@ -2012,8 +1993,8 @@ class Kconfig(object):
             raise KconfigSyntaxError("Unexpected end of file " +
                                      self._filename)
 
-        prev_node.next = None
-        return prev_node
+        prev.next = None
+        return prev
 
     def _parse_cond(self):
         # Parses an optional 'if <expr>' construct and returns the parsed
