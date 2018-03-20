@@ -2230,9 +2230,9 @@ class Kconfig(object):
                 node.item.is_optional = True
 
             else:
-                self._tokens_i = -1
                 # Reuse the tokens for the non-property line later
                 self._has_tokens = True
+                self._tokens_i = -1
                 break
 
         # Done parsing properties. Now add the new
