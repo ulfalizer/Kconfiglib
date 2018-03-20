@@ -1827,7 +1827,7 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = sym
-                node.help = node.list = None
+                node.prompt = node.help = node.list = None
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
@@ -1964,7 +1964,7 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = choice
-                node.help = None
+                node.prompt = node.help = None
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
@@ -2021,7 +2021,6 @@ class Kconfig(object):
         # New properties encountered at this location. A local 'depends on'
         # only applies to these, in case a symbol is defined in multiple
         # locations.
-        prompt = None
         defaults = []
         selects = []
         implies = []
@@ -2048,11 +2047,11 @@ class Kconfig(object):
                 node.item.orig_type = new_type
 
                 if self._peek_token() is not None:
-                    if prompt:
+                    if node.prompt:
                         self._warn("{} defined with multiple prompts in single location"
                                    .format(_name_and_loc_str(node.item)))
 
-                    prompt = (self._expect_str(), self._parse_cond())
+                    node.prompt = (self._expect_str(), self._parse_cond())
 
             elif t0 == _T_DEPENDS:
                 if not self._check_token(_T_ON):
@@ -2149,11 +2148,11 @@ class Kconfig(object):
                 # 'prompt' properties override each other within a single
                 # definition of a symbol, but additional prompts can be added
                 # by defining the symbol multiple times
-                if prompt:
+                if node.prompt:
                     self._warn("{} defined with multiple prompts in single location"
                                .format(_name_and_loc_str(node.item)))
 
-                prompt = (self._expect_str(), self._parse_cond())
+                node.prompt = (self._expect_str(), self._parse_cond())
 
             elif t0 == _T_RANGE:
                 ranges.append((self._expect_sym(),
@@ -2258,13 +2257,11 @@ class Kconfig(object):
                     self._make_or(node.item.direct_dep, node.dep)
 
             # Set the prompt, with dependencies propagated
-            if prompt:
-                node.prompt = (prompt[0],
-                               self._make_and(self._make_and(prompt[1],
-                                                             node.dep),
-                                              visible_if_deps))
-            else:
-                node.prompt = None
+            if node.prompt:
+                node.prompt = \
+                    (node.prompt[0],
+                     self._make_and(node.prompt[1],
+                                    self._make_and(node.dep, visible_if_deps)))
 
             # Add the new defaults, with dependencies propagated
             for val_expr, cond in defaults:
