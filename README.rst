@@ -285,6 +285,8 @@ See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project for a 
 Real-world examples
 ~~~~~~~~~~~~~~~~~~~
 
+- `kconfig.py <https://github.com/zephyrproject-rtos/zephyr/blob/master/scripts/kconfig/kconfig.py>`_ from the `Zephyr <https://www.zephyrproject.org/>`_ project handles ``.config`` and header file generation, also doing configuration fragment merging.
+
 These use the older Kconfiglib 1 API, which was clunkier and not as general (functions instead of properties, no direct access to the menu structure or properties, uglier ``__str__()`` output):
 
 - `genboardscfg.py <http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD>`_ from `Das U-Boot <http://www.denx.de/wiki/U-Boot>`_ generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
