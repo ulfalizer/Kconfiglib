@@ -1899,11 +1899,11 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
-                # See similar code in _parse_properties()
-                parent_dep = parent.item if isinstance(parent.item, Choice) \
-                             else parent.dep
-
-                node.dep = self._make_and(parent_dep, self._parse_expr(True))
+                node.dep = self._make_and(
+                    self._parse_expr(True),
+                    # See similar code in _parse_properties()
+                    parent.item if isinstance(parent.item, Choice)
+                    else parent.dep)
 
                 self._parse_block(_T_ENDIF, node, node, visible_if_deps)
                 node.list = node.next
