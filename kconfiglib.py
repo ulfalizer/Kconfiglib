@@ -384,6 +384,7 @@ import os
 import platform
 import re
 import sys
+import io
 
 # File layout:
 #
@@ -1340,12 +1341,12 @@ class Kconfig(object):
         # was set when the configuration was loaded
 
         try:
-            return open(filename, _UNIVERSAL_NEWLINES_MODE)
+            return io.open(filename, _UNIVERSAL_NEWLINES_MODE, encoding='utf-8')
         except IOError as e:
             if not os.path.isabs(filename) and self.srctree is not None:
                 filename = os.path.join(self.srctree, filename)
                 try:
-                    return open(filename, _UNIVERSAL_NEWLINES_MODE)
+                    return io.open(filename, _UNIVERSAL_NEWLINES_MODE, encoding='utf-8')
                 except IOError as e2:
                     # This is needed for Python 3, because e2 is deleted after
                     # the try block:
