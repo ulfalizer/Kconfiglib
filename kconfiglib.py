@@ -1900,10 +1900,8 @@ class Kconfig(object):
                 node.linenr = self._linenr
 
                 # See similar code in _parse_properties()
-                if isinstance(parent.item, Choice):
-                    parent_dep = parent.item
-                else:
-                    parent_dep = parent.dep
+                parent_dep = parent.item if isinstance(parent.item, Choice) \
+                             else parent.dep
 
                 node.dep = self._make_and(parent_dep, self._parse_expr(True))
 
@@ -2248,10 +2246,10 @@ class Kconfig(object):
         # as the value (mode) of the choice limits the visibility of the
         # contained choice symbols. Due to the similar interface, Choice works
         # as a drop-in replacement for Symbol here.
-        if isinstance(node.parent.item, Choice):
-            node.dep = self._make_and(node.dep, node.parent.item)
-        else:
-            node.dep = self._make_and(node.dep, node.parent.dep)
+        node.dep = self._make_and(
+            node.dep,
+            node.parent.item if isinstance(node.parent.item, Choice)
+            else node.parent.dep)
 
         if isinstance(node.item, (Symbol, Choice)):
             if isinstance(node.item, Symbol):
