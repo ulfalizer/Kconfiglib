@@ -1871,7 +1871,7 @@ class Kconfig(object):
                 # Sort the glob results to ensure a consistent ordering of
                 # Kconfig symbols, which indirectly ensures a consistent
                 # ordering in e.g. .config files
-                for filename in sorted(glob.glob(pattern)):
+                for filename in sorted(glob.iglob(pattern)):
                     if self.srctree is not None and not os.path.isabs(filename):
                         # Strip the $srctree prefix from the filename and let
                         # the normal $srctree logic find the file. This makes
