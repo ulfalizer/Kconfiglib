@@ -2807,7 +2807,6 @@ class Symbol(object):
                 has_active_range = False
 
             if vis and self.user_value is not None and \
-               _is_base_n(self.user_value, base) and \
                (not has_active_range or
                 low <= int(self.user_value, base) <= high):
 
