@@ -2806,16 +2806,29 @@ class Symbol(object):
             else:
                 has_active_range = False
 
-            if vis and self.user_value is not None and \
-               (not has_active_range or
-                low <= int(self.user_value, base) <= high):
+            # Defaults are used if the symbol is invisible, lacks a user value,
+            # or has an out-of-range user value.
+            use_defaults = True
 
-                # If the user value is well-formed and satisfies range
-                # contraints, it is stored in exactly the same form as
-                # specified in the assignment (with or without "0x", etc.)
-                val = self.user_value
+            if vis and self.user_value is not None:
+                user_val = int(self.user_value, base)
+                if has_active_range and not low <= user_val <= high:
+                    num2str = str if base == 10 else hex
+                    self.kconfig._warn(
+                        "user value {} on the {} symbol {} ignored due to "
+                        "being outside the active range ([{}, {}]) -- falling "
+                        "back on defaults"
+                        .format(num2str(user_val), TYPE_TO_STR[self.orig_type],
+                                _name_and_loc_str(self),
+                                num2str(low), num2str(high)))
+                else:
+                    # If the user value is well-formed and satisfies range
+                    # contraints, it is stored in exactly the same form as
+                    # specified in the assignment (with or without "0x", etc.)
+                    val = self.user_value
+                    use_defaults = False
 
-            else:
+            if use_defaults:
                 # No user value or invalid user value. Look at defaults.
 
                 for val_expr, cond in self.defaults:

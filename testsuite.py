@@ -1131,6 +1131,9 @@ g
 
     # User values and dependent ranges
 
+    # Avoid warnings for assigning values outside the active range
+    c.disable_warnings()
+
     def verify_range(sym_name, low, high, default):
         """
         Tests that the values in the range 'low'-'high' can be assigned, and
@@ -1199,6 +1202,8 @@ g
 
     verify_value("INACTIVE_RANGE", "2")
     verify_value("ACTIVE_RANGE", "1")
+
+    c.enable_warnings()
 
 
     print("Testing defconfig_filename")
