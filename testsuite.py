@@ -1203,8 +1203,6 @@ g
     verify_value("INACTIVE_RANGE", "2")
     verify_value("ACTIVE_RANGE", "1")
 
-    c.enable_warnings()
-
 
     print("Testing defconfig_filename")
 
