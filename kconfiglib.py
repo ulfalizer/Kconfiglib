@@ -4657,6 +4657,12 @@ def _check_choice_sanity(choice):
             sym.kconfig._warn("default on the choice symbol {} will have "
                               "no effect".format(_name_and_loc(sym)))
 
+        if sym.rev_dep is not sym.kconfig.n:
+            _warn_choice_select_imply(sym, sym.rev_dep, "selected")
+
+        if sym.weak_rev_dep is not sym.kconfig.n:
+            _warn_choice_select_imply(sym, sym.weak_rev_dep, "implied")
+
         for node in sym.nodes:
             if node.parent.item is choice:
                 if not node.prompt:
@@ -4667,6 +4673,20 @@ def _check_choice_sanity(choice):
                 sym.kconfig._warn("the choice symbol {} is defined with a "
                                   "prompt outside the choice"
                                   .format(_name_and_loc(sym)))
+
+def _warn_choice_select_imply(sym, expr, expr_type):
+    msg = "the choice symbol {} is {} by the following symbols, which has " \
+          "no effect: ".format(_name_and_loc(sym), expr_type)
+
+    while isinstance(expr, tuple) and expr[0] == OR:
+        msg += _select_imply_str(expr[2])
+        expr = expr[1]
+
+    sym.kconfig._warn(msg + _select_imply_str(expr))
+
+def _select_imply_str(select):
+    return "\n - " + \
+        _name_and_loc(select[1] if isinstance(select, tuple) else select)
 
 #
 # Public global constants
