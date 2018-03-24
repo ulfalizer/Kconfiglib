@@ -2810,7 +2810,7 @@ class Symbol(object):
             # or has an out-of-range user value.
             use_defaults = True
 
-            if vis and self.user_value is not None:
+            if vis and self.user_value:
                 user_val = int(self.user_value, base)
                 if has_active_range and not low <= user_val <= high:
                     num2str = str if base == 10 else hex
