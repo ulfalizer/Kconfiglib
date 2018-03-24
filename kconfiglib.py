@@ -777,7 +777,7 @@ class Kconfig(object):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
                                        .format(val, TYPE_TO_STR[sym.orig_type],
-                                               _name_and_loc_str(sym)),
+                                               _name_and_loc(sym)),
                                        filename, linenr)
                             continue
 
@@ -804,7 +804,7 @@ class Kconfig(object):
                         if not string_match:
                             self._warn("Malformed string literal in "
                                        "assignment to {}. Assignment ignored."
-                                       .format(_name_and_loc_str(sym)),
+                                       .format(_name_and_loc(sym)),
                                        filename, linenr)
                             continue
 
@@ -837,7 +837,7 @@ class Kconfig(object):
                         display_user_val = sym.user_value
 
                     warn_msg = '{} set more than once. Old value: "{}", new value: "{}".'.format(
-                        _name_and_loc_str(sym), display_user_val, val
+                        _name_and_loc(sym), display_user_val, val
                     )
 
                     if display_user_val == val:
@@ -1839,7 +1839,7 @@ class Kconfig(object):
 
                 if node.is_menuconfig and not node.prompt:
                     self._warn("the menuconfig symbol {} has no prompt"
-                               .format(_name_and_loc_str(node.item)))
+                               .format(_name_and_loc(node.item)))
 
                 # Tricky Python semantics: This assign prev.next before prev
                 prev.next = prev = node
@@ -2041,7 +2041,7 @@ class Kconfig(object):
                 if node.item.orig_type != UNKNOWN and \
                    node.item.orig_type != new_type:
                     self._warn("{} defined with multiple types, {} will be used"
-                               .format(_name_and_loc_str(node.item),
+                               .format(_name_and_loc(node.item),
                                        TYPE_TO_STR[new_type]))
 
                 node.item.orig_type = new_type
@@ -2049,7 +2049,7 @@ class Kconfig(object):
                 if self._peek_token() is not None:
                     if node.prompt:
                         self._warn("{} defined with multiple prompts in single location"
-                                   .format(_name_and_loc_str(node.item)))
+                                   .format(_name_and_loc(node.item)))
 
                     node.prompt = (self._expect_str(), self._parse_cond())
 
@@ -2066,7 +2066,7 @@ class Kconfig(object):
                 if node.help is not None:
                     self._warn("{} defined with more than one help text -- "
                                "only the last one will be used"
-                               .format(_name_and_loc_str(node.item)))
+                               .format(_name_and_loc(node.item)))
 
                 # Small optimization. This code is pretty hot.
                 readline = self._file.readline
@@ -2079,7 +2079,7 @@ class Kconfig(object):
 
                 if not line:
                     self._warn("{} has 'help' but empty help text"
-                               .format(_name_and_loc_str(node.item)))
+                               .format(_name_and_loc(node.item)))
 
                     node.help = ""
                     break
@@ -2089,7 +2089,7 @@ class Kconfig(object):
                     # If the first non-empty lines has zero indent, there is no
                     # help text
                     self._warn("{} has 'help' but empty help text"
-                               .format(_name_and_loc_str(node.item)))
+                               .format(_name_and_loc(node.item)))
 
                     node.help = ""
                     self._saved_line = line  # "Unget" the line
@@ -2137,7 +2137,7 @@ class Kconfig(object):
                 if node.item.orig_type != UNKNOWN and \
                    node.item.orig_type != new_type:
                     self._warn("{} defined with multiple types, {} will be used"
-                               .format(_name_and_loc_str(node.item),
+                               .format(_name_and_loc(node.item),
                                        TYPE_TO_STR[new_type]))
 
                 node.item.orig_type = new_type
@@ -2150,7 +2150,7 @@ class Kconfig(object):
                 # by defining the symbol multiple times
                 if node.prompt:
                     self._warn("{} defined with multiple prompts in single location"
-                               .format(_name_and_loc_str(node.item)))
+                               .format(_name_and_loc(node.item)))
 
                 node.prompt = (self._expect_str(), self._parse_cond())
 
@@ -2819,7 +2819,7 @@ class Symbol(object):
                         "being outside the active range ([{}, {}]) -- falling "
                         "back on defaults"
                         .format(num2str(user_val), TYPE_TO_STR[self.orig_type],
-                                _name_and_loc_str(self),
+                                _name_and_loc(self),
                                 num2str(low), num2str(high)))
                 else:
                     # If the user value is well-formed and satisfies range
@@ -3069,7 +3069,7 @@ class Symbol(object):
                 "assignment ignored"
                 .format(TRI_TO_STR[value] if value in (0, 1, 2) else
                             "'{}'".format(value),
-                        _name_and_loc_str(self),
+                        _name_and_loc(self),
                         TYPE_TO_STR[self.orig_type]))
 
             return False
@@ -3077,7 +3077,7 @@ class Symbol(object):
         if self.env_var is not None:
             self.kconfig._warn("ignored attempt to assign user value to "
                                "{}, which gets its value from the environment"
-                               .format(_name_and_loc_str(self)))
+                               .format(_name_and_loc(self)))
             return False
 
         if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):
@@ -3332,8 +3332,8 @@ class Symbol(object):
                 return
 
         if self.kconfig._warn_no_prompt:
-            self.kconfig._warn(_name_and_loc_str(self) + " has no prompt, "
-                               "meaning user values have no effect on it")
+            self.kconfig._warn(_name_and_loc(self) + " has no prompt, meaning "
+                               "user values have no effect on it")
 
     def _str_default(self):
         # write_min_config() helper function. Returns the value the symbol
@@ -3394,7 +3394,7 @@ class Symbol(object):
 
             msg = "\n - {}, with value {}, direct dependencies {} " \
                   "(value: {})" \
-                  .format(_name_and_loc_str(selecting_sym),
+                  .format(_name_and_loc(selecting_sym),
                           selecting_sym.str_value,
                           expr_str(selecting_sym.direct_dep),
                           TRI_TO_STR[expr_value(selecting_sym.direct_dep)])
@@ -3408,8 +3408,7 @@ class Symbol(object):
 
         warn_msg = "{} has unsatisfied direct dependencies ({}), but is " \
                    "currently being selected by the following symbols:" \
-                   .format(_name_and_loc_str(self),
-                           expr_str(self.direct_dep))
+                   .format(_name_and_loc(self), expr_str(self.direct_dep))
 
         # This relies on us using the following format for the select
         # expression:
@@ -3674,7 +3673,7 @@ class Choice(object):
                 "assignment ignored"
                 .format(TRI_TO_STR[value] if value in (0, 1, 2) else
                             "'{}'".format(value),
-                        _name_and_loc_str(self),
+                        _name_and_loc(self),
                         TYPE_TO_STR[self.orig_type]))
 
             return False
@@ -4379,7 +4378,7 @@ def _sym_choice_str(sc):
 
     return "\n".join(lines) + "\n"
 
-def _name_and_loc_str(sc):
+def _name_and_loc(sc):
     # Helper for giving the symbol/choice name and location(s) in e.g. warnings
 
     name = sc.name or "<choice>"
@@ -4557,17 +4556,17 @@ def _check_sym_sanity(sym):
             if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
                 sym.kconfig._warn("{} selects the {} symbol {}, which is not "
                                   "bool or tristate"
-                                  .format(_name_and_loc_str(sym),
+                                  .format(_name_and_loc(sym),
                                           TYPE_TO_STR[target_sym.orig_type],
-                                          _name_and_loc_str(target_sym)))
+                                          _name_and_loc(target_sym)))
 
         for target_sym, _ in sym.implies:
             if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
                 sym.kconfig._warn("{} implies the {} symbol {}, which is not "
                                   "bool or tristate"
-                                  .format(_name_and_loc_str(sym),
+                                  .format(_name_and_loc(sym),
                                           TYPE_TO_STR[target_sym.orig_type],
-                                          _name_and_loc_str(target_sym)))
+                                          _name_and_loc(target_sym)))
 
     elif sym.orig_type in (STRING, INT, HEX):
         for default, _ in sym.defaults:
@@ -4575,7 +4574,7 @@ def _check_sym_sanity(sym):
                 raise KconfigSyntaxError(
                     "the {} symbol {} has a malformed default {} -- expected "
                     "a single symbol"
-                    .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym),
+                    .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym),
                             expr_str(default)))
 
             if sym.orig_type in (INT, HEX) and \
@@ -4583,24 +4582,24 @@ def _check_sym_sanity(sym):
 
                 sym.kconfig._warn("the {0} symbol {1} has a non-{0} default {2}"
                                   .format(TYPE_TO_STR[sym.orig_type],
-                                          _name_and_loc_str(sym),
-                                          _name_and_loc_str(default)))
+                                          _name_and_loc(sym),
+                                          _name_and_loc(default)))
 
         if sym.selects or sym.implies:
             sym.kconfig._warn("the {} symbol {} has selects or implies"
                               .format(TYPE_TO_STR[sym.orig_type],
-                                      _name_and_loc_str(sym)))
+                                      _name_and_loc(sym)))
 
     else:  # UNKNOWN
         sym.kconfig._warn("{} defined without a type"
-                          .format(_name_and_loc_str(sym)))
+                          .format(_name_and_loc(sym)))
 
 
     if sym.ranges:
         if sym.orig_type not in (INT, HEX):
             sym.kconfig._warn(
                 "the {} symbol {} has ranges, but is not int or hex"
-                .format(TYPE_TO_STR[sym.orig_type], _name_and_loc_str(sym)))
+                .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym)))
         else:
             for low, high, _ in sym.ranges:
                 if not _int_hex_ok(low, sym.orig_type) or \
@@ -4609,9 +4608,9 @@ def _check_sym_sanity(sym):
                    sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
                                      "[{2}, {3}]"
                                      .format(TYPE_TO_STR[sym.orig_type],
-                                             _name_and_loc_str(sym),
-                                             _name_and_loc_str(low),
-                                             _name_and_loc_str(high)))
+                                             _name_and_loc(sym),
+                                             _name_and_loc(low),
+                                             _name_and_loc(high)))
 
 
 def _int_hex_ok(sym, type_):
@@ -4631,7 +4630,7 @@ def _check_choice_sanity(choice):
 
     if choice.orig_type not in (BOOL, TRISTATE):
         choice.kconfig._warn("{} defined with type {}"
-                             .format(_name_and_loc_str(choice),
+                             .format(_name_and_loc(choice),
                                      TYPE_TO_STR[choice.orig_type]))
 
     for node in choice.nodes:
@@ -4639,36 +4638,35 @@ def _check_choice_sanity(choice):
             break
     else:
         choice.kconfig._warn("{} defined without a prompt"
-                             .format(_name_and_loc_str(choice)))
+                             .format(_name_and_loc(choice)))
 
     for default, _ in choice.defaults:
         if not isinstance(default, Symbol):
             raise KconfigSyntaxError(
                 "{} has a malformed default {}"
-                .format(_name_and_loc_str(choice), expr_str(default)))
+                .format(_name_and_loc(choice), expr_str(default)))
 
         if default.choice is not choice:
             choice.kconfig._warn("the default selection {} of {} is not "
                                  "contained in the choice"
-                                 .format(_name_and_loc_str(default),
-                                         _name_and_loc_str(choice)))
+                                 .format(_name_and_loc(default),
+                                         _name_and_loc(choice)))
 
     for sym in choice.syms:
         if sym.defaults:
             choice.kconfig._warn("default on the choice symbol {} will have "
-                                 "no effect"
-                                 .format(_name_and_loc_str(sym)))
+                                 "no effect".format(_name_and_loc(sym)))
 
         for node in sym.nodes:
             if node.parent.item is choice:
                 if not node.prompt:
                     choice.kconfig._warn("the choice symbol {} has no prompt"
-                                         .format(_name_and_loc_str(sym)))
+                                         .format(_name_and_loc(sym)))
 
             elif node.prompt:
                 choice.kconfig._warn("the choice symbol {} is defined with a "
                                      "prompt outside the choice"
-                                     .format(_name_and_loc_str(sym)))
+                                     .format(_name_and_loc(sym)))
 
 #
 # Public global constants
