@@ -3375,16 +3375,11 @@ class Symbol(object):
         # unsatisfied direct dependencies (dependencies from 'depends on', ifs,
         # and menus) is selected by some other symbol
 
-        warn_msg = "{} has unsatisfied direct dependencies ({}), but is " \
-                   "currently being selected by the following symbols:" \
-                   .format(_name_and_loc_str(self),
-                           expr_str(self.direct_dep))
-
-        # Returns a warning string if 'select' is actually selecting us, and
-        # the empty string otherwise
         def check_select(select):
-            # No 'nonlocal' in Python 2. Just return the string to append to
-            # warn_msg instead.
+            # Returns a warning string if 'select' is actually selecting us,
+            # and the empty string otherwise. nonlocal would be handy for
+            # appending to warn_msg directly, but it's Python 3 only.
+
             select_val = expr_value(select)
             if not select_val:
                 # Only include selects that are not n
@@ -3397,7 +3392,7 @@ class Symbol(object):
                 # <sym>
                 selecting_sym = select
 
-            msg = "\n{}, with value {}, direct dependencies {} " \
+            msg = "\n - {}, with value {}, direct dependencies {} " \
                   "(value: {})" \
                   .format(_name_and_loc_str(selecting_sym),
                           selecting_sym.str_value,
@@ -3411,22 +3406,21 @@ class Symbol(object):
 
             return msg
 
+        warn_msg = "{} has unsatisfied direct dependencies ({}), but is " \
+                   "currently being selected by the following symbols:" \
+                   .format(_name_and_loc_str(self),
+                           expr_str(self.direct_dep))
+
+        # This relies on us using the following format for the select
+        # expression:
+        #
+        #   (OR, (OR, (OR, <expr 1>, <expr 2>), <expr 3>), <expr 4>)
         expr = self.rev_dep
-        while 1:
-            # This relies on us using the following format for the select
-            # expression (which is nice in that it preserves the order of the
-            # selecting symbols):
-            #
-            #   (OR, (OR, (OR, <expr 1>, <expr 2>), <expr 3>), <expr 4>)
-            #
-            # We could do fancier expression processing later if needed.
-            if isinstance(expr, tuple) and expr[0] == OR:
-                warn_msg += check_select(expr[2])
-                # Go to the next select
-                expr = expr[1]
-            else:
-                warn_msg += check_select(expr)
-                break
+        while isinstance(expr, tuple) and expr[0] == OR:
+            warn_msg += check_select(expr[2])
+            # Go to next select
+            expr = expr[1]
+        warn_msg += check_select(expr)
 
         self.kconfig._warn(warn_msg)
 
