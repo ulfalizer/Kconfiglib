@@ -4654,19 +4654,19 @@ def _check_choice_sanity(choice):
 
     for sym in choice.syms:
         if sym.defaults:
-            choice.kconfig._warn("default on the choice symbol {} will have "
-                                 "no effect".format(_name_and_loc(sym)))
+            sym.kconfig._warn("default on the choice symbol {} will have "
+                              "no effect".format(_name_and_loc(sym)))
 
         for node in sym.nodes:
             if node.parent.item is choice:
                 if not node.prompt:
-                    choice.kconfig._warn("the choice symbol {} has no prompt"
-                                         .format(_name_and_loc(sym)))
+                    sym.kconfig._warn("the choice symbol {} has no prompt"
+                                      .format(_name_and_loc(sym)))
 
             elif node.prompt:
-                choice.kconfig._warn("the choice symbol {} is defined with a "
-                                     "prompt outside the choice"
-                                     .format(_name_and_loc(sym)))
+                sym.kconfig._warn("the choice symbol {} is defined with a "
+                                  "prompt outside the choice"
+                                  .format(_name_and_loc(sym)))
 
 #
 # Public global constants
