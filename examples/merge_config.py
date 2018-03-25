@@ -37,7 +37,7 @@
 #     # Ops... assigned twice
 #     # CONFIG_FOO is not set
 #
-#     Ops... this symbol doesn't exist
+#     # Ops... this symbol doesn't exist
 #     CONFIG_OPS=y
 #
 #     CONFIG_BAZ="baz string"
@@ -85,12 +85,9 @@ kconf.write_config(sys.argv[2])
 # Print warnings for symbols whose actual value doesn't match the assigned
 # value
 
-def name_and_loc_str(sym):
-    """
-    Helper for printing the symbol name along with the location(s) in the
-    Kconfig files where the symbol is defined
-    """
-    # If the symbol has no menu nodes, it is undefined
+def name_and_loc(sym):
+    # Helper for printing symbol names and Kconfig file location(s) in warnings
+
     if not sym.nodes:
         return sym.name + " (undefined)"
 
@@ -112,4 +109,4 @@ for sym in kconf.defined_syms:
         if user_value != sym.str_value:
             print('warning: {} was assigned the value "{}" but got the '
                   'value "{}" -- check dependencies'
-                  .format(name_and_loc_str(sym), user_value, sym.str_value))
+                  .format(name_and_loc(sym), user_value, sym.str_value))
