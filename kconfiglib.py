@@ -4350,13 +4350,13 @@ def _sym_choice_str(sc):
 
             if isinstance(sc, Symbol):
                 for select, cond in sc.selects:
-                    select_string = "select " + select.name
+                    select_string = "select " + expr_str(select)
                     if cond is not sc.kconfig.y:
                         select_string += " if " + expr_str(cond)
                     indent_add(select_string)
 
                 for imply, cond in sc.implies:
-                    imply_string = "imply " + imply.name
+                    imply_string = "imply " + expr_str(imply)
                     if cond is not sc.kconfig.y:
                         imply_string += " if " + expr_str(cond)
                     indent_add(imply_string)
