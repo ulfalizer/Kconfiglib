@@ -4106,23 +4106,20 @@ def expr_str(expr):
 
     Passing subexpressions of expressions to this function works as expected.
     """
-    if not isinstance(expr, tuple):
-        if isinstance(expr, Choice):
-            if expr.name is not None:
-                return "<choice {}>".format(expr.name)
-            return "<choice>"
-
-        # Symbol
-
+    if isinstance(expr, Symbol):
         if expr.is_constant:
             return '"{}"'.format(escape(expr.name))
-
         return expr.name
 
+    if isinstance(expr, Choice):
+        if expr.name is not None:
+            return "<choice {}>".format(expr.name)
+        return "<choice>"
+
     if expr[0] == NOT:
-        if isinstance(expr[1], Symbol):
-            return "!" + expr_str(expr[1])
-        return "!({})".format(expr_str(expr[1]))
+        if isinstance(expr[1], tuple):
+            return "!({})".format(expr_str(expr[1]))
+        return "!" + expr_str(expr[1])  # Symbol
 
     if expr[0] == AND:
         return "{} && {}".format(_format_and_op(expr[1]),

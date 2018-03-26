@@ -30,8 +30,7 @@ config ADVANCED
     prompt "prompt 2"
 
 menuconfig ADVANCED
-    prompt "prompt 3"
-    depends on DEP2
+    prompt "prompt 3" if DEP2 && (DEP3 || !DEP4 || !(DEP5 && DEP6))
 
 if DEP3
 
