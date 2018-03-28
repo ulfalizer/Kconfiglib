@@ -4122,11 +4122,14 @@ def expr_str(expr):
         return "!" + expr_str(expr[1])  # Symbol
 
     if expr[0] == AND:
-        return "{} && {}".format(_format_and_op(expr[1]),
-                                 _format_and_op(expr[2]))
+        return "{} && {}".format(_parenthesize(expr[1], OR),
+                                 _parenthesize(expr[2], OR))
 
     if expr[0] == OR:
-        return "{} || {}".format(expr_str(expr[1]), expr_str(expr[2]))
+        # This turns A && B || C && D into "(A && B) || (C && D)", which is
+        # redundant, but more readable
+        return "{} || {}".format(_parenthesize(expr[1], AND),
+                                 _parenthesize(expr[2], AND))
 
     # Relation
     return "{} {} {}".format(expr_str(expr[1]),
@@ -4210,11 +4213,10 @@ def _make_depend_on(sym, expr):
         _internal_error("Internal error while fetching symbols from an "
                         "expression with token stream {}.".format(expr))
 
-def _format_and_op(expr):
-    # expr_str() helper. Returns the string representation of 'expr', which is
-    # assumed to be an operand to AND, with parentheses added if needed.
+def _parenthesize(expr, type_):
+    # expr_str() helper. Adds parentheses around expressions of type 'type_'.
 
-    if isinstance(expr, tuple) and expr[0] == OR:
+    if isinstance(expr, tuple) and expr[0] == type_:
         return "({})".format(expr_str(expr))
     return expr_str(expr)
 

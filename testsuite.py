@@ -528,10 +528,10 @@ config ADVANCED
 	prompt "prompt 2"
 
 menuconfig ADVANCED
-	prompt "prompt 3" if DEP2 && (DEP3 || !DEP4 || !(DEP5 && DEP6))
+	prompt "prompt 3"
 
 config ADVANCED
-	depends on DEP4 && DEP3
+	depends on (A || !B || (C && D) || !(E && F) || G = H || (I && !J && (K || L) && !(M || N) && O = P)) && DEP4 && DEP3
 	help
 	  second help text
 """)
