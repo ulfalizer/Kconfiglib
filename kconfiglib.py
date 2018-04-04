@@ -1966,8 +1966,8 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = choice
-                node.prompt = node.help = None
                 node.is_menuconfig = True
+                node.prompt = node.help = None
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
