@@ -1302,6 +1302,27 @@ g
                format(s.name))
 
 
+    print("Testing is_menuconfig")
+
+    c = Kconfig("Kconfiglib/tests/Kmenuconfig")
+
+    for not_menuconfig in c.syms["NOT_MENUCONFIG_1"].nodes[0], \
+                          c.syms["NOT_MENUCONFIG_2"].nodes[0], \
+                          c.syms["MENUCONFIG_MULTI_DEF"].nodes[0], \
+                          c.syms["COMMENT_HOOK"].nodes[0].next:
+
+        verify(not not_menuconfig.is_menuconfig,
+               "'{}' should have is_menuconfig False".format(not_menuconfig))
+
+    for menuconfig in c.syms["MENUCONFIG_1"].nodes[0], \
+                      c.syms["MENUCONFIG_MULTI_DEF"].nodes[1], \
+                      c.syms["MENU_HOOK"].nodes[0].next, \
+                      c.syms["CHOICE_HOOK"].nodes[0].next:
+
+        verify(menuconfig.is_menuconfig,
+               "'{}' should have is_menuconfig True".format(menuconfig))
+
+
     print("Testing 'option env' semantics")
 
     os.environ["ENV_VAR"] = "ENV_VAR value"

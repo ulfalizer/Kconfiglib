@@ -1827,11 +1827,11 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = sym
+                node.is_menuconfig = (t0 == _T_MENUCONFIG)
                 node.prompt = node.help = node.list = None
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
-                node.is_menuconfig = (t0 == _T_MENUCONFIG)
 
                 sym.nodes.append(node)
 
@@ -1914,6 +1914,7 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = MENU
+                node.is_menuconfig = True
                 node.visibility = self.y
                 node.parent = parent
                 node.filename = self._filename
@@ -1934,6 +1935,7 @@ class Kconfig(object):
                 node = MenuNode()
                 node.kconfig = self
                 node.item = COMMENT
+                node.is_menuconfig = False
                 node.list = None
                 node.parent = parent
                 node.filename = self._filename
@@ -1965,6 +1967,7 @@ class Kconfig(object):
                 node.kconfig = self
                 node.item = choice
                 node.prompt = node.help = None
+                node.is_menuconfig = True
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
@@ -3912,11 +3915,19 @@ class MenuNode(object):
       symbols and choices within the menu.
 
     is_menuconfig:
-      True if the symbol for the menu node (it must be a symbol) was defined
-      with 'menuconfig' rather than 'config' (at this location). This is a hint
-      on how to display the menu entry (display the children in a separate menu
-      rather than indenting them). It's ignored internally by Kconfiglib,
-      except when printing symbols.
+      Set to True if the children of the menu node should be displayed in a
+      separate menu. This is the case for the following items:
+
+        - Menus (node.item == MENU)
+
+        - Choices
+
+        - Symbols defined with the 'menuconfig' keyword. The children come from
+          implicitly created submenus, and should be displayed in a separate
+          menu rather than being indented.
+
+      'is_menuconfig' is just a hint on how to display the menu node. It's
+      ignored internally by Kconfiglib, except when printing symbols.
 
     filename/linenr:
       The location where the menu node appears.
