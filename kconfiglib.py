@@ -633,6 +633,7 @@ class Kconfig(object):
         self.top_node = MenuNode()
         self.top_node.kconfig = self
         self.top_node.item = MENU
+        self.top_node.is_menuconfig = True
         self.top_node.visibility = self.y
         self.top_node.prompt = ("Linux Kernel Configuration", self.y)
         self.top_node.parent = None

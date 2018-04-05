@@ -1314,7 +1314,8 @@ g
         verify(not not_menuconfig.is_menuconfig,
                "'{}' should have is_menuconfig False".format(not_menuconfig))
 
-    for menuconfig in c.syms["MENUCONFIG_1"].nodes[0], \
+    for menuconfig in c.top_node, \
+                      c.syms["MENUCONFIG_1"].nodes[0], \
                       c.syms["MENUCONFIG_MULTI_DEF"].nodes[1], \
                       c.syms["MENU_HOOK"].nodes[0].next, \
                       c.syms["CHOICE_HOOK"].nodes[0].next:
