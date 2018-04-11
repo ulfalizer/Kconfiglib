@@ -44,7 +44,10 @@
 from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, \
                        BOOL, TRISTATE, HEX, STRING, \
                        TRI_TO_STR, \
-                       KconfigSyntaxError, expr_value, escape, unescape
+                       escape, unescape, \
+                       expr_str, expr_value, split_expr, \
+                       OR, AND, \
+                       KconfigSyntaxError
 import difflib
 import errno
 import os
@@ -847,6 +850,45 @@ g
         fail("recursive 'source' raised wrong exception")
     else:
         fail("recursive 'source' did not raise exception")
+
+
+    print("Testing split_expr()")
+
+    def verify_split(to_split, op, operand_strs):
+        # The same hackage as in Kconfig.eval_string()
+        c._line = "if " + to_split
+        c._tokenize()
+        del c._tokens[0]
+        operands = split_expr(c._parse_expr(False), op)
+
+        verify(len(operands) == len(operand_strs),
+               "Wrong number of operands when {} was split by {}"
+               .format(to_split, "OR" if op == OR else "AND"))
+
+        for operand, operand_str in zip(operands, operand_strs):
+            verify_equal(expr_str(operand), operand_str)
+
+    verify_split("A",                    OR, ("A",                ))
+    verify_split("!A",                   OR, ("!A",               ))
+    verify_split("A = B",                OR, ("A = B",            ))
+    verify_split("A && B",               OR, ("A && B",           ))
+    verify_split("A || B",               OR, ("A", "B"            ))
+    verify_split("(A || B) || C",        OR, ("A", "B", "C"       ))
+    verify_split("A || (B || C)",        OR, ("A", "B", "C"       ))
+    verify_split("A || !(B || C)",       OR, ("A", "!(B || C)"    ))
+    verify_split("A || (B && (C || D))", OR, ("A", "B && (C || D)"))
+    verify_split("(A && (B || C)) || D", OR, ("A && (B || C)", "D"))
+
+    verify_split("A",                    AND, ("A",                ))
+    verify_split("!A",                   AND, ("!A",               ))
+    verify_split("A = B",                AND, ("A = B",            ))
+    verify_split("A || B",               AND, ("A || B",           ))
+    verify_split("A && B",               AND, ("A", "B"            ))
+    verify_split("(A && B) && C",        AND, ("A", "B", "C"       ))
+    verify_split("A && (B && C)",        AND, ("A", "B", "C"       ))
+    verify_split("A && !(B && C)",       AND, ("A", "!(B && C)"    ))
+    verify_split("A && (B || (C && D))", AND, ("A", "B || (C && D)"))
+    verify_split("(A || (B && C)) && D", AND, ("A || (B && C)", "D"))
 
 
     print("Testing visibility")
