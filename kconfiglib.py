@@ -657,10 +657,14 @@ class Kconfig(object):
 
         self._file = self._open(filename)
 
-        self._parse_block(None,           # end_token
-                          self.top_node,  # parent
-                          self.top_node,  # prev
-                          self.y)         # visible_if_deps
+        try:
+            self._parse_block(None,           # end_token
+                              self.top_node,  # parent
+                              self.top_node,  # prev
+                              self.y)         # visible_if_deps
+        except UnicodeDecodeError as e:
+            _decoding_error(e, self._filename)
+
         self.top_node.list = self.top_node.next
         self.top_node.next = None
 
@@ -738,6 +742,8 @@ class Kconfig(object):
         # This stub only exists to make sure _warn_no_prompt gets reenabled
         try:
             self._load_config(filename, replace)
+        except UnicodeDecodeError as e:
+            _decoding_error(e, filename)
         finally:
             self._warn_no_prompt = True
 
@@ -4340,6 +4346,22 @@ def _internal_error(msg):
         "\nSorry! You may want to send an email to ulfalizer a.t Google's "
         "email service to tell me about this. Include the message above and "
         "the stack trace and describe what you were doing.")
+
+def _decoding_error(e, filename):
+    # Gives the filename and context for UnicodeDecodeError's, which are a pain
+    # to debug otherwise. 'e' is the UnicodeDecodeError object.
+
+    raise KconfigSyntaxError(
+        "\n"
+        "Malformed {} in {}\n"
+        "Context: {}\n"
+        "Problematic data: {}\n"
+        "Reason: {}".format(
+            e.encoding, filename,
+            e.object[max(e.start - 40, 0):e.end + 40],
+            e.object[e.start:e.end],
+            e.reason))
+
 
 # Printing functions
 
