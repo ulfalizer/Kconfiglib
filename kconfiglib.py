@@ -814,7 +814,7 @@ class Kconfig(object):
                     elif sym.orig_type == STRING:
                         string_match = _conf_string_re_match(val)
                         if not string_match:
-                            self._warn("Malformed string literal in "
+                            self._warn("malformed string literal in "
                                        "assignment to {}. Assignment ignored."
                                        .format(_name_and_loc(sym)),
                                        filename, linenr)
@@ -825,6 +825,15 @@ class Kconfig(object):
                 else:
                     unset_match = unset_re_match(line)
                     if not unset_match:
+                        # Print a warning for lines that match neither
+                        # set_re_match() nor unset_re_match() and that are not
+                        # blank lines or comments. 'line' has already been
+                        # rstrip()'d, so blank lines show up as "" here.
+                        if line and not line.lstrip().startswith("#"):
+                            self._warn("ignoring malformed line '{}'"
+                                       .format(line),
+                                       filename, linenr)
+
                         continue
 
                     name = unset_match.group(1)
