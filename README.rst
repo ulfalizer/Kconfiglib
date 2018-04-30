@@ -75,7 +75,11 @@ Kconfiglib can do the following, among other things:
   from symbols depending on preceding symbols. This can be used e.g. to
   implement menuconfig-like functionality.
   
-  See the `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig.py>`_ example.
+  See `menuconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ and the
+  minimalistic `menuconfig_example.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_
+  example.
 
 
 Here are some other features:
@@ -302,41 +306,7 @@ The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ 
 
 - `oldconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/oldconfig.py>`_ provides ``make oldconfig`` functionality, prompting the user for the values of new symbols to update an old ``.config`` file.
 
-- `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts, and isn't something you'd actually want to use. Here's a screenshot:
-
-.. code-block::
-
-    ======== Example Kconfig configuration ========
-
-    [*] Enable loadable module support (MODULES)
-        Bool and tristate symbols
-            [*] Bool symbol (BOOL)
-                    [ ] Dependent bool symbol (BOOL_DEP)
-                    < > Dependent tristate symbol (TRI_DEP)
-                    [ ] First prompt (TWO_MENU_NODES)
-            < > Tristate symbol (TRI)
-            [ ] Second prompt (TWO_MENU_NODES)
-                *** These are selected by TRI_DEP ***
-            < > Tristate selected by TRI_DEP (SELECTED_BY_TRI_DEP)
-            < > Tristate implied by TRI_DEP (IMPLIED_BY_TRI_DEP)
-        String, int, and hex symbols
-            (foo) String symbol (STRING)
-            (747) Int symbol (INT)
-            (0xABC) Hex symbol (HEX)
-        Various choices
-            -*- Bool choice (BOOL_CHOICE)
-                    --> Bool choice sym 1 (BOOL_CHOICE_SYM_1)
-                        Bool choice sym 2 (BOOL_CHOICE_SYM_2)
-            {M} Tristate choice (TRI_CHOICE)
-                    < > Tristate choice sym 1 (TRI_CHOICE_SYM_1)
-                    < > Tristate choice sym 2 (TRI_CHOICE_SYM_2)
-            [ ] Optional bool choice (OPT_BOOL_CHOICE)
-
-    Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): BOOL
-    Value for BOOL (available: n, y): n
-    ...
-    
-See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project for a real-world `menuconfig` implementation built on top of Kconfiglib.
+- `menuconfig_example.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts.
 
 Real-world examples
 ~~~~~~~~~~~~~~~~~~~

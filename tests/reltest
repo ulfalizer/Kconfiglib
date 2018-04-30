@@ -39,12 +39,12 @@ for py in python2 python3; do
     test_script Kconfiglib/examples/print_sym_info.py MODULES
     test_script Kconfiglib/examples/print_tree.py
 
-    $py Kconfiglib/examples/menuconfig.py Kconfiglib/examples/Kmenuconfig <<END
+    $py Kconfiglib/examples/menuconfig_example.py Kconfiglib/examples/Kmenuconfig <<END
 BOOL
 n
 END
     if (($?)); then
-        echo "menuconfig.py failed with $py"
+        echo "menuconfig_example.py failed with $py"
         exit 1
     fi
 done
