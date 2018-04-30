@@ -8,24 +8,18 @@ Overview
 Kconfiglib 1. For a summary of changes between Kconfiglib 1 and Kconfiglib 2,
 see* |changes|_.
 
+*Kconfiglib 2 now has two interactive configuration interfaces available. See
+the Configuration Interfaces section below.*
+
 .. _changes: https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt
 .. |changes| replace:: *kconfiglib-2-changes.txt*
 
-|RomaVis|_ *has built a portable* |TkInter|_ *menuconfig implementation on top of Kconfiglib. It is still a work-in-progress, but is already functional. See the* |pymenuconfig|_ *project.*
-
-.. _RomaVis: https://github.com/RomaVis
-.. |RomaVis| replace:: *RomaVis*
-
-.. _TkInter: https://wiki.python.org/moin/TkInter
-.. |TkInter| replace:: *TkInter*
-
-.. _pymenuconfig: https://github.com/RomaVis/pymenuconfig
-.. |pymenuconfig| replace:: *pymenuconfig*
-
-Kconfiglib is a Python 2/3 library for scripting and extracting information
-from `Kconfig
+Kconfiglib is a Python 2/3 library for working with `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
-configuration systems. It can do the following, among other things:
+configuration systems. It also functions well as a standalone Kconfig
+implementation, and has ``menuconfig`` implementations available.
+
+Kconfiglib can do the following, among other things:
 
 - **Programmatically get and set symbol values**
 
@@ -145,6 +139,11 @@ Here are some other features:
   the current Kconfig file, and a globbing ``source`` (``gsource``) that doubles
   as an include-if-exists function.
 
+- **Unicode support**
+
+  Unicode characters in string literals in `Kconfig` and `.config` files are
+  correctly handled. This support mostly comes for free from Python.
+
 - **Windows support**
 
   Nothing Linux-specific is used. Universal newlines mode is used for both
@@ -152,12 +151,11 @@ Here are some other features:
   
   The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib to
   generate ``.config`` files and C headers on Linux as well as Windows.
-  
 
 - **Internals that (mostly) mirror the C implementation**
   
   While being simpler to understand and tweak.
-  
+
 Documentation
 -------------
 
@@ -217,6 +215,62 @@ Manual installation
 The entire library is contained in
 `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
 Just drop it somewhere.
+
+Configuration interfaces
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Two configuration interfaces are currently available:
+
+  - `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
+    is a terminal-based configuration interface implemented using the standard
+    Python ``curses`` module.
+
+    Some screenshots below:
+
+    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss3.png
+
+    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss5.png
+
+    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss7.png
+
+    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss8.png
+
+    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss6.png
+
+    (Sorry about that yellow color. See the styling code at the top of
+    ``menuconfig.py`` if you want to try to make it prettier. :))
+
+    ``menuconfig.py`` only supports Python 3, mostly due to
+    ``curses.get_wch()`` being used, which is needed for Unicode support.
+    ``curses.get_wch()`` isn't available in the Python 2 version of the
+    ``curses`` module.
+
+    ``menuconfig.py`` has no third-party dependencies on \*nix.
+
+    On Windows, the ``curses`` modules is not available by default, but support
+    can be added by installing the ``windows-curses`` package:
+
+        pip install windows-curses
+
+    This uses wheels built from `this repository
+    <https://github.com/zephyrproject-rtos/windows-curses>`_, which is in turn
+    based on Christoph Gohlke's `Python Extension Packages for Windows
+    <https://www.lfd.uci.edu/~gohlke/pythonlibs/#curses>`_.
+
+    See the docstring at the top of `menuconfig.py
+    <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ for
+    more information about the terminal menuconfig implementation.
+
+  - `RomaVis <https://github.com/RomaVis>`_ has built a fully portable Python
+    2/3 `TkInter <https://wiki.python.org/moin/TkInter>`_ menuconfig
+    implementation. It is still a work-in-progress, but is already functional.
+
+    See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project
+    for more information.
+
+    Screenshot below:
+
+    .. image:: https://raw.githubusercontent.com/RomaVis/pymenuconfig/master/screenshot.PNG
 
 Examples
 --------
