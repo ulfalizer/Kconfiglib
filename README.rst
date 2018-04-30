@@ -249,8 +249,10 @@ Two configuration interfaces are currently available:
 
   On Windows, the ``curses`` modules is not available by default, but support
   can be added by installing the ``windows-curses`` package:
+  
+  .. code-block:: shell
 
-      pip install windows-curses
+      $ pip install windows-curses
 
   This uses wheels built from `this repository
   <https://github.com/zephyrproject-rtos/windows-curses>`_, which is in turn
