@@ -221,56 +221,56 @@ Configuration interfaces
 
 Two configuration interfaces are currently available:
 
-  - `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
-    is a terminal-based configuration interface implemented using the standard
-    Python ``curses`` module.
+- `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
+  is a terminal-based configuration interface implemented using the standard
+  Python ``curses`` module.
 
-    Some screenshots below:
+  Some screenshots below:
 
-    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss3.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss3.png
 
-    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss5.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss5.png
 
-    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss7.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss7.png
 
-    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss8.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss8.png
 
-    .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss6.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss6.png
 
-    (Sorry about that yellow color. See the styling code at the top of
-    ``menuconfig.py`` if you want to try to make it prettier. :))
+  (Sorry about that yellow color. See the styling code at the top of
+  ``menuconfig.py`` if you want to try to make it prettier. :))
 
-    ``menuconfig.py`` only supports Python 3, mostly due to
-    ``curses.get_wch()`` being used, which is needed for Unicode support.
-    ``curses.get_wch()`` isn't available in the Python 2 version of the
-    ``curses`` module.
+  ``menuconfig.py`` only supports Python 3, mostly due to
+  ``curses.get_wch()`` being used, which is needed for Unicode support.
+  ``curses.get_wch()`` isn't available in the Python 2 version of the
+  ``curses`` module.
 
-    ``menuconfig.py`` has no third-party dependencies on \*nix.
+  ``menuconfig.py`` has no third-party dependencies on \*nix.
 
-    On Windows, the ``curses`` modules is not available by default, but support
-    can be added by installing the ``windows-curses`` package:
+  On Windows, the ``curses`` modules is not available by default, but support
+  can be added by installing the ``windows-curses`` package:
 
-        pip install windows-curses
+      pip install windows-curses
 
-    This uses wheels built from `this repository
-    <https://github.com/zephyrproject-rtos/windows-curses>`_, which is in turn
-    based on Christoph Gohlke's `Python Extension Packages for Windows
-    <https://www.lfd.uci.edu/~gohlke/pythonlibs/#curses>`_.
+  This uses wheels built from `this repository
+  <https://github.com/zephyrproject-rtos/windows-curses>`_, which is in turn
+  based on Christoph Gohlke's `Python Extension Packages for Windows
+  <https://www.lfd.uci.edu/~gohlke/pythonlibs/#curses>`_.
 
-    See the docstring at the top of `menuconfig.py
-    <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ for
-    more information about the terminal menuconfig implementation.
+  See the docstring at the top of `menuconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ for
+  more information about the terminal menuconfig implementation.
 
-  - `RomaVis <https://github.com/RomaVis>`_ has built a fully portable Python
-    2/3 `TkInter <https://wiki.python.org/moin/TkInter>`_ menuconfig
-    implementation. It is still a work-in-progress, but is already functional.
+- `RomaVis <https://github.com/RomaVis>`_ has built a fully portable Python
+  2/3 `TkInter <https://wiki.python.org/moin/TkInter>`_ menuconfig
+  implementation. It is still a work-in-progress, but is already functional.
 
-    See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project
-    for more information.
+  See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project
+  for more information.
 
-    Screenshot below:
+  Screenshot below:
 
-    .. image:: https://raw.githubusercontent.com/RomaVis/pymenuconfig/master/screenshot.PNG
+  .. image:: https://raw.githubusercontent.com/RomaVis/pymenuconfig/master/screenshot.PNG
 
 Examples
 --------
