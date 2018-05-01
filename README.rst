@@ -199,14 +199,15 @@ installed with e.g.
 
     $ pip(3) install kconfiglib --user
 
-All releases have a corresponding tag in the git repository, e.g. ``v4.3.0``
+All releases have a corresponding tag in the git repository, e.g. ``v5.0.0``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been
-two small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
-`2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_)
+three small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
+`2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
+`3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_)
 to the behavior of the API (which I don't think will affect anyone), which is
-why the major version is at 4 rather than 2.
+why the major version is at 5 rather than 2.
 
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
