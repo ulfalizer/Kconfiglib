@@ -199,7 +199,7 @@ installed with e.g.
 
     $ pip(3) install kconfiglib --user
 
-All releases have a corresponding tag in the git repository, e.g. ``v4.2.0``
+All releases have a corresponding tag in the git repository, e.g. ``v4.2.1``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been
