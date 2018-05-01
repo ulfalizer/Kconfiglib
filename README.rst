@@ -145,7 +145,7 @@ Here are some other features:
 
 - **Unicode support**
 
-  Unicode characters in string literals in `Kconfig` and `.config` files are
+  Unicode characters in string literals in ``Kconfig`` and ``.config`` files are
   correctly handled. This support mostly comes for free from Python.
 
 - **Windows support**
