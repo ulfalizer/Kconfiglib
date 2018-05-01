@@ -479,6 +479,19 @@ class Kconfig(object):
       C tools). Can be changed with the 'mainmenu' statement (see
       kconfig-language.txt).
 
+    warnings:
+      A list of strings containing all warnings that have been generated. This
+      allows flexibility in how warnings are printed and processed.
+
+      See the 'warn_to_stderr' parameter to Kconfig.__init__() and the
+      Kconfig.enable/disable_stderr_warnings() functions as well. Note that
+      warnings still get added to Kconfig.warnings when 'warn_to_stderr' is
+      True.
+
+      Just as for warnings printed to stderr, only optional warnings that are
+      enabled will get added to Kconfig.warnings. See the various
+      Kconfig.enable/disable_*_warnings() functions.
+
     srctree:
       The value of the $srctree environment variable when the configuration was
       loaded, or None if $srctree wasn't set. Kconfig and .config files are
@@ -506,6 +519,7 @@ class Kconfig(object):
         "_warn_for_no_prompt",
         "_warn_for_redun_assign",
         "_warn_for_undef_assign",
+        "_warn_to_stderr",
         "_warnings_enabled",
         "config_prefix",
         "const_syms",
@@ -518,6 +532,7 @@ class Kconfig(object):
         "srctree",
         "syms",
         "top_node",
+        "warnings",
         "y",
 
         # Parsing-related
@@ -537,7 +552,7 @@ class Kconfig(object):
     # Public interface
     #
 
-    def __init__(self, filename="Kconfig", warn=True):
+    def __init__(self, filename="Kconfig", warn=True, warn_to_stderr=True):
         """
         Creates a new Kconfig object by parsing Kconfig files. Raises
         KconfigSyntaxError on syntax errors. Note that Kconfig files are not
@@ -557,13 +572,23 @@ class Kconfig(object):
           set. See the class documentation.
 
         warn (default: True):
-          True if warnings related to this configuration should be printed to
-          stderr. This can be changed later with
-          Kconfig.enable/disable_warnings(). It is provided as a constructor
-          argument since warnings might be generated during parsing.
+          True if warnings related to this configuration should be generated.
+          This can be changed later with Kconfig.enable/disable_warnings(). It
+          is provided as a constructor argument since warnings might be
+          generated during parsing.
 
           See the other Kconfig.enable_*_warnings() functions as well, which
           enable or suppress certain warnings when warnings are enabled.
+
+          All generated warnings are added to the Kconfig.warnings list. See
+          the class documentation.
+
+        warn_to_stderr (default: True):
+          True if warnings should be printed to stderr in addition to being
+          added to Kconfig.warnings.
+
+          This can be changed later with
+          Kconfig.enable/disable_stderr_warnings().
         """
         self.srctree = os.environ.get("srctree")
 
@@ -584,9 +609,13 @@ class Kconfig(object):
                        _RE_ASCII).match
 
 
+        self.warnings = []
+
         self._warnings_enabled = warn
+        self._warn_to_stderr = warn_to_stderr
         self._warn_for_undef_assign = False
         self._warn_for_redun_assign = True
+
 
         self.syms = {}
         self.const_syms = {}
@@ -1311,11 +1340,23 @@ class Kconfig(object):
         """
         self._warnings_enabled = False
 
+    def enable_stderr_warnings(self):
+        """
+        See Kconfig.__init__().
+        """
+        self._warn_to_stderr = True
+
+    def disable_stderr_warnings(self):
+        """
+        See Kconfig.__init__().
+        """
+        self._warn_to_stderr = False
+
     def enable_undef_warnings(self):
         """
-        Enables warnings for assignments to undefined symbols. Printed to
-        stderr. Disabled by default since they tend to be spammy for Kernel
-        configurations (and mostly suggests cleanups).
+        Enables warnings for assignments to undefined symbols. Disabled by
+        default since they tend to be spammy for Kernel configurations (and
+        mostly suggests cleanups).
         """
         self._warn_for_undef_assign = True
 
@@ -1352,7 +1393,10 @@ class Kconfig(object):
             "srctree not set" if self.srctree is None else
                 'srctree "{}"'.format(self.srctree),
             'config symbol prefix "{}"'.format(self.config_prefix),
-            "warnings " + ("enabled" if self._warnings_enabled else "disabled"),
+            "warnings " +
+                ("enabled" if self._warnings_enabled else "disabled"),
+            "printing of warnings to stderr " +
+                ("enabled" if self._warn_to_stderr else "disabled"),
             "undef. symbol assignment warnings " +
                 ("enabled" if self._warn_for_undef_assign else "disabled"),
             "redundant symbol assignment warnings " +
@@ -2536,7 +2580,13 @@ class Kconfig(object):
         # For printing general warnings
 
         if self._warnings_enabled:
-            _stderr_msg("warning: " + msg, filename, linenr)
+            msg = "warning: " + msg
+            if filename is not None:
+                msg = "{}:{}: {}".format(filename, linenr, msg)
+
+            self.warnings.append(msg)
+            if self._warn_to_stderr:
+                sys.stderr.write(msg + "\n")
 
     def _warn_undef_assign(self, msg, filename=None, linenr=None):
         # See the class documentation
@@ -4339,12 +4389,6 @@ def _sym_to_num(sym):
     # the C implementation.
     return sym.tri_value if sym.orig_type in (BOOL, TRISTATE) else \
            int(sym.str_value, _TYPE_TO_BASE[sym.orig_type])
-
-def _stderr_msg(msg, filename, linenr):
-    if filename is not None:
-        msg = "{}:{}: {}".format(filename, linenr, msg)
-
-    sys.stderr.write(msg + "\n")
 
 def _internal_error(msg):
     raise InternalError(
