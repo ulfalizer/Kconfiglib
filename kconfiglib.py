@@ -501,12 +501,12 @@ class Kconfig(object):
     """
     __slots__ = (
         "_choices",
-        "_print_undef_assign",
-        "_print_redun_assign",
-        "_print_warnings",
         "_set_re_match",
         "_unset_re_match",
-        "_warn_no_prompt",
+        "_warn_for_no_prompt",
+        "_warn_for_redun_assign",
+        "_warn_for_undef_assign",
+        "_warnings_enabled",
         "config_prefix",
         "const_syms",
         "defconfig_list",
@@ -561,6 +561,9 @@ class Kconfig(object):
           stderr. This can be changed later with
           Kconfig.enable/disable_warnings(). It is provided as a constructor
           argument since warnings might be generated during parsing.
+
+          See the other Kconfig.enable_*_warnings() functions as well, which
+          enable or suppress certain warnings when warnings are enabled.
         """
         self.srctree = os.environ.get("srctree")
 
@@ -581,9 +584,9 @@ class Kconfig(object):
                        _RE_ASCII).match
 
 
-        self._print_warnings = warn
-        self._print_undef_assign = False
-        self._print_redun_assign = True
+        self._warnings_enabled = warn
+        self._warn_for_undef_assign = False
+        self._warn_for_redun_assign = True
 
         self.syms = {}
         self.const_syms = {}
@@ -687,7 +690,7 @@ class Kconfig(object):
         # Build Symbol._dependents for all symbols
         self._build_dep()
 
-        self._warn_no_prompt = True
+        self._warn_for_no_prompt = True
 
     @property
     def mainmenu_text(self):
@@ -737,15 +740,15 @@ class Kconfig(object):
         """
         # Disable the warning about assigning to symbols without prompts. This
         # is normal and expected within a .config file.
-        self._warn_no_prompt = False
+        self._warn_for_no_prompt = False
 
-        # This stub only exists to make sure _warn_no_prompt gets reenabled
+        # This stub only exists to make sure _warn_for_no_prompt gets reenabled
         try:
             self._load_config(filename, replace)
         except UnicodeDecodeError as e:
             _decoding_error(e, filename)
         finally:
-            self._warn_no_prompt = True
+            self._warn_for_no_prompt = True
 
     def _load_config(self, filename, replace):
         with self._open(filename) as f:
@@ -1283,7 +1286,7 @@ class Kconfig(object):
         Resets the user values of all symbols, as if Kconfig.load_config() or
         Symbol.set_value() had never been called.
         """
-        self._warn_no_prompt = False
+        self._warn_for_no_prompt = False
         try:
             # set_value() already rejects undefined symbols, and they don't
             # need to be invalidated (because their value never changes), so we
@@ -1294,19 +1297,19 @@ class Kconfig(object):
             for choice in self._choices:
                 choice.unset_value()
         finally:
-            self._warn_no_prompt = True
+            self._warn_for_no_prompt = True
 
     def enable_warnings(self):
         """
         See Kconfig.__init__().
         """
-        self._print_warnings = True
+        self._warnings_enabled = True
 
     def disable_warnings(self):
         """
         See Kconfig.__init__().
         """
-        self._print_warnings = False
+        self._warnings_enabled = False
 
     def enable_undef_warnings(self):
         """
@@ -1314,26 +1317,29 @@ class Kconfig(object):
         stderr. Disabled by default since they tend to be spammy for Kernel
         configurations (and mostly suggests cleanups).
         """
-        self._print_undef_assign = True
+        self._warn_for_undef_assign = True
 
     def disable_undef_warnings(self):
         """
         See enable_undef_assign().
         """
-        self._print_undef_assign = False
+        self._warn_for_undef_assign = False
 
     def enable_redun_warnings(self):
         """
-        Enables warnings for redundant assignments to symbols. Printed to
-        stderr. Enabled by default.
+        Enables warnings for duplicated assignments in .config files that all
+        set the same value.
+
+        These warnings are enabled by default. Disabling them might be helpful
+        in certain cases when merging configurations.
         """
-        self._print_redun_assign = True
+        self._warn_for_redun_assign = True
 
     def disable_redun_warnings(self):
         """
         See enable_redun_warnings().
         """
-        self._print_redun_assign = False
+        self._warn_for_redun_assign = False
 
     def __repr__(self):
         """
@@ -1346,11 +1352,11 @@ class Kconfig(object):
             "srctree not set" if self.srctree is None else
                 'srctree "{}"'.format(self.srctree),
             'config symbol prefix "{}"'.format(self.config_prefix),
-            "warnings " + ("enabled" if self._print_warnings else "disabled"),
+            "warnings " + ("enabled" if self._warnings_enabled else "disabled"),
             "undef. symbol assignment warnings " +
-                ("enabled" if self._print_undef_assign else "disabled"),
+                ("enabled" if self._warn_for_undef_assign else "disabled"),
             "redundant symbol assignment warnings " +
-                ("enabled" if self._print_redun_assign else "disabled")
+                ("enabled" if self._warn_for_redun_assign else "disabled")
         )))
 
     #
@@ -2529,14 +2535,14 @@ class Kconfig(object):
     def _warn(self, msg, filename=None, linenr=None):
         # For printing general warnings
 
-        if self._print_warnings:
+        if self._warnings_enabled:
             _stderr_msg("warning: " + msg, filename, linenr)
 
     def _warn_undef_assign(self, msg, filename=None, linenr=None):
         # See the class documentation
 
-        if self._print_undef_assign:
-            _stderr_msg("warning: " + msg, filename, linenr)
+        if self._warn_for_undef_assign:
+            self._warn(msg, filename, linenr)
 
     def _warn_undef_assign_load(self, name, val, filename, linenr):
         # Special version for load_config()
@@ -2548,8 +2554,8 @@ class Kconfig(object):
     def _warn_redun_assign(self, msg, filename=None, linenr=None):
         # See the class documentation
 
-        if self._print_redun_assign:
-            _stderr_msg("warning: " + msg, filename, linenr)
+        if self._warn_for_redun_assign:
+            self._warn(msg, filename, linenr)
 
 class Symbol(object):
     """
@@ -3364,7 +3370,7 @@ class Symbol(object):
                 self._rec_invalidate()
                 return
 
-        if self.kconfig._warn_no_prompt:
+        if self.kconfig._warn_for_no_prompt:
             self.kconfig._warn(_name_and_loc(self) + " has no prompt, meaning "
                                "user values have no effect on it")
 
