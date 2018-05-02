@@ -100,6 +100,7 @@ _N_SCROLL_ARROWS = 14
 _MAIN_HELP_LINES = """
 [Space/Enter] Toggle/enter   [ESC] Leave menu   [S] Save
 [M] Save minimal config      [?] Symbol info    [Q] Quit (prompts for save)
+[A] Toggle show-all mode
 """[1:-1].split("\n")
 
 # Lines of help text shown at the bottom of the information display
@@ -112,6 +113,8 @@ def _init_styles():
     global _TOP_SEP_STYLE
     global _MENU_LIST_STYLE
     global _MENU_LIST_SEL_STYLE
+    global _MENU_LIST_INVISIBLE_STYLE
+    global _MENU_LIST_INVISIBLE_SEL_STYLE
     global _BOT_SEP_STYLE
     global _HELP_STYLE
 
@@ -141,45 +144,53 @@ def _init_styles():
 
 
     # Top row, with menu path
-    _PATH_STYLE          = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
+    _PATH_STYLE                    = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
 
     # Separator below menu path, with title and arrows pointing up
-    _TOP_SEP_STYLE       = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    _TOP_SEP_STYLE                 = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
-    # The "main" menu display with the list of symbols, etc.
-    _MENU_LIST_STYLE     = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
+    # Non-selected visible (see show-all mode below) menu entry in the "main"
+    # menu display, which has the list of symbols, etc.
+    _MENU_LIST_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
 
-    # Selected menu entry
-    _MENU_LIST_SEL_STYLE = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    # Selected visible menu entry
+    _MENU_LIST_SEL_STYLE           = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+
+    # Non-selected invisible menu entry in the main menu display, for show-all
+    # mode
+    _MENU_LIST_INVISIBLE_STYLE     = _style(curses.COLOR_RED,   curses.COLOR_WHITE,  curses.A_NORMAL, BOLD             )
+
+    # Selected invisible menu entry, for show-all mode
+    _MENU_LIST_INVISIBLE_SEL_STYLE = _style(curses.COLOR_RED,   curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
 
     # Row below menu list, with arrows pointing down
-    _BOT_SEP_STYLE       = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    _BOT_SEP_STYLE                 = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
     # Help window with keys at the bottom
-    _HELP_STYLE          = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
+    _HELP_STYLE                    = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
 
 
     # Frame around dialog boxes
-    _DIALOG_FRAME_STYLE  = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    _DIALOG_FRAME_STYLE            = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
     # Body of dialog boxes
-    _DIALOG_BODY_STYLE   = _style(curses.COLOR_WHITE, curses.COLOR_BLACK,  curses.A_NORMAL                   )
+    _DIALOG_BODY_STYLE             = _style(curses.COLOR_WHITE, curses.COLOR_BLACK,  curses.A_NORMAL                   )
 
     # Text input field in dialog boxes
-    _INPUT_FIELD_STYLE   = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    _INPUT_FIELD_STYLE             = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
 
 
     # Top line of information display, with title and arrows pointing up
-    _INFO_TOP_LINE_STYLE = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    _INFO_TOP_LINE_STYLE           = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
     # Main information display window
-    _INFO_TEXT_STYLE     = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
+    _INFO_TEXT_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
 
     # Separator below information display, with arrows pointing down
-    _INFO_BOT_SEP_STYLE  = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    _INFO_BOT_SEP_STYLE            = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
     # Help window with keys at the bottom of the information display
-    _INFO_HELP_STYLE     = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
+    _INFO_HELP_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
 
 
 #
@@ -277,6 +288,7 @@ def menuconfig(kconf):
 
     globals()["_kconf"] = kconf
     global _config_filename
+    global _show_all
 
 
     _config_filename = os.environ.get("KCONFIG_CONFIG")
@@ -294,12 +306,17 @@ def menuconfig(kconf):
     else:
         print("Using default symbol values as base")
 
-
-    # We rely on having a selected node
-    if not _visible_nodes(_kconf.top_node):
-        print("No visible symbols in the top menu -- nothing to configure.\n"
-              "Check that environment variables are set properly.")
-        return
+    # Any visible items in the top menu?
+    _show_all = False
+    if not _shown_nodes(_kconf.top_node):
+        # Nothing visible. Start in show-all mode and try again.
+        _show_all = True
+        if not _shown_nodes(_kconf.top_node):
+            # Give up. The implementation relies on always having a selected
+            # node.
+            print("Empty configuration -- nothing to configure.\n"
+                  "Check that environment variables are set properly.")
+            return
 
     # Disable warnings. They get mangled in curses mode, and we deal with
     # errors ourselves.
@@ -321,19 +338,28 @@ def menuconfig(kconf):
 #     Menu node of the menu (or menuconfig symbol, or choice) currently being
 #     shown
 #
-#   _visible:
-#     List of visible symbols in _cur_menu
+#   _shown:
+#     List of items in _cur_menu that are shown (ignoring scrolling). In
+#     show-all mode, this list contains all items in _cur_menu. Otherwise, it
+#     contains just the visible items.
 #
 #   _sel_node_i:
-#     Index in _visible of the currently selected node
+#     Index in _shown of the currently selected node
 #
 #   _menu_scroll:
-#     Index in _visible of the top row of the menu display
+#     Index in _shown of the top row of the menu display
 #
 #   _parent_screen_rows:
 #     List/stack of the row numbers that the selections in the parent menus
 #     appeared on. This is used to prevent the scrolling from jumping around
 #     when going in and out of menus.
+#
+#   _show_all:
+#     If True, "show-all" mode is on. Show-all mode shows all symbols and other
+#     items in the current menu, including those that lack a prompt or aren't
+#     currently visible.
+#
+#     Invisible items are drawn in a different style to make them stand out.
 
 def _menuconfig(stdscr):
     # Logic for the "main" display, with the list of symbols, etc.
@@ -378,7 +404,7 @@ def _menuconfig(stdscr):
             # Do appropriate node action. Only Space is treated specially,
             # preferring to toggle nodes rather than enter menus.
 
-            sel_node = _visible[_sel_node_i]
+            sel_node = _shown[_sel_node_i]
 
             if sel_node.is_menuconfig and not \
                (c == " " and _prefer_toggle(sel_node.item)):
@@ -407,7 +433,10 @@ def _menuconfig(stdscr):
                          "minimal configuration")
 
         elif c == "?":
-            _display_info(_visible[_sel_node_i])
+            _display_info(_shown[_sel_node_i])
+
+        elif c in ("a", "A"):
+            _toggle_show_all()
 
         elif c in ("q", "Q"):
             while True:
@@ -446,7 +475,7 @@ def _init():
 
     global _parent_screen_rows
     global _cur_menu
-    global _visible
+    global _shown
     global _sel_node_i
     global _menu_scroll
 
@@ -487,7 +516,7 @@ def _init():
 
     # Initial state
     _cur_menu = _kconf.top_node
-    _visible = _visible_nodes(_cur_menu)
+    _shown = _shown_nodes(_cur_menu)
     _sel_node_i = 0
     _menu_scroll = 0
 
@@ -542,7 +571,7 @@ def _max_menu_scroll():
     # Returns the maximum amount the menu display can be scrolled down. We stop
     # scrolling when the bottom node is visible.
 
-    return max(0, len(_visible) - _menu_win_height())
+    return max(0, len(_shown) - _menu_win_height())
 
 def _prefer_toggle(item):
     # For nodes with menus, determines whether Space should change the value of
@@ -557,20 +586,20 @@ def _enter_menu(menu):
     # Makes 'menu' the currently displayed menu
 
     global _cur_menu
-    global _visible
+    global _shown
     global _sel_node_i
     global _menu_scroll
 
-    visible_sub = _visible_nodes(menu)
+    shown_sub = _shown_nodes(menu)
     # Never enter empty menus. We depend on having a current node.
-    if visible_sub:
+    if shown_sub:
         # Remember where the current node appears on the screen, so we can try
         # to get it to appear in the same place when we leave the menu
         _parent_screen_rows.append(_sel_node_i - _menu_scroll)
 
         # Jump into menu
         _cur_menu = menu
-        _visible = visible_sub
+        _shown = shown_sub
         _sel_node_i = 0
         _menu_scroll = 0
 
@@ -579,7 +608,7 @@ def _leave_menu():
     # the top menu.
 
     global _cur_menu
-    global _visible
+    global _shown
     global _sel_node_i
     global _menu_scroll
 
@@ -588,8 +617,8 @@ def _leave_menu():
 
     # Jump to parent menu
     parent = _parent_menu(_cur_menu)
-    _visible = _visible_nodes(parent)
-    _sel_node_i = _visible.index(_cur_menu)
+    _shown = _shown_nodes(parent)
+    _sel_node_i = _shown.index(_cur_menu)
     _cur_menu = parent
 
     # Try to make the menu entry appear on the same row on the screen as it did
@@ -603,7 +632,7 @@ def _select_next_menu_entry():
     global _sel_node_i
     global _menu_scroll
 
-    if _sel_node_i < len(_visible) - 1:
+    if _sel_node_i < len(_shown) - 1:
         # Jump to the next node
         _sel_node_i += 1
 
@@ -635,7 +664,7 @@ def _select_last_menu_entry():
     global _sel_node_i
     global _menu_scroll
 
-    _sel_node_i = len(_visible) - 1
+    _sel_node_i = len(_shown) - 1
     _menu_scroll = _max_menu_scroll()
 
 def _select_first_menu_entry():
@@ -645,6 +674,53 @@ def _select_first_menu_entry():
     global _menu_scroll
 
     _sel_node_i = _menu_scroll = 0
+
+def _toggle_show_all():
+    # Toggles show-all mode on/off
+
+    global _show_all
+    global _shown
+    global _sel_node_i
+    global _menu_scroll
+
+    # Row on the screen the cursor is on. Preferably we want the same row to
+    # stay highlighted.
+    old_row = _sel_node_i - _menu_scroll
+
+    _show_all = not _show_all
+    # List of new nodes to be shown after toggling _show_all
+    new_shown = _shown_nodes(_cur_menu)
+
+    # Find a good node to select. The selected node might disappear if show-all
+    # mode is turned off.
+
+    # If there are visible nodes before the previously selected node, select
+    # the closest one. This will select the previously selected node itself if
+    # it is still visible.
+    for node in reversed(_shown[:_sel_node_i + 1]):
+        if node in new_shown:
+            _sel_node_i = new_shown.index(node)
+            break
+    else:
+        # No visible nodes before the previously selected node. Select the
+        # closest visible node after it instead.
+        for node in _shown[_sel_node_i + 1:]:
+            if node in new_shown:
+                _sel_node_i = new_shown.index(node)
+                break
+        else:
+            # No visible nodes at all, meaning show-all was turned off inside
+            # an invisible menu. Don't allow that, as the implementation relies
+            # on always having a selected node.
+            _show_all = True
+
+            return
+
+    _shown = new_shown
+
+    # Try to make the cursor stay on the same row in the menu window. This
+    # might be impossible if too many nodes have disappeared above the node.
+    _menu_scroll = max(_sel_node_i - old_row, 0)
 
 def _draw_main():
     # Draws the "main" display, with the list of symbols, the header, and the
@@ -703,16 +779,21 @@ def _draw_main():
 
     _menu_win.erase()
 
-    # Draw the _visible nodes starting from index _menu_scroll up to either as
-    # many as fit in the window, or to the end of _visible
+    # Draw the _shown nodes starting from index _menu_scroll up to either as
+    # many as fit in the window, or to the end of _shown
     for i in range(_menu_scroll,
-                   min(_menu_scroll + _menu_win_height(), len(_visible))):
+                   min(_menu_scroll + _menu_win_height(), len(_shown))):
 
-        _safe_addstr(_menu_win, i - _menu_scroll, 0,
-                     _node_str(_visible[i]),
-                     # Highlight the selected entry
-                     _MENU_LIST_SEL_STYLE
-                         if i == _sel_node_i else curses.A_NORMAL)
+        node = _shown[i]
+
+        if node.prompt and expr_value(node.prompt[1]):
+            style = _MENU_LIST_SEL_STYLE if i == _sel_node_i else \
+                    _MENU_LIST_STYLE
+        else:
+            style = _MENU_LIST_INVISIBLE_SEL_STYLE if i == _sel_node_i else \
+                    _MENU_LIST_INVISIBLE_STYLE
+
+        _safe_addstr(_menu_win, i - _menu_scroll, 0, _node_str(node), style)
 
     _menu_win.noutrefresh()
 
@@ -726,6 +807,13 @@ def _draw_main():
     # Draw arrows pointing down if the symbol window is scrolled up
     if _menu_scroll < _max_menu_scroll():
         _safe_hline(_bot_sep_win, 0, 4, curses.ACS_DARROW, _N_SCROLL_ARROWS)
+
+    # Indicate when show-all mode is enabled
+    if _show_all:
+        s = "Show-all mode enabled"
+        _safe_addstr(_bot_sep_win,
+                     0, stdscr.getmaxyx()[1] - len(s) - 2,
+                     s)
 
     _bot_sep_win.noutrefresh()
 
@@ -751,31 +839,34 @@ def _parent_menu(node):
         menu = menu.parent
     return menu
 
-def _visible_nodes(menu):
+def _shown_nodes(menu):
     # Returns a list of the nodes in 'menu' (see _parent_menu()) that should be
-    # visible in the menu window
+    # shown in the menu window
+
+    res = []
 
     def rec(node):
-        res = []
+        nonlocal res
 
         while node:
             # Show the node if its prompt is visible. For menus, also check
-            # 'visible if'.
-            if node.prompt and expr_value(node.prompt[1]) and not \
-               (node.item == MENU and not expr_value(node.visibility)):
+            # 'visible if'. In show-all mode, show everything.
+            if _show_all or \
+               (node.prompt and expr_value(node.prompt[1]) and not \
+                (node.item == MENU and not expr_value(node.visibility))):
+
                 res.append(node)
 
                 # If a node has children but doesn't have the is_menuconfig
                 # flag set, the children come from a submenu created implicitly
                 # from dependencies. Show those in this menu too.
                 if node.list and not node.is_menuconfig:
-                    res.extend(rec(node.list))
+                    rec(node.list)
 
             node = node.next
 
-        return res
-
-    return rec(menu.list)
+    rec(menu.list)
+    return res
 
 def _change_node(node):
     # Changes the value of the menu node 'node' if it is a symbol. Bools and
@@ -783,11 +874,15 @@ def _change_node(node):
     # dialog.
 
     global _cur_menu
-    global _visible
+    global _shown
     global _sel_node_i
     global _menu_scroll
 
     if not isinstance(node.item, (Symbol, Choice)):
+        return
+
+    # This will hit for invisible symbols in show-all mode
+    if not (node.prompt and expr_value(node.prompt[1])):
         return
 
     # sc = symbol/choice
@@ -834,13 +929,13 @@ def _change_node(node):
     # Row on the screen the cursor was on
     old_row = _sel_node_i - _menu_scroll
 
-    sel_node = _visible[_sel_node_i]
+    sel_node = _shown[_sel_node_i]
 
     # New visible nodes
-    _visible = _visible_nodes(_cur_menu)
+    _shown = _shown_nodes(_cur_menu)
 
     # New index of selected node
-    _sel_node_i = _visible.index(sel_node)
+    _sel_node_i = _shown.index(sel_node)
 
     # Try to make the cursor stay on the same row in the menu window. This
     # might be impossible if too many nodes have disappeared above the node.
@@ -1528,7 +1623,11 @@ def _node_str(node):
     # This approach gives nice alignment for empty string symbols ("()  Foo")
     s = "{:{}} ".format(_value_str(node), 3 + indent)
 
-    if node.prompt:
+    if not node.prompt:
+        # Show the symbol/choice name in <> brackets if it has no prompt. This
+        # path can only hit in show-all mode.
+        s += "<{}>".format(node.item.name)
+    else:
         if node.item == COMMENT:
             s += "*** {} ***".format(node.prompt[0])
         else:
@@ -1557,7 +1656,7 @@ def _node_str(node):
     # entered. Add "(empty)" if the menu is empty. We don't allow those to be
     # entered.
     if node.is_menuconfig:
-        s += "  --->" if _visible_nodes(node) else "  ---> (empty)"
+        s += "  --->" if _shown_nodes(node) else "  ---> (empty)"
 
     return s
 
