@@ -756,6 +756,8 @@ def _draw_main():
     # This could be optimized to only update the windows that have actually
     # changed, but keep it simple for now and let curses sort it out.
 
+    term_width = stdscr.getmaxyx()[1]
+
 
     #
     # Update the top row with the menu path
@@ -769,14 +771,26 @@ def _draw_main():
 
     menu = _cur_menu
     while menu is not _kconf.top_node:
-        menu_prompts.insert(0, menu.prompt[0])
+        menu_prompts.append(menu.prompt[0])
         menu = menu.parent
+    menu_prompts.append("(top menu)")
+    menu_prompts.reverse()
 
-    _safe_addstr(_path_win, 0, 0, "(top menu)")
-    for prompt in menu_prompts:
-        _safe_addch(_path_win, " ")
+    # Hack: We can't put ACS_RARROW directly in the string. Temporarily
+    # represent it with NULL. Maybe using a Unicode character would be better.
+    menu_path_str = " \0 ".join(menu_prompts)
+
+    # Scroll the menu path to the right if needed to make the current menu's
+    # title visible
+    if len(menu_path_str) > term_width:
+        menu_path_str = menu_path_str[len(menu_path_str) - term_width:]
+
+    # Print the path with the arrows reinserted
+    split_path = menu_path_str.split("\0")
+    _safe_addstr(_path_win, split_path[0])
+    for s in split_path[1:]:
         _safe_addch(_path_win, curses.ACS_RARROW)
-        _safe_addstr(_path_win, " " + prompt)
+        _safe_addstr(_path_win, s)
 
     _path_win.noutrefresh()
 
@@ -794,7 +808,7 @@ def _draw_main():
 
     # Add the 'mainmenu' text as the title, centered at the top
     _safe_addstr(_top_sep_win,
-                 0, (stdscr.getmaxyx()[1] - len(_kconf.mainmenu_text))//2,
+                 0, (term_width - len(_kconf.mainmenu_text))//2,
                  _kconf.mainmenu_text)
 
     _top_sep_win.noutrefresh()
@@ -838,9 +852,7 @@ def _draw_main():
     # Indicate when show-all mode is enabled
     if _show_all:
         s = "Show-all mode enabled"
-        _safe_addstr(_bot_sep_win,
-                     0, stdscr.getmaxyx()[1] - len(s) - 2,
-                     s)
+        _safe_addstr(_bot_sep_win, 0, term_width - len(s) - 2, s)
 
     _bot_sep_win.noutrefresh()
 
