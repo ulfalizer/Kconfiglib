@@ -360,11 +360,19 @@ def menuconfig(kconf):
 #     currently visible.
 #
 #     Invisible items are drawn in a different style to make them stand out.
+#
+#   _conf_changed:
+#     True if the configuration has been changed. If False, we don't bother
+#     showing the save-and-quit dialog.
+#
+#     We reset this to False whenever the configuration is saved explicitly
+#     from the save dialog.
 
 def _menuconfig(stdscr):
     # Logic for the "main" display, with the list of symbols, etc.
 
     globals()["stdscr"] = stdscr
+    global _conf_changed
 
     _init()
 
@@ -419,13 +427,13 @@ def _menuconfig(stdscr):
                     _leave_menu()
 
         elif c in ("n", "N"):
-            _set_node(_shown[_sel_node_i], 0)
+            _set_node_tri_val(_shown[_sel_node_i], 0)
 
         elif c in ("m", "M"):
-            _set_node(_shown[_sel_node_i], 1)
+            _set_node_tri_val(_shown[_sel_node_i], 1)
 
         elif c in ("y", "Y"):
-            _set_node(_shown[_sel_node_i], 2)
+            _set_node_tri_val(_shown[_sel_node_i], 2)
 
         elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
                    "\x1B",  # \x1B = ESC
@@ -434,8 +442,10 @@ def _menuconfig(stdscr):
             _leave_menu()
 
         elif c in ("s", "S"):
-            _save_dialog(_kconf.write_config, _config_filename,
-                         "configuration")
+            if _save_dialog(_kconf.write_config, _config_filename,
+                            "configuration"):
+
+                _conf_changed = False
 
         elif c in ("m", "M"):
             _save_dialog(_kconf.write_min_config, "defconfig",
@@ -448,6 +458,9 @@ def _menuconfig(stdscr):
             _toggle_show_all()
 
         elif c in ("q", "Q"):
+            if not _conf_changed:
+                return "No changes to save"
+
             while True:
                 c = _key_dialog(
                     "Quit",
@@ -487,6 +500,8 @@ def _init():
     global _shown
     global _sel_node_i
     global _menu_scroll
+
+    global _conf_changed
 
     # Looking for this in addition to KEY_BACKSPACE (which is unreliable) makes
     # backspace work with TERM=vt100. That makes it likely to work in sane
@@ -531,6 +546,9 @@ def _init():
 
     # Give windows their initial size
     _resize_main()
+
+    # No changes yet
+    _conf_changed = False
 
 def _resize_main():
     # Resizes the "main" display, with the list of menu entries, etc., to a
@@ -912,32 +930,47 @@ def _change_node(node):
                     s = "0x" + s
 
             if _check_validity(sc, s):
-                sc.set_value(s)
+                _set_val(sc, s)
                 break
 
     elif len(sc.assignable) == 1:
         # Handles choice symbols for choices in y mode, which are a special
         # case: .assignable can be (2,) while .tri_value is 0.
-        sc.set_value(sc.assignable[0])
+        _set_val(sc, sc.assignable[0])
 
     else:
         # Set the symbol to the value after the current value in
         # sc.assignable, with wrapping
         val_index = sc.assignable.index(sc.tri_value)
-        sc.set_value(
-            sc.assignable[(val_index + 1) % len(sc.assignable)])
+        _set_val(sc, sc.assignable[(val_index + 1) % len(sc.assignable)])
 
-    # Changing the value of the symbol might have changed what items in the
-    # current menu are visible. Recalculate the state.
     _update_menu()
 
-def _set_node(node, tri_val):
+def _set_node_tri_val(node, tri_val):
     # Sets 'node' to 'tri_val', if that value can be assigned
 
     if isinstance(node.item, (Symbol, Choice)) and \
        tri_val in node.item.assignable:
 
-        node.item.set_value(tri_val)
+        _set_val(node.item, tri_val)
+
+def _set_val(sc, val):
+    # Wrapper around Symbol/Choice.set_value() for updating the menu state and
+    # _conf_changed
+
+    global _conf_changed
+
+    # Use the string representation of tristate values. This makes the format
+    # consistent for all symbol types.
+    if val in TRI_TO_STR:
+        val = TRI_TO_STR[val]
+
+    if val != sc.str_value:
+        sc.set_value(val)
+        _conf_changed = True
+
+        # Changing the value of the symbol might have changed what items in the
+        # current menu are visible. Recalculate the state.
         _update_menu()
 
 def _update_menu():
@@ -1115,6 +1148,10 @@ def _save_dialog(save_fn, default_filename, description):
     #
     # description:
     #   String describing the thing being saved
+    #
+    # Return value:
+    #   Returns True if the configuration was saved, and False if the user
+    #   canceled the dialog
 
     filename = default_filename
     while True:
@@ -1122,10 +1159,11 @@ def _save_dialog(save_fn, default_filename, description):
             "Filename to save {} to".format(description),
             filename)
 
-        if filename is None or \
-           _try_save(save_fn, filename, description):
+        if filename is None:
+            return False
 
-            return
+        if _try_save(save_fn, filename, description):
+            return True
 
 def _try_save(save_fn, filename, description):
     # Tries to save a file. Pops up an error and returns False on failure.
