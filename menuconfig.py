@@ -418,6 +418,15 @@ def _menuconfig(stdscr):
                     # selection, like 'make menuconfig' does
                     _leave_menu()
 
+        elif c in ("n", "N"):
+            _set_node(_shown[_sel_node_i], 0)
+
+        elif c in ("m", "M"):
+            _set_node(_shown[_sel_node_i], 1)
+
+        elif c in ("y", "Y"):
+            _set_node(_shown[_sel_node_i], 2)
+
         elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
                    "\x1B",  # \x1B = ESC
                    "h", "H"):
@@ -873,11 +882,6 @@ def _change_node(node):
     # tristates are toggled, while other symbol types pop up a text entry
     # dialog.
 
-    global _cur_menu
-    global _shown
-    global _sel_node_i
-    global _menu_scroll
-
     if not isinstance(node.item, (Symbol, Choice)):
         return
 
@@ -925,6 +929,28 @@ def _change_node(node):
 
     # Changing the value of the symbol might have changed what items in the
     # current menu are visible. Recalculate the state.
+    _update_menu()
+
+def _set_node(node, tri_val):
+    # Sets 'node' to 'tri_val', if that value can be assigned
+
+    if isinstance(node.item, (Symbol, Choice)) and \
+       tri_val in node.item.assignable:
+
+        node.item.set_value(tri_val)
+        _update_menu()
+
+def _update_menu():
+    # Updates the current menu after the value of a symbol or choice has been
+    # changed. Changing a value might change which items in the menu are
+    # visible.
+    #
+    # Tries to preserve the location of the cursor when items disappear above
+    # it.
+
+    global _shown
+    global _sel_node_i
+    global _menu_scroll
 
     # Row on the screen the cursor was on
     old_row = _sel_node_i - _menu_scroll
