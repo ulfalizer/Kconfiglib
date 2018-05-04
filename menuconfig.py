@@ -18,9 +18,9 @@ inspired by Vi:
   g/Home  : Jump to beginning of list
 
 The mconf feature where pressing a key jumps to a menu entry with that
-character in it in the current menu isn't supported. A search feature with a
-"jump to" function for jumping directly to a particular symbol regardless of
-where it is defined will be added later instead.
+character in it in the current menu isn't supported. A jump-to feature for
+jumping directly to any symbol (including invisible symbols) is available
+instead.
 
 Space and Enter are "smart" and try to do what you'd expect for the given
 menu entry.
@@ -78,6 +78,25 @@ Limitations
     https://www.lfd.uci.edu/~gohlke/pythonlibs/#curses though.
 """
 
+import curses
+import errno
+import locale
+import os
+import platform
+import re
+import sys
+import textwrap
+
+# We need this double import for the _expr_str() override below
+import kconfiglib
+
+from kconfiglib import Kconfig, \
+                       Symbol, Choice, MENU, COMMENT, \
+                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
+                       AND, OR, NOT, \
+                       expr_value, split_expr, \
+                       TRI_TO_STR, TYPE_TO_STR
+
 
 #
 # Configuration variables
@@ -98,34 +117,38 @@ _N_SCROLL_ARROWS = 14
 
 # Lines of help text shown at the bottom of the "main" display
 _MAIN_HELP_LINES = """
-[Space/Enter] Toggle/enter   [ESC] Leave menu   [S] Save
-[M] Save minimal config      [?] Symbol info    [Q] Quit (prompts for save)
-[A] Toggle show-all mode
+[Space/Enter] Toggle/enter   [ESC] Leave menu    [S] Save
+[?] Symbol info              [/] Jump to symbol  [A] Toggle show-all mode
+[Q] Quit (prompts for save)  [D] Save minimal config (advanced)
 """[1:-1].split("\n")
 
-# Lines of help text shown at the bottom of the information display
+# Lines of help text shown at the bottom of the information dialog
 _INFO_HELP_LINES = """
 [ESC/q] Return to menu
 """[1:-1].split("\n")
 
+# Lines of help text shown at the bottom of the search dialog
+_JUMP_TO_HELP_LINES = """
+Type text to narrow the search. Regular expressions are supported (anything
+available in the Python 're' module). Use the up/down cursor keys to step in
+the list. [Enter] jumps to the selected symbol. [ESC] aborts the search.
+"""[1:-1].split("\n")
+
 def _init_styles():
-    global _PATH_STYLE
-    global _TOP_SEP_STYLE
-    global _MENU_LIST_STYLE
-    global _MENU_LIST_SEL_STYLE
-    global _MENU_LIST_INVISIBLE_STYLE
-    global _MENU_LIST_INVISIBLE_SEL_STYLE
-    global _BOT_SEP_STYLE
+    global _SEPARATOR_STYLE
     global _HELP_STYLE
+    global _LIST_STYLE
+    global _LIST_SEL_STYLE
+    global _LIST_INVISIBLE_STYLE
+    global _LIST_INVISIBLE_SEL_STYLE
+    global _INPUT_FIELD_STYLE
+
+    global _PATH_STYLE
 
     global _DIALOG_FRAME_STYLE
     global _DIALOG_BODY_STYLE
-    global _INPUT_FIELD_STYLE
 
-    global _INFO_TOP_LINE_STYLE
     global _INFO_TEXT_STYLE
-    global _INFO_BOT_SEP_STYLE
-    global _INFO_HELP_STYLE
 
     # Initialize styles for different parts of the application. The arguments
     # are ordered as follows:
@@ -143,78 +166,40 @@ def _init_styles():
     BOLD = curses.A_NORMAL if platform.system() == "Windows" else curses.A_BOLD
 
 
-    # Top row, with menu path
-    _PATH_STYLE                    = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
+    # Separator lines between windows. Also used for the top line in the symbol
+    # information dialog.
+    _SEPARATOR_STYLE          = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
-    # Separator below menu path, with title and arrows pointing up
-    _TOP_SEP_STYLE                 = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    # Edit boxes
+    _INPUT_FIELD_STYLE        = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
 
-    # Non-selected visible (see show-all mode below) menu entry in the "main"
-    # menu display, which has the list of symbols, etc.
-    _MENU_LIST_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
+    # List of items, e.g. the main display
+    _LIST_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
+    # Style for the selected item
+    _LIST_SEL_STYLE           = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
 
-    # Selected visible menu entry
-    _MENU_LIST_SEL_STYLE           = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    # Like _LIST_(SEL_)STYLE, for invisible items. Used in show-all mode.
+    _LIST_INVISIBLE_STYLE     = _style(curses.COLOR_RED,   curses.COLOR_WHITE,  curses.A_NORMAL, BOLD             )
+    _LIST_INVISIBLE_SEL_STYLE = _style(curses.COLOR_RED,   curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
 
-    # Non-selected invisible menu entry in the main menu display, for show-all
-    # mode
-    _MENU_LIST_INVISIBLE_STYLE     = _style(curses.COLOR_RED,   curses.COLOR_WHITE,  curses.A_NORMAL, BOLD             )
+    # Help text windows at the bottom of various fullscreen dialogs
+    _HELP_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
 
-    # Selected invisible menu entry, for show-all mode
-    _MENU_LIST_INVISIBLE_SEL_STYLE = _style(curses.COLOR_RED,   curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    # Top row in the main display, with the menu path
+    _PATH_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
 
-    # Row below menu list, with arrows pointing down
-    _BOT_SEP_STYLE                 = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
-
-    # Help window with keys at the bottom
-    _HELP_STYLE                    = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
-
+    # Symbol information text
+    _INFO_TEXT_STYLE          = _LIST_STYLE
 
     # Frame around dialog boxes
-    _DIALOG_FRAME_STYLE            = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
-
+    _DIALOG_FRAME_STYLE       = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
     # Body of dialog boxes
-    _DIALOG_BODY_STYLE             = _style(curses.COLOR_WHITE, curses.COLOR_BLACK,  curses.A_NORMAL                   )
-
-    # Text input field in dialog boxes
-    _INPUT_FIELD_STYLE             = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
-
-
-    # Top line of information display, with title and arrows pointing up
-    _INFO_TOP_LINE_STYLE           = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
-
-    # Main information display window
-    _INFO_TEXT_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
-
-    # Separator below information display, with arrows pointing down
-    _INFO_BOT_SEP_STYLE            = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
-
-    # Help window with keys at the bottom of the information display
-    _INFO_HELP_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
+    _DIALOG_BODY_STYLE        = _style(curses.COLOR_WHITE, curses.COLOR_BLACK,  curses.A_NORMAL                   )
 
 
 #
 # Main application
 #
-
-from kconfiglib import Kconfig, \
-                       Symbol, Choice, MENU, COMMENT, \
-                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
-                       AND, OR, NOT, \
-                       expr_value, split_expr, \
-                       TRI_TO_STR, TYPE_TO_STR
-
-# We need this double import for the _expr_str() override below
-import kconfiglib
-
-import curses
-import errno
-import locale
-import os
-import platform
-import sys
-import textwrap
-
 
 # Color pairs we've already created, indexed by a
 # (<foreground color>, <background color>) tuple
@@ -242,7 +227,7 @@ def _style(fg_color, bg_color, attribs, no_color_extra_attribs=0):
     return _color_attribs[(fg_color, bg_color)] | attribs
 
 # "Extend" the standard kconfiglib.expr_str() to show values for symbols
-# appearing in expressions, for the information display.
+# appearing in expressions, for the information dialog.
 #
 # This is a bit hacky, but officially supported. It beats having to reimplement
 # expression printing just to tweak it a bit.
@@ -347,7 +332,7 @@ def menuconfig(kconf):
 #     Index in _shown of the currently selected node
 #
 #   _menu_scroll:
-#     Index in _shown of the top row of the menu display
+#     Index in _shown of the top row of the main display
 #
 #   _parent_screen_rows:
 #     List/stack of the row numbers that the selections in the parent menus
@@ -369,7 +354,7 @@ def menuconfig(kconf):
 #     from the save dialog.
 
 def _menuconfig(stdscr):
-    # Logic for the "main" display, with the list of symbols, etc.
+    # Logic for the main display, with the list of symbols, etc.
 
     globals()["stdscr"] = stdscr
     global _conf_changed
@@ -439,7 +424,12 @@ def _menuconfig(stdscr):
                    "\x1B",  # \x1B = ESC
                    "h", "H"):
 
-            _leave_menu()
+            if c == "\x1B" and _cur_menu is _kconf.top_node:
+                res = quit_dialog()
+                if res:
+                    return res
+            else:
+                _leave_menu()
 
         elif c in ("s", "S"):
             if _save_dialog(_kconf.write_config, _config_filename,
@@ -447,40 +437,48 @@ def _menuconfig(stdscr):
 
                 _conf_changed = False
 
-        elif c in ("m", "M"):
+        elif c in ("d", "D"):
             _save_dialog(_kconf.write_min_config, "defconfig",
                          "minimal configuration")
 
+        elif c == "/":
+            _jump_to_dialog()
+
         elif c == "?":
-            _display_info(_shown[_sel_node_i])
+            _info_dialog(_shown[_sel_node_i])
 
         elif c in ("a", "A"):
             _toggle_show_all()
 
         elif c in ("q", "Q"):
-            if not _conf_changed:
-                return "No changes to save"
+            res = quit_dialog()
+            if res:
+                return res
 
-            while True:
-                c = _key_dialog(
-                    "Quit",
-                    " Save configuration?\n"
-                    "\n"
-                    "(Y)es  (N)o  (C)ancel",
-                    "ync")
+def quit_dialog():
+   if not _conf_changed:
+       return "No changes to save"
 
-                if c is None or c == "c":
-                    break
+   while True:
+       c = _key_dialog(
+           "Quit",
+           " Save configuration?\n"
+           "\n"
+           "(Y)es  (N)o  (C)ancel",
+           "ync")
 
-                if c == "y":
-                    if _try_save(_kconf.write_config, _config_filename,
-                                 "configuration"):
+       if c is None or c == "c":
+           return None
 
-                        return "Configuration saved to '{}'" \
-                               .format(_config_filename)
+       if c == "y":
+           if _try_save(_kconf.write_config, _config_filename,
+                        "configuration"):
 
-                elif c == "n":
-                    return "Configuration was not saved"
+               return "Configuration saved to '{}'" \
+                      .format(_config_filename)
+
+       elif c == "n":
+           return "Configuration was not saved"
 
 def _init():
     # Initializes the main display with the list of symbols, etc. Also does
@@ -522,14 +520,14 @@ def _init():
     _path_win = _styled_win(_PATH_STYLE)
 
     # Separator below menu path, with title and arrows pointing up
-    _top_sep_win = _styled_win(_TOP_SEP_STYLE)
+    _top_sep_win = _styled_win(_SEPARATOR_STYLE)
 
     # List of menu entries with symbols, etc.
-    _menu_win = _styled_win(_MENU_LIST_STYLE)
+    _menu_win = _styled_win(_LIST_STYLE)
     _menu_win.keypad(True)
 
     # Row below menu list, with arrows pointing down
-    _bot_sep_win = _styled_win(_BOT_SEP_STYLE)
+    _bot_sep_win = _styled_win(_SEPARATOR_STYLE)
 
     # Help window with keys at the bottom
     _help_win = _styled_win(_HELP_STYLE)
@@ -551,8 +549,8 @@ def _init():
     _conf_changed = False
 
 def _resize_main():
-    # Resizes the "main" display, with the list of menu entries, etc., to a
-    # size appropriate for the terminal size
+    # Resizes the main display, with the list of symbols, etc., to fill the
+    # terminal
 
     global _menu_scroll
 
@@ -584,8 +582,8 @@ def _resize_main():
         for win in _top_sep_win, _menu_win, _bot_sep_win, _help_win:
             win.mvwin(0, 0)
 
-    # Adjust the scroll so that the selected node is still within the
-    # window, if needed
+    # Adjust the scroll so that the selected node is still within the window,
+    # if needed
     if _sel_node_i - _menu_scroll >= menu_win_height:
         _menu_scroll = _sel_node_i - menu_win_height + 1
 
@@ -593,12 +591,6 @@ def _menu_win_height():
     # Returns the height of the menu display
 
     return _menu_win.getmaxyx()[0]
-
-def _max_menu_scroll():
-    # Returns the maximum amount the menu display can be scrolled down. We stop
-    # scrolling when the bottom node is visible.
-
-    return max(0, len(_shown) - _menu_win_height())
 
 def _prefer_toggle(item):
     # For nodes with menus, determines whether Space should change the value of
@@ -630,6 +622,31 @@ def _enter_menu(menu):
         _sel_node_i = 0
         _menu_scroll = 0
 
+def _jump_to(node):
+    # Jumps directly to the menu node 'node'
+
+    global _cur_menu
+    global _shown
+    global _sel_node_i
+    global _menu_scroll
+    global _show_all
+    global _parent_screen_rows
+
+    # Clear remembered menu locations. We might not even have been in the
+    # parent menus before.
+    _parent_screen_rows = []
+
+    # Turn on show-all mode if the node isn't visible
+    if not (node.prompt and expr_value(node.prompt[1])):
+        _show_all = True
+
+    _cur_menu = _parent_menu(node)
+    _shown = _shown_nodes(_cur_menu)
+    _sel_node_i = _shown.index(node)
+
+    # Center the jumped-to node vertically, if possible
+    _menu_scroll = max(_sel_node_i - _menu_win_height()//2, 0)
+
 def _leave_menu():
     # Jumps to the parent menu of the current menu. Does nothing if we're in
     # the top menu.
@@ -649,8 +666,16 @@ def _leave_menu():
     _cur_menu = parent
 
     # Try to make the menu entry appear on the same row on the screen as it did
-    # before we entered the menu
-    _menu_scroll = max(_sel_node_i - _parent_screen_rows.pop(), 0)
+    # before we entered the menu.
+
+    if _parent_screen_rows:
+        # The terminal might have shrunk since we were last in the parent menu
+        screen_row = min(_parent_screen_rows.pop(), _menu_win_height() - 1)
+        _menu_scroll = max(_sel_node_i - screen_row, 0)
+    else:
+        # No saved parent menu locations, meaning we jumped directly to some
+        # node earlier. Just center the node vertically if possible.
+        _menu_scroll = max(_sel_node_i - _menu_win_height()//2, 0)
 
 def _select_next_menu_entry():
     # Selects the menu entry after the current one, adjusting the scroll if
@@ -668,7 +693,8 @@ def _select_next_menu_entry():
         # gives nice and non-jumpy behavior even when
         # _SCROLL_OFFSET >= _menu_win_height().
         if _sel_node_i >= _menu_scroll + _menu_win_height() - _SCROLL_OFFSET:
-            _menu_scroll = min(_menu_scroll + 1, _max_menu_scroll())
+            _menu_scroll = min(_menu_scroll + 1,
+                               _max_scroll(_shown, _menu_win))
 
 def _select_prev_menu_entry():
     # Selects the menu entry before the current one, adjusting the scroll if
@@ -692,7 +718,7 @@ def _select_last_menu_entry():
     global _menu_scroll
 
     _sel_node_i = len(_shown) - 1
-    _menu_scroll = _max_menu_scroll()
+    _menu_scroll = _max_scroll(_shown, _menu_win)
 
 def _select_first_menu_entry():
     # Selects the first menu entry in the current menu
@@ -828,11 +854,10 @@ def _draw_main():
         node = _shown[i]
 
         if node.prompt and expr_value(node.prompt[1]):
-            style = _MENU_LIST_SEL_STYLE if i == _sel_node_i else \
-                    _MENU_LIST_STYLE
+            style = _LIST_SEL_STYLE if i == _sel_node_i else _LIST_STYLE
         else:
-            style = _MENU_LIST_INVISIBLE_SEL_STYLE if i == _sel_node_i else \
-                    _MENU_LIST_INVISIBLE_STYLE
+            style = _LIST_INVISIBLE_SEL_STYLE if i == _sel_node_i else \
+                    _LIST_INVISIBLE_STYLE
 
         _safe_addstr(_menu_win, i - _menu_scroll, 0, _node_str(node), style)
 
@@ -846,7 +871,7 @@ def _draw_main():
     _bot_sep_win.erase()
 
     # Draw arrows pointing down if the symbol window is scrolled up
-    if _menu_scroll < _max_menu_scroll():
+    if _menu_scroll < _max_scroll(_shown, _menu_win):
         _safe_hline(_bot_sep_win, 0, 4, curses.ACS_DARROW, _N_SCROLL_ARROWS)
 
     # Indicate when show-all mode is enabled
@@ -1043,21 +1068,10 @@ def _input_dialog(title, initial_text, info_text=None):
     hscroll = 0
 
     while True:
-        # Width of input field
-        edit_width = win.getmaxyx()[1] - 4
-
-        # Adjust horizontal scroll if the cursor would be outside the input
-        # field
-        if i < hscroll:
-            hscroll = i
-        elif i >= hscroll + edit_width:
-            hscroll = i - edit_width + 1
-
         # Draw the "main" display with the menu, etc., so that resizing still
         # works properly. This is like a stack of windows, only hardcoded for
         # now.
         _draw_main()
-
         _draw_input_dialog(win, title, info_text, s, i, hscroll)
         curses.doupdate()
 
@@ -1076,43 +1090,10 @@ def _input_dialog(title, initial_text, info_text=None):
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
             _resize_main()
-
             _resize_input_dialog(win, title, info_text)
 
-        elif c == curses.KEY_LEFT:
-            if i > 0:
-                i -= 1
-
-        elif c == curses.KEY_RIGHT:
-            if i < len(s):
-                i += 1
-
-        elif c in (curses.KEY_HOME, "\x01"):  # \x01 = CTRL-A
-            i = 0
-
-        elif c in (curses.KEY_END, "\x05"):  # \x05 = CTRL-E
-            i = len(s)
-
-        elif c in (curses.KEY_BACKSPACE, _ERASE_CHAR):
-            if i > 0:
-                s = s[:i-1] + s[i:]
-                i -= 1
-
-        elif c == curses.KEY_DC:
-            s = s[:i] + s[i+1:]
-
-        elif c == "\x0B":  # \x0B = CTRL-K
-            s = s[:i]
-
-        elif c == "\x15":  # \x15 = CTRL-U
-            s = s[i:]
-            i = 0
-
-        elif isinstance(c, str):
-            # Insert character
-
-            s = s[:i] + c + s[i:]
-            i += 1
+        else:
+            s, i, hscroll = _edit_text(c, s, i, hscroll, win.getmaxyx()[1] - 4)
 
 def _resize_input_dialog(win, title, info_text):
     # Resizes the input dialog to a size appropriate for the terminal size
@@ -1175,6 +1156,7 @@ def _save_dialog(save_fn, default_filename, description):
             return False
 
         if _try_save(save_fn, filename, description):
+            _msg("Success", "{} saved to {}".format(description, filename))
             return True
 
 def _try_save(save_fn, filename, description):
@@ -1222,7 +1204,6 @@ def _key_dialog(title, text, keys):
     while True:
         # See _input_dialog()
         _draw_main()
-
         _draw_key_dialog(win, title, text)
         curses.doupdate()
 
@@ -1236,7 +1217,6 @@ def _key_dialog(title, text, keys):
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
             _resize_main()
-
             _resize_key_dialog(win, text)
 
         elif isinstance(c, str):
@@ -1267,11 +1247,6 @@ def _draw_key_dialog(win, title, text):
 
     win.noutrefresh()
 
-def _error(text):
-    # Pops up an error dialog that can be dismissed with Space/Enter/ESC
-
-    _key_dialog("Error", text, " \n")
-
 def _draw_frame(win, title):
     # Draw a frame around the inner edges of 'win', with 'title' at the top
 
@@ -1292,35 +1267,308 @@ def _draw_frame(win, title):
 
     win.attroff(_DIALOG_FRAME_STYLE)
 
-def _display_info(node):
+def _jump_to_dialog():
+    # Search text
+    s = ""
+    # Previous search text
+    prev_s = None
+    # Search text cursor position
+    s_i = 0
+    # Horizontal scroll offset
+    hscroll = 0
+
+    # Index of selected row
+    sel_node_i = 0
+    # Index in 'matches' of the top row of the list
+    scroll = 0
+
+    # Edit box at the top
+    edit_box = _styled_win(_INPUT_FIELD_STYLE)
+    edit_box.keypad(True)
+
+    # List of matches
+    matches_win = _styled_win(_LIST_STYLE)
+
+    # Bottom separator, with arrows pointing down
+    bot_sep_win = _styled_win(_SEPARATOR_STYLE)
+
+    # Help window with instructions at the bottom
+    help_win = _styled_win(_HELP_STYLE)
+
+    # Give windows their initial size
+    _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
+                           sel_node_i, scroll)
+
+    _safe_curs_set(2)
+
+    # Defined symbols sorted by name, with duplicates removed
+    sorted_syms = sorted(set(_kconf.defined_syms), key=lambda sym: sym.name)
+
+    # TODO: Code duplication with _select_{next,prev}_menu_entry(). Can this be
+    # factored out in some nice way?
+
+    def select_next_match():
+        nonlocal sel_node_i
+        nonlocal scroll
+
+        if sel_node_i < len(matches) - 1:
+            sel_node_i += 1
+
+            if sel_node_i >= scroll + matches_win.getmaxyx()[0] - _SCROLL_OFFSET:
+                scroll = min(scroll + 1, _max_scroll(matches, matches_win))
+
+    def select_prev_match():
+        nonlocal sel_node_i
+        nonlocal scroll
+
+        if sel_node_i > 0:
+           sel_node_i -= 1
+
+           if sel_node_i <= scroll + _SCROLL_OFFSET:
+               scroll = max(scroll - 1, 0)
+
+    while True:
+        if s != prev_s:
+            # The search text changed. Find new matching nodes.
+
+            prev_s = s
+
+            try:
+                re_search = re.compile(s, re.IGNORECASE).search
+
+                # No exception thrown, so the regex is okay
+                bad_re = None
+
+                # 'matches' holds a list of matching menu nodes.
+
+                # This is a bit faster than the loop equivalent. At a high
+                # level, the syntax of list comprehensions is
+                # [<item> <loop template>].
+                matches = [node
+                           for sym in sorted_syms
+                               if re_search(sym.name)
+                                   for node in sym.nodes]
+
+            except re.error as e:
+                # Bad regex. Remember the error message so we can show it.
+                bad_re = e.msg
+                matches = []
+
+            # Reset scroll and jump to the top of the list of matches
+            sel_node_i = scroll = 0
+
+        _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
+                             s, s_i, hscroll,
+                             bad_re, matches, sel_node_i, scroll)
+        curses.doupdate()
+
+
+        c = _get_wch_compat(edit_box)
+
+        if c == "\n":
+            if not matches:
+                continue
+
+            _jump_to(matches[sel_node_i])
+
+            _safe_curs_set(0)
+            # Resize the main display before returning in case the terminal was
+            # resized while the search dialog was open
+            _resize_main()
+            return
+
+        if c == "\x1B":  # \x1B = ESC
+            _safe_curs_set(0)
+            _resize_main()
+            return
+
+
+        if c == curses.KEY_RESIZE:
+            # No need to call _resize_main(), because the search window is
+            # fullscreen.
+
+            # We adjust the scroll so that the selected node stays visible in
+            # the list when the terminal is resized, hence the 'scroll'
+            # assignment
+            scroll = _resize_jump_to_dialog(
+                edit_box, matches_win, bot_sep_win, help_win,
+                sel_node_i, scroll)
+
+        elif c == curses.KEY_DOWN:
+            select_next_match()
+
+        elif c == curses.KEY_UP:
+            select_prev_match()
+
+        elif c == curses.KEY_NPAGE:  # Page Down
+            # Keep it simple. This way we get sane behavior for small windows,
+            # etc., for free.
+            for _ in range(_PG_JUMP):
+                select_next_match()
+
+        elif c == curses.KEY_PPAGE:  # Page Up
+            for _ in range(_PG_JUMP):
+                select_prev_match()
+
+        else:
+            s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
+                                         edit_box.getmaxyx()[1] - 2)
+
+def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
+                           sel_node_i, scroll):
+    # Resizes the jump-to dialog to fill the terminal.
+    #
+    # Returns the new scroll index. We adjust the scroll if needed so that the
+    # selected node stays visible.
+
+    screen_height, screen_width = stdscr.getmaxyx()
+
+    bot_sep_win.resize(1, screen_width)
+
+    help_win_height = len(_JUMP_TO_HELP_LINES)
+    matches_win_height = screen_height - help_win_height - 4
+
+    if matches_win_height >= 1:
+        edit_box.resize(3, screen_width)
+        matches_win.resize(matches_win_height, screen_width)
+        help_win.resize(help_win_height, screen_width)
+
+        matches_win.mvwin(3, 0)
+        bot_sep_win.mvwin(3 + matches_win_height, 0)
+        help_win.mvwin(3 + matches_win_height + 1, 0)
+    else:
+        # Degenerate case. Give up on nice rendering and just prevent errors.
+
+        matches_win_height = 1
+
+        edit_box.resize(screen_height, screen_width)
+        matches_win.resize(1, screen_width)
+        help_win.resize(1, screen_width)
+
+        for win in matches_win, bot_sep_win, help_win:
+            win.mvwin(0, 0)
+
+    # Adjust the scroll so that the selected row is still within the window, if
+    # needed
+    if sel_node_i - scroll >= matches_win_height:
+        return sel_node_i - matches_win_height + 1
+    return scroll
+
+def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
+                         s, s_i, hscroll,
+                         bad_re, matches, sel_node_i, scroll):
+    edit_width = edit_box.getmaxyx()[1] - 2
+
+
+    #
+    # Update list of matches
+    #
+
+    matches_win.erase()
+
+    if bad_re is not None:
+        # bad_re holds the error message from the re.error exception on errors
+        _safe_addstr(matches_win, 0, 0,
+                     "Bad regular expression: " + bad_re)
+    elif not matches:
+        _safe_addstr(matches_win, 0, 0, "No matches")
+    else:
+        for i in range(scroll,
+                       min(scroll + matches_win.getmaxyx()[0], len(matches))):
+            style = _LIST_SEL_STYLE if i == sel_node_i else _LIST_STYLE
+
+            sym = matches[i].item
+
+            s2 = sym.name
+            if len(sym.nodes) > 1:
+                # Give menu locations as well for symbols that are defined in
+                # multiple locations. The different menu locations will be
+                # listed next to one another.
+                s2 += " (in menu {})".format(
+                    _parent_menu(matches[i]).prompt[0])
+
+            _safe_addstr(matches_win, i - scroll, 0, s2, style)
+
+    matches_win.noutrefresh()
+
+
+    #
+    # Update bottom separator line
+    #
+
+    bot_sep_win.erase()
+
+    # Draw arrows pointing down if the symbol list is scrolled up
+    if scroll < _max_scroll(matches, matches_win):
+        _safe_hline(bot_sep_win, 0, 4, curses.ACS_DARROW, _N_SCROLL_ARROWS)
+
+    bot_sep_win.noutrefresh()
+
+
+    #
+    # Update help window at bottom
+    #
+
+    help_win.erase()
+
+    for i, line in enumerate(_JUMP_TO_HELP_LINES):
+        _safe_addstr(help_win, i, 0, line)
+
+    help_win.noutrefresh()
+
+
+    #
+    # Update edit box. We do this last since it makes it handy to position the
+    # cursor.
+    #
+
+    edit_box.erase()
+
+    _draw_frame(edit_box, "Jump to symbol")
+
+    # Draw arrows pointing up if the symbol list is scrolled down
+    if scroll > 0:
+        # TODO: Bit ugly that _DIALOG_FRAME_STYLE is repeated here
+        _safe_hline(edit_box, 2, 4, curses.ACS_UARROW, _N_SCROLL_ARROWS,
+                    _DIALOG_FRAME_STYLE)
+
+    # Note: Perhaps having a separate window for the input field would be nicer
+    visible_s = s[hscroll:hscroll + edit_width]
+    _safe_addstr(edit_box, 1, 1, visible_s, _INPUT_FIELD_STYLE)
+
+    _safe_move(edit_box, 1, 1 + s_i - hscroll)
+
+    edit_box.noutrefresh()
+
+def _info_dialog(node):
     # Shows a fullscreen window with information about 'node'
 
     # Top row, with title and arrows point up
-    top_line_win = _styled_win(_INFO_TOP_LINE_STYLE)
+    top_line_win = _styled_win(_SEPARATOR_STYLE)
 
     # Text display
     text_win = _styled_win(_INFO_TEXT_STYLE)
     text_win.keypad(True)
 
     # Bottom separator, with arrows pointing down
-    bot_sep_win = _styled_win(_INFO_BOT_SEP_STYLE)
+    bot_sep_win = _styled_win(_SEPARATOR_STYLE)
 
     # Help window with keys at the bottom
-    help_win = _styled_win(_INFO_HELP_STYLE)
+    help_win = _styled_win(_HELP_STYLE)
 
     # Give windows their initial size
-    _resize_info_display(top_line_win, text_win, bot_sep_win, help_win)
+    _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
 
 
     # Get lines of help text
-    lines = _info(node).split("\n")
+    lines = _info_str(node).split("\n")
 
     # Index of first row in 'lines' to show
     scroll = 0
 
     while True:
-        _draw_info_display(node, lines, scroll, top_line_win, text_win,
-                           bot_sep_win, help_win)
+        _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
+                          bot_sep_win, help_win)
         curses.doupdate()
 
 
@@ -1329,20 +1577,20 @@ def _display_info(node):
         if c == curses.KEY_RESIZE:
             # No need to call _resize_main(), because the help window is
             # fullscreen
-            _resize_info_display(top_line_win, text_win, bot_sep_win, help_win)
+            _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
 
         elif c in (curses.KEY_DOWN, "j", "J"):
-            if scroll < _max_info_scroll(text_win, lines):
+            if scroll < _max_scroll(lines, text_win):
                 scroll += 1
 
         elif c in (curses.KEY_NPAGE, "\x04"):  # Page Down/Ctrl-D
-            scroll = min(scroll + _PG_JUMP, _max_info_scroll(text_win, lines))
+            scroll = min(scroll + _PG_JUMP, _max_scroll(lines, text_win))
 
         elif c in (curses.KEY_PPAGE, "\x15"):  # Page Up/Ctrl-U
             scroll = max(scroll - _PG_JUMP, 0)
 
         elif c in (curses.KEY_END, "G"):
-            scroll = _max_info_scroll(text_win, lines)
+            scroll = _max_scroll(lines, text_win)
 
         elif c in (curses.KEY_HOME, "g"):
             scroll = 0
@@ -1355,15 +1603,14 @@ def _display_info(node):
                    "\x1B",  # \x1B = ESC
                    "q", "Q", "h", "H"):
 
-            # Resize the main display before returning so that it gets the
-            # right size in case the terminal was resized while the help
-            # display was open
+            # Resize the main display before returning in case the terminal was
+            # resized while the help dialog was open
             _resize_main()
 
             return
 
-def _resize_info_display(top_line_win, text_win, bot_sep_win, help_win):
-    # Resizes the help display to a size appropriate for the terminal size
+def _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win):
+    # Resizes the info dialog to fill the terminal
 
     screen_height, screen_width = stdscr.getmaxyx()
 
@@ -1389,8 +1636,8 @@ def _resize_info_display(top_line_win, text_win, bot_sep_win, help_win):
         for win in text_win, bot_sep_win, help_win:
             win.mvwin(0, 0)
 
-def _draw_info_display(node, lines, scroll, top_line_win, text_win,
-                       bot_sep_win, help_win):
+def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
+                      bot_sep_win, help_win):
 
     text_win_height, text_win_width = text_win.getmaxyx()
 
@@ -1445,7 +1692,7 @@ def _draw_info_display(node, lines, scroll, top_line_win, text_win,
     bot_sep_win.erase()
 
     # Draw arrows pointing down if the symbol window is scrolled up
-    if scroll < _max_info_scroll(text_win, lines):
+    if scroll < _max_scroll(lines, text_win):
         _safe_hline(bot_sep_win, 0, 4, curses.ACS_DARROW, _N_SCROLL_ARROWS)
 
     bot_sep_win.noutrefresh()
@@ -1462,13 +1709,7 @@ def _draw_info_display(node, lines, scroll, top_line_win, text_win,
 
     help_win.noutrefresh()
 
-def _max_info_scroll(text_win, lines):
-    # Returns the maximum amount the information display can be scrolled down.
-    # We stop scrolling when the last line of the help text is visible.
-
-    return max(0, len(lines) - text_win.getmaxyx()[0])
-
-def _info(node):
+def _info_str(node):
     # Returns information about the menu node 'node' as a string.
     #
     # The helper functions are responsible for adding newlines. This allows
@@ -1569,14 +1810,15 @@ def _defaults_info(sc):
 
     s = "Defaults:\n"
 
-    for value, cond in sc.defaults:
+    for val, cond in sc.defaults:
         s += "  - "
         if isinstance(sc, Symbol):
-            s += _expr_str(value)
+            s += '{} (value: "{}")' \
+                 .format(_expr_str(val), TRI_TO_STR[expr_value(val)])
         else:
             # Don't print the value next to the symbol name for choice
             # defaults, as it looks a bit confusing
-            s += value.name
+            s += val.name
         s += "\n"
 
         if cond is not _kconf.y:
@@ -1681,6 +1923,93 @@ def _styled_win(style):
     win = curses.newwin(1, 1)
     win.bkgdset(" ", style)
     return win
+
+def _max_scroll(lst, win):
+    # Assuming 'lst' is a list of items to be displayed in 'win',
+    # returns the maximum number of steps 'win' can be scrolled down.
+    # We stop scrolling when the bottom item is visible.
+
+    return max(0, len(lst) - win.getmaxyx()[0])
+
+def _edit_text(c, s, i, hscroll, width):
+    # Implements text editing commands for edit boxes. Takes a character (which
+    # could also be e.g. curses.KEY_LEFT) and the edit box state, and returns
+    # the new state after the character has been processed.
+    #
+    # c:
+    #   Character from user
+    #
+    # s:
+    #   Current contents of string
+    #
+    # i:
+    #   Current cursor index in string
+    #
+    # hscroll:
+    #   Index in s of the leftmost character in the edit box, for horizontal
+    #   scrolling
+    #
+    # width:
+    #   Width in characters of the edit box
+    #
+    # Return value:
+    #   An (s, i, hscroll) tuple for the new state
+
+    if c == curses.KEY_LEFT:
+        if i > 0:
+            i -= 1
+
+    elif c == curses.KEY_RIGHT:
+        if i < len(s):
+            i += 1
+
+    elif c in (curses.KEY_HOME, "\x01"):  # \x01 = CTRL-A
+        i = 0
+
+    elif c in (curses.KEY_END, "\x05"):  # \x05 = CTRL-E
+        i = len(s)
+
+    elif c in (curses.KEY_BACKSPACE, _ERASE_CHAR):
+        if i > 0:
+            s = s[:i-1] + s[i:]
+            i -= 1
+
+    elif c == curses.KEY_DC:
+        s = s[:i] + s[i+1:]
+
+    elif c == "\x0B":  # \x0B = CTRL-K
+        s = s[:i]
+
+    elif c == "\x15":  # \x15 = CTRL-U
+        s = s[i:]
+        i = 0
+
+    elif isinstance(c, str):
+        # Insert character
+
+        s = s[:i] + c + s[i:]
+        i += 1
+
+
+    # Adjust the horizontal scroll if the cursor would be outside the input
+    # field
+    if i < hscroll:
+        hscroll = i
+    elif i >= hscroll + width:
+        hscroll = i - width + 1
+
+
+    return s, i, hscroll
+
+def _msg(title, text):
+    # Pops up a message dialog that can be dismissed with Space/Enter/ESC
+
+    _key_dialog(title, text, " \n")
+
+def _error(text):
+    # Pops up an error dialog that can be dismissed with Space/Enter/ESC
+
+    _msg("Error", text)
 
 def _node_str(node):
     # Returns the complete menu entry text for a menu node.
