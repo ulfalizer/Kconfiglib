@@ -242,9 +242,21 @@ Two configuration interfaces are currently available:
 
   .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss6.png
 
-  "Show-all" mode, which includes promptless/invisible items:
+  **"Show-all" mode, which includes promptless/invisible items:**
 
   .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss9.png
+  
+  **Incremental search with regex support:**
+  
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss10.png
+  
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss11.png
+  
+  **Destination after pressing Enter, for the example above. "Show-all" mode is turned on automatically when jumping to invisible symbols.**
+  
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss13.png
+  
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss12.png
 
   (Sorry about that yellow color. See the styling code at the top of
   ``menuconfig.py`` if you want to try to make it prettier. :))
