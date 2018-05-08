@@ -102,6 +102,11 @@ from kconfiglib import Kconfig, \
 # Configuration variables
 #
 
+# How many steps an implicit submenu will be indented. Implicit submenus are
+# created when an item depends on the symbol before it. Note that symbols
+# defined with 'menuconfig' create a separate menu instead of indenting.
+_SUBMENU_INDENT = 4
+
 # Number of steps for Page Up/Down to jump
 _PG_JUMP = 6
 
@@ -2022,7 +2027,7 @@ def _node_str(node):
     indent = 0
     parent = node.parent
     while not parent.is_menuconfig:
-        indent += 2
+        indent += _SUBMENU_INDENT
         parent = parent.parent
 
     # This approach gives nice alignment for empty string symbols ("()  Foo")
