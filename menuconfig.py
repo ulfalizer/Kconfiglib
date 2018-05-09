@@ -2115,7 +2115,7 @@ def _value_str(node):
 
     if item.type == TRISTATE:
         if item.assignable == (1, 2):
-            return "{{{}}}".format(tri_val_str)  # { }/{M}/{*}
+            return "{{{}}}".format(tri_val_str)  # {M}/{*}
         return "<{}>".format(tri_val_str)
 
 def _is_y_mode_choice_sym(item):
