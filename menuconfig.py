@@ -214,30 +214,30 @@ def _init_styles():
 # Main application
 #
 
-# Color pairs we've already created, indexed by a
-# (<foreground color>, <background color>) tuple
-_color_attribs = {}
-
-def _style(fg_color, bg_color, attribs, no_color_extra_attribs=0):
+# color_attribs holds the color pairs we've already created, indexed by a
+# (<foreground color>, <background color>) tuple.
+#
+# Obscure Python: We never pass a value for color_attribs, so it keeps pointing
+# to the same dict. This avoids a global.
+def _style(fg_color, bg_color, attribs, no_color_extra_attribs=0,
+           color_attribs={}):
     # Returns an attribute with the specified foreground and background color
     # and the attributes in 'attribs'. Reuses color pairs already created if
     # possible, and creates a new color pair otherwise.
     #
     # Returns 'attribs | no_color_extra_attribs' if colors aren't supported.
 
-    global _color_attribs
-
     if not curses.has_colors():
         return attribs | no_color_extra_attribs
 
-    if (fg_color, bg_color) not in _color_attribs:
+    if (fg_color, bg_color) not in color_attribs:
         # Create new color pair. Color pair number 0 is hardcoded and cannot be
         # changed, hence the +1s.
-        curses.init_pair(len(_color_attribs) + 1, fg_color, bg_color)
-        _color_attribs[(fg_color, bg_color)] = \
-            curses.color_pair(len(_color_attribs) + 1)
+        curses.init_pair(len(color_attribs) + 1, fg_color, bg_color)
+        color_attribs[(fg_color, bg_color)] = \
+            curses.color_pair(len(color_attribs) + 1)
 
-    return _color_attribs[(fg_color, bg_color)] | attribs
+    return color_attribs[(fg_color, bg_color)] | attribs
 
 # "Extend" the standard kconfiglib.expr_str() to show values for symbols
 # appearing in expressions, for the information dialog.
@@ -1437,9 +1437,9 @@ def _jump_to_dialog():
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
                                          edit_box.getmaxyx()[1] - 2)
 
-_cached_search_strings = None
-
-def _search_strings():
+# Obscure Python: We never pass a value for cached_search_strings, so it keeps
+# pointing to the same list. This avoids a global.
+def _search_strings(cached_search_strings=[]):
     # Returns a list with (node, node_string) tuples for all symbol menu nodes,
     # sorted by symbol name.
     #
@@ -1449,26 +1449,20 @@ def _search_strings():
 
     # This is a static list. Only computing it once makes the search dialog
     # come up a bit faster after the first time it's entered.
-    global _cached_search_strings
-    if _cached_search_strings:
-        return _cached_search_strings
+    if not cached_search_strings:
+        # Defined symbols sorted by name, with duplicates removed.
+        #
+        # Duplicates appear when symbols have multiple menu nodes (definition
+        # locations), but they appear in menu order, which isn't what we want
+        # here. We'd still need to go through sym.nodes as well.
+        for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
+            for node in sym.nodes:
+                node_string = sym.name
+                if node.prompt:
+                    node_string += ' "{}"'.format(node.prompt[0])
+                cached_search_strings.append((node, node_string))
 
-    node_strings = []
-
-    # Defined symbols sorted by name, with duplicates removed.
-    #
-    # Duplicates appear when symbols have multiple menu nodes (definition
-    # locations), but they appear in menu order, which isn't what we want here.
-    # We'd still need to go through sym.nodes as well.
-    for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
-        for node in sym.nodes:
-            node_string = sym.name
-            if node.prompt:
-                node_string += ' "{}"'.format(node.prompt[0])
-            node_strings.append((node, node_string))
-
-    _CACHED_NODE_STRINGS = node_strings
-    return node_strings
+    return cached_search_strings
 
 def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                            sel_node_i, scroll):
