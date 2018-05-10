@@ -916,7 +916,7 @@ def _draw_main():
 def _parent_menu(node):
     # Returns the menu node of the menu that contains 'node'. In addition to
     # proper 'menu's, this might also be a 'menuconfig' symbol or a 'choice'.
-    # "Menu" here means a menu in the interface (a list of menu entries).
+    # "Menu" here means a menu in the interface.
 
     menu = node.parent
     while not menu.is_menuconfig:
