@@ -292,16 +292,20 @@ def menuconfig(kconf):
     if _config_filename is None:
         _config_filename = ".config"
 
+
     if os.path.exists(_config_filename):
         print("Using existing configuration '{}' as base"
               .format(_config_filename))
         _kconf.load_config(_config_filename)
+
     elif kconf.defconfig_filename is not None:
         print("Using default configuration found in '{}' as base"
               .format(kconf.defconfig_filename))
         _kconf.load_config(kconf.defconfig_filename)
+
     else:
         print("Using default symbol values as base")
+
 
     # Any visible items in the top menu?
     _show_all = False
@@ -1489,8 +1493,10 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
         # bad_re holds the error message from the re.error exception on errors
         _safe_addstr(matches_win, 0, 0,
                      "Bad regular expression: " + bad_re)
+
     elif not matches:
         _safe_addstr(matches_win, 0, 0, "No matches")
+
     else:
         for i in range(scroll,
                        min(scroll + matches_win.getmaxyx()[0], len(matches))):
@@ -1503,8 +1509,8 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                 # Give menu locations as well for symbols that are defined in
                 # multiple locations. The different menu locations will be
                 # listed next to one another.
-                s2 += " (in menu {})".format(
-                    _parent_menu(matches[i]).prompt[0])
+                s2 += " (in menu {})" \
+                      .format(_parent_menu(matches[i]).prompt[0])
 
             _safe_addstr(matches_win, i - scroll, 0, s2, style)
 
