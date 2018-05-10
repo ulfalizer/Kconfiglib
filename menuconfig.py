@@ -141,9 +141,10 @@ _INFO_HELP_LINES = """
 
 # Lines of help text shown at the bottom of the search dialog
 _JUMP_TO_HELP_LINES = """
-Type text to narrow the search. Regular expressions are supported (anything
-available in the Python 're' module). Use the up/down cursor keys to step in
-the list. [Enter] jumps to the selected symbol. [ESC] aborts the search.
+Type text to narrow the search. Regexes are supported (via Python's 're'
+module). The up/down cursor keys step in the list. [Enter] jumps to the
+selected symbol. [ESC] aborts the search. Type multiple space-separated
+strings/regexes to find entries that match all of them.
 """[1:-1].split("\n")
 
 def _init_styles():
@@ -1363,9 +1364,10 @@ def _jump_to_dialog():
             prev_s = s
 
             try:
-                re_search = re.compile(s, re.IGNORECASE).search
+                regex_searches = [re.compile(regex, re.IGNORECASE).search
+                                  for regex in s.split()]
 
-                # No exception thrown, so the regex is okay
+                # No exception thrown, so the regexes are okay
                 bad_re = None
 
                 # 'matches' holds a list of matching menu nodes.
@@ -1373,10 +1375,12 @@ def _jump_to_dialog():
                 # This is a bit faster than the loop equivalent. At a high
                 # level, the syntax of list comprehensions is
                 # [<item> <loop template>].
-                matches = [node
-                           for sym in sorted_syms
-                               if re_search(sym.name)
-                                   for node in sym.nodes]
+                matches = [
+                    node
+                    for sym in sorted_syms
+                        if all(search(sym.name) for search in regex_searches)
+                            for node in sym.nodes
+                ]
 
             except re.error as e:
                 # Bad regex. Remember the error message so we can show it.
