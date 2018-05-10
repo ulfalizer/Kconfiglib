@@ -1331,9 +1331,6 @@ def _jump_to_dialog():
 
     _safe_curs_set(2)
 
-    # Defined symbols sorted by name, with duplicates removed
-    sorted_syms = sorted(set(_kconf.defined_syms), key=lambda sym: sym.name)
-
     # TODO: Code duplication with _select_{next,prev}_menu_entry(). Can this be
     # factored out in some nice way?
 
@@ -1370,17 +1367,17 @@ def _jump_to_dialog():
                 # No exception thrown, so the regexes are okay
                 bad_re = None
 
-                # 'matches' holds a list of matching menu nodes.
+                # List of (node, node_string) tuples for the matching nodes
+                matches = []
 
-                # This is a bit faster than the loop equivalent. At a high
-                # level, the syntax of list comprehensions is
-                # [<item> <loop template>].
-                matches = [
-                    node
-                    for sym in sorted_syms
-                        if all(search(sym.name) for search in regex_searches)
-                            for node in sym.nodes
-                ]
+                # Go through the list of (node, node_string) tuples, where
+                # 'node_string' describes 'node'
+                for node, node_string in _search_strings():
+                    for search in regex_searches:
+                        if not search(node_string):
+                            break
+                    else:
+                        matches.append((node, node_string))
 
             except re.error as e:
                 # Bad regex. Remember the error message so we can show it.
@@ -1402,7 +1399,7 @@ def _jump_to_dialog():
             if not matches:
                 continue
 
-            _jump_to(matches[sel_node_i])
+            _jump_to(matches[sel_node_i][0])
 
             _safe_curs_set(0)
             return
@@ -1439,6 +1436,39 @@ def _jump_to_dialog():
         else:
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
                                          edit_box.getmaxyx()[1] - 2)
+
+_cached_search_strings = None
+
+def _search_strings():
+    # Returns a list with (node, node_string) tuples for all symbol menu nodes,
+    # sorted by symbol name.
+    #
+    # node_string is a string containing the symbol's name and prompt. It is
+    # matched against the regex(es) the user inputs during search, and doubles
+    # as the string displayed for the node in the list of matches.
+
+    # This is a static list. Only computing it once makes the search dialog
+    # come up a bit faster after the first time it's entered.
+    global _cached_search_strings
+    if _cached_search_strings:
+        return _cached_search_strings
+
+    node_strings = []
+
+    # Defined symbols sorted by name, with duplicates removed.
+    #
+    # Duplicates appear when symbols have multiple menu nodes (definition
+    # locations), but they appear in menu order, which isn't what we want here.
+    # We'd still need to go through sym.nodes as well.
+    for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
+        for node in sym.nodes:
+            node_string = sym.name
+            if node.prompt:
+                node_string += ' "{}"'.format(node.prompt[0])
+            node_strings.append((node, node_string))
+
+    _CACHED_NODE_STRINGS = node_strings
+    return node_strings
 
 def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                            sel_node_i, scroll):
@@ -1503,19 +1533,9 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
     else:
         for i in range(scroll,
                        min(scroll + matches_win.getmaxyx()[0], len(matches))):
-            style = _LIST_SEL_STYLE if i == sel_node_i else _LIST_STYLE
 
-            sym = matches[i].item
-
-            s2 = sym.name
-            if len(sym.nodes) > 1:
-                # Give menu locations as well for symbols that are defined in
-                # multiple locations. The different menu locations will be
-                # listed next to one another.
-                s2 += " (in menu {})" \
-                      .format(_parent_menu(matches[i]).prompt[0])
-
-            _safe_addstr(matches_win, i - scroll, 0, s2, style)
+            _safe_addstr(matches_win, i - scroll, 0, matches[i][1],
+                         _LIST_SEL_STYLE if i == sel_node_i else _LIST_STYLE)
 
     matches_win.noutrefresh()
 
