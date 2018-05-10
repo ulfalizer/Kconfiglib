@@ -463,9 +463,15 @@ def _menuconfig(stdscr):
 
         elif c == "/":
             _jump_to_dialog()
+            # The terminal might have been resized while the fullscreen jump-to
+            # dialog was open
+            _resize_main()
 
         elif c == "?":
             _info_dialog(_shown[_sel_node_i])
+            # The terminal might have been resized while the fullscreen info
+            # dialog was open
+            _resize_main()
 
         elif c in ("a", "A"):
             _toggle_show_all()
@@ -1395,21 +1401,14 @@ def _jump_to_dialog():
             _jump_to(matches[sel_node_i])
 
             _safe_curs_set(0)
-            # Resize the main display before returning in case the terminal was
-            # resized while the search dialog was open
-            _resize_main()
             return
 
         if c == "\x1B":  # \x1B = ESC
             _safe_curs_set(0)
-            _resize_main()
             return
 
 
         if c == curses.KEY_RESIZE:
-            # No need to call _resize_main(), because the search window is
-            # fullscreen.
-
             # We adjust the scroll so that the selected node stays visible in
             # the list when the terminal is resized, hence the 'scroll'
             # assignment
@@ -1600,8 +1599,6 @@ def _info_dialog(node):
         c = _get_wch_compat(text_win)
 
         if c == curses.KEY_RESIZE:
-            # No need to call _resize_main(), because the help window is
-            # fullscreen
             _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
 
         elif c in (curses.KEY_DOWN, "j", "J"):
@@ -1627,10 +1624,6 @@ def _info_dialog(node):
         elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
                    "\x1B",  # \x1B = ESC
                    "q", "Q", "h", "H"):
-
-            # Resize the main display before returning in case the terminal was
-            # resized while the help dialog was open
-            _resize_main()
 
             return
 
