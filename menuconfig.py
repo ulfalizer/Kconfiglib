@@ -1396,13 +1396,10 @@ def _jump_to_dialog():
         c = _get_wch_compat(edit_box)
 
         if c == "\n":
-            if not matches:
-                continue
-
-            _jump_to(matches[sel_node_i][0])
-
-            _safe_curs_set(0)
-            return
+            if matches:
+                _jump_to(matches[sel_node_i][0])
+                _safe_curs_set(0)
+                return
 
         if c == "\x1B":  # \x1B = ESC
             _safe_curs_set(0)
