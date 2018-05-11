@@ -2064,6 +2064,7 @@ def _node_str(node):
         # Show the symbol/choice name in <> brackets if it has no prompt. This
         # path can only hit in show-all mode.
         s += "<{}>".format(node.item.name)
+
     else:
         if node.item == COMMENT:
             s += "*** {} ***".format(node.prompt[0])
