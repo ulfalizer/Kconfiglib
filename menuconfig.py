@@ -1513,20 +1513,19 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     matches_win.erase()
 
-    if bad_re is not None:
-        # bad_re holds the error message from the re.error exception on errors
-        _safe_addstr(matches_win, 0, 0,
-                     "Bad regular expression: " + bad_re)
-
-    elif not matches:
-        _safe_addstr(matches_win, 0, 0, "No matches")
-
-    else:
+    if matches:
         for i in range(scroll,
                        min(scroll + matches_win.getmaxyx()[0], len(matches))):
 
             _safe_addstr(matches_win, i - scroll, 0, matches[i][1],
                          _LIST_SEL_STYLE if i == sel_node_i else _LIST_STYLE)
+
+    else:
+        # bad_re holds the error message from the re.error exception on errors
+        _safe_addstr(matches_win, 0, 0,
+                     "No matches"
+                     if bad_re is None else
+                     "Bad regular expression: " + bad_re)
 
     matches_win.noutrefresh()
 
