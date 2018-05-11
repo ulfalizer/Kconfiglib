@@ -217,8 +217,8 @@ def _init_styles():
 # color_attribs holds the color pairs we've already created, indexed by a
 # (<foreground color>, <background color>) tuple.
 #
-# Obscure Python: We never pass a value for color_attribs, so it keeps pointing
-# to the same dict. This avoids a global.
+# Obscure Python: We never pass a value for color_attribs, and it keeps
+# pointing to the same dict. This avoids a global.
 def _style(fg_color, bg_color, attribs, no_color_extra_attribs=0,
            color_attribs={}):
     # Returns an attribute with the specified foreground and background color
@@ -1434,7 +1434,7 @@ def _jump_to_dialog():
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
                                          edit_box.getmaxyx()[1] - 2)
 
-# Obscure Python: We never pass a value for cached_search_strings, so it keeps
+# Obscure Python: We never pass a value for cached_search_strings, and it keeps
 # pointing to the same list. This avoids a global.
 def _search_strings(cached_search_strings=[]):
     # Returns a list with (node, node_string) tuples for all symbol menu nodes,
