@@ -2009,6 +2009,12 @@ def _edit_text(c, s, i, hscroll, width):
     elif c == curses.KEY_DC:
         s = s[:i] + s[i+1:]
 
+    elif c == "\x17":  # \x17 = CTRL-W
+        # The \W removes characters like ',' one at a time
+        new_i = re.search(r"(?:\w*|\W)\s*$", s[:i]).start()
+        s = s[:new_i] + s[i:]
+        i = new_i
+
     elif c == "\x0B":  # \x0B = CTRL-K
         s = s[:i]
 
