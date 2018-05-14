@@ -2269,7 +2269,7 @@ def _safe_move(win, *args):
         pass
 
 def _convert_c_lc_ctype_to_utf8():
-    # See _CONVERT_C_LOCALE_TO_UTF8
+    # See _CONVERT_C_LC_CTYPE_TO_UTF8
 
     if _IS_WINDOWS:
         # Windows rarely has issues here, and the PEP 538 implementation avoids
