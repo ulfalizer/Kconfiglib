@@ -808,9 +808,16 @@ g
                    .format(repr(node), expected_loc, node_loc))
 
     # Expanded in the 'source' statement in Klocation
+
     os.environ["TESTS_DIR_FROM_ENV"] = "tests"
     os.environ["SUB_DIR_FROM_ENV"] = "sub"
     os.environ["srctree"] = "Kconfiglib/"
+
+    os.environ["_SOURCED"] = "_sourced"
+    os.environ["_RSOURCED"] = "_rsourced"
+    os.environ["_GSOURCED"] = "_gsourced"
+    os.environ["_GRSOURCED"] = "_grsourced"
+
 
     # Has symbol with empty help text, so disable warnings
     c = Kconfig("tests/Klocation", warn=False)
@@ -830,7 +837,7 @@ g
       "tests/sub/Klocation_gsourced2:1",
       "tests/sub/Klocation_grsourced1:1",
       "tests/sub/Klocation_grsourced2:1",
-      "tests/Klocation:78")
+      "tests/Klocation:54")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_sourced:5")
@@ -1258,7 +1265,7 @@ g
            "defconfig_list symbol exist")
 
     # Referenced in Kdefconfig_existent(_but_n)
-    os.environ["BAR"] = "defconfig_2"
+    os.environ["FOO"] = "defconfig_2"
 
     c = Kconfig("Kconfiglib/tests/Kdefconfig_existent_but_n")
     verify(c.defconfig_filename is None,
@@ -1267,7 +1274,7 @@ g
 
     c = Kconfig("Kconfiglib/tests/Kdefconfig_existent")
     verify(c.defconfig_filename == "Kconfiglib/tests/defconfig_2",
-           "defconfig_filename should return the existent file "
+           "defconfig_filename should return the existing file "
            "Kconfiglib/tests/defconfig_2")
 
     # Should also look relative to $srctree if the specified defconfig is a

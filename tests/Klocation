@@ -33,30 +33,6 @@ config MULTI_DEF
 endif
 endif
 
-config TESTS_DIR_FROM_ENV
-    string
-    option env="TESTS_DIR_FROM_ENV"
-
-config SUB_DIR_FROM_ENV
-    string
-    option env="SUB_DIR_FROM_ENV"
-
-config _SOURCED
-    string
-    default "_sourced"
-
-config _RSOURCED
-    string
-    default "_rsourced"
-
-config _GSOURCED
-    string
-    default "_gsourced"
-
-config _GRSOURCED
-    string
-    default "_grsourced"
-
 # Expands to "tests/Klocation_sourced"
 source "$TESTS_DIR_FROM_ENV/Klocation$_SOURCED"
 
