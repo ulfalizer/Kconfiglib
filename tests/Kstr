@@ -74,6 +74,58 @@ config OPTIONS
     option defconfig_list
     option env="ENV"
 
+if LOC_1
+config CORRECT_PROP_LOCS_BOOL
+    prompt "prompt 1"
+    default DEFAULT_1
+    default DEFAULT_2
+    select SELECT_1
+    select SELECT_2
+    imply IMPLY_1
+    imply IMPLY_2
+    help
+      help 1
+endif
+
+if LOC_2
+menuconfig CORRECT_PROP_LOCS_BOOL
+    bool "prompt 2"
+    default DEFAULT_3
+    default DEFAULT_4
+    select SELECT_3
+    select SELECT_4
+    imply IMPLY_3
+    imply IMPLY_4
+    help
+      help 2
+endif
+
+if LOC_3
+config CORRECT_PROP_LOCS_BOOL
+    prompt "prompt 3"
+    default DEFAULT_5
+    default DEFAULT_6
+    select SELECT_5
+    select SELECT_6
+    imply IMPLY_5
+    imply IMPLY_6
+    help
+      help 2
+endif
+
+if LOC_1
+config CORRECT_PROP_LOCS_INT
+    int
+    range 1 2
+    range 3 4
+endif
+
+if LOC_2
+config CORRECT_PROP_LOCS_INT
+    range 5 6
+    range 7 8
+endif
+
 choice CHOICE
     tristate "foo"
     default CHOICE_1
@@ -91,3 +143,51 @@ choice
     tristate "no name"
     optional
 endchoice
+
+if LOC_1
+choice CORRECT_PROP_LOCS_CHOICE
+    bool
+    default CHOICE_3
+
+config CHOICE_3
+    bool "choice 3"
+
+config CHOICE_4
+    bool "choice 3"
+
+config CHOICE_5
+    bool "choice 3"
+
+endchoice
+endif
+
+if LOC_2
+choice CORRECT_PROP_LOCS_CHOICE
+    default CHOICE_4
+endchoice
+endif
+
+if LOC_3
+choice CORRECT_PROP_LOCS_CHOICE
+    default CHOICE_5
+endchoice
+endif
+
+config SIMPLE_MENU_HOOK
+menu "simple menu"
+endmenu
+
+config ADVANCED_MENU_HOOK
+menu "advanced menu"
+    depends on A
+    visible if B
+    visible if C || D
+endmenu
+
+config SIMPLE_COMMENT_HOOK
+comment "simple comment"
+
+config ADVANCED_COMMENT_HOOK
+comment "advanced comment"
+    depends on A
+    depends on B

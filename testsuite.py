@@ -528,12 +528,15 @@ config ADVANCED
 	  first help text
 
 config ADVANCED
+	tristate
 	prompt "prompt 2"
 
 menuconfig ADVANCED
+	tristate
 	prompt "prompt 3"
 
 config ADVANCED
+	tristate
 	depends on (A || !B || (C && D) || !(E && F) || G = H || (I && !J && (K || L) && !(M || N) && O = P)) && DEP4 && DEP3
 	help
 	  second help text
@@ -576,6 +579,61 @@ config OPTIONS
 	option env="ENV"
 """)
 
+    verify_str(c.syms["CORRECT_PROP_LOCS_BOOL"], """
+config CORRECT_PROP_LOCS_BOOL
+	bool
+	prompt "prompt 1" if LOC_1
+	default DEFAULT_1 if LOC_1
+	default DEFAULT_2 if LOC_1
+	select SELECT_1 if LOC_1
+	select SELECT_2 if LOC_1
+	imply IMPLY_1 if LOC_1
+	imply IMPLY_2 if LOC_1
+	depends on LOC_1
+	help
+	  help 1
+
+menuconfig CORRECT_PROP_LOCS_BOOL
+	bool
+	prompt "prompt 2" if LOC_2
+	default DEFAULT_3 if LOC_2
+	default DEFAULT_4 if LOC_2
+	select SELECT_3 if LOC_2
+	select SELECT_4 if LOC_2
+	imply IMPLY_3 if LOC_2
+	imply IMPLY_4 if LOC_2
+	depends on LOC_2
+	help
+	  help 2
+
+config CORRECT_PROP_LOCS_BOOL
+	bool
+	prompt "prompt 3" if LOC_3
+	default DEFAULT_5 if LOC_3
+	default DEFAULT_6 if LOC_3
+	select SELECT_5 if LOC_3
+	select SELECT_6 if LOC_3
+	imply IMPLY_5 if LOC_3
+	imply IMPLY_6 if LOC_3
+	depends on LOC_3
+	help
+	  help 2
+""")
+
+    verify_str(c.syms["CORRECT_PROP_LOCS_INT"], """
+config CORRECT_PROP_LOCS_INT
+	int
+	range 1 2 if LOC_1
+	range 3 4 if LOC_1
+	depends on LOC_1
+
+config CORRECT_PROP_LOCS_INT
+	int
+	range 5 6 if LOC_2
+	range 7 8 if LOC_2
+	depends on LOC_2
+""")
+
 
     print("Testing Choice.__str__()")
 
@@ -592,6 +650,45 @@ choice
 	tristate
 	prompt "no name"
 	optional
+""")
+
+    verify_str(c.named_choices["CORRECT_PROP_LOCS_CHOICE"], """
+choice CORRECT_PROP_LOCS_CHOICE
+	bool
+	default CHOICE_3 if LOC_1
+	depends on LOC_1
+
+choice CORRECT_PROP_LOCS_CHOICE
+	bool
+	default CHOICE_4 if LOC_2
+	depends on LOC_2
+
+choice CORRECT_PROP_LOCS_CHOICE
+	bool
+	default CHOICE_5 if LOC_3
+	depends on LOC_3
+""")
+
+
+    print("Testing MenuNode.__str__() for menus and comments")
+
+    verify_str(c.syms["SIMPLE_MENU_HOOK"].nodes[0].next, """
+menu "simple menu"
+""")
+
+    verify_str(c.syms["ADVANCED_MENU_HOOK"].nodes[0].next, """
+menu "advanced menu"
+	depends on A
+	visible if B && (C || D)
+""")
+
+    verify_str(c.syms["SIMPLE_COMMENT_HOOK"].nodes[0].next, """
+comment "simple comment"
+""")
+
+    verify_str(c.syms["ADVANCED_COMMENT_HOOK"].nodes[0].next, """
+comment "advanced comment"
+	depends on A && B
 """)
 
 
@@ -858,6 +955,18 @@ g
         fail("recursive 'source' raised wrong exception")
     else:
         fail("recursive 'source' did not raise exception")
+
+
+    print("Testing Symbol/Choice.direct_dep")
+
+    c = Kconfig("Kconfiglib/tests/Kdirdep")
+
+    verify_equal(expr_str(c.syms["NO_DEP_SYM"].direct_dep), '"y"')
+    verify_equal(expr_str(c.syms["DEP_SYM"].direct_dep), "A || (B && C) || !D")
+
+    verify_equal(expr_str(c.named_choices["NO_DEP_CHOICE"].direct_dep), '"y"')
+    verify_equal(expr_str(c.named_choices["DEP_CHOICE"].direct_dep),
+                 "A || B || C")
 
 
     print("Testing split_expr()")

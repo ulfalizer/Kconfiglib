@@ -91,7 +91,7 @@ import textwrap
 import kconfiglib
 
 from kconfiglib import Kconfig, \
-                       Symbol, Choice, MENU, COMMENT, \
+                       Symbol, Choice, MENU, COMMENT, MenuNode, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        AND, OR, NOT, \
                        expr_value, split_expr, \
@@ -1758,7 +1758,6 @@ def _info_str(node):
             _direct_dep_info(sym) +
             _defaults_info(sym) +
             _select_imply_info(sym) +
-            _loc_info(sym) +
             _kconfig_def_info(sym)
         )
 
@@ -1773,7 +1772,6 @@ def _info_str(node):
             _choice_syms_info(choice) +
             _direct_dep_info(choice) +
             _defaults_info(choice) +
-            _loc_info(choice) +
             _kconfig_def_info(choice)
         )
 
@@ -1916,24 +1914,22 @@ def _select_imply_info(sym):
 
     return s
 
-def _loc_info(sc):
-    # Returns a string with information about where 'sc' (Symbol or Choice) is
-    # defined in the Kconfig files. Also includes the menu path leading up to
-    # it.
-
-    s = "Definition location{}:\n".format("s" if len(sc.nodes) > 1 else "")
-
-    for node in sc.nodes:
-        s += "  - {}:{}\n      Menu: {}\n" \
-             .format(node.filename, node.linenr, _menu_path_info(node))
-
-    return s + "\n"
-
 def _kconfig_def_info(item):
-    # Returns a string with the definition of 'item' in Kconfig syntax
+    # Returns a string with the definition of 'item' in Kconfig syntax,
+    # together with the definition location(s)
 
-    return "Kconfig definition (with propagated dependencies):\n\n" + \
-           textwrap.indent(str(item).expandtabs(), "  ")
+    nodes = [item] if isinstance(item, MenuNode) else item.nodes
+
+    s = "Kconfig definition{}, with propagated dependencies\n" \
+        .format("s" if len(nodes) > 1 else "")
+    s += (len(s) - 1)*"=" + "\n\n"
+
+    s += "\n\n".join("At {}:{}, in menu {}:\n\n{}".format(
+                         node.filename, node.linenr, _menu_path_info(node),
+                         textwrap.indent(str(node), "  "))
+                     for node in nodes)
+
+    return s
 
 def _menu_path_info(node):
     # Returns a string describing the menu path leading up to 'node'
