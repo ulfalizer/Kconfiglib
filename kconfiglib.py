@@ -95,21 +95,6 @@ possibilities for ARCH and SRCARCH. Kconfiglib will print a warning if an unset
 environment variable is referenced inside the Kconfig files.
 
 
-Gotcha
-******
-
-It's important to set $SRCARCH even if you don't care about values and only
-want to extract information from Kconfig files, because the top-level Kconfig
-file does this (as of writing):
-
-  source "arch/$SRCARCH/Kconfig"
-
-If $SRCARCH is not set, this expands to "arch//Kconfig", and arch/Kconfig
-happens to be an existing file, giving something that appears to work but is
-actually a truncated configuration. The available symbols will differ depending
-on the arch as well.
-
-
 Intro to symbol values
 ======================
 
