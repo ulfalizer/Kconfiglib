@@ -2132,14 +2132,7 @@ class Kconfig(object):
                 continue
 
             if t0 in _TYPE_TOKENS:
-                new_type = _TOKEN_TO_TYPE[t0]
-
-                if node.item.orig_type not in (UNKNOWN, new_type):
-                    self._warn("{} defined with multiple types, {} will be used"
-                               .format(_name_and_loc(node.item),
-                                       TYPE_TO_STR[new_type]))
-
-                node.item.orig_type = new_type
+                self._set_type(node, _TOKEN_TO_TYPE[t0])
 
                 if self._peek_token() is not None:
                     if node.prompt:
@@ -2228,15 +2221,7 @@ class Kconfig(object):
                                       self._parse_cond()))
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
-                new_type = _TOKEN_TO_TYPE[t0]
-
-                if node.item.orig_type not in (UNKNOWN, new_type):
-                    self._warn("{} defined with multiple types, {} will be used"
-                               .format(_name_and_loc(node.item),
-                                       TYPE_TO_STR[new_type]))
-
-                node.item.orig_type = new_type
-
+                self._set_type(node, _TOKEN_TO_TYPE[t0])
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
@@ -2328,6 +2313,14 @@ class Kconfig(object):
                 self._has_tokens = True
                 self._tokens_i = -1
                 return
+
+    def _set_type(self, node, new_type):
+        if node.item.orig_type not in (UNKNOWN, new_type):
+            self._warn("{} defined with multiple types, {} will be used"
+                       .format(_name_and_loc(node.item),
+                               TYPE_TO_STR[new_type]))
+
+        node.item.orig_type = new_type
 
     def _parse_expr(self, transform_m):
         # Parses an expression from the tokens in Kconfig._tokens using a
