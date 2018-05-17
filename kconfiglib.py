@@ -2288,20 +2288,17 @@ class Kconfig(object):
             self._saved_line = line  # "Unget" the line
             return
 
-        help_lines = [_dedent_rstrip(line, indent)]
+        # The help text goes on till the first non-empty line with less indent
+        # than the first line
+
+        help_lines = []
         # Small optimization
         add_help_line = help_lines.append
 
-        # The help text goes on till the first non-empty line with less indent
-
-        while 1:
+        while line and (line.isspace() or _indentation(line) >= indent):
+            add_help_line(_dedent_rstrip(line, indent))
             line = readline()
             self._linenr += 1
-            if not (line and (line.isspace() or \
-                              _indentation(line) >= indent)):
-                break
-
-            add_help_line(_dedent_rstrip(line, indent))
 
         node.help = "\n".join(help_lines).rstrip() + "\n"
         self._saved_line = line  # "Unget" the line
