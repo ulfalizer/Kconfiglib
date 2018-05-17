@@ -2128,59 +2128,7 @@ class Kconfig(object):
                 node.dep = self._make_and(node.dep, self._parse_expr(True))
 
             elif t0 == _T_HELP:
-                # Find first non-blank (not all-space) line and get its
-                # indentation
-
-                if node.help is not None:
-                    self._warn("{} defined with more than one help text -- "
-                               "only the last one will be used"
-                               .format(_name_and_loc(node.item)))
-
-                # Small optimization. This code is pretty hot.
-                readline = self._file.readline
-
-                while 1:
-                    line = readline()
-                    self._linenr += 1
-                    if not line or not line.isspace():
-                        break
-
-                if not line:
-                    self._warn("{} has 'help' but empty help text"
-                               .format(_name_and_loc(node.item)))
-
-                    node.help = ""
-                    break
-
-                indent = _indentation(line)
-                if indent == 0:
-                    # If the first non-empty lines has zero indent, there is no
-                    # help text
-                    self._warn("{} has 'help' but empty help text"
-                               .format(_name_and_loc(node.item)))
-
-                    node.help = ""
-                    self._saved_line = line  # "Unget" the line
-                    break
-
-                help_lines = [_dedent_rstrip(line, indent)]
-                # Small optimization
-                add_help_line = help_lines.append
-
-                # The help text goes on till the first non-empty line with less
-                # indent
-
-                while 1:
-                    line = readline()
-                    self._linenr += 1
-                    if not (line and (line.isspace() or \
-                                      _indentation(line) >= indent)):
-                        break
-
-                    add_help_line(_dedent_rstrip(line, indent))
-
-                node.help = "\n".join(help_lines).rstrip() + "\n"
-                self._saved_line = line  # "Unget" the line
+                self._parse_help(node)
 
             elif t0 == _T_SELECT:
                 if not isinstance(node.item, Symbol):
@@ -2304,6 +2252,59 @@ class Kconfig(object):
                        .format(_name_and_loc(node.item)))
 
         node.prompt = (self._expect_str(), self._parse_cond())
+
+    def _parse_help(self, node):
+        # Find first non-blank (not all-space) line and get its indentation
+
+        if node.help is not None:
+            self._warn("{} defined with more than one help text -- only the "
+                       "last one will be used"
+                       .format(_name_and_loc(node.item)))
+
+        # Small optimization. This code is pretty hot.
+        readline = self._file.readline
+
+        while 1:
+            line = readline()
+            self._linenr += 1
+            if not line or not line.isspace():
+                break
+
+        if not line:
+            self._warn("{} has 'help' but empty help text"
+                       .format(_name_and_loc(node.item)))
+
+            node.help = ""
+            return
+
+        indent = _indentation(line)
+        if indent == 0:
+            # If the first non-empty lines has zero indent, there is no help
+            # text
+            self._warn("{} has 'help' but empty help text"
+                       .format(_name_and_loc(node.item)))
+
+            node.help = ""
+            self._saved_line = line  # "Unget" the line
+            return
+
+        help_lines = [_dedent_rstrip(line, indent)]
+        # Small optimization
+        add_help_line = help_lines.append
+
+        # The help text goes on till the first non-empty line with less indent
+
+        while 1:
+            line = readline()
+            self._linenr += 1
+            if not (line and (line.isspace() or \
+                              _indentation(line) >= indent)):
+                break
+
+            add_help_line(_dedent_rstrip(line, indent))
+
+        node.help = "\n".join(help_lines).rstrip() + "\n"
+        self._saved_line = line  # "Unget" the line
 
     def _parse_expr(self, transform_m):
         # Parses an expression from the tokens in Kconfig._tokens using a
