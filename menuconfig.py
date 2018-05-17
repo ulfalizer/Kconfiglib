@@ -825,7 +825,7 @@ def _draw_main():
     menu = _cur_menu
     while menu is not _kconf.top_node:
         menu_prompts.append(menu.prompt[0])
-        menu = menu.parent
+        menu = _parent_menu(menu)
     menu_prompts.append("(top menu)")
     menu_prompts.reverse()
 
