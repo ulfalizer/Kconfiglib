@@ -2263,15 +2263,15 @@ class Kconfig(object):
                     env_var = self._expect_str_and_eol()
                     node.item.env_var = env_var
 
-                    if env_var not in os.environ:
+                    if env_var in os.environ:
+                        node.defaults.append(
+                            (self._lookup_const_sym(os.environ[env_var]),
+                             self.y))
+                    else:
                         self._warn("{1} has 'option env=\"{0}\"', "
                                    "but the environment variable {0} is not "
                                    "set".format(node.item.name, env_var),
                                    self._filename, self._linenr)
-                    else:
-                        node.defaults.append(
-                            (self._lookup_const_sym(os.environ[env_var]),
-                             self.y))
 
                 elif self._check_token(_T_DEFCONFIG_LIST):
                     if not self.defconfig_list:
