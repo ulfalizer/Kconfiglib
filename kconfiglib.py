@@ -2133,13 +2133,8 @@ class Kconfig(object):
 
             if t0 in _TYPE_TOKENS:
                 self._set_type(node, _TOKEN_TO_TYPE[t0])
-
                 if self._peek_token() is not None:
-                    if node.prompt:
-                        self._warn("{} defined with multiple prompts in single location"
-                                   .format(_name_and_loc(node.item)))
-
-                    node.prompt = (self._expect_str(), self._parse_cond())
+                    self._parse_prompt(node)
 
             elif t0 == _T_DEPENDS:
                 if not self._check_token(_T_ON):
@@ -2226,14 +2221,7 @@ class Kconfig(object):
                                       self._parse_cond()))
 
             elif t0 == _T_PROMPT:
-                # 'prompt' properties override each other within a single
-                # definition of a symbol, but additional prompts can be added
-                # by defining the symbol multiple times
-                if node.prompt:
-                    self._warn("{} defined with multiple prompts in single location"
-                               .format(_name_and_loc(node.item)))
-
-                node.prompt = (self._expect_str(), self._parse_cond())
+                self._parse_prompt(node)
 
             elif t0 == _T_RANGE:
                 node.ranges.append((self._expect_sym(),
@@ -2321,6 +2309,16 @@ class Kconfig(object):
                                TYPE_TO_STR[new_type]))
 
         node.item.orig_type = new_type
+
+    def _parse_prompt(self, node):
+        # 'prompt' properties override each other within a single definition of
+        # a symbol, but additional prompts can be added by defining the symbol
+        # multiple times
+        if node.prompt:
+            self._warn("{} defined with multiple prompts in single location"
+                       .format(_name_and_loc(node.item)))
+
+        node.prompt = (self._expect_str(), self._parse_cond())
 
     def _parse_expr(self, transform_m):
         # Parses an expression from the tokens in Kconfig._tokens using a
