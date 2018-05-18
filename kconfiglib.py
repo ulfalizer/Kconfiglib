@@ -2301,10 +2301,11 @@ class Kconfig(object):
         # than the first line
 
         help_lines = []
-        # Small optimization
+        # Small optimizations
         add_help_line = help_lines.append
+        indentation = _indentation
 
-        while line and (line.isspace() or _indentation(line) >= indent):
+        while line and (line.isspace() or indentation(line) >= indent):
             # De-indent 'line' by 'indent' spaces and rstrip() it to remove any
             # newlines (which gets rid of other trailing whitespace too, but
             # that's fine).
