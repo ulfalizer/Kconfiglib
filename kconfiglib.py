@@ -2179,6 +2179,16 @@ class Kconfig(object):
                                    "set".format(node.item.name, env_var),
                                    self._filename, self._linenr)
 
+                    if env_var != node.item.name:
+                        self._warn("Kconfiglib expands environment variables "
+                                   "in strings directly, meaning you do not "
+                                   "need 'option env=...' \"bounce\" symbols. "
+                                   "For compatibility with the C tools, "
+                                   "rename {} to {} (so that the symbol name "
+                                   "matches the environment variable name)."
+                                   .format(node.item.name, env_var),
+                                   self._filename, self._linenr)
+
                 elif self._check_token(_T_DEFCONFIG_LIST):
                     if not self.defconfig_list:
                         self.defconfig_list = node.item
