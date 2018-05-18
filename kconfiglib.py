@@ -730,7 +730,7 @@ class Kconfig(object):
         """
         See the class documentation.
         """
-        return os.path.expandvars(self.top_node.prompt[0])
+        return _expand(self.top_node.prompt[0])
 
     @property
     def defconfig_filename(self):
@@ -743,7 +743,7 @@ class Kconfig(object):
         for filename, cond in self.defconfig_list.defaults:
             if expr_value(cond):
                 try:
-                    with self._open(os.path.expandvars(filename.str_value)) as f:
+                    with self._open(_expand(filename.str_value)) as f:
                         return f.name
                 except IOError:
                     continue
@@ -1928,20 +1928,20 @@ class Kconfig(object):
                 prev.next = prev = node
 
             elif t0 == _T_SOURCE:
-                self._enter_file(os.path.expandvars(self._expect_str_and_eol()))
+                self._enter_file(_expand(self._expect_str_and_eol()))
                 prev = self._parse_block(None, parent, prev)
                 self._leave_file()
 
             elif t0 == _T_RSOURCE:
                 self._enter_file(os.path.join(
                     os.path.dirname(self._filename),
-                    os.path.expandvars(self._expect_str_and_eol())
+                    _expand(self._expect_str_and_eol())
                 ))
                 prev = self._parse_block(None, parent, prev)
                 self._leave_file()
 
             elif t0 in (_T_GSOURCE, _T_GRSOURCE):
-                pattern = os.path.expandvars(self._expect_str_and_eol())
+                pattern = _expand(self._expect_str_and_eol())
                 if t0 == _T_GRSOURCE:
                     # Relative gsource
                     pattern = os.path.join(os.path.dirname(self._filename),
@@ -4505,6 +4505,15 @@ def _make_depend_on(sym, expr):
     else:
         _internal_error("Internal error while fetching symbols from an "
                         "expression with token stream {}.".format(expr))
+
+def _expand(s):
+    # The predefined UNAME_RELEASE symbol is expanded in one of the 'default's
+    # of the DEFCONFIG_LIST symbol in the Linux kernel. This function maintains
+    # compatibility with it even though environment variables in strings are
+    # now expanded directly.
+
+    # platform.uname() has an internal cache, so this is speedy enough
+    return os.path.expandvars(s.replace("$UNAME_RELEASE", platform.uname()[2]))
 
 def _parenthesize(expr, type_):
     # expr_str() helper. Adds parentheses around expressions of type 'type_'.
