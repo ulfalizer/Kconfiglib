@@ -1848,9 +1848,7 @@ def _info_str(node):
         )
 
     # node.item in (MENU, COMMENT)
-    return "Defined at {}:{}\nMenu: {}\n\n{}" \
-           .format(node.filename, node.linenr, _menu_path_info(node),
-                   _kconfig_def_info(node))
+    return _kconfig_def_info(node)
 
 def _prompt_info(sc):
     # Returns a string listing the prompts of 'sc' (Symbol or Choice)
