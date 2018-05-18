@@ -2251,7 +2251,16 @@ class Kconfig(object):
             self._warn("{} defined with multiple prompts in single location"
                        .format(_name_and_loc(node.item)))
 
-        node.prompt = (self._expect_str(), self._parse_cond())
+        prompt = self._expect_str()
+        if prompt != prompt.strip():
+            self._warn("{} has leading or trailing whitespace in its prompt"
+                       .format(_name_and_loc(node.item)))
+
+            # This avoid issues for e.g. reStructuredText documentation, where
+            # '*prompt *' is invalid
+            prompt = prompt.strip()
+
+        node.prompt = (prompt, self._parse_cond())
 
     def _parse_help(self, node):
         # Find first non-blank (not all-space) line and get its indentation
