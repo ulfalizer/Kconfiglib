@@ -2305,7 +2305,16 @@ class Kconfig(object):
         add_help_line = help_lines.append
 
         while line and (line.isspace() or _indentation(line) >= indent):
-            add_help_line(_dedent_rstrip(line, indent))
+            # De-indent 'line' by 'indent' spaces and rstrip() it to remove any
+            # newlines (which gets rid of other trailing whitespace too, but
+            # that's fine).
+            #
+            # This prepares help text lines in a speedy way: The [indent:]
+            # might already remove trailing newlines for lines shorter than
+            # indent (e.g. empty lines). The rstrip() makes it consistent,
+            # meaning we can join the lines with "\n" later.
+            add_help_line(line.expandtabs()[indent:].rstrip())
+
             line = readline()
             self._linenr += 1
 
@@ -4537,18 +4546,6 @@ def _indentation(line):
 
     line = line.expandtabs()
     return len(line) - len(line.lstrip())
-
-def _dedent_rstrip(line, indent):
-    # De-indents 'line' by 'indent' spaces and rstrip()s it to remove any
-    # newlines (which gets rid of other trailing whitespace too, but that's
-    # fine).
-    #
-    # Used to prepare help text lines in a speedy way: The [indent:] might
-    # already remove trailing newlines for lines shorter than indent (e.g.
-    # empty lines). The rstrip() makes it consistent, meaning we can join the
-    # lines with "\n" later.
-
-    return line.expandtabs()[indent:].rstrip()
 
 def _is_base_n(s, n):
     try:
