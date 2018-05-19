@@ -1096,8 +1096,10 @@ def _input_dialog(title, initial_text, info_text=None):
     win = _styled_win(_DIALOG_BODY_STYLE)
     win.keypad(True)
 
+    info_lines = info_text.split("\n") if info_text else []
+
     # Give the input dialog its initial size
-    _resize_input_dialog(win, title, info_text)
+    _resize_input_dialog(win, title, info_lines)
 
     _safe_curs_set(2)
 
@@ -1118,7 +1120,7 @@ def _input_dialog(title, initial_text, info_text=None):
         # works properly. This is like a stack of windows, only hardcoded for
         # now.
         _draw_main()
-        _draw_input_dialog(win, title, info_text, s, i, hscroll)
+        _draw_input_dialog(win, title, info_lines, s, i, hscroll)
         curses.doupdate()
 
 
@@ -1136,28 +1138,31 @@ def _input_dialog(title, initial_text, info_text=None):
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
             _resize_main()
-            _resize_input_dialog(win, title, info_text)
+            _resize_input_dialog(win, title, info_lines)
 
         else:
             s, i, hscroll = _edit_text(c, s, i, hscroll, edit_width())
 
-def _resize_input_dialog(win, title, info_text):
+def _resize_input_dialog(win, title, info_lines):
     # Resizes the input dialog to a size appropriate for the terminal size
 
     screen_height, screen_width = stdscr.getmaxyx()
 
-    win_height = min(5 if info_text is None else 7, screen_height)
+    win_height = 5
+    if info_lines:
+        win_height += len(info_lines) + 1
+    win_height = min(win_height, screen_height)
 
-    win_width = max(_INPUT_DIALOG_MIN_WIDTH, len(title) + 4)
-    if info_text is not None:
-        win_width = max(win_width, len(info_text) + 4)
+    win_width = max(_INPUT_DIALOG_MIN_WIDTH,
+                    len(title) + 4,
+                    *(len(line) + 4 for line in info_lines))
     win_width = min(win_width, screen_width)
 
     win.resize(win_height, win_width)
     win.mvwin((screen_height - win_height)//2,
               (screen_width - win_width)//2)
 
-def _draw_input_dialog(win, title, info_text, s, i, hscroll):
+def _draw_input_dialog(win, title, info_lines, s, i, hscroll):
     edit_width = win.getmaxyx()[1] - 4
 
     win.erase()
@@ -1169,8 +1174,8 @@ def _draw_input_dialog(win, title, info_text, s, i, hscroll):
     _safe_addstr(win, 2, 2, visible_s + " "*(edit_width - len(visible_s)),
                  _INPUT_FIELD_STYLE)
 
-    if info_text is not None:
-        _safe_addstr(win, 4, 2, info_text)
+    for linenr, line in enumerate(info_lines):
+        _safe_addstr(win, 4 + linenr, 2, line)
 
     _safe_move(win, 2, 2 + i - hscroll)
 
@@ -1187,10 +1192,12 @@ def _load_dialog():
 
     filename = ""
     while True:
-        filename = _input_dialog("File to load", filename)
+        filename = _input_dialog("File to load", filename, _load_save_info())
 
         if filename is None:
             return False
+
+        filename = os.path.expanduser(filename)
 
         if _try_load(filename):
             sel_node = _shown[_sel_node_i]
@@ -1249,12 +1256,14 @@ def _save_dialog(save_fn, default_filename, description):
 
     filename = default_filename
     while True:
-        filename = _input_dialog(
-            "Filename to save {} to".format(description),
-            filename)
+        filename = _input_dialog("Filename to save {} to".format(description),
+                                 filename,
+                                 _load_save_info())
 
         if filename is None:
             return False
+
+        filename = os.path.expanduser(filename)
 
         if _try_save(save_fn, filename, description):
             _msg("Success", "{} saved to {}".format(description, filename))
@@ -2104,6 +2113,12 @@ def _edit_text(c, s, i, hscroll, width):
 
 
     return s, i, hscroll
+
+def _load_save_info():
+    # Returns an information string for load/save dialog boxes
+
+    return "(Relative to {})\n\nRefer to your home directory with ~" \
+           .format(os.path.join(os.getcwd(), ""))
 
 def _msg(title, text):
     # Pops up a message dialog that can be dismissed with Space/Enter/ESC
