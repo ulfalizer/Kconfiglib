@@ -118,7 +118,8 @@ _SUBMENU_INDENT = 4
 _PG_JUMP = 6
 
 # How far the cursor needs to be from the edge of the window before it starts
-# to scroll
+# to scroll. Used for the main menu display, the information display, the
+# search display, and for text boxes.
 _SCROLL_OFFSET = 5
 
 # Minimum width of dialogs that ask for text input
@@ -2103,13 +2104,14 @@ def _edit_text(c, s, i, hscroll, width):
         s = s[:i] + c + s[i:]
         i += 1
 
-
-    # Adjust the horizontal scroll if the cursor would be outside the input
-    # field
-    if i < hscroll:
-        hscroll = i
-    elif i >= hscroll + width:
-        hscroll = i - width + 1
+    # Adjust the horizontal scroll so that the cursor never touches the left or
+    # right edges of the edit box, except when it's at the beginning or the end
+    # of the string
+    if i < hscroll + _SCROLL_OFFSET:
+        hscroll = max(i - _SCROLL_OFFSET, 0)
+    elif i >= hscroll + width - _SCROLL_OFFSET:
+        max_scroll = max(len(s) - width + 1, 0)
+        hscroll = min(i - width + _SCROLL_OFFSET + 1, max_scroll)
 
 
     return s, i, hscroll
