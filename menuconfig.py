@@ -1452,14 +1452,20 @@ def _jump_to_dialog():
                 # List of (node, node_string) tuples for the matching nodes
                 matches = []
 
-                # Go through the list of (node, node_string) tuples, where
-                # 'node_string' describes 'node'
-                for node, node_string in _search_strings():
+                for node in _searched_nodes():
                     for search in regex_searches:
-                        if not search(node_string):
+                        # Does the regex match either the symbol name or the
+                        # prompt (if any)?
+                        if not (search(node.item.name) or
+                                (node.prompt and search(node.prompt[0]))):
+
+                            # Give up on the first regex that doesn't match, to
+                            # speed things up a bit when multiple regexes are
+                            # entered
                             break
+
                     else:
-                        matches.append((node, node_string))
+                        matches.append(node)
 
             except re.error as e:
                 # Bad regex. Remember the error message so we can show it.
@@ -1483,7 +1489,7 @@ def _jump_to_dialog():
 
         if c == "\n":
             if matches:
-                _jump_to(matches[sel_node_i][0])
+                _jump_to(matches[sel_node_i])
                 _safe_curs_set(0)
                 return
 
@@ -1522,30 +1528,21 @@ def _jump_to_dialog():
 
 # Obscure Python: We never pass a value for cached_search_strings, and it keeps
 # pointing to the same list. This avoids a global.
-def _search_strings(cached_search_strings=[]):
-    # Returns a list with (node, node_string) tuples for all symbol menu nodes,
-    # sorted by symbol name.
-    #
-    # node_string is a string containing the symbol's name and prompt. It is
-    # matched against the regex(es) the user inputs during search, and doubles
-    # as the string displayed for the node in the list of matches.
+def _searched_nodes(cached_search_nodes=[]):
+    # Returns a list of menu nodes to search, sorted by symbol name
 
-    # This is a static list. Only computing it once makes the search dialog
-    # come up a bit faster after the first time it's entered.
-    if not cached_search_strings:
-        # Defined symbols sorted by name, with duplicates removed.
+    if not cached_search_nodes:
+        # Sort symbols by name and remove duplicates, then add all nodes for
+        # each symbol.
         #
         # Duplicates appear when symbols have multiple menu nodes (definition
         # locations), but they appear in menu order, which isn't what we want
         # here. We'd still need to go through sym.nodes as well.
-        for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
-            for node in sym.nodes:
-                node_string = sym.name
-                if node.prompt:
-                    node_string += ' "{}"'.format(node.prompt[0])
-                cached_search_strings.append((node, node_string))
 
-    return cached_search_strings
+        for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
+            cached_search_nodes.extend(sym.nodes)
+
+    return cached_search_nodes
 
 def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                            sel_node_i, scroll):
@@ -1604,7 +1601,11 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
         for i in range(scroll,
                        min(scroll + matches_win.getmaxyx()[0], len(matches))):
 
-            _safe_addstr(matches_win, i - scroll, 0, matches[i][1],
+            sym_str = matches[i].item.name
+            if matches[i].prompt:
+                sym_str += ' "{}"'.format(matches[i].prompt[0])
+
+            _safe_addstr(matches_win, i - scroll, 0, sym_str,
                          _LIST_SEL_STYLE if i == sel_node_i else _LIST_STYLE)
 
     else:
