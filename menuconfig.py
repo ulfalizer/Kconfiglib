@@ -1449,7 +1449,7 @@ def _jump_to_dialog():
                 # No exception thrown, so the regexes are okay
                 bad_re = None
 
-                # List of (node, node_string) tuples for the matching nodes
+                # List of matching nodes
                 matches = []
 
                 for node in _searched_nodes():
