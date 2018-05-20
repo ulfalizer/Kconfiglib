@@ -1590,6 +1590,7 @@ def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                          s, s_i, hscroll,
                          bad_re, matches, sel_node_i, scroll):
+
     edit_width = edit_box.getmaxyx()[1] - 2
 
 
