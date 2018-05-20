@@ -1538,7 +1538,6 @@ def _searched_nodes(cached_search_nodes=[]):
         # Duplicates appear when symbols have multiple menu nodes (definition
         # locations), but they appear in menu order, which isn't what we want
         # here. We'd still need to go through sym.nodes as well.
-
         for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
             cached_search_nodes.extend(sym.nodes)
 
