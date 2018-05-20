@@ -1443,8 +1443,15 @@ def _jump_to_dialog():
             prev_s = s
 
             try:
-                regex_searches = [re.compile(regex, re.IGNORECASE).search
-                                  for regex in s.split()]
+                # We could use re.IGNORECASE here instead of lower(), but this
+                # is noticeably less jerky while inputting regexes like
+                # '.*debug$' (though the '.*' is redundant there). Those
+                # probably have bad interactions with re.search(), which
+                # matches anywhere in the string.
+                #
+                # It's not horrible either way. Just a bit smoother.
+                regex_searches = [re.compile(regex).search
+                                  for regex in s.lower().split()]
 
                 # No exception thrown, so the regexes are okay
                 bad_re = None
@@ -1456,8 +1463,9 @@ def _jump_to_dialog():
                     for search in regex_searches:
                         # Does the regex match either the symbol name or the
                         # prompt (if any)?
-                        if not (search(node.item.name) or
-                                (node.prompt and search(node.prompt[0]))):
+                        if not (search(node.item.name.lower()) or
+                                (node.prompt and
+                                 search(node.prompt[0].lower()))):
 
                             # Give up on the first regex that doesn't match, to
                             # speed things up a bit when multiple regexes are
