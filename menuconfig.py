@@ -1463,7 +1463,11 @@ def _jump_to_dialog():
 
             except re.error as e:
                 # Bad regex. Remember the error message so we can show it.
-                bad_re = e.msg
+                bad_re = "Bad regular expression"
+                # re.error.msg was added in Python 3.5
+                if hasattr(e, "msg"):
+                    bad_re += ": " + e.msg
+
                 matches = []
 
             # Reset scroll and jump to the top of the list of matches
@@ -1604,10 +1608,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     else:
         # bad_re holds the error message from the re.error exception on errors
-        _safe_addstr(matches_win, 0, 0,
-                     "No matches"
-                     if bad_re is None else
-                     "Bad regular expression: " + bad_re)
+        _safe_addstr(matches_win, 0, 0, bad_re or "No matches")
 
     matches_win.noutrefresh()
 
