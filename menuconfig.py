@@ -1608,7 +1608,9 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
         for i in range(scroll,
                        min(scroll + matches_win.getmaxyx()[0], len(matches))):
 
-            sym_str = matches[i].item.name
+            sym = matches[i].item
+
+            sym_str = "{}(={})".format(sym.name, sym.str_value)
             if matches[i].prompt:
                 sym_str += ' "{}"'.format(matches[i].prompt[0])
 
