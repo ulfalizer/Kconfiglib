@@ -1610,7 +1610,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
             sym = matches[i].item
 
-            sym_str = "{}(={})".format(sym.name, sym.str_value)
+            sym_str = '{}(="{}")'.format(sym.name, sym.str_value)
             if matches[i].prompt:
                 sym_str += ' "{}"'.format(matches[i].prompt[0])
 
