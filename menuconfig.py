@@ -130,8 +130,9 @@ _N_SCROLL_ARROWS = 14
 
 # Lines of help text shown at the bottom of the "main" display
 _MAIN_HELP_LINES = """
-[Space/Enter] Toggle/enter   [ESC] Leave menu    [S] Save        [O] Load
-[?] Symbol info              [/] Jump to symbol  [A] Toggle show-all mode
+[Space/Enter] Toggle/enter   [ESC] Leave menu    [S] Save
+[O] Load                     [?] Symbol info     [/] Jump to symbol
+[A] Toggle show-all mode     [C] Toggle show-name mode
 [Q] Quit (prompts for save)  [D] Save minimal config (advanced)
 """[1:-1].split("\n")
 
@@ -368,6 +369,9 @@ def menuconfig(kconf):
 #
 #     Invisible items are drawn in a different style to make them stand out.
 #
+#   _show_name:
+#     If True, the names of all symbol are shown in addition to the prompt.
+#
 #   _conf_changed:
 #     True if the configuration has been changed. If False, we don't bother
 #     showing the save-and-quit dialog.
@@ -380,6 +384,7 @@ def _menuconfig(stdscr):
 
     globals()["stdscr"] = stdscr
     global _conf_changed
+    global _show_name
 
     _init()
 
@@ -494,6 +499,9 @@ def _menuconfig(stdscr):
         elif c in ("a", "A"):
             _toggle_show_all()
 
+        elif c in ("c", "C"):
+            _show_name = not _show_name
+
         elif c in ("q", "Q"):
             res = quit_dialog()
             if res:
@@ -543,6 +551,8 @@ def _init():
     global _sel_node_i
     global _menu_scroll
 
+    global _show_name
+
     global _conf_changed
 
     # Looking for this in addition to KEY_BACKSPACE (which is unreliable) makes
@@ -581,10 +591,13 @@ def _init():
     _parent_screen_rows = []
 
     # Initial state
+
     _cur_menu = _kconf.top_node
     _shown = _shown_nodes(_cur_menu)
     _sel_node_i = 0
     _menu_scroll = 0
+
+    _show_name = False
 
     # Give windows their initial size
     _resize_main()
@@ -918,9 +931,14 @@ def _draw_main():
     if _menu_scroll < _max_scroll(_shown, _menu_win):
         _safe_hline(_bot_sep_win, 0, 4, curses.ACS_DARROW, _N_SCROLL_ARROWS)
 
-    # Indicate when show-all mode is enabled
+    # Indicate when show-all and/or show-name mode is enabled
+    enabled_modes = []
     if _show_all:
-        s = "Show-all mode enabled"
+        enabled_modes.append("show-all")
+    if _show_name:
+        enabled_modes.append("show-name")
+    if enabled_modes:
+        s = " and ".join(enabled_modes) + " mode enabled"
         _safe_addstr(_bot_sep_win, 0, term_width - len(s) - 2, s)
 
     _bot_sep_win.noutrefresh()
@@ -2159,14 +2177,17 @@ def _node_str(node):
         parent = parent.parent
 
     # This approach gives nice alignment for empty string symbols ("()  Foo")
-    s = "{:{}} ".format(_value_str(node), 3 + indent)
+    s = "{:{}}".format(_value_str(node), 3 + indent)
 
-    if not node.prompt:
-        # Show the symbol/choice name in <> brackets if it has no prompt. This
-        # path can only hit in show-all mode.
-        s += "<{}>".format(node.item.name)
+    # 'not node.prompt' can only be True in show-all mode
+    if (not node.prompt or _show_name) and \
+       (isinstance(node.item, Symbol) or
+        (isinstance(node.item, Choice) and node.item.name)):
 
-    else:
+        s += " <{}>".format(node.item.name)
+
+    if node.prompt:
+        s += " "
         if node.item == COMMENT:
             s += "*** {} ***".format(node.prompt[0])
         else:
