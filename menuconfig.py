@@ -2180,9 +2180,10 @@ def _node_str(node):
     s = "{:{}}".format(_value_str(node), 3 + indent)
 
     # 'not node.prompt' can only be True in show-all mode
-    if (not node.prompt or _show_name) and \
-       (isinstance(node.item, Symbol) or
-        (isinstance(node.item, Choice) and node.item.name)):
+    if not node.prompt or \
+       (_show_name and
+        (isinstance(node.item, Symbol) or
+         (isinstance(node.item, Choice) and node.item.name))):
 
         s += " <{}>".format(node.item.name)
 
