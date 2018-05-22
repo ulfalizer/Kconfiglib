@@ -1798,20 +1798,10 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
     if scroll > 0:
         _safe_hline(top_line_win, 0, 4, curses.ACS_UARROW, _N_SCROLL_ARROWS)
 
-
-    if isinstance(node.item, Symbol):
-        title = "{}{}".format(_kconf.config_prefix, node.item.name)
-
-    elif isinstance(node.item, Choice):
-        title = node.item.name or "Choice"
-
-    elif node.item == MENU:
-        title = 'menu "{}"'.format(node.prompt[0])
-
-    else:  # node.item == COMMENT
-        title = 'comment "{}"'.format(node.prompt[0])
-
-
+    title = ("Symbol" if isinstance(node.item, Symbol) else
+             "Choice" if isinstance(node.item, Choice) else
+             "Menu"   if node.item == MENU else
+             "Comment") + " information"
     _safe_addstr(top_line_win, 0, (text_win_width - len(title))//2, title)
 
     top_line_win.noutrefresh()
@@ -1863,6 +1853,7 @@ def _info_str(node):
         sym = node.item
 
         return (
+            _name_info(sym) +
             _prompt_info(sym) +
             "Type: {}\n".format(TYPE_TO_STR[sym.type]) +
             'Value: "{}"\n\n'.format(sym.str_value) +
@@ -1877,6 +1868,7 @@ def _info_str(node):
         choice = node.item
 
         return (
+            _name_info(choice) +
             _prompt_info(choice) +
             "Type: {}\n".format(TYPE_TO_STR[choice.type]) +
             'Mode: "{}"\n\n'.format(choice.str_value) +
@@ -1889,6 +1881,12 @@ def _info_str(node):
 
     # node.item in (MENU, COMMENT)
     return _kconfig_def_info(node)
+
+def _name_info(sc):
+    # Returns a string with the name of the symbol/choice. Names are optional
+    # for choices.
+
+    return "Name: {}\n".format(sc.name) if sc.name else ""
 
 def _prompt_info(sc):
     # Returns a string listing the prompts of 'sc' (Symbol or Choice)
