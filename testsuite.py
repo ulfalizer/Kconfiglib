@@ -927,14 +927,14 @@ g
 
     verify_locations(c.syms["MULTI_DEF"].nodes,
       "tests/Klocation:7",
-      "tests/Klocation:31",
+      "tests/Klocation:37",
       "tests/Klocation_sourced:3",
       "tests/sub/Klocation_rsourced:2",
       "tests/sub/Klocation_gsourced1:1",
       "tests/sub/Klocation_gsourced2:1",
       "tests/sub/Klocation_grsourced1:1",
       "tests/sub/Klocation_grsourced2:1",
-      "tests/Klocation:54")
+      "tests/Klocation:60")
 
     verify_locations(c.named_choices["CHOICE"].nodes,
                      "tests/Klocation_sourced:5")

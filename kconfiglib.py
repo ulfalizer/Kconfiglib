@@ -2327,7 +2327,8 @@ class Kconfig(object):
             add_help_line(line.expandtabs()[indent:].rstrip())
 
             line = readline()
-            self._linenr += 1
+
+        self._linenr += len(help_lines)
 
         node.help = "\n".join(help_lines).rstrip() + "\n"
         self._saved_line = line  # "Unget" the line

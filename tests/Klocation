@@ -28,6 +28,12 @@ config HELP_2
 
         baz
 
+config HELP_3
+    help
+      foo
+      bar
+    bool
+
 config MULTI_DEF
 
 endif
