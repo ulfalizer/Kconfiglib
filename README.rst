@@ -321,7 +321,7 @@ The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ 
 
 - `merge_config.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/merge_config.py>`_ merges configuration fragments to produce a complete .config, similarly to ``scripts/kconfig/merge_config.sh`` from the kernel.
 
-- `oldconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/oldconfig.py>`_ provides ``make oldconfig`` functionality, prompting the user for the values of new symbols to update an old ``.config`` file.
+- `oldconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_ provides ``make oldconfig`` functionality, prompting the user for the values of new symbols to update an old ``.config`` file.
 
 - `menuconfig_example.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts.
 
