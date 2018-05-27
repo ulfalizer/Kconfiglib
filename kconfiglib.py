@@ -4757,7 +4757,7 @@ def _check_sym_sanity(sym):
 
             if sym.orig_type == STRING:
                 if not default.is_constant and not default.nodes and \
-                   default.name != default.name.upper():
+                   not default.name.isupper():
                     # 'default foo' on a string symbol could be either a symbol
                     # reference or someone leaving out the quotes. Guess that
                     # the quotes were left out if 'foo' isn't all-uppercase
