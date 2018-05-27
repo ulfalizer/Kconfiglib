@@ -32,55 +32,34 @@
 from kconfiglib import Kconfig, Choice
 import sys
 
-def all_choices(node):
-    """
-    Returns all choices in the menu tree rooted at 'node'. See the
-    Kconfig.write_config() implementation in kconfiglib.py for an example of
-    how the tree can be walked iteratively instead.
-
-    (I was thinking of making a list of choices available directly in the API,
-    but I'm not sure it will always be needed internally, and I'm trying to
-    spam the API with less seldomly-used stuff compared to Kconfiglib 1.)
-    """
-    res = []
-
-    while node:
-        if isinstance(node.item, Choice):
-            res.append(node.item)
-
-        if node.list:
-            res.extend(all_choices(node.list))
-
-        node = node.next
-
-    return res
-
 kconf = Kconfig(sys.argv[1])
-
-non_choice_syms = [sym for sym in kconf.defined_syms if not sym.choice]
-choices = all_choices(kconf.top_node)  # All choices in the configuration
 
 while True:
     changed = False
 
-    for sym in non_choice_syms:
+    for sym in kconf.defined_syms:
+        # Choices are handled separately below
+        if sym.choice:
+            continue
+
         # Set the symbol to the highest assignable value, unless it already has
         # that value. sym.assignable[-1] gives the last element in assignable.
         if sym.assignable and sym.tri_value < sym.assignable[-1]:
             sym.set_value(sym.assignable[-1])
             changed = True
 
-    for choice in choices:
+    for choice in kconf.choices:
         # Same logic as above for choices
         if choice.assignable and choice.tri_value < choice.assignable[-1]:
             choice.set_value(choice.assignable[-1])
-            changed = True
 
             # For y-mode choices, we just let the choice get its default
             # selection. For m-mode choices, we set all choice symbols to m.
             if choice.tri_value == 1:
                 for sym in choice.syms:
                     sym.set_value(1)
+
+            changed = True
 
     # Do multiple passes until we longer manage to raise any symbols or
     # choices, like in allnoconfig.py
