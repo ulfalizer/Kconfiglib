@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Implements oldconfig-like functionality:
 #
 #   1. Load existing .config
@@ -293,6 +295,29 @@ def do_oldconfig_for_node(node):
             if sym is not choice.user_selection and sym.visibility:
                 sym.set_value(0)
 
+# Entry point when run as an executable, split out so that setuptools'
+# 'entry_points' can be used. It produces a handy oldconfig.exe launcher on
+# Windows.
+def main():
+    if len(sys.argv) > 2:
+        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
+
+    kconf = Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+
+    config_filename = os.environ.get("KCONFIG_CONFIG")
+    if config_filename is None:
+        config_filename = ".config"
+
+    if not os.path.exists(config_filename):
+        sys.exit("{}: '{}' does not exist"
+                 .format(sys.argv[0], config_filename))
+
+    kconf.load_config(config_filename)
+    do_oldconfig(kconf)
+    kconf.write_config(config_filename)
+
+    print("Configuration saved to '{}'".format(config_filename))
+
 def do_oldconfig(kconf):
     # An earlier symbol in the Kconfig files might depend on a later symbol and
     # become visible if its value changes. This flag is set to True if the
@@ -316,16 +341,4 @@ def do_oldconfig_rec(node):
         node = node.next
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("error: pass name of base Kconfig file as argument")
-
-    if not os.path.exists(".config"):
-        sys.exit("error: no existing .config")
-
-    kconf = Kconfig(sys.argv[1])
-
-    kconf.load_config(".config")
-    do_oldconfig(kconf)
-    kconf.write_config(".config")
-
-    print("Configuration written to .config")
+    main()
