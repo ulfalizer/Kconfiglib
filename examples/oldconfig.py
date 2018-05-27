@@ -11,8 +11,8 @@
 # add (look at the parents of each item and print all menu prompts and
 # comments unless they have already been printed).
 #
-# Bonus feature: Inputting '??' on the prompt will display the help text of the
-# item, if any. Hopefully no one will want to use that as a value.
+# Inputting '?' on the prompt will display the help text of the item, if any.
+# Hopefully no one will want to use that as a value.
 #
 # Sample session:
 #
@@ -183,7 +183,7 @@ def do_oldconfig_for_node(node):
                             node.prompt[0], name_and_loc_str(sym),
                             default_value_str(sym)))
 
-            if val == "??":
+            if val == "?":
                 print_help(node)
                 continue
 
