@@ -41,7 +41,7 @@
 # All tests should pass. Report regressions to ulfalizer a.t Google's email
 # service.
 
-from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, \
+from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, MenuNode, \
                        BOOL, TRISTATE, HEX, STRING, \
                        TRI_TO_STR, \
                        escape, unescape, \
@@ -955,6 +955,27 @@ g
         fail("recursive 'source' raised wrong exception")
     else:
         fail("recursive 'source' did not raise exception")
+
+
+    print("Testing Kconfig.choices/menus/comments")
+
+    c = Kconfig("Kconfiglib/tests/Kitemlists")
+
+    def verify_prompts(items, *expected_prompts):
+        verify(len(items) == len(expected_prompts),
+               "Wrong number of prompts for {}".format(items))
+
+        for item, expected_prompt in zip(items, expected_prompts):
+            if not isinstance(item, MenuNode):
+                item = item.nodes[0]
+
+            verify(item.prompt[0] == expected_prompt,
+                   "Wrong prompt for {}, expected '{}'"
+                   .format(repr(item), expected_prompt))
+
+    verify_prompts(c.choices, "choice 1", "choice 2", "choice 3")
+    verify_prompts(c.menus, "menu 1", "menu 2", "menu 3", "menu 4", "menu 5")
+    verify_prompts(c.comments, "comment 1", "comment 2", "comment 3")
 
 
     print("Testing Symbol/Choice.direct_dep")

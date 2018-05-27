@@ -420,6 +420,14 @@ class Kconfig(object):
       A list with all choices, in the same order as they appear in the Kconfig
       files
 
+    menus:
+      A list with all menus, in the same order as they appear in the Kconfig
+      files
+
+    comments:
+      A list with all comments, in the same order as they appear in the Kconfig
+      files
+
     n/m/y:
       The predefined constant symbols n/m/y. Also available in const_syms.
 
@@ -514,11 +522,13 @@ class Kconfig(object):
         "_warn_to_stderr",
         "_warnings_enabled",
         "choices",
+        "comments",
         "config_prefix",
         "const_syms",
         "defconfig_list",
         "defined_syms",
         "m",
+        "menus",
         "modules",
         "n",
         "named_choices",
@@ -634,6 +644,9 @@ class Kconfig(object):
 
         self.named_choices = {}
         self.choices = []
+
+        self.menus = []
+        self.comments = []
 
         for nmy in "n", "m", "y":
             sym = Symbol()
@@ -1993,6 +2006,8 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
+                self.menus.append(node)
+
                 self._parse_properties(node)
                 self._parse_block(_T_ENDMENU, node, node)
                 node.list = node.next
@@ -2009,6 +2024,8 @@ class Kconfig(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
+
+                self.comments.append(node)
 
                 self._parse_properties(node)
 
