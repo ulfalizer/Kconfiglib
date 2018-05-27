@@ -278,6 +278,16 @@ _expr_str_orig = kconfiglib.expr_str
 kconfiglib.expr_str = _expr_str_val
 _expr_str = _expr_str_val
 
+# Entry point when run as an executable, split out so that setuptools'
+# 'entry_points' can be used. It produces a handy menuconfig.exe launcher on
+# Windows.
+def _main():
+    if len(sys.argv) > 2:
+        print("usage: {} [Kconfig]".format(sys.argv[0]), file=sys.stderr)
+        sys.exit(1)
+
+    menuconfig(Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1]))
+
 def menuconfig(kconf):
     """
     Launches the configuration interface, returning after the user exits.
@@ -2414,8 +2424,4 @@ def _convert_c_lc_ctype_to_utf8():
 _IS_WINDOWS = (platform.system() == "Windows")
 
 if __name__ == "__main__":
-    if len(sys.argv) > 2:
-        print("usage: {} [Kconfig]".format(sys.argv[0]), file=sys.stderr)
-        sys.exit(1)
-
-    menuconfig(Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1]))
+    _main()
