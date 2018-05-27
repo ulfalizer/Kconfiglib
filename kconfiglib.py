@@ -414,7 +414,11 @@ class Kconfig(object):
 
     defined_syms:
       A list with all defined symbols, in the same order as they appear in the
-      Kconfig files. Provided as a convenience.
+      Kconfig files
+
+    choices:
+      A list with all choices, in the same order as they appear in the Kconfig
+      files
 
     n/m/y:
       The predefined constant symbols n/m/y. Also available in const_syms.
@@ -501,7 +505,6 @@ class Kconfig(object):
       loaded matters.
     """
     __slots__ = (
-        "_choices",
         "_encoding",
         "_set_re_match",
         "_unset_re_match",
@@ -510,6 +513,7 @@ class Kconfig(object):
         "_warn_for_undef_assign",
         "_warn_to_stderr",
         "_warnings_enabled",
+        "choices",
         "config_prefix",
         "const_syms",
         "defconfig_list",
@@ -627,9 +631,9 @@ class Kconfig(object):
         self.syms = {}
         self.const_syms = {}
         self.defined_syms = []
+
         self.named_choices = {}
-        # List containing all choices. Not sure it's helpful to expose this.
-        self._choices = []
+        self.choices = []
 
         for nmy in "n", "m", "y":
             sym = Symbol()
@@ -705,7 +709,7 @@ class Kconfig(object):
         for sym in self.defined_syms:
             _check_sym_sanity(sym)
 
-        for choice in self._choices:
+        for choice in self.choices:
             _check_choice_sanity(choice)
 
 
@@ -784,7 +788,7 @@ class Kconfig(object):
                 for sym in self.defined_syms:
                     sym._was_set = False
 
-                for choice in self._choices:
+                for choice in self.choices:
                     choice._was_set = False
 
             # Small optimizations
@@ -907,7 +911,7 @@ class Kconfig(object):
                 if not sym._was_set:
                     sym.unset_value()
 
-            for choice in self._choices:
+            for choice in self.choices:
                 if not choice._was_set:
                     choice.unset_value()
 
@@ -1316,7 +1320,7 @@ class Kconfig(object):
             for sym in self.defined_syms:
                 sym.unset_value()
 
-            for choice in self._choices:
+            for choice in self.choices:
                 choice.unset_value()
         finally:
             self._warn_for_no_prompt = True
@@ -2016,7 +2020,7 @@ class Kconfig(object):
                     choice = Choice()
                     choice.direct_dep = self.n
 
-                    self._choices.append(choice)
+                    self.choices.append(choice)
                 else:
                     # Named choice
                     choice = self.named_choices.get(name)
@@ -2025,7 +2029,7 @@ class Kconfig(object):
                         choice.name = name
                         choice.direct_dep = self.n
 
-                        self._choices.append(choice)
+                        self.choices.append(choice)
                         self.named_choices[name] = choice
 
                 choice.kconfig = self
@@ -2459,7 +2463,7 @@ class Kconfig(object):
             # propagated to the conditions of the properties before
             # _build_dep() runs.
 
-        for choice in self._choices:
+        for choice in self.choices:
             # Choices depend on the following:
 
             # The prompt conditions
@@ -2483,7 +2487,7 @@ class Kconfig(object):
         for sym in self.defined_syms:
             sym._invalidate()
 
-        for choice in self._choices:
+        for choice in self.choices:
             choice._invalidate()
 
 

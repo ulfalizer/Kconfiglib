@@ -2091,8 +2091,7 @@ def test_sanity(conf, arch, srcarch):
         sym.type
         sym.visibility
 
-    # Cheat with internals
-    for choice in conf._choices:
+    for choice in conf.choices:
         for sym in choice.syms:
             verify(sym.choice is choice,
                    "{0} is in choice.syms but 'sym.choice' is not the choice"
