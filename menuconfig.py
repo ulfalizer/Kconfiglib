@@ -283,8 +283,7 @@ _expr_str = _expr_str_val
 # Windows.
 def _main():
     if len(sys.argv) > 2:
-        print("usage: {} [Kconfig]".format(sys.argv[0]), file=sys.stderr)
-        sys.exit(1)
+        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
 
     menuconfig(Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1]))
 

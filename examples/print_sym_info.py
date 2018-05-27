@@ -37,8 +37,7 @@ from kconfiglib import Kconfig, TRI_TO_STR
 import sys
 
 if len(sys.argv) < 3:
-    print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
-    sys.exit(1)
+    sys.exit('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
 
 kconf = Kconfig(sys.argv[1])
 sym = kconf.syms[sys.argv[2]]

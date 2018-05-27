@@ -1921,8 +1921,7 @@ def run_compatibility_tests():
     if all_passed:
         print("All selftests and compatibility tests passed")
     else:
-        print("Some tests failed")
-        sys.exit(1)
+        sys.exit("Some tests failed")
 
 def all_arch_srcarch_pairs():
     for srcarch in os.listdir("arch"):

@@ -317,12 +317,10 @@ def do_oldconfig_rec(node):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        eprint("error: pass name of base Kconfig file as argument")
-        sys.exit(1)
+        sys.exit("error: pass name of base Kconfig file as argument")
 
     if not os.path.exists(".config"):
-        eprint("error: no existing .config")
-        sys.exit(1)
+        sys.exit("error: no existing .config")
 
     kconf = Kconfig(sys.argv[1])
 

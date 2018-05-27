@@ -10,8 +10,7 @@ import kconfiglib
 import sys
 
 if len(sys.argv) < 3:
-    print("Pass the expression to evaluate with SCRIPT_ARG=<expression>")
-    sys.exit(1)
+    sys.exit("Pass the expression to evaluate with SCRIPT_ARG=<expression>")
 
 expr = sys.argv[2]
 

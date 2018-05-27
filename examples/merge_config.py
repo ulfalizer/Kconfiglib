@@ -63,8 +63,7 @@ from kconfiglib import Kconfig, Symbol, BOOL, TRISTATE, TRI_TO_STR
 import sys
 
 if len(sys.argv) < 4:
-    print("usage: merge_config.py Kconfig merged_config config1 [config2 ...]")
-    sys.exit(1)
+    sys.exit("usage: merge_config.py Kconfig merged_config config1 [config2 ...]")
 
 kconf = Kconfig(sys.argv[1])
 

@@ -38,8 +38,7 @@ import re
 import sys
 
 if len(sys.argv) < 3:
-    print("Pass the regex with SCRIPT_ARG=<regex>")
-    sys.exit(1)
+    sys.exit("Pass the regex with SCRIPT_ARG=<regex>")
 
 search = re.compile(sys.argv[2], re.IGNORECASE).search
 

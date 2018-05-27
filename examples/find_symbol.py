@@ -171,8 +171,7 @@ def nodes_referencing_sym(node, sym_name):
 # imported
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
-        sys.exit(1)
+        sys.exit('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
 
     sym_name = sys.argv[2]
 
@@ -180,8 +179,7 @@ if __name__ == "__main__":
     nodes = nodes_referencing_sym(kconf.top_node, sym_name)
 
     if not nodes:
-        print("No reference to '{}' found".format(sym_name))
-        sys.exit()
+        sys.exit("No reference to '{}' found".format(sym_name))
 
     print("Found {} locations that reference '{}':\n".format(len(nodes), sym_name))
 
