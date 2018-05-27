@@ -298,6 +298,7 @@ def menuconfig(kconf):
     globals()["_kconf"] = kconf
     global _config_filename
     global _show_all
+    global _conf_changed
 
 
     _config_filename = os.environ.get("KCONFIG_CONFIG")
@@ -306,17 +307,22 @@ def menuconfig(kconf):
 
 
     if os.path.exists(_config_filename):
+        _conf_changed = False
         print("Using existing configuration '{}' as base"
               .format(_config_filename))
         _kconf.load_config(_config_filename)
 
-    elif kconf.defconfig_filename is not None:
-        print("Using default configuration found in '{}' as base"
-              .format(kconf.defconfig_filename))
-        _kconf.load_config(kconf.defconfig_filename)
-
     else:
-        print("Using default symbol values as base")
+        # Always prompt for save if the output configuration file doesn't exist
+        _conf_changed = True
+
+        if kconf.defconfig_filename is not None:
+            print("Using default configuration found in '{}' as base"
+                  .format(kconf.defconfig_filename))
+            _kconf.load_config(kconf.defconfig_filename)
+
+        else:
+            print("Using default symbol values as base")
 
 
     # Any visible items in the top menu?
@@ -562,8 +568,6 @@ def _init():
 
     global _show_name
 
-    global _conf_changed
-
     # Looking for this in addition to KEY_BACKSPACE (which is unreliable) makes
     # backspace work with TERM=vt100. That makes it likely to work in sane
     # environments.
@@ -610,9 +614,6 @@ def _init():
 
     # Give windows their initial size
     _resize_main()
-
-    # No changes yet
-    _conf_changed = False
 
 def _resize_main():
     # Resizes the main display, with the list of symbols, etc., to fill the
