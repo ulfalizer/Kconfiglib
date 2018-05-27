@@ -658,17 +658,6 @@ class Kconfig(object):
         self.modules = self._lookup_sym("MODULES")
         self.defconfig_list = None
 
-        # The only predefined symbol besides n/m/y. DEFCONFIG_LIST uses this as
-        # of writing.
-        uname_sym = self._lookup_const_sym("UNAME_RELEASE")
-        uname_sym.orig_type = STRING
-        # env_var doubles as the SYMBOL_AUTO flag from the C implementation, so
-        # just set it to something. The naming breaks a bit here.
-        uname_sym.env_var = "<uname release>"
-        uname_sym.defaults.append(
-            (self._lookup_const_sym(platform.uname()[2]), self.y))
-        self.syms["UNAME_RELEASE"] = uname_sym
-
         self.top_node = MenuNode()
         self.top_node.kconfig = self
         self.top_node.item = MENU
@@ -2880,9 +2869,6 @@ class Symbol(object):
       'option env="FOO"' acts like a 'default' property whose value is the
       value of $FOO.
 
-      env_var is set to "<uname release>" for the predefined symbol
-      UNAME_RELEASE, which holds the 'release' field from uname.
-
       Symbols with 'option env' are never written out to .config files, even if
       they are visible. env_var corresponds to a flag called SYMBOL_AUTO in the
       C implementation.
@@ -4537,8 +4523,8 @@ def _make_depend_on(sym, expr):
                         "expression with token stream {}.".format(expr))
 
 def _expand(s):
-    # The predefined UNAME_RELEASE symbol is expanded in one of the 'default's
-    # of the DEFCONFIG_LIST symbol in the Linux kernel. This function maintains
+    # A predefined UNAME_RELEASE symbol is expanded in one of the 'default's of
+    # the DEFCONFIG_LIST symbol in the Linux kernel. This function maintains
     # compatibility with it even though environment variables in strings are
     # now expanded directly.
 

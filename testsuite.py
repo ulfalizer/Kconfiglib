@@ -825,7 +825,7 @@ comment "advanced comment"
     print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
-<configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree not set, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
+<configuration with 14 symbols, main menu prompt "Linux Kernel Configuration", srctree not set, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
 """)
 
     os.environ["srctree"] = "srctree value"
@@ -838,7 +838,7 @@ comment "advanced comment"
     c.enable_undef_warnings()
 
     verify_repr(c, """
-<configuration with 15 symbols, main menu prompt "Linux Kernel Configuration", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
+<configuration with 14 symbols, main menu prompt "Linux Kernel Configuration", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
 """)
 
     os.environ.pop("srctree", None)
@@ -1134,7 +1134,6 @@ g
     verify_const_unassignable("m")
     verify_const_unassignable("y")
     verify_const_unassignable("const")
-    verify_const_unassignable("UNAME_RELEASE")
     verify_assignable("UNDEFINED", (), ())
     verify_assignable("NO_PROMPT", (), ())
     verify_assignable("STRING", (), ())
@@ -1533,16 +1532,6 @@ g
            "NOT_ALLNOCONFIG_Y should not be allnoconfig_y")
     verify(c.syms["ALLNOCONFIG_Y"].is_allnoconfig_y,
            "ALLNOCONFIG_Y should be allnoconfig_y")
-
-
-    print("Testing UNAME_RELEASE")
-
-    verify_value("UNAME_RELEASE", platform.uname()[2])
-    ur = c.syms["UNAME_RELEASE"]
-    verify(ur.kconfig is c and
-           ur.type == STRING and
-           ur.env_var == "<uname release>",
-           "UNAME_RELEASE has wrong fields")
 
 
     print("Testing .config reading and writing")
@@ -2042,8 +2031,7 @@ def test_sanity(conf, arch, srcarch):
     for key, sym in conf.syms.items():
         verify(isinstance(key, str), "weird key '{}' in syms dict".format(key))
 
-        if sym.name != "UNAME_RELEASE":
-            verify(not sym.is_constant, sym.name + " in 'syms' and constant")
+        verify(not sym.is_constant, sym.name + " in 'syms' and constant")
 
         verify(sym not in conf.const_syms,
                sym.name + " in both 'syms' and 'const_syms'")
