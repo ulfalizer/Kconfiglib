@@ -1,12 +1,10 @@
-# Works like 'make allnoconfig'. Verified by the test suite to generate
-# identical output to 'make allnoconfig' for all ARCHes.
+# This is tree-walking version of allnoconfig.py, for demonstration purposes.
+# Verified by the test suite to generate identical output to 'make allnoconfig'
+# for all ARCHes.
 #
-# See allnoconfig_simpler.py for a much simpler version. This more roundabout
-# version demonstrates some tree walking and value processing.
+# Usage for the Linux kernel:
 #
-# Usage:
-#
-#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py
+#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_walk.py
 
 from kconfiglib import Kconfig, Symbol
 import sys

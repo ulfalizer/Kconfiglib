@@ -1903,7 +1903,7 @@ def run_compatibility_tests():
                 #test_min_config,
                 test_sanity,
                 test_all_no,
-                test_all_no_simpler,
+                test_all_no_walk,
                 test_all_yes)
 
     for test_fn in test_fns:
@@ -1947,12 +1947,12 @@ def all_arch_srcarch_kconfigs():
 
 def test_all_no(conf, arch, srcarch):
     """
-    Verify that our examples/allnoconfig.py script generates the same .config
-    as 'make allnoconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    Verify that allnoconfig.py script generates the same .config as 'make
+    allnoconfig', for each architecture. Runs the script via 'make
+    scriptconfig', so kinda slow even in speedy mode.
     """
     # TODO: Support speedy mode for running the script
-    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig.py "
+    shell("make scriptconfig SCRIPT=Kconfiglib/allnoconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
     if speedy:
@@ -1962,14 +1962,14 @@ def test_all_no(conf, arch, srcarch):
 
     compare_configs(arch)
 
-def test_all_no_simpler(conf, arch, srcarch):
+def test_all_no_walk(conf, arch, srcarch):
     """
-    Verify that our examples/allnoconfig_simpler.py script generates the same
+    Verify that our examples/allnoconfig_walk.py script generates the same
     .config as 'make allnoconfig', for each architecture. Runs the script via
     'make scriptconfig', so kinda slow even in speedy mode.
     """
     # TODO: Support speedy mode for running the script
-    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_simpler.py "
+    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_walk.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
     if speedy:
