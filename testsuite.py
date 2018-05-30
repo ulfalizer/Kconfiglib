@@ -1917,16 +1917,16 @@ def run_compatibility_tests():
 
     print("Running compatibility tests...\n")
 
-    test_fns = (test_allmodconfig,
-                test_alldefconfig,
-                test_defconfig,
+    test_fns = (test_defconfig,
                 # Fails for a few defconfigs due to a bug in the C tools. Will
                 # be enabled once patches get in.
                 #test_min_config,
-                test_sanity,
+                test_alldefconfig,
                 test_allnoconfig,
                 test_allnoconfig_walk,
-                test_allyesconfig)
+                test_allmodconfig,
+                test_allyesconfig,
+                test_sanity)
 
     for test_fn in test_fns:
         # The test description is taken from the docstring of the corresponding
