@@ -23,10 +23,12 @@ Kconfiglib can do the following, among other things:
 
 - **Programmatically get and set symbol values**
 
-  `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig.py>`_ and `allyesconfig.py
-  <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ examples are provided, automatically verified to
-  produce identical output to the standard ``make allnoconfig`` and ``make
-  allyesconfig``.
+  See `allnoconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_ and
+  `allyesconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_,
+  which are automatically verified to produce identical output to the standard
+  ``make allnoconfig`` and ``make allyesconfig``.
 
 - **Read and write .config and defconfig files**
 
@@ -303,7 +305,9 @@ Example scripts
 
 The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ directory contains some simple example scripts. Among these are the following ones. Make sure you run them with the latest version of Kconfiglib, as they might make use of newly added features.
 
-- `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig.py>`_, `allnoconfig_simpler.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig_simpler.py>`_, and `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig`` in various ways. Demonstrates menu tree walking and value setting.
+- `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_, `allnoconfig_walk.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig_walk.py>`_, and `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig``. Demonstrates value setting and menu tree walking.
+
+- `oldconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_ provides ``make oldconfig`` functionality, prompting the user for the values of new symbols to update an old ``.config`` file.
 
 - `defconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/defconfig.py>`_ has the same effect as going into ``make menuconfig`` and immediately saving and exiting.
 
@@ -320,8 +324,6 @@ The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ 
 - `list_undefined.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/list_undefined.py>`_ finds references to symbols that are not defined by any architecture in the Linux kernel.
 
 - `merge_config.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/merge_config.py>`_ merges configuration fragments to produce a complete .config, similarly to ``scripts/kconfig/merge_config.sh`` from the kernel.
-
-- `oldconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_ provides ``make oldconfig`` functionality, prompting the user for the values of new symbols to update an old ``.config`` file.
 
 - `menuconfig_example.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_ implements a configuration interface that uses notation similar to ``make menuconfig``. It's deliberately kept as simple as possible to demonstrate just the core concepts.
 
