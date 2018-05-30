@@ -4487,13 +4487,27 @@ def unescape(s):
 
 def standard_kconfig():
     """
-    Helper for implementing tools. Loads either a top-level Kconfig specified
-    as an argument, or "Kconfig" otherwise. Returns the Kconfig instance.
+    Helper for tools. Loads the top-level Kconfig specified as the first
+    command-line argument, or "Kconfig" if there are no command-line arguments.
+    Returns the Kconfig instance.
+
+    Exits with sys.exit() (which raises a SystemExit exception) and prints a
+    usage note to stderr if more than one command-line argument is passed.
     """
     if len(sys.argv) > 2:
         sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
 
     return Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+
+def standard_config_filename():
+    """
+    Helper for tools. Returns the value of KCONFIG_CONFIG (which specifies the
+    .config file to load/save) if it is set, and ".config" otherwise.
+    """
+    config_filename = os.environ.get("KCONFIG_CONFIG")
+    if config_filename is not None:
+        return config_filename
+    return ".config"
 
 #
 # Internal functions

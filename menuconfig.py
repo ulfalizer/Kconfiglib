@@ -96,7 +96,7 @@ from kconfiglib import Kconfig, \
                        AND, OR, NOT, \
                        expr_value, split_expr, \
                        TRI_TO_STR, TYPE_TO_STR, \
-                       standard_kconfig
+                       standard_kconfig, standard_config_filename
 
 
 #
@@ -299,10 +299,7 @@ def menuconfig(kconf):
     global _conf_changed
 
 
-    _config_filename = os.environ.get("KCONFIG_CONFIG")
-    if _config_filename is None:
-        _config_filename = ".config"
-
+    _config_filename = standard_config_filename()
 
     if os.path.exists(_config_filename):
         _conf_changed = False

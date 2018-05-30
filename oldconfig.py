@@ -101,7 +101,7 @@
 #     Configuration written to .config
 from __future__ import print_function
 from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX, \
-                       standard_kconfig
+                       standard_kconfig, standard_config_filename
 import os
 import sys
 
@@ -302,10 +302,7 @@ def do_oldconfig_for_node(node):
 def main():
     kconf = standard_kconfig()
 
-    config_filename = os.environ.get("KCONFIG_CONFIG")
-    if config_filename is None:
-        config_filename = ".config"
-
+    config_filename = standard_config_filename()
     if not os.path.exists(config_filename):
         sys.exit("{}: '{}' does not exist"
                  .format(sys.argv[0], config_filename))

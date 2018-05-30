@@ -28,11 +28,7 @@ def main():
         if sym.orig_type in BOOL_TRI:
             sym.set_value(2 if sym.is_allnoconfig_y else 0)
 
-    config_filename = os.environ.get("KCONFIG_CONFIG")
-    if config_filename is None:
-        config_filename = ".config"
-
-    kconf.write_config(config_filename)
+    kconf.write_config(kconfiglib.standard_config_filename())
 
 if __name__ == "__main__":
     main()

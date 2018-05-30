@@ -70,7 +70,7 @@ def main():
         if not changed:
             break
 
-    kconf.write_config(".config")
+    kconf.write_config(kconfiglib.standard_config_filename())
 
 if __name__ == "__main__":
     main()
