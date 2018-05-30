@@ -100,7 +100,8 @@
 #     $ python oldconfig.py Kconfig  # Everything's already up to date
 #     Configuration written to .config
 from __future__ import print_function
-from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX
+from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX, \
+                       standard_kconfig
 import os
 import sys
 
@@ -299,10 +300,7 @@ def do_oldconfig_for_node(node):
 # 'entry_points' can be used. It produces a handy oldconfig.exe launcher on
 # Windows.
 def main():
-    if len(sys.argv) > 2:
-        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
-
-    kconf = Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+    kconf = standard_kconfig()
 
     config_filename = os.environ.get("KCONFIG_CONFIG")
     if config_filename is None:

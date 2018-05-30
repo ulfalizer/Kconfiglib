@@ -32,10 +32,7 @@ import sys
 import kconfiglib
 
 def main():
-    if len(sys.argv) > 2:
-        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
-
-    kconf = kconfiglib.Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+    kconf = kconfiglib.standard_kconfig()
 
     # Avoid warnings printed by Kconfiglib when assigning a value to a symbol that
     # has no prompt. Such assignments never have an effect.

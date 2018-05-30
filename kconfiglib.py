@@ -4485,6 +4485,16 @@ def unescape(s):
     """
     return _unescape_re_sub(r"\1", s)
 
+def standard_kconfig():
+    """
+    Helper for implementing tools. Loads either a top-level Kconfig specified
+    as an argument, or "Kconfig" otherwise. Returns the Kconfig instance.
+    """
+    if len(sys.argv) > 2:
+        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
+
+    return Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+
 #
 # Internal functions
 #

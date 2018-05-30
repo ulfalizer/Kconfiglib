@@ -95,7 +95,8 @@ from kconfiglib import Kconfig, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        AND, OR, NOT, \
                        expr_value, split_expr, \
-                       TRI_TO_STR, TYPE_TO_STR
+                       TRI_TO_STR, TYPE_TO_STR, \
+                       standard_kconfig
 
 
 #
@@ -282,10 +283,7 @@ _expr_str = _expr_str_val
 # 'entry_points' can be used. It produces a handy menuconfig.exe launcher on
 # Windows.
 def _main():
-    if len(sys.argv) > 2:
-        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
-
-    menuconfig(Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1]))
+    menuconfig(standard_kconfig())
 
 def menuconfig(kconf):
     """

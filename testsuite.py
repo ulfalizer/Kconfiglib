@@ -1968,7 +1968,7 @@ def all_arch_srcarch_kconfigs():
 
 def test_all_no(conf, arch, srcarch):
     """
-    Verify that allnoconfig.py script generates the same .config as 'make
+    Verify that allnoconfig.py generates the same .config as 'make
     allnoconfig', for each architecture. Runs the script via 'make
     scriptconfig', so kinda slow even in speedy mode.
     """
