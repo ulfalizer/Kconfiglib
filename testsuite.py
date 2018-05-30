@@ -1917,7 +1917,8 @@ def run_compatibility_tests():
 
     print("Running compatibility tests...\n")
 
-    test_fns = (test_alldefconfig,
+    test_fns = (test_allmodconfig,
+                test_alldefconfig,
                 test_defconfig,
                 # Fails for a few defconfigs due to a bug in the C tools. Will
                 # be enabled once patches get in.
@@ -1997,6 +1998,23 @@ def test_allnoconfig_walk(conf, arch, srcarch):
         shell("scripts/kconfig/conf --allnoconfig Kconfig")
     else:
         shell("make allnoconfig")
+
+    compare_configs(arch)
+
+def test_allmodconfig(conf, arch, srcarch):
+    """
+    Verify that allmodconfig.py generates the same .config as
+    'make allmodconfig', for each architecture. Runs the script via
+    'make scriptconfig', so kinda slow even in speedy mode.
+    """
+    # TODO: Support speedy mode for running the script
+    shell("make scriptconfig SCRIPT=Kconfiglib/allmodconfig.py "
+          "PYTHONCMD='{}'".format(sys.executable))
+    shell("mv .config ._config")
+    if speedy:
+        shell("scripts/kconfig/conf --allmodconfig Kconfig")
+    else:
+        shell("make allmodconfig")
 
     compare_configs(arch)
 
