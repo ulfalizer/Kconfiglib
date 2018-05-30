@@ -38,34 +38,19 @@ def main():
     # Small optimization
     BOOL_TRI = (kconfiglib.BOOL, kconfiglib.TRISTATE)
 
+    # Try to set all bool/tristate symbols to 'y'. Dependencies might truncate
+    # the value down later, but this will at least give the highest possible
+    # value.
     for sym in kconf.defined_syms:
-        if sym.orig_type in BOOL_TRI and not sym.choice:
-            sym.set_value(2)
+        if sym.orig_type in BOOL_TRI:
+            # Set all choice symbols to 'm'. This value will be ignored for
+            # choices in 'y' mode (the "normal" mode), but will set all symbols
+            # in m-mode choices to 'm', which is as high as they can go.
+            sym.set_value(1 if sym.choice else 2)
 
-    # This might be slightly more robust than what the C tools do for choices,
-    # as raising one choice might allow other choices to be raised. It
-    # currently produces the same output for all ARCHes though.
-
-    while True:
-        changed = False
-
-        for choice in kconf.choices:
-            if choice.assignable and choice.tri_value < choice.assignable[-1]:
-                choice.set_value(choice.assignable[-1])
-
-                # For y-mode choices, we just let the choice get its default
-                # selection. For m-mode choices, we set all choice symbols to
-                # m.
-                if choice.tri_value == 1:
-                    for sym in choice.syms:
-                        sym.set_value(1)
-
-                changed = True
-
-        # Do multiple passes until we longer manage to raise any choices, like
-        # in allnoconfig_walk.py
-        if not changed:
-            break
+    # Set all choices to the highest possible mode
+    for choice in kconf.choices:
+        choice.set_value(2)
 
     kconf.write_config(kconfiglib.standard_config_filename())
 
