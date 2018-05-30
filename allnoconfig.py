@@ -9,9 +9,6 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/allnoconfig.py
 
-import os
-import sys
-
 import kconfiglib
 
 def main():

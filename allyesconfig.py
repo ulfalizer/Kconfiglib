@@ -26,9 +26,6 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py
 
-import os
-import sys
-
 import kconfiglib
 
 def main():
