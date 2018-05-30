@@ -1923,9 +1923,9 @@ def run_compatibility_tests():
                 # be enabled once patches get in.
                 #test_min_config,
                 test_sanity,
-                test_all_no,
-                test_all_no_walk,
-                test_all_yes)
+                test_allnoconfig,
+                test_allnoconfig_walk,
+                test_allyesconfig)
 
     for test_fn in test_fns:
         # The test description is taken from the docstring of the corresponding
@@ -1966,11 +1966,11 @@ def all_arch_srcarch_kconfigs():
         os.environ["SRCARCH"] = srcarch
         yield (Kconfig(), arch, srcarch)
 
-def test_all_no(conf, arch, srcarch):
+def test_allnoconfig(conf, arch, srcarch):
     """
-    Verify that allnoconfig.py generates the same .config as 'make
-    allnoconfig', for each architecture. Runs the script via 'make
-    scriptconfig', so kinda slow even in speedy mode.
+    Verify that allnoconfig.py generates the same .config as
+    'make allnoconfig', for each architecture. Runs the script via
+    'make scriptconfig', so kinda slow even in speedy mode.
     """
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/allnoconfig.py "
@@ -1983,7 +1983,7 @@ def test_all_no(conf, arch, srcarch):
 
     compare_configs(arch)
 
-def test_all_no_walk(conf, arch, srcarch):
+def test_allnoconfig_walk(conf, arch, srcarch):
     """
     Verify that examples/allnoconfig_walk.py generates the same .config as
     'make allnoconfig', for each architecture. Runs the script via 'make
@@ -2000,11 +2000,11 @@ def test_all_no_walk(conf, arch, srcarch):
 
     compare_configs(arch)
 
-def test_all_yes(conf, arch, srcarch):
+def test_allyesconfig(conf, arch, srcarch):
     """
     Verify that allyesconfig.py generates the same .config as
-    'make allyesconfig', for each architecture. Runs the script via 'make
-    scriptconfig', so kinda slow even in speedy mode.
+    'make allyesconfig', for each architecture. Runs the script via
+    'make scriptconfig', so kinda slow even in speedy mode.
     """
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/allyesconfig.py "
@@ -2161,10 +2161,13 @@ def test_sanity(conf, arch, srcarch):
 
 def test_alldefconfig(conf, arch, srcarch):
     """
-    Verify that Kconfiglib generates the same .config as 'make alldefconfig',
-    for each architecture
+    Verify that alldefconfig.py generates the same .config as
+    'make alldefconfig', for each architecture. Runs the script via
+    'make scriptconfig', so kinda slow even in speedy mode.
     """
-    conf.write_config("._config")
+    shell("make scriptconfig SCRIPT=Kconfiglib/alldefconfig.py "
+          "PYTHONCMD='{}'".format(sys.executable))
+    shell("mv .config ._config")
     if speedy:
         shell("scripts/kconfig/conf --alldefconfig Kconfig")
     else:
