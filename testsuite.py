@@ -1985,9 +1985,9 @@ def test_all_no(conf, arch, srcarch):
 
 def test_all_no_walk(conf, arch, srcarch):
     """
-    Verify that our examples/allnoconfig_walk.py script generates the same
-    .config as 'make allnoconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    Verify that examples/allnoconfig_walk.py generates the same .config as
+    'make allnoconfig', for each architecture. Runs the script via 'make
+    scriptconfig', so kinda slow even in speedy mode.
     """
     # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_walk.py "
@@ -2002,12 +2002,12 @@ def test_all_no_walk(conf, arch, srcarch):
 
 def test_all_yes(conf, arch, srcarch):
     """
-    Verify that our examples/allyesconfig.py script generates the same .config
-    as 'make allyesconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    Verify that allyesconfig.py generates the same .config as
+    'make allyesconfig', for each architecture. Runs the script via 'make
+    scriptconfig', so kinda slow even in speedy mode.
     """
     # TODO: Support speedy mode for running the script
-    shell("make scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py "
+    shell("make scriptconfig SCRIPT=Kconfiglib/allyesconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
     if speedy:
