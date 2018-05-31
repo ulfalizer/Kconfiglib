@@ -1557,7 +1557,7 @@ def _jump_to_dialog():
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
                                          edit_box.getmaxyx()[1] - 2)
 
-# Obscure Python: We never pass a value for cached_search_strings, and it keeps
+# Obscure Python: We never pass a value for cached_search_nodes, and it keeps
 # pointing to the same list. This avoids a global.
 def _searched_nodes(cached_search_nodes=[]):
     # Returns a list of menu nodes to search, sorted by symbol name
