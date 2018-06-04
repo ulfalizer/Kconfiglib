@@ -13,13 +13,38 @@ setuptools.setup(
     author_email="ulfalizer@gmail.com",
     keywords="kconfig, kbuild",
     license="ISC",
-    py_modules=("kconfiglib",),
+
+    py_modules=(
+        "kconfiglib",
+        "menuconfig",
+        "oldconfig",
+        "syncconfig",
+        "alldefconfig",
+        "allnoconfig",
+        "allmodconfig",
+        "allyesconfig",
+    ),
+
+    entry_points={
+        "console_scripts": (
+            "menuconfig = menuconfig:_main",
+            "oldconfig = oldconfig:main",
+            "syncconfig = syncconfig:main",
+            "alldefconfig = alldefconfig:main",
+            "allnoconfig = allnoconfig:main",
+            "allmodconfig = allmodconfig:main",
+            "allyesconfig = allyesconfig:main",
+        )
+    },
+
     # Needs support for unnumbered {} in format()
     python_requires=">=2.7,!=3.0.*",
+
     project_urls={
         "GitHub repository": "https://github.com/ulfalizer/Kconfiglib",
         "Examples": "https://github.com/ulfalizer/Kconfiglib/tree/master/examples"
     },
+
     classifiers=(
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
