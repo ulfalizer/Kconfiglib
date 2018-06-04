@@ -4,20 +4,116 @@
 Overview
 --------
 
-*This is version 2 of Kconfiglib, which is not backwards-compatible with
-Kconfiglib 1. For a summary of changes between Kconfiglib 1 and Kconfiglib 2,
-see* |changes|_.
-
-*Kconfiglib 2 now has two interactive configuration interfaces available. See
-the Configuration Interfaces section below.*
-
-.. _changes: https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt
-.. |changes| replace:: *kconfiglib-2-changes.txt*
-
-Kconfiglib is a Python 2/3 library for working with `Kconfig
+Kconfiglib is a `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
-configuration systems. It also functions well as a standalone Kconfig
-implementation, and has ``menuconfig`` implementations available.
+implementation in Python 2/3. It started out as a helper library, but now has a
+enough functionality to work well as a standalone Kconfig implementation
+(including ``menuconfig`` implementations).
+
+The entire library is contained in `kconfiglib.py
+<https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_. The
+bundled scripts are implemented on top of it. Implementing your own scripts
+should be relatively easy, if needed.
+
+The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib
+exclusively, with lots of small helper scripts in other projects.
+
+Installation
+------------
+
+Installation with pip
+~~~~~~~~~~~~~~~~~~~~~
+
+Kconfiglib is available on `PyPI <https://pypi.python.org/pypi/kconfiglib/>`_ and can be
+installed with e.g.
+
+.. code::
+
+    $ pip(3) install kconfiglib
+
+Microsoft Windows is supported.
+
+The ``pip`` installation will give you both the base library and the following
+executables. All but one mirrors functionality available in the C tools.
+
+ - `menuconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
+
+ - `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
+
+ - `alldefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+
+ - `allnoconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+
+ - `allmodconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+
+ - `allyesconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+
+ - `genconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/genconfig.py>`_
+
+``genconfig`` is intended to be run at build time. It generates a C header for
+the configuration and (optionally) information that can be used to rebuild only
+files that reference Kconfig symbols that have changed value.
+
+The ``menuconfig`` implementation requires Python 3. It uses ``get_wch()``,
+which is required for Unicode input support, but which unfortunately isn't
+available in the Python 2 version of the standard ``curses`` module.
+
+If you install Kconfiglib with ``pip``'s ``--user`` flag, make sure that your
+``PATH`` includes the directory where the executables end up. You can list the
+installed files with ``pip(3) show -f kconfiglib``.
+
+All releases have a corresponding tag in the git repository, e.g. ``v6.0.0``
+(the latest version).
+
+`Semantic versioning <http://semver.org/>`_ is used. There's been
+four small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
+`2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
+`3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_,
+`4 <https://github.com/ulfalizer/Kconfiglib/commit/cbf32e29a130d22bc734b7778e6304ac9df2a3e8>`_)
+to the behavior of the API (which shouldn't affect many people), which is why
+the major version is at 6 rather than 2.
+
+Manual installation
+~~~~~~~~~~~~~~~~~~~
+
+Just drop ``kconfiglib.py`` and the scripts you want somewhere. There are no
+third-party dependencies (except for the `windows-curses
+<https://github.com/zephyrproject-rtos/windows-curses>`_ package on Windows,
+when running the terminal ``menuconfig`` implementation).
+
+Installation for the Linux kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the module docstring at the top of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+
+Library documentation
+---------------------
+
+Kconfiglib comes with extensive documentation in the form of docstrings. To view it, run e.g.
+the following command:
+
+.. code:: sh
+
+    $ pydoc kconfiglib
+
+For HTML output, add ``-w``:
+
+.. code:: sh
+
+    $ pydoc -w kconfiglib
+
+A good starting point is to read the module docstring (which you could also just read directly
+at the beginning of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_). It gives an introduction to symbol
+values, the menu tree, and expressions.
+
+After reading the module docstring, a good next step is to read the ``Kconfig`` class
+documentation, and then the documentation for the ``Symbol``, ``Choice``, and ``MenuNode``
+classes.
+
+Please tell me if something is unclear or can be explained better.
+
+Library features
+----------------
 
 Kconfiglib can do the following, among other things:
 
@@ -53,17 +149,15 @@ Kconfiglib can do the following, among other things:
 
 - **Inspect symbols**
 
-  Printing a symbol gives output which could be fed back into a Kconfig parser
-  to redefine it***. The printing function (``__str__()``) is implemented with
-  public APIs, meaning you can fetch just whatever information you need as
+  Printing a symbol or other item (which calls ``__str__()``) returns its
+  definition in Kconfig format. This also works for symbols defined in multiple
+  locations.
+
+  A helpful ``__repr__()`` is  on all objects too.
+
+  All ``__str__()`` and ``__repr__()`` methods are deliberately implemented
+  with just public APIs, so all symbol information can be fetched separately as
   well.
-
-  A helpful ``__repr__()`` is implemented on all objects too, also implemented
-  with public APIs.
-
-  \***Choice symbols get their parent choice as a dependency, which shows up as
-  e.g. ``prompt "choice symbol" if <choice>`` when printing the symbol. This
-  could easily be worked around if 100% reparsable output is needed.
 
 - **Inspect expressions**
 
@@ -83,12 +177,15 @@ Kconfiglib can do the following, among other things:
   <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_
   example.
 
-
-Here are some other features:
+Other features
+--------------
 
 - **Single-file implementation**
   
-  The entire library is contained in `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+  The entire library is contained in `kconfiglib.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+
+  The tools implemented on top of it are one file each.
 
 - **Runs unmodified under both Python 2 and Python 3**
   
@@ -162,69 +259,8 @@ Here are some other features:
   
   While being simpler to understand and tweak.
 
-Documentation
--------------
-
-Kconfiglib comes with extensive documentation in the form of docstrings. To view it, run e.g.
-the following command:
-
-.. code:: sh
-
-    $ pydoc kconfiglib
-    
-For HTML output, add ``-w``:
-
-.. code:: sh
-
-    $ pydoc -w kconfiglib
-    
-A good starting point is to read the module docstring (which you could also just read directly
-at the beginning of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_). It gives an introduction to symbol
-values, the menu tree, and expressions.
-
-After reading the module docstring, a good next step is to read the ``Kconfig`` class
-documentation, and then the documentation for the ``Symbol``, ``Choice``, and ``MenuNode``
-classes.
-
-Please tell me if something is unclear or can be explained better.
-
-Installation
-------------
-
-Installation with pip
-~~~~~~~~~~~~~~~~~~~~~
-
-Kconfiglib is available on `PyPI <https://pypi.python.org/pypi/kconfiglib/>`_ and can be
-installed with e.g.
-
-.. code::
-
-    $ pip(3) install kconfiglib --user
-
-All releases have a corresponding tag in the git repository, e.g. ``v5.0.0``
-(the latest version).
-
-`Semantic versioning <http://semver.org/>`_ is used. There's been
-three small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
-`2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
-`3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_)
-to the behavior of the API (which I don't think will affect anyone), which is
-why the major version is at 5 rather than 2.
-
-Installation for the Linux kernel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-See the module docstring at the top of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
-
-Manual installation
-~~~~~~~~~~~~~~~~~~~
-
-The entire library is contained in
-`kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
-Just drop it somewhere.
-
-Configuration interfaces
-~~~~~~~~~~~~~~~~~~~~~~~~
+Menuconfig interfaces
+---------------------
 
 Two configuration interfaces are currently available:
 
@@ -297,6 +333,11 @@ Two configuration interfaces are currently available:
 
   .. image:: https://raw.githubusercontent.com/RomaVis/pymenuconfig/master/screenshot.PNG
 
+  While working on the terminal menuconfig implementation, I added a few APIs
+  to Kconfiglib that turned out to be handy. ``pymenuconfig`` precedes the
+  terminal menuconfig, and so didn't have them available. Blame me for any
+  workarounds.
+
 Examples
 --------
 
@@ -304,10 +345,6 @@ Example scripts
 ~~~~~~~~~~~~~~~
 
 The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ directory contains some simple example scripts. Among these are the following ones. Make sure you run them with the latest version of Kconfiglib, as they might make use of newly added features.
-
-- `allnoconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_, `allnoconfig_walk.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allnoconfig_walk.py>`_, and `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/allyesconfig.py>`_ implement ``make allnoconfig`` and ``make allyesconfig``. Demonstrates value setting and menu tree walking.
-
-- `oldconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_ provides ``make oldconfig`` functionality, prompting the user for the values of new symbols to update an old ``.config`` file.
 
 - `defconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/defconfig.py>`_ has the same effect as going into ``make menuconfig`` and immediately saving and exiting.
 
@@ -479,6 +516,11 @@ too.
 Notes
 -----
 
+* This is version 2 of Kconfiglib, which is not backwards-compatible with
+  Kconfiglib 1. For a summary of changes between Kconfiglib 1 and Kconfiglib
+  2, see `kconfiglib-2-changes.txt
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt>`_.
+
 * I sometimes see people add custom output formats, which is pretty straightforward to do (see the implementations of 
   ``write_autoconf()`` and ``write_config()`` for a template). If you come up with something you think might
   be useful to other people, I'm happy to take it in upstream. Batteries included and all that.
@@ -488,10 +530,6 @@ Notes
   
   Let me know if you need proper ``option modules`` support. It wouldn't be that
   hard to add.
-
-* `fpemud <https://github.com/fpemud>`_ has put together
-  `Python bindings <https://github.com/fpemud/pylkc>`_ to internal functions in the C
-  implementation. This is an alternative to Kconfiglib's all-Python approach.
 
 * The test suite failures (should be the only ones) for the following Blackfin
   defconfigs on e.g. Linux 3.7.0-rc8 are due to
