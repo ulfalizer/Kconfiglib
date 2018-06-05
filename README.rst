@@ -36,19 +36,19 @@ Microsoft Windows is supported.
 The ``pip`` installation will give you both the base library and the following
 executables. All but one mirror functionality available in the C tools.
 
- - `menuconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
+- `menuconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
 
- - `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
+- `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
 
- - `alldefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+- `alldefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
 
- - `allnoconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_
+- `allnoconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_
 
- - `allmodconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allmodconfig.py>`_
+- `allmodconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allmodconfig.py>`_
 
- - `allyesconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
+- `allyesconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
 
- - `genconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/genconfig.py>`_
+- `genconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/genconfig.py>`_
 
 ``genconfig`` is intended to be run at build time. It generates a C header for
 the configuration and (optionally) information that can be used to rebuild only
