@@ -42,11 +42,11 @@ executables. All but one mirror functionality available in the C tools.
 
  - `alldefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
 
- - `allnoconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+ - `allnoconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_
 
- - `allmodconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+ - `allmodconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allmodconfig.py>`_
 
- - `allyesconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
+ - `allyesconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
 
  - `genconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/genconfig.py>`_
 
