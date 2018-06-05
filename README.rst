@@ -34,7 +34,7 @@ installed with e.g.
 Microsoft Windows is supported.
 
 The ``pip`` installation will give you both the base library and the following
-executables. All but one mirrors functionality available in the C tools.
+executables. All but one mirror functionality available in the C tools.
 
  - `menuconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
 
@@ -55,12 +55,12 @@ the configuration and (optionally) information that can be used to rebuild only
 files that reference Kconfig symbols that have changed value.
 
 The ``menuconfig`` implementation requires Python 3. It uses ``get_wch()``,
-which is required for Unicode input support, but which unfortunately isn't
+which is needed for Unicode input support. Unfortunately, ``get_wch()`` isn't
 available in the Python 2 version of the standard ``curses`` module.
 
-If you install Kconfiglib with ``pip``'s ``--user`` flag, make sure that your
-``PATH`` includes the directory where the executables end up. You can list the
-installed files with ``pip(3) show -f kconfiglib``.
+**Note:** If you install Kconfiglib with ``pip``'s ``--user`` flag, make sure
+that your ``PATH`` includes the directory where the executables end up. You can
+list the installed files with ``pip(3) show -f kconfiglib``.
 
 All releases have a corresponding tag in the git repository, e.g. ``v6.0.0``
 (the latest version).
