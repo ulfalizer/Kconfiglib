@@ -50,7 +50,7 @@ executables. All but one mirror functionality available in the C tools.
 
 - `genconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/genconfig.py>`_
 
-``genconfig`` is intended to be run at build time. It generates a C header for
+``genconfig`` is intended to be run at build time. It generates a C header from
 the configuration and (optionally) information that can be used to rebuild only
 files that reference Kconfig symbols that have changed value.
 
