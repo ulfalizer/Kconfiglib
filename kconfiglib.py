@@ -4505,9 +4505,7 @@ def standard_config_filename():
     .config file to load/save) if it is set, and ".config" otherwise.
     """
     config_filename = os.environ.get("KCONFIG_CONFIG")
-    if config_filename is not None:
-        return config_filename
-    return ".config"
+    return config_filename if config_filename is not None else ".config"
 
 #
 # Internal functions
