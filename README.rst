@@ -208,9 +208,10 @@ Other features
 
 - **Not horribly slow despite being a pure Python implementation**
   
-  The `allyesconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/allyesconfig.py>`_ example currently runs in
-  about 1.3 seconds on a Core i7 2600K (with a warm file cache), including the
-  ``make`` overhead from ``make scriptconfig``.
+  The `allyesconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
+  script currently runs in about 1.3 seconds on a Core i7 2600K (with a warm
+  file cache), including the ``make`` overhead from ``make scriptconfig``.
   
   Kconfiglib is especially speedy in cases where multiple ``.config`` files
   need to be processed, because the ``Kconfig`` files will only need to be parsed
