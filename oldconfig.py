@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2018, Ulf Magnusson
+# SPDX-License-Identifier: ISC
+
 # Implements oldconfig-like functionality:
 #
 #   1. Load existing .config

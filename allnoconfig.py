@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2018, Ulf Magnusson
+# SPDX-License-Identifier: ISC
+
 # Works like 'make allnoconfig'. Verified by the test suite to generate
 # identical output to 'make allnoconfig' for all ARCHes.
 #
