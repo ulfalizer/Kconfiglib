@@ -36,22 +36,20 @@ import kconfiglib
 def main():
     kconf = kconfiglib.standard_kconfig()
 
-    # Avoid warnings printed by Kconfiglib when assigning a value to a symbol that
-    # has no prompt. Such assignments never have an effect.
+    # See allnoconfig.py
     kconf.disable_warnings()
 
-    # Small optimization
-    BOOL_TRI = (kconfiglib.BOOL, kconfiglib.TRISTATE)
-
-    # Try to set all bool/tristate symbols to 'y'. Dependencies might truncate
-    # the value down later, but this will at least give the highest possible
-    # value.
+    # Try to set all symbols to 'y'. Dependencies might truncate the value down
+    # later, but this will at least give the highest possible value.
+    #
+    # Assigning 0/1/2 to non-bool/tristate symbols has no effect (int/hex
+    # symbols still take a string, because they preserve formatting).
     for sym in kconf.defined_syms:
-        if sym.orig_type in BOOL_TRI:
-            # Set all choice symbols to 'm'. This value will be ignored for
-            # choices in 'y' mode (the "normal" mode), but will set all symbols
-            # in m-mode choices to 'm', which is as high as they can go.
-            sym.set_value(1 if sym.choice else 2)
+        # Set choice symbols to 'm'. This value will be ignored for choices in
+        # 'y' mode (the "normal" mode), which will instead just get their
+        # default selection, but will set all symbols in m-mode choices to 'm',
+        # which is as high as they can go.
+        sym.set_value(1 if sym.choice else 2)
 
     # Set all choices to the highest possible mode
     for choice in kconf.choices:

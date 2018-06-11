@@ -20,16 +20,22 @@ import kconfiglib
 def main():
     kconf = kconfiglib.standard_kconfig()
 
-    # Avoid warnings printed by Kconfiglib when assigning a value to a symbol that
-    # has no prompt. Such assignments never have an effect.
+    # Avoid warnings printed by Kconfiglib when assigning a value to a symbol
+    # that has no prompt. Such assignments never have an effect.
+
+    # Avoid warnings that would otherwise get printed by Kconfiglib for the
+    # following:
+    #
+    # 1. Assigning a value to a symbol without a prompt, which never has any
+    #    effect
+    #
+    # 2. Assigning values invalid for the type (only bool/tristate symbols
+    #    accept 0/1/2, for n/m/y). The assignments will be ignored for other
+    #    symbol types, which is what we want.
     kconf.disable_warnings()
 
-    # Small optimization
-    BOOL_TRI = (kconfiglib.BOOL, kconfiglib.TRISTATE)
-
     for sym in kconf.defined_syms:
-        if sym.orig_type in BOOL_TRI:
-            sym.set_value(2 if sym.is_allnoconfig_y else 0)
+        sym.set_value(2 if sym.is_allnoconfig_y else 0)
 
     kconf.write_config(kconfiglib.standard_config_filename())
 

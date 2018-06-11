@@ -18,8 +18,7 @@ import kconfiglib
 def main():
     kconf = kconfiglib.standard_kconfig()
 
-    # Avoid warnings printed by Kconfiglib when assigning a value to a symbol that
-    # has no prompt. Such assignments never have an effect.
+    # See allnoconfig.py
     kconf.disable_warnings()
 
     # Small optimizations
