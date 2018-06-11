@@ -150,7 +150,8 @@ _JUMP_TO_HELP_LINES = """
 Type text to narrow the search. Regexes are supported (via Python's 're'
 module). The up/down cursor keys step in the list. [Enter] jumps to the
 selected symbol. [ESC] aborts the search. Type multiple space-separated
-strings/regexes to find entries that match all of them.
+strings/regexes to find entries that match all of them. Type Ctrl-F to
+view the help of the selected item without leaving the dialog.
 """[1:-1].split("\n")
 
 def _init_styles():
@@ -504,7 +505,7 @@ def _menuconfig(stdscr):
             _resize_main()
 
         elif c == "?":
-            _info_dialog(_shown[_sel_node_i])
+            _info_dialog(_shown[_sel_node_i], False)
             # The terminal might have been resized while the fullscreen info
             # dialog was open
             _resize_main()
@@ -1546,6 +1547,15 @@ def _jump_to_dialog():
                 edit_box, matches_win, bot_sep_win, help_win,
                 sel_node_i, scroll)
 
+        elif c == "\x06":  # \x06 = Ctrl-F
+            _safe_curs_set(0)
+            _info_dialog(matches[sel_node_i], True)
+            _safe_curs_set(1)
+
+            scroll = _resize_jump_to_dialog(
+                edit_box, matches_win, bot_sep_win, help_win,
+                sel_node_i, scroll)
+
         elif c == curses.KEY_DOWN:
             select_next_match()
 
@@ -1704,8 +1714,13 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     edit_box.noutrefresh()
 
-def _info_dialog(node):
-    # Shows a fullscreen window with information about 'node'
+def _info_dialog(node, from_jump_to_dialog):
+    # Shows a fullscreen window with information about 'node'.
+    #
+    # If 'from_jump_to_dialog' is True, the information dialog was opened from
+    # within the jump-to-dialog. In this case, we make '/' from within the
+    # information dialog just return, to avoid a confusing recursive invocation
+    # of the jump-to-dialog.
 
     # Top row, with title and arrows point up
     top_line_win = _styled_win(_SEPARATOR_STYLE)
@@ -1763,6 +1778,10 @@ def _info_dialog(node):
 
         elif c == "/":
             # Support starting a search from within the information dialog
+
+            if from_jump_to_dialog:
+                # Avoid recursion
+                return
 
             if _jump_to_dialog():
                 # Jumped to a symbol. Cancel the information dialog.
