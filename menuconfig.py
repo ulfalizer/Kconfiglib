@@ -1406,6 +1406,12 @@ def _draw_frame(win, title):
     win.attroff(_DIALOG_FRAME_STYLE)
 
 def _jump_to_dialog():
+    # Implements the jump-to dialog, where symbols can be looked up via
+    # incremental search and jumped to.
+    #
+    # Returns True if the user jumped to a symbol, and False if the dialog was
+    # canceled.
+
     # Search text
     s = ""
     # Previous search text
@@ -1525,11 +1531,11 @@ def _jump_to_dialog():
             if matches:
                 _jump_to(matches[sel_node_i])
                 _safe_curs_set(0)
-                return
+                return True
 
         if c == "\x1B":  # \x1B = ESC
             _safe_curs_set(0)
-            return
+            return False
 
 
         if c == curses.KEY_RESIZE:
@@ -1754,6 +1760,18 @@ def _info_dialog(node):
         elif c in (curses.KEY_UP, "k", "K"):
             if scroll > 0:
                 scroll -= 1
+
+        elif c == "/":
+            # Support starting a search from within the information dialog
+
+            if _jump_to_dialog():
+                # Jumped to a symbol. Cancel the information dialog.
+                return
+
+            # Stay in the information dialog if the jump-to dialog was
+            # canceled. Resize it in case the terminal was resized while the
+            # fullscreen jump-to dialog was open.
+            _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
 
         elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
                    "\x1B",  # \x1B = ESC
