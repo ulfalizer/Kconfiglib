@@ -45,7 +45,7 @@ from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, MenuNode, \
                        BOOL, TRISTATE, HEX, STRING, \
                        TRI_TO_STR, \
                        escape, unescape, \
-                       expr_str, expr_value, split_expr, \
+                       expr_str, expr_value, expr_items, split_expr, \
                        OR, AND, \
                        KconfigSyntaxError
 import difflib
@@ -988,6 +988,25 @@ g
     verify_equal(expr_str(c.named_choices["NO_DEP_CHOICE"].direct_dep), '"y"')
     verify_equal(expr_str(c.named_choices["DEP_CHOICE"].direct_dep),
                  "A || B || C")
+
+
+    print("Testing expr_items()")
+
+    c = Kconfig("Kconfiglib/tests/Kexpr_items")
+
+    def verify_expr_items(expr, *sym_names):
+        verify_equal(tuple(sorted(item.name for item in expr_items(expr))),
+                     sym_names)
+
+    verify_expr_items(
+        c.syms["TEST"].defaults[0][0],
+        "A", "B", "C", "D", "E", "F", "G", "H"
+    )
+
+    verify_expr_items(
+        c.syms["TEST_CHOICE"].nodes[0].prompt[1],
+        "A", "CHOICE"
+    )
 
 
     print("Testing split_expr()")

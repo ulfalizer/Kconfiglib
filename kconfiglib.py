@@ -4422,6 +4422,30 @@ def expr_str(expr):
                              _REL_TO_STR[expr[0]],
                              expr_str(expr[2]))
 
+def expr_items(expr):
+    """
+    Returns a set() of all items (symbols and choices) that appear in the
+    expression 'expr'.
+    """
+
+    deps = set()
+
+    def rec(subexpr):
+        if not isinstance(subexpr, tuple):
+            # Symbol or choice
+            deps.add(subexpr)
+
+        elif subexpr[0] == NOT:
+            rec(subexpr[1])
+
+        else:
+           # AND, OR, or relation
+           rec(subexpr[1])
+           rec(subexpr[2])
+
+    rec(expr)
+    return deps
+
 def split_expr(expr, op):
     """
     Returns a list containing the top-level AND or OR operands in the

@@ -59,7 +59,7 @@
 #   config OPROFILE
 #   ... (tons more lines)
 
-from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT, NOT
+from kconfiglib import Kconfig, Symbol, expr_items, Choice, MENU, COMMENT, NOT
 import sys
 
 def expr_contains_sym(expr, sym_name):
@@ -70,18 +70,11 @@ def expr_contains_sym(expr, sym_name):
     Note that "foo" is represented as a constant symbol, like in the C
     implementation.
     """
-    # Choice symbols have a Choice instance propagated to the conditions of
-    # their properties, so we need this test rather than
-    # isinstance(expr, Symbol)
-    if not isinstance(expr, tuple):
-        return expr.name == sym_name
+    for item in expr_items(expr):
+        if item.name == sym_name:
+            return True
 
-    if expr[0] == NOT:
-        return expr_contains_sym(expr[1], sym_name)
-
-    # AND, OR, or relation
-    return expr_contains_sym(expr[1], sym_name) or \
-           expr_contains_sym(expr[2], sym_name)
+    return False
 
 def sc_references_sym(sc, sym_name):
     """
