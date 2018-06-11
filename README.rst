@@ -7,7 +7,7 @@ Overview
 Kconfiglib is a `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
 implementation in Python 2/3. It started out as a helper library, but now has a
-enough functionality to work well as a standalone Kconfig implementation
+enough functionality to also work well as a standalone Kconfig implementation
 (including ``menuconfig`` implementations).
 
 The entire library is contained in `kconfiglib.py
@@ -177,6 +177,26 @@ Kconfiglib can do the following, among other things:
   <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_
   example.
 
+Kconfig language extensions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following Kconfig extensions are available:
+  
+- A relative ``source`` statement (``rsource``) where Kconfig
+  file paths are specified relative to the directory of
+  the current Kconfig file.
+  
+- A globbing ``source`` (``gsource``) that doubles
+  as an include-if-exists function.
+  
+- Environment variables are expanded directly in e.g. ``source``
+  and ``mainmenu`` statements, meaning ``option env`` symbols
+  are redundant.
+  
+  ``option env`` symbols are still supported for compatibility,
+  with the caveat that they must have the same name as the environment
+  variables they reference. A warning is printed if the names differ.
+
 Other features
 --------------
 
@@ -235,13 +255,6 @@ Other features
 
   All warnings point out the location(s) in the ``Kconfig`` files where a
   symbol is defined, where applicable.
-  
-- **Kconfig extensions**
-
-  So far, these include a relative ``source`` statement (``rsource``) where Kconfig
-  file paths are specified relative to the directory of
-  the current Kconfig file, and a globbing ``source`` (``gsource``) that doubles
-  as an include-if-exists function.
 
 - **Unicode support**
 
