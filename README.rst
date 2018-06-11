@@ -348,7 +348,7 @@ Two configuration interfaces are currently available:
   .. image:: https://raw.githubusercontent.com/RomaVis/pymenuconfig/master/screenshot.PNG
 
   While working on the terminal menuconfig implementation, I added a few APIs
-  to Kconfiglib that turned out to be handy. ``pymenuconfig`` precedes the
+  to Kconfiglib that turned out to be handy. ``pymenuconfig`` predates the
   terminal menuconfig, and so didn't have them available. Blame me for any
   workarounds.
 
