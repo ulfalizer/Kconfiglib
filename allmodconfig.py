@@ -6,6 +6,9 @@
 # Works like 'make allmodconfig'. Verified by the test suite to generate output
 # identical to 'make allmodconfig', for all ARCHES.
 #
+# The default output filename is '.config'. A different filename can be passed
+# in the KCONFIG_CONFIG environment variable.
+#
 # Usage for the Linux kernel:
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py

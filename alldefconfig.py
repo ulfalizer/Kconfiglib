@@ -6,6 +6,9 @@
 # Works like 'make alldefconfig'. Verified by the test suite to generate
 # identical output to 'make alldefconfig' for all ARCHes.
 #
+# The default output filename is '.config'. A different filename can be passed
+# in the KCONFIG_CONFIG environment variable.
+#
 # Usage for the Linux kernel:
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/alldefconfig.py
