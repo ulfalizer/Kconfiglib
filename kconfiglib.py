@@ -4425,23 +4425,23 @@ def expr_items(expr):
     expression 'expr'.
     """
 
-    deps = set()
+    res = set()
 
     def rec(subexpr):
-        if not isinstance(subexpr, tuple):
-            # Symbol or choice
-            deps.add(subexpr)
-
-        elif subexpr[0] == NOT:
+        if isinstance(subexpr, tuple):
+            # AND, OR, NOT or relation
             rec(subexpr[1])
 
+            # NOTs only have a single operand
+            if subexpr[0] != NOT:
+                rec(subexpr[2])
+
         else:
-           # AND, OR, or relation
-           rec(subexpr[1])
-           rec(subexpr[2])
+            # Symbol or choice
+            res.add(subexpr)
 
     rec(expr)
-    return deps
+    return res
 
 def split_expr(expr, op):
     """
