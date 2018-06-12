@@ -4561,22 +4561,22 @@ def _visibility(sc):
 
     return vis
 
-def _make_depend_on(sym, expr):
-    # Adds 'sym' as a dependency to all symbols in 'expr'. Constant symbols in
-    # 'expr' are skipped as they can never change value anyway.
+def _make_depend_on(sc, expr):
+    # Adds 'sc' (symbol or choice) as a "dependee" to all symbols in 'expr'.
+    # Constant symbols in 'expr' are skipped as they can never change value
+    # anyway.
 
-    if not isinstance(expr, tuple):
-        # Symbol or choice
-        if not expr.is_constant:
-            expr._dependents.add(sym)
+    if isinstance(expr, tuple):
+        # AND, OR, NOT or relation
+        _make_depend_on(sc, expr[1])
 
-    elif expr[0] == NOT:
-        _make_depend_on(sym, expr[1])
+        # NOTs only have a single operand
+        if expr[0] != NOT:
+            _make_depend_on(sc, expr[2])
 
-    else:
-        # AND, OR, or relation
-        _make_depend_on(sym, expr[1])
-        _make_depend_on(sym, expr[2])
+    elif not expr.is_constant:
+        # Non-constant symbol, or choice
+        expr._dependents.add(sc)
 
 def _expand(s):
     # A predefined UNAME_RELEASE symbol is expanded in one of the 'default's of
