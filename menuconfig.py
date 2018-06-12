@@ -1534,12 +1534,11 @@ def _jump_to_dialog():
                 _safe_curs_set(0)
                 return True
 
-        if c == "\x1B":  # \x1B = ESC
+        elif c == "\x1B":  # \x1B = ESC
             _safe_curs_set(0)
             return False
 
-
-        if c == curses.KEY_RESIZE:
+        elif c == curses.KEY_RESIZE:
             # We adjust the scroll so that the selected node stays visible in
             # the list when the terminal is resized, hence the 'scroll'
             # assignment
