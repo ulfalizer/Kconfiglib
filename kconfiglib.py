@@ -4429,7 +4429,8 @@ def expr_items(expr):
 
     def rec(subexpr):
         if isinstance(subexpr, tuple):
-            # AND, OR, NOT or relation
+            # AND, OR, NOT, or relation
+
             rec(subexpr[1])
 
             # NOTs only have a single operand
@@ -4567,7 +4568,8 @@ def _make_depend_on(sc, expr):
     # anyway.
 
     if isinstance(expr, tuple):
-        # AND, OR, NOT or relation
+        # AND, OR, NOT, or relation
+
         _make_depend_on(sc, expr[1])
 
         # NOTs only have a single operand
