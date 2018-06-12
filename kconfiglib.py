@@ -4313,13 +4313,11 @@ class KconfigSyntaxError(Exception):
     """
     Exception raised for syntax errors.
     """
-    pass
 
 class InternalError(Exception):
     """
     Exception raised for internal errors.
     """
-    pass
 
 #
 # Public functions
