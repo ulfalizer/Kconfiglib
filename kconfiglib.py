@@ -4150,6 +4150,45 @@ class MenuNode(object):
         "ranges"
     )
 
+    def referenced(self):
+        """
+        Returns a set() of all symbols and choices referenced in the properties
+        and property conditions of this menu node.
+
+        Also includes dependencies inherited from surrounding menus and if's.
+        Choices appear in the dependencies of choice symbols.
+        """
+        res = set()
+
+        if self.prompt:
+            res |= expr_items(self.prompt[1])
+
+        if self.item == MENU:
+            res |= expr_items(self.visibility)
+
+        for value, cond in self.defaults:
+            res |= expr_items(value)
+            res |= expr_items(cond)
+
+        for value, cond in self.selects:
+            res.add(value)
+            res |= expr_items(cond)
+
+        for value, cond in self.implies:
+            res.add(value)
+            res |= expr_items(cond)
+
+        for low, high, cond in self.ranges:
+            res.add(low)
+            res.add(high)
+            res |= expr_items(cond)
+
+        # Need this to catch dependencies from a lone 'depends on' when there
+        # are no properties to propagate it to
+        res |= expr_items(self.dep)
+
+        return res
+
     def __repr__(self):
         """
         Returns a string with information about the menu node when it is

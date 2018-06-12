@@ -1009,7 +1009,35 @@ g
     )
 
 
+    print("Testing MenuNode.referenced()")
+
+    c = Kconfig("Kconfiglib/tests/Kreferenced", warn=False)
+
+    def verify_deps(item, *dep_names):
+        verify_equal(tuple(sorted(item.name for item in item.referenced())),
+                     dep_names)
+
+    verify_deps(c.syms["NO_REFS"].nodes[0], "y")
+
+    verify_deps(c.syms["JUST_DEPENDS_ON_REFS"].nodes[0], "A", "B")
+
+    verify_deps(c.syms["LOTS_OF_REFS"].nodes[0],
+                *(chr(n) for n in range(ord('A'), ord('Z') + 1)))
+
+    verify_deps(c.syms["INT_REFS"].nodes[0],
+                "A", "B", "C", "D", "E", "F", "G", "H", "y")
+
+    verify_deps(c.syms["CHOICE_REF"].nodes[0], "CHOICE")
+
+    verify_deps(c.menus[0], "A", "B", "C", "D")
+
+    verify_deps(c.comments[0], "A", "B")
+
+
     print("Testing split_expr()")
+
+    c = Kconfig("Kconfiglib/tests/empty")
+    c.disable_warnings()
 
     def verify_split(to_split, op, operand_strs):
         # The same hackage as in Kconfig.eval_string()
