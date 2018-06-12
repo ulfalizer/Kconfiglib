@@ -4177,8 +4177,7 @@ class MenuNode(object):
                           " tree)")
 
         else:
-            raise InternalError("unable to determine type in "
-                                "MenuNode.__repr__()")
+            _internal_error("unable to determine type in MenuNode.__repr__()")
 
         if self.prompt:
             fields.append('prompt "{}" (visibility {})'
