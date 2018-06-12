@@ -4566,25 +4566,17 @@ def _make_depend_on(sym, expr):
     # 'expr' are skipped as they can never change value anyway.
 
     if not isinstance(expr, tuple):
+        # Symbol or choice
         if not expr.is_constant:
             expr._dependents.add(sym)
-
-    elif expr[0] in (AND, OR):
-        _make_depend_on(sym, expr[1])
-        _make_depend_on(sym, expr[2])
 
     elif expr[0] == NOT:
         _make_depend_on(sym, expr[1])
 
-    elif expr[0] in _RELATIONS:
-        if not expr[1].is_constant:
-            expr[1]._dependents.add(sym)
-        if not expr[2].is_constant:
-            expr[2]._dependents.add(sym)
-
     else:
-        _internal_error("Internal error while fetching symbols from an "
-                        "expression with token stream {}.".format(expr))
+        # AND, OR, or relation
+        _make_depend_on(sym, expr[1])
+        _make_depend_on(sym, expr[2])
 
 def _expand(s):
     # A predefined UNAME_RELEASE symbol is expanded in one of the 'default's of
