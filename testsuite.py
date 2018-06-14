@@ -1022,7 +1022,7 @@ g
     verify_deps(c.syms["JUST_DEPENDS_ON_REFS"].nodes[0], "A", "B")
 
     verify_deps(c.syms["LOTS_OF_REFS"].nodes[0],
-                *(chr(n) for n in range(ord('A'), ord('Z') + 1)))
+                *(chr(n) for n in range(ord("A"), ord("Z") + 1)))
 
     verify_deps(c.syms["INT_REFS"].nodes[0],
                 "A", "B", "C", "D", "E", "F", "G", "H", "y")
@@ -1943,6 +1943,34 @@ g
     verify_is_weird_choice_symbol("WS7")
     verify_is_weird_choice_symbol("WS8")
     verify_is_normal_choice_symbol("WS9")
+
+
+    print("Testing multi.def. property copying")
+
+    c = Kconfig("Kconfiglib/tests/Kdepcopy", warn=False)
+
+    def verify_props(desc, props, prop_names):
+        actual = [prop[0].name for prop in props]
+        expected = prop_names.split()
+
+        verify(actual == expected,
+               "Wrong {} properties, expected '{}', got '{}'"
+               .format(desc, expected, actual))
+
+    verify_props("default", c.syms["MULTIDEF"].defaults,
+                 "A B C D E F G H I J K L M N O P Q R")
+
+    verify_props("select", c.syms["MULTIDEF"].selects,
+                 "AA BB CC DD EE FF GG HH II JJ")
+
+    verify_props("imply", c.syms["MULTIDEF"].selects,
+                 "AA BB CC DD EE FF GG HH II JJ")
+
+    verify_props("select", c.syms["MULTIDEF_CHOICE"].selects,
+                 "A B C")
+
+    verify_props("range", c.syms["MULTIDEF_RANGE"].ranges,
+                 "A B C D E F")
 
 
     print("\nAll selftests passed\n" if all_passed else
