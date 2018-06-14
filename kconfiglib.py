@@ -1483,7 +1483,7 @@ class Kconfig(object):
                 "likely to soon appear in the C tools as well, and simplifies "
                 "the parsing implementation (symbols no longer need to be "
                 "evaluated during parsing)."
-                .format(self._filename, self._linenr, str(e)),
+                .format(self._filename, self._linenr, e),
                 80))
 
         self._filename = filename
