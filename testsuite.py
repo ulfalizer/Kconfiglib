@@ -1017,6 +1017,8 @@ g
         verify_equal(tuple(sorted(item.name for item in item.referenced())),
                      dep_names)
 
+    verify_deps(c.top_node, "y")
+
     verify_deps(c.syms["NO_REFS"].nodes[0], "y")
 
     verify_deps(c.syms["JUST_DEPENDS_ON_REFS"].nodes[0], "A", "B")

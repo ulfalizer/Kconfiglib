@@ -2114,13 +2114,6 @@ class Kconfig(object):
         # below.
         node.dep = self.y
 
-        # Properties added at this location. A local 'depends on' only applies
-        # to these, in case a symbol is defined in multiple locations.
-        node.defaults = []
-        node.selects = []
-        node.implies = []
-        node.ranges = []
-
         while self._next_line():
             t0 = self._next_token()
             if t0 is None:
@@ -4170,6 +4163,15 @@ class MenuNode(object):
         "implies",
         "ranges"
     )
+
+    def __init__(self):
+        # Properties defined on this particular menu node. A local 'depends on'
+        # only applies to these, in case a symbol is defined in multiple
+        # locations.
+        self.defaults = []
+        self.selects = []
+        self.implies = []
+        self.ranges = []
 
     def referenced(self):
         """
