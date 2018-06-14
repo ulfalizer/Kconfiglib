@@ -2533,8 +2533,8 @@ class Kconfig(object):
             #
             # The recursive _finalize_tree() calls assume that the current
             # "level" in the tree has already had dependencies propagated. This
-            # makes e.g. implicit submenu creation, which needs to look ahead,
-            # easier to implement.
+            # makes e.g. implicit submenu creation easier, because it needs to
+            # look ahead.
             self._propagate_deps(node, visible_if)
 
             # Finalize the children
