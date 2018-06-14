@@ -2355,9 +2355,8 @@ def _is_num(name):
     # they get their name as their value when the symbol is undefined.
 
     try:
-        int(name, 10)
+        int(name)
         return True
-
     except ValueError:
         if not name.startswith(("0x", "0X")):
             return False
@@ -2365,7 +2364,6 @@ def _is_num(name):
         try:
             int(name, 16)
             return True
-
         except ValueError:
             return False
 
