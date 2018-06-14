@@ -2060,11 +2060,11 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
+                choice.nodes.append(node)
+
                 self._parse_properties(node)
                 self._parse_block(_T_ENDCHOICE, node, node)
                 node.list = node.next
-
-                choice.nodes.append(node)
 
                 prev.next = prev = node
 
