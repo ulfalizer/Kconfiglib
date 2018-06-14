@@ -70,7 +70,7 @@ config MULTIDEF
     imply JJ
 
 
-# Same test with choices involved
+# Same test with choice symbols involved
 
 config MULTIDEF_CHOICE
     bool
@@ -123,3 +123,51 @@ config MULTIDEF_RANGE
 config MULTIDEF_RANGE
     int
     range F _
+
+
+# Same test for a choice
+
+choice MULTICHOICE
+    bool "choice"
+    default A
+
+config A
+    bool "A"
+
+config B
+    bool "B"
+
+config C
+    bool "C"
+
+config D
+    bool "C"
+
+config E
+    bool "C"
+
+endchoice
+
+if FOO
+
+choice MULTICHOICE
+    default B
+endchoice
+
+menu "menu"
+
+choice MULTICHOICE
+    default C
+endchoice
+
+endmenu
+
+choice MULTICHOICE
+    default D
+endchoice
+
+endif
+
+choice MULTICHOICE
+    default E
+endchoice

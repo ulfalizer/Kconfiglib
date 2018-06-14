@@ -1974,6 +1974,9 @@ g
     verify_props("range", c.syms["MULTIDEF_RANGE"].ranges,
                  "A B C D E F")
 
+    verify_props("default", c.choices[1].defaults,
+                 "A B C D E")
+
 
     print("\nAll selftests passed\n" if all_passed else
           "\nSome selftests failed\n")
