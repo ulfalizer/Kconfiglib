@@ -2637,8 +2637,8 @@ class Kconfig(object):
             cur = cur.next
 
     def _copy_deps_to_sc(self, node):
-        # Copies properties from the menu node 'node' up to its
-        # contained symbol or choice.
+        # Copies properties from the menu node 'node' up to its contained
+        # symbol or choice.
         #
         # This can't be rolled into _propagate_deps(), because that function
         # traverses the menu tree roughly breadth-first order, meaning
