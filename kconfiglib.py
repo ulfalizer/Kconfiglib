@@ -2097,7 +2097,7 @@ class Kconfig(object):
     def _parse_properties(self, node):
         # Parses and adds properties to the MenuNode 'node' (type, 'prompt',
         # 'default's, etc.) Properties are later copied up to symbols and
-        # choices in a separate pass after parsing, in _copy_props_to_sc().
+        # choices in a separate pass after parsing, in _add_props_to_sc().
         #
         # An older version of this code added properties directly to symbols
         # and choices instead of to their menu nodes (and handled dependency
@@ -2546,7 +2546,7 @@ class Kconfig(object):
         elif isinstance(node.item, Symbol):
             # Add the node's non-node-specific properties (defaults, ranges,
             # etc.) to the Symbol
-            self._copy_props_to_sc(node)
+            self._add_props_to_sc(node)
 
             # See if we can create an implicit menu rooted at the Symbol and
             # finalize each child menu node in that menu if so, like for the
@@ -2577,7 +2577,7 @@ class Kconfig(object):
         # outside
         if isinstance(node.item, Choice):
             # Add the node's non-node-specific properties to the choice
-            self._copy_props_to_sc(node)
+            self._add_props_to_sc(node)
             _finalize_choice(node)
 
     def _propagate_deps(self, node, visible_if):
@@ -2636,7 +2636,7 @@ class Kconfig(object):
 
             cur = cur.next
 
-    def _copy_props_to_sc(self, node):
+    def _add_props_to_sc(self, node):
         # Copies properties from the menu node 'node' up to its contained
         # symbol or choice.
         #
