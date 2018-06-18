@@ -1917,6 +1917,24 @@ g
     verify(c.syms["MMT_3"].orig_type == TRISTATE,
            "Expected MMT_3 to have type tristate")
 
+    # Verify that the default selection can change depending on the
+    # visibility of the choice symbols
+
+    default_with_dep_choice = c.named_choices["DEFAULT_WITH_DEP"]
+
+    verify(default_with_dep_choice.selection is c.syms["B"],
+           "Wrong choice default with unsatisfied deps on default")
+
+    c.syms["DEP"].set_value("y")
+
+    verify(default_with_dep_choice.selection is c.syms["A"],
+           "Wrong choice default with satisfied deps on default")
+
+    c.syms["DEP"].set_value("n")
+
+    verify(default_with_dep_choice.selection is c.syms["B"],
+           "Wrong choice default with unsatisfied deps on default (round two)")
+
     # Verify that symbols in choices that depend on the preceding symbol aren't
     # considered choice symbols
 
@@ -1976,6 +1994,19 @@ g
 
     verify_props("default", c.choices[1].defaults,
                  "A B C D E")
+
+
+    print("Testing dependency loop detection")
+
+    # These are all expected to raise dependency loop errors
+    for i in range(11):
+        filename = "Kconfiglib/tests/Kdeploop" + str(i)
+        try:
+            Kconfig(filename)
+        except KconfigSyntaxError as e:
+            pass
+        else:
+            fail("dependency loop in {} not detected".format(filename))
 
 
     print("\nAll selftests passed\n" if all_passed else
@@ -2178,6 +2209,10 @@ def test_sanity(conf, arch, srcarch):
 
        verify(not (sym.orig_type not in (BOOL, TRISTATE) and sym.choice),
               sym.name + " is a choice symbol but not bool/tristate")
+
+       verify(sym._checked == 2,
+              "{} has broken dependency loop detection (_checked = {})"
+              .format(sym.name, sym._checked))
 
     for key, sym in conf.const_syms.items():
         verify(isinstance(key, str),

@@ -132,6 +132,25 @@ config MMT_5
     bool
 endchoice
 
+# Choice where the default selection (the first symbol) depends on another
+# symbol. If that symbol becomes 'n', the default selection should change to
+# the first visible symbol in the choice.
+
+choice DEFAULT_WITH_DEP
+    bool "default with dep"
+
+config A
+    bool "A"
+    depends on DEP
+
+config B
+    bool "B"
+
+endchoice
+
+config DEP
+    bool "dep"
+
 # Choice with symbols that shouldn't be considered choice symbols because they
 # depend on the preceding symbol. This might be a kconfig bug, but some things
 # use it, so we need to emulate it.
