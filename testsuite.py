@@ -47,7 +47,7 @@ from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, MenuNode, \
                        escape, unescape, \
                        expr_str, expr_value, expr_items, split_expr, \
                        OR, AND, \
-                       KconfigSyntaxError
+                       KconfigError
 import difflib
 import errno
 import os
@@ -230,13 +230,13 @@ def run_selftests():
 
     def verify_string_bad(s):
         """
-        Verifies that tokenizing 's' throws a KconfigSyntaxError. Strips the
-        first and last characters from 's' so we can use readable raw strings
-        as input.
+        Verifies that tokenizing 's' throws a KconfigError. Strips the first
+        and last characters from 's' so we can use readable raw strings as
+        input.
         """
         try:
             c.eval_string(s)
-        except KconfigSyntaxError:
+        except KconfigError:
             pass
         else:
             fail("expected tokenization of {} to fail, didn't".format(s[1:-1]))
@@ -462,15 +462,15 @@ def run_selftests():
     def verify_eval_bad(expr):
         try:
             c.eval_string(expr)
-        except KconfigSyntaxError:
+        except KconfigError:
             pass
         else:
-            fail('expected eval_string("{}") to throw KconfigSyntaxError, '
+            fail('expected eval_string("{}") to throw KconfigError, '
                  "didn't".format(expr))
 
     # The C implementation's parser can be pretty lax about syntax. Kconfiglib
     # sometimes needs to emulate that. Verify that some bad stuff throws
-    # KconfigSyntaxError at least.
+    # KconfigError at least.
     verify_eval_bad("")
     verify_eval_bad("&")
     verify_eval_bad("|")
@@ -949,7 +949,7 @@ g
 
     try:
         Kconfig("Kconfiglib/tests/Krecursive1")
-    except KconfigSyntaxError:
+    except KconfigError:
         pass
     except:
         fail("recursive 'source' raised wrong exception")
@@ -2003,7 +2003,7 @@ g
         filename = "Kconfiglib/tests/Kdeploop" + str(i)
         try:
             Kconfig(filename)
-        except KconfigSyntaxError as e:
+        except KconfigError as e:
             pass
         else:
             fail("dependency loop in {} not detected".format(filename))

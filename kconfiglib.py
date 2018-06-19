@@ -559,8 +559,8 @@ class Kconfig(object):
                  encoding="utf-8"):
         """
         Creates a new Kconfig object by parsing Kconfig files. Raises
-        KconfigSyntaxError on syntax errors. Note that Kconfig files are not
-        the same as .config files (which store configuration symbol values).
+        KconfigError on syntax errors. Note that Kconfig files are not the same
+        as .config files (which store configuration symbol values).
 
         filename (default: "Kconfig"):
           The base Kconfig file. For the Linux kernel, you'll want "Kconfig"
@@ -1296,9 +1296,8 @@ class Kconfig(object):
     def eval_string(self, s):
         """
         Returns the tristate value of the expression 's', represented as 0, 1,
-        and 2 for n, m, and y, respectively. Raises KconfigSyntaxError if
-        syntax errors are detected in 's'. Warns if undefined symbols are
-        referenced.
+        and 2 for n, m, and y, respectively. Raises KconfigError if syntax
+        errors are detected in 's'. Warns if undefined symbols are referenced.
 
         As an example, if FOO and BAR are tristate symbols at least one of
         which has the value y, then config.eval_string("y && (FOO || BAR)")
@@ -1467,7 +1466,7 @@ class Kconfig(object):
         for _, name, _ in self._filestack:
             if name == filename:
                 # KconfigParseError might have been a better name, but too late
-                raise KconfigSyntaxError(
+                raise KconfigError(
                     "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
                     "environment variables are set correctly.\n"
                     "Backtrace:\n{}"
@@ -2087,8 +2086,7 @@ class Kconfig(object):
         # End of file reached. Terminate the final node and return it.
 
         if end_token is not None:
-            raise KconfigSyntaxError("Unexpected end of file " +
-                                     self._filename)
+            raise KconfigError("Unexpected end of file " + self._filename)
 
         prev.next = None
         return prev
@@ -2706,7 +2704,7 @@ class Kconfig(object):
         else:
             loc = "{}:{}: ".format(self._filename, self._linenr)
 
-        raise KconfigSyntaxError(
+        raise KconfigError(
             "{}Couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
 
     def _open_enc(self, filename, mode):
@@ -4397,10 +4395,13 @@ class MenuNode(object):
 
         return "\n".join(lines) + "\n"
 
-class KconfigSyntaxError(Exception):
+class KconfigError(Exception):
     """
-    Exception raised for syntax errors.
+    Exception raised for Kconfig-related errors.
     """
+
+# Backwards compatibility
+KconfigSyntaxError = KconfigError
 
 class InternalError(Exception):
     """
@@ -4725,7 +4726,7 @@ def _decoding_error(e, filename):
     # Gives the filename and context for UnicodeDecodeError's, which are a pain
     # to debug otherwise. 'e' is the UnicodeDecodeError object.
 
-    raise KconfigSyntaxError(
+    raise KconfigError(
         "\n"
         "Malformed {} in {}\n"
         "Context: {}\n"
@@ -5007,7 +5008,7 @@ def _found_dep_loop(loop, cur):
 
     msg += "...depends again on {}".format(_name_and_loc(loop[0]))
 
-    raise KconfigSyntaxError(msg)
+    raise KconfigError(msg)
 
 def _check_sym_sanity(sym):
     # Checks various symbol properties that are handiest to check after
@@ -5037,7 +5038,7 @@ def _check_sym_sanity(sym):
     elif sym.orig_type in (STRING, INT, HEX):
         for default, _ in sym.defaults:
             if not isinstance(default, Symbol):
-                raise KconfigSyntaxError(
+                raise KconfigError(
                     "the {} symbol {} has a malformed default {} -- expected "
                     "a single symbol"
                     .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym),
@@ -5119,7 +5120,7 @@ def _check_choice_sanity(choice):
 
     for default, _ in choice.defaults:
         if not isinstance(default, Symbol):
-            raise KconfigSyntaxError(
+            raise KconfigError(
                 "{} has a malformed default {}"
                 .format(_name_and_loc(choice), expr_str(default)))
 
