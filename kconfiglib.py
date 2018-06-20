@@ -4206,7 +4206,9 @@ class MenuNode(object):
         Also includes dependencies inherited from surrounding menus and if's.
         Choices appear in the dependencies of choice symbols.
         """
-        res = set()
+        # self.dep is included to catch dependencies from a lone 'depends on'
+        # when there are no properties to propagate it to
+        res = expr_items(self.dep)
 
         if self.prompt:
             res |= expr_items(self.prompt[1])
@@ -4230,10 +4232,6 @@ class MenuNode(object):
             res.add(low)
             res.add(high)
             res |= expr_items(cond)
-
-        # Need this to catch dependencies from a lone 'depends on' when there
-        # are no properties to propagate it to
-        res |= expr_items(self.dep)
 
         return res
 
