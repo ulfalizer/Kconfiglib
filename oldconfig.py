@@ -103,10 +103,12 @@
 #     $ python oldconfig.py Kconfig  # Everything's already up to date
 #     Configuration written to .config
 from __future__ import print_function
-from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX, \
-                       standard_kconfig, standard_config_filename
+
 import os
 import sys
+
+from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX, \
+                       standard_kconfig, standard_config_filename
 
 # Python 2/3 compatibility hack
 if sys.version_info[0] < 3:
