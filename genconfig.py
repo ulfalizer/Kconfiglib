@@ -15,7 +15,6 @@
 #   genconfig.py [-h] [--header-path HEADER_FILE] [--sync-deps [OUTPUT_DIR]] [KCONFIG_FILENAME]
 
 import argparse
-import sys
 
 import kconfiglib
 
