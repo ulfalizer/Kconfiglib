@@ -87,15 +87,13 @@ import locale
 import os
 import platform
 import re
-import sys
 import textwrap
 
 # We need this double import for the _expr_str() override below
 import kconfiglib
 
-from kconfiglib import Kconfig, \
-                       Symbol, Choice, MENU, COMMENT, MenuNode, \
-                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
+from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
+                       BOOL, STRING, INT, HEX, UNKNOWN, \
                        AND, OR, NOT, \
                        expr_value, split_expr, \
                        TRI_TO_STR, TYPE_TO_STR, \
@@ -522,29 +520,29 @@ def _menuconfig(stdscr):
                 return res
 
 def quit_dialog():
-   if not _conf_changed:
-       return "No changes to save"
+    if not _conf_changed:
+        return "No changes to save"
 
-   while True:
-       c = _key_dialog(
-           "Quit",
-           " Save configuration?\n"
-           "\n"
-           "(Y)es  (N)o  (C)ancel",
-           "ync")
+    while True:
+        c = _key_dialog(
+            "Quit",
+            " Save configuration?\n"
+            "\n"
+            "(Y)es  (N)o  (C)ancel",
+            "ync")
 
-       if c is None or c == "c":
-           return None
+        if c is None or c == "c":
+            return None
 
-       if c == "y":
-           if _try_save(_kconf.write_config, _config_filename,
-                        "configuration"):
+        if c == "y":
+            if _try_save(_kconf.write_config, _config_filename,
+                         "configuration"):
 
-               return "Configuration saved to '{}'" \
-                      .format(_config_filename)
+                return "Configuration saved to '{}'" \
+                       .format(_config_filename)
 
-       elif c == "n":
-           return "Configuration was not saved"
+        elif c == "n":
+            return "Configuration was not saved"
 
 def _init():
     # Initializes the main display with the list of symbols, etc. Also does
@@ -1464,10 +1462,10 @@ def _jump_to_dialog():
         nonlocal scroll
 
         if sel_node_i > 0:
-           sel_node_i -= 1
+            sel_node_i -= 1
 
-           if sel_node_i <= scroll + _SCROLL_OFFSET:
-               scroll = max(scroll - 1, 0)
+            if sel_node_i <= scroll + _SCROLL_OFFSET:
+                scroll = max(scroll - 1, 0)
 
     while True:
         if s != prev_s:
@@ -2292,10 +2290,10 @@ def _value_str(node):
     if item.type == BOOL:
         return "[{}]".format(tri_val_str)
 
-    if item.type == TRISTATE:
-        if item.assignable == (1, 2):
-            return "{{{}}}".format(tri_val_str)  # {M}/{*}
-        return "<{}>".format(tri_val_str)
+    # item.type == TRISTATE
+    if item.assignable == (1, 2):
+        return "{{{}}}".format(tri_val_str)  # {M}/{*}
+    return "<{}>".format(tri_val_str)
 
 def _is_y_mode_choice_sym(item):
     # The choice mode is an upper bound on the visibility of choice symbols, so
