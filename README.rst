@@ -62,16 +62,17 @@ available in the Python 2 version of the standard ``curses`` module.
 that your ``PATH`` includes the directory where the executables end up. You can
 list the installed files with ``pip(3) show -f kconfiglib``.
 
-All releases have a corresponding tag in the git repository, e.g. ``v6.1.1``
+All releases have a corresponding tag in the git repository, e.g. ``v7.0.0``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been
-four small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
+five small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
 `2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
 `3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_,
-`4 <https://github.com/ulfalizer/Kconfiglib/commit/cbf32e29a130d22bc734b7778e6304ac9df2a3e8>`_)
+`4 <https://github.com/ulfalizer/Kconfiglib/commit/cbf32e29a130d22bc734b7778e6304ac9df2a3e8>`_,
+`5 <https://github.com/ulfalizer/Kconfiglib/commit/eb6c21a9b33a2d6e2bed9882d4f930d0cab2f03b>`_)
 to the behavior of the API (which shouldn't affect many people), which is why
-the major version is at 6 rather than 2.
+the major version is at 7 rather than 2.
 
 Manual installation
 ~~~~~~~~~~~~~~~~~~~
