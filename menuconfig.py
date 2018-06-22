@@ -2356,16 +2356,16 @@ def _is_num(name):
 
     try:
         int(name)
-        return True
     except ValueError:
         if not name.startswith(("0x", "0X")):
             return False
 
         try:
             int(name, 16)
-            return True
         except ValueError:
             return False
+
+    return True
 
 def _get_wch_compat(win):
     # Decent resizing behavior on PDCurses requires calling resize_term(0, 0)
