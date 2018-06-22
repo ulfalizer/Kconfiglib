@@ -1,6 +1,5 @@
-# Prints all symbols, choices, menus, and comments that reference a symbol with
-# a particular name in any of their properties or property conditions.
-# Demonstrates expression fetching and walking.
+# Prints all menu nodes that reference a given symbol any of their properties
+# or property conditions, along with their parent menu nodes.
 #
 # Usage:
 #
@@ -8,192 +7,124 @@
 #
 # Example output for SCRIPT_ARG=X86:
 #
+#   Found 470 locations that reference X86:
 #
-#   Found 452 locations that reference 'X86':
-#   
-#   ========== Location 1 (init/Kconfig:1122) ==========
-#   
+#   ========== Location 1 (init/Kconfig:1108) ==========
+#
 #   config SGETMASK_SYSCALL
-#           bool
-#           prompt "sgetmask/ssetmask syscalls support" if EXPERT
-#           default PARISC || MN10300 || BLACKFIN || M68K || PPC || MIPS || X86 || SPARC || CRIS || MICROBLAZE || SUPERH
-#           help
-#             sys_sgetmask and sys_ssetmask are obsolete system calls
-#             no longer supported in libc but still enabled by default in some
-#             architectures.
-#             
-#             If unsure, leave the default option here.
-#   
-#   ---------- Parent 1 (init/Kconfig:1091)  ----------
-#   
+#   	bool
+#   	prompt "sgetmask/ssetmask syscalls support" if EXPERT
+#   	default PARISC || M68K || PPC || MIPS || X86 || SPARC || MICROBLAZE || SUPERH
+#   	help
+#   	  sys_sgetmask and sys_ssetmask are obsolete system calls
+#   	  no longer supported in libc but still enabled by default in some
+#   	  architectures.
+#
+#   	  If unsure, leave the default option here.
+#
+#   ---------- Parent 1 (init/Kconfig:1077)  ----------
+#
 #   menuconfig EXPERT
-#           bool
-#           prompt "Configure standard kernel features (expert users)"
-#           select DEBUG_KERNEL
-#           help
-#             This option allows certain base kernel options and settings
-#             to be disabled or tweaked. This is for specialized
-#             environments which can tolerate a "non-standard" kernel.
-#             Only use this if you really know what you are doing.
-#   
+#   	bool
+#   	prompt "Configure standard kernel features (expert users)"
+#   	select DEBUG_KERNEL
+#   	help
+#   	  This option allows certain base kernel options and settings
+#   	  to be disabled or tweaked. This is for specialized
+#   	  environments which can tolerate a "non-standard" kernel.
+#   	  Only use this if you really know what you are doing.
+#
 #   ---------- Parent 2 (init/Kconfig:39)  ----------
-#   
+#
 #   menu "General setup"
-#   
-#   ========== Location 2 (arch/Kconfig:28) ==========
-#   
+#
+#   ========== Location 2 (arch/Kconfig:29) ==========
+#
 #   config OPROFILE_EVENT_MULTIPLEX
-#           bool
-#           prompt "OProfile multiplexing support (EXPERIMENTAL)" if OPROFILE && X86
-#           default "n" if OPROFILE && X86
-#           help
-#             The number of hardware counters is limited. The multiplexing
-#             feature enables OProfile to gather more events than counters
-#             are provided by the hardware. This is realized by switching
-#             between events at a user specified time interval.
-#             
-#             If unsure, say N.
-#   
-#   ---------- Parent 1 (arch/Kconfig:15)  ----------
-#   
+#   	bool
+#   	prompt "OProfile multiplexing support (EXPERIMENTAL)" if OPROFILE && X86
+#   	default "n" if OPROFILE && X86
+#   	depends on OPROFILE && X86
+#   	help
+#   	  The number of hardware counters is limited. The multiplexing
+#   	  feature enables OProfile to gather more events than counters
+#   	  are provided by the hardware. This is realized by switching
+#   	  between events at a user specified time interval.
+#
+#   	  If unsure, say N.
+#
+#   ---------- Parent 1 (arch/Kconfig:16)  ----------
+#
 #   config OPROFILE
-#   ... (tons more lines)
+#   	tristate
+#   	prompt "OProfile system profiling" if PROFILING && HAVE_OPROFILE
+#   	select RING_BUFFER if PROFILING && HAVE_OPROFILE
+#   	select RING_BUFFER_ALLOW_SWAP if PROFILING && HAVE_OPROFILE
+#   	depends on PROFILING && HAVE_OPROFILE
+#   	help
+#   	  OProfile is a profiling system capable of profiling the
+#   	  whole system, include the kernel, kernel modules, libraries,
+#   	  and applications.
+#
+#   	  If unsure, say N.
+#
+#   ---------- Parent 2 (init/Kconfig:39)  ----------
+#
+#   menu "General setup"
+#
+#   ... (tons more)
 
-from kconfiglib import Kconfig, Symbol, expr_items, Choice, MENU, COMMENT, NOT
 import sys
 
-def expr_contains_sym(expr, sym_name):
-    """
-    Returns True if a symbol (or choice, though that's unlikely) with name
-    'sym_name' appears in the expression 'expr', and False otherwise.
+import kconfiglib
 
-    Note that "foo" is represented as a constant symbol, like in the C
-    implementation.
-    """
-    for item in expr_items(expr):
-        if item.name == sym_name:
-            return True
 
-    return False
+def referencing_nodes(node, sym):
+    # Returns a list of all menu nodes that reference 'sym' in any of their
+    # properties or property conditions
 
-def sc_references_sym(sc, sym_name):
-    """
-    Returns True if a symbol with name 'sym_name' appears in any of the
-    properties or property conditions of the Symbol or Choice 'sc', and False
-    otherwise.
-    """
-    # Search defaults
-    for default, cond in sc.defaults:
-        if expr_contains_sym(default, sym_name) or \
-           expr_contains_sym(cond, sym_name):
-            return True
-
-    if isinstance(sc, Symbol):
-        # Search selects
-        for select, cond in sc.selects:
-            if select.name == sym_name or \
-               expr_contains_sym(cond, sym_name):
-                return True
-
-        # Search implies
-        for imply, cond in sc.implies:
-            if imply.name == sym_name or \
-               expr_contains_sym(cond, sym_name):
-                return True
-
-        # Search ranges
-        for low, high, cond in sc.ranges:
-            if low.name == sym_name or \
-               high.name == sym_name or \
-               expr_contains_sym(cond, sym_name):
-                return True
-
-    return False
-
-def node_references_sym(node, sym_name):
-    """
-    Returns True if a symbol with name 'sym_name' appears in the prompt
-    condition of the MenuNode 'node' or in any of the properties of a
-    symbol/choice stored in the menu node, and False otherwise.
-
-    For MENU menu nodes, also searches the 'visible if' condition.
-
-    Note that prompts are always stored in menu nodes. This is why a symbol can
-    be defined in multiple locations and have a different prompt in each
-    location. For MENU and COMMENT menu nodes, the prompt holds the menu title
-    or comment text. This organization matches the C implementation.
-    """
-    if node.prompt:
-        # Search the prompt condition
-        if expr_contains_sym(node.prompt[1], sym_name):
-            return True
-
-    if isinstance(node.item, (Symbol, Choice)):
-        # Search symbol or choice
-        return sc_references_sym(node.item, sym_name)
-
-    if node.item == MENU:
-        # Search the 'visible if' condition
-        return expr_contains_sym(node.visibility, sym_name)
-
-    # Comments are already handled by searching the prompt condition, because
-    # 'depends on' gets propagated to it. This is why we don't need to look at
-    # the direct dependencies for MENU either.
-
-def nodes_referencing_sym(node, sym_name):
-    """
-    Returns a list of all menu nodes in the menu tree rooted at 'node' that
-    reference a symbol with name 'sym_name' in any of their properties. Also
-    checks the properties of any symbols or choices contained in the menu
-    nodes.
-    """
     res = []
 
     while node:
-        if node_references_sym(node, sym_name):
+        if sym in node.referenced:
             res.append(node)
 
         if node.list:
-            res.extend(nodes_referencing_sym(node.list, sym_name))
+            res.extend(referencing_nodes(node.list, sym))
 
         node = node.next
 
     return res
 
-# find_undefined.py makes use nodes_referencing_sym(), so allow use to be
-# imported
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        sys.exit('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
 
-    sym_name = sys.argv[2]
+if len(sys.argv) < 3:
+    sys.exit('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
 
-    kconf = Kconfig(sys.argv[1])
-    nodes = nodes_referencing_sym(kconf.top_node, sym_name)
+kconf = kconfiglib.Kconfig(sys.argv[1])
+sym_name = sys.argv[2]
 
-    if not nodes:
-        sys.exit("No reference to '{}' found".format(sym_name))
+if sym_name not in kconf.syms:
+    print("No symbol {} exists in the configuration".format(sym_name))
+    sys.exit(0)
 
-    print("Found {} locations that reference '{}':\n".format(len(nodes), sym_name))
+nodes = referencing_nodes(kconf.top_node, kconf.syms[sym_name])
+if not nodes:
+    print("No reference to {} found".format(sym_name))
+    sys.exit(0)
 
-    for i, node in enumerate(nodes, 1):
-        print("========== Location {} ({}:{}) ==========\n".format(i, node.filename, node.linenr))
-        print(node)
+print("Found {} locations that reference {}:\n"
+      .format(len(nodes), sym_name))
 
-        parent_i = 0
+for i, node in enumerate(nodes, 1):
+    print("========== Location {} ({}:{}) ==========\n\n{}"
+          .format(i, node.filename, node.linenr, node))
 
-        # Print the parents of the menu node too
-        while True:
-            node = node.parent
-            if node is kconf.top_node:
-		# Don't print the top node. Would say something like the
-		# following, which isn't that interesting:
-                #
-		#   menu "Linux/$ARCH $KERNELVERSION Kernel Configuration"
-                break
+    # Print the parents of the menu node too
 
-            parent_i += 1
-
-            print("---------- Parent {} ({}:{})  ----------\n"
-                  .format(parent_i, node.filename, node.linenr))
-            print(node)
+    node = node.parent
+    parent_i = 1
+    while node is not kconf.top_node:
+        print("---------- Parent {} ({}:{})  ----------\n\n{}"
+              .format(parent_i, node.filename, node.linenr, node))
+        node = node.parent
+        parent_i += 1

@@ -6,7 +6,7 @@
 # the symbol, it usually indicates a problem or potential cleanup.
 #
 # This script could be sped up a lot if needed. See the comment near the
-# nodes_referencing_sym() call.
+# referencing_nodes() call.
 #
 # Run with the following command in the kernel root:
 #
@@ -35,18 +35,18 @@
 #     SUNXI_CCU_DIV: drivers/clk/sunxi-ng/Kconfig:14
 #     AC97: sound/ac97/Kconfig:6
 #     ...
-from kconfiglib import Kconfig
-
-# Reuse a function from the find_symbol.py example
-from find_symbol import nodes_referencing_sym
 
 import os
 import subprocess
+
+from kconfiglib import Kconfig
+
 
 # Referenced inside the Kconfig files
 os.environ["KERNELVERSION"] = str(
     subprocess.check_output(("make", "kernelversion")).decode("utf-8").rstrip()
 )
+
 
 def all_arch_srcarch_pairs():
     """
@@ -74,6 +74,7 @@ def all_arch_srcarch_pairs():
     yield ("tilegx", "tile")
 
     yield ("um", "um")
+
 
 def all_arch_srcarch_kconfigs():
     """
@@ -105,35 +106,46 @@ for kconf in all_arch_srcarch_kconfigs():
         else:
             # Undefined symbol. We skip some of the uninteresting ones.
 
-            # Predefined
-            if name == "UNAME_RELEASE":
-                continue
-
             # Due to how Kconfig works, integer literals show up as symbols
             # (from e.g. 'default 1'). Skip those.
             try:
                 int(name, 0)
                 continue
             except ValueError:
-                pass
-
-            # Interesting undefined symbol
-            undefined.add(name)
+                # Interesting undefined symbol
+                undefined.add(name)
 
 
 print("\nFinding references to each undefined symbol")
 
-# Maps each globally undefined symbol to the locations of the items (symbols,
-# choices, menus, ifs) that reference it
+def referencing_nodes(node, name):
+    # Returns a list of all menu nodes that reference a symbol named 'name' in
+    # any of their properties or property conditions
+    res = []
+
+    while node:
+        for ref in node.referenced:
+            if ref.name == name:
+                res.append(node)
+
+        if node.list:
+            res.extend(referencing_nodes(node.list, name))
+
+        node = node.next
+
+    return res
+
+
+# Maps each globally undefined symbol to the menu nodes that reference it
 undef_sym_refs = [(name, set()) for name in undefined - defined]
 
 for kconf in all_arch_srcarch_kconfigs():
     for name, refs in undef_sym_refs:
         # This means that we search the entire configuration tree for each
         # undefined symbol, which is terribly inefficient. We could speed
-        # things up by tweaking nodes_referencing_sym() to compare each symbol
-        # to multiple symbols while walking the configuration tree.
-        for node in nodes_referencing_sym(kconf.top_node, name):
+        # things up by tweaking referencing_nodes() to compare each symbol to
+        # multiple symbols while walking the configuration tree.
+        for node in referencing_nodes(kconf.top_node, name):
             refs.add("{}:{}".format(node.filename, node.linenr))
 
 
