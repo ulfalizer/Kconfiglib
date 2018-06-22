@@ -1009,7 +1009,7 @@ g
     )
 
 
-    print("Testing MenuNode.referenced()")
+    print("Testing MenuNode/Symbol/Choice.referenced()")
 
     c = Kconfig("Kconfiglib/tests/Kreferenced", warn=False)
 
@@ -1034,6 +1034,9 @@ g
     verify_deps(c.menus[0], "A", "B", "C", "D")
 
     verify_deps(c.comments[0], "A", "B")
+
+    verify_deps(c.syms["MULTI_DEF_SYM"], "A", "B", "C", "y")
+    verify_deps(c.named_choices["MULTI_DEF_CHOICE"], "A", "B", "C")
 
 
     print("Testing split_expr()")

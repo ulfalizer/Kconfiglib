@@ -3334,6 +3334,20 @@ class Symbol(object):
             self.user_value = None
             self._rec_invalidate_if_has_prompt()
 
+    def referenced(self):
+        """
+        Returns a set() of all symbols and choices referenced in the properties
+        and property conditions of the symbol.
+
+        Also includes dependencies inherited from surrounding menus and if's.
+        Choices appear in the dependencies of choice symbols.
+        """
+        res = set()
+        for node in self.nodes:
+            res |= node.referenced()
+
+        return res
+
     def __repr__(self):
         """
         Returns a string with information about the symbol (including its name,
@@ -3911,6 +3925,20 @@ class Choice(object):
             self.user_value = self.user_selection = None
             self._rec_invalidate()
 
+    def referenced(self):
+        """
+        Returns a set() of all symbols and choices referenced in the properties
+        and property conditions of the choice.
+
+        Also includes dependencies inherited from surrounding menus and if's.
+        Choices appear in the dependencies of choice symbols.
+        """
+        res = set()
+        for node in self.nodes:
+            res |= node.referenced()
+
+        return res
+
     def __repr__(self):
         """
         Returns a string with information about the choice when it is evaluated
@@ -4201,7 +4229,7 @@ class MenuNode(object):
     def referenced(self):
         """
         Returns a set() of all symbols and choices referenced in the properties
-        and property conditions of this menu node.
+        and property conditions of the menu node.
 
         Also includes dependencies inherited from surrounding menus and if's.
         Choices appear in the dependencies of choice symbols.
