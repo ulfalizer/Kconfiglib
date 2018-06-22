@@ -1009,12 +1009,12 @@ g
     )
 
 
-    print("Testing MenuNode/Symbol/Choice.referenced()")
+    print("Testing MenuNode/Symbol/Choice.referenced")
 
     c = Kconfig("Kconfiglib/tests/Kreferenced", warn=False)
 
     def verify_deps(item, *dep_names):
-        verify_equal(tuple(sorted(item.name for item in item.referenced())),
+        verify_equal(tuple(sorted(item.name for item in item.referenced)),
                      dep_names)
 
     verify_deps(c.top_node, "y")
