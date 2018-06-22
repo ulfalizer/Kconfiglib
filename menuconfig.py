@@ -453,13 +453,13 @@ def _menuconfig(stdscr):
                     _leave_menu()
 
         elif c in ("n", "N"):
-            _set_node_tri_val(_shown[_sel_node_i], 0)
+            _set_sel_node_tri_val(0)
 
         elif c in ("m", "M"):
-            _set_node_tri_val(_shown[_sel_node_i], 1)
+            _set_sel_node_tri_val(1)
 
         elif c in ("y", "Y"):
-            _set_node_tri_val(_shown[_sel_node_i], 2)
+            _set_sel_node_tri_val(2)
 
         elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
                    "\x1B",  # \x1B = ESC
@@ -1054,13 +1054,13 @@ def _change_node(node):
 
     _update_menu()
 
-def _set_node_tri_val(node, tri_val):
-    # Sets 'node' to 'tri_val', if that value can be assigned
+def _set_sel_node_tri_val(tri_val):
+    # Sets the value of the currently selected menu entry to 'tri_val', if that
+    # value can be assigned
 
-    if isinstance(node.item, (Symbol, Choice)) and \
-       tri_val in node.item.assignable:
-
-        _set_val(node.item, tri_val)
+    sc = _shown[_sel_node_i].item
+    if isinstance(sc, (Symbol, Choice)) and tri_val in sc.assignable:
+        _set_val(sc, tri_val)
 
 def _set_val(sc, val):
     # Wrapper around Symbol/Choice.set_value() for updating the menu state and
