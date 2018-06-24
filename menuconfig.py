@@ -1050,8 +1050,6 @@ def _change_node(node):
         val_index = sc.assignable.index(sc.tri_value)
         _set_val(sc, sc.assignable[(val_index + 1) % len(sc.assignable)])
 
-    _update_menu()
-
 def _set_sel_node_tri_val(tri_val):
     # Sets the value of the currently selected menu entry to 'tri_val', if that
     # value can be assigned
