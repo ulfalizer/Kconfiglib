@@ -1281,8 +1281,7 @@ def _save_dialog(save_fn, default_filename, description):
     filename = default_filename
     while True:
         filename = _input_dialog("Filename to save {} to".format(description),
-                                 filename,
-                                 _load_save_info())
+                                 filename, _load_save_info())
 
         if filename is None:
             return False
