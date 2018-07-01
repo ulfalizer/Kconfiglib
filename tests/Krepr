@@ -9,7 +9,7 @@ endif
 config BASIC
     bool
     default y
-    help
+    ---help---
 
 config VISIBLE
     bool "visible"

@@ -1584,28 +1584,21 @@ class Kconfig(object):
         # Token index (minus one). Set for later -- not further updated here.
         self._tokens_i = -1
 
-        # See comment at _initial_token_re_match definition
-        initial_token_match = _initial_token_re_match(s)
-        if not initial_token_match:
+        # Initial token on the line
+        command_match = _command_re_match(s)
+        if not command_match:
             self._tokens = (None,)
             return
 
         # Tricky implementation detail: While parsing a token, 'token' refers
         # to the previous token. See _STRING_LEX for why this is needed.
-        token = _get_keyword(initial_token_match.group(1))
-
-        if token == _T_HELP:
-            # Avoid junk after "help", e.g. "---", being registered as a
-            # symbol
-            self._tokens = (token, None)
-            return
-
+        token = _get_keyword(command_match.group(1))
         if token is None:
             self._parse_error("expected keyword as first token")
 
         self._tokens = [token]
         # The current index in the string being tokenized
-        i = initial_token_match.end()
+        i = command_match.end()
 
         # Main tokenization loop (for tokens past the first one)
         while i < len(s):
@@ -1712,17 +1705,15 @@ class Kconfig(object):
                             self._lookup_const_sym(val)
 
                 elif c == "&":
-                    # Invalid characters are ignored (backwards-compatible)
                     if i >= len(s) or s[i] != "&":
-                        continue
+                        self._parse_error("malformed operator")
 
                     token = _T_AND
                     i += 1
 
                 elif c == "|":
-                    # Invalid characters are ignored (backwards-compatible)
                     if i >= len(s) or s[i] != "|":
-                        continue
+                        self._parse_error("malformed operator")
 
                     token = _T_OR
                     i += 1
@@ -1763,8 +1754,7 @@ class Kconfig(object):
                         token = _T_GREATER
 
                 else:
-                    # Invalid characters are ignored (backwards-compatible)
-                    continue
+                    self._parse_error("invalid character in line")
 
                 # Skip trailing whitespace
                 while i < len(s) and s[i].isspace():
@@ -5317,6 +5307,7 @@ GREATER_EQUAL = _T_GREATER_EQUAL
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
 _get_keyword = {
+    "---help---":     _T_HELP,
     "allnoconfig_y":  _T_ALLNOCONFIG_Y,
     "bool":           _T_BOOL,
     "boolean":        _T_BOOL,
@@ -5393,25 +5384,12 @@ _TYPE_TOKENS = frozenset((
 # Use ASCII regex matching on Python 3. It's already the default on Python 2.
 _RE_ASCII = 0 if _IS_PY2 else re.ASCII
 
-# Note: This hack is no longer needed as of upstream commit c226456
-# (kconfig: warn of unhandled characters in Kconfig commands). It
-# is kept around for backwards compatibility.
+# The initial token on a line. Also eats leading and trailing whitespace, so
+# that we can jump straight to the next token (or to the end of the line if
+# there is only one token).
 #
-# The initial word on a line is parsed specially. Let
-# command_chars = [A-Za-z0-9_]. Then
-#  - leading non-command_chars characters are ignored, and
-#  - the first token consists the following one or more
-#    command_chars characters.
-# This is why things like "----help--" are accepted.
-#
-# In addition to the initial token, the regex also matches trailing whitespace
-# so that we can jump straight to the next token (or to the end of the line if
-# there's just a single token).
-#
-# As an optimization, this regex fails to match for lines containing just a
-# comment.
-_initial_token_re_match = \
-    re.compile(r"[^A-Za-z0-9_#]*([A-Za-z0-9_]+)\s*", _RE_ASCII).match
+# This regex will also fail to match for empty lines and comment lines.
+_command_re_match = re.compile(r"\s*([A-Za-z0-9_-]+)\s*", _RE_ASCII).match
 
 # Matches an identifier/keyword, also eating trailing whitespace
 _id_keyword_re_match = re.compile(r"([A-Za-z0-9_/.-]+)\s*", _RE_ASCII).match
