@@ -1593,7 +1593,7 @@ class Kconfig(object):
         # Tricky implementation detail: While parsing a token, 'token' refers
         # to the previous token. See _STRING_LEX for why this is needed.
         token = _get_keyword(command_match.group(1))
-        if token is None:
+        if not token:
             self._parse_error("expected keyword as first token")
 
         self._tokens = [token]
@@ -1617,7 +1617,7 @@ class Kconfig(object):
 
                 name = id_keyword_match.group(1)
                 keyword = _get_keyword(name)
-                if keyword is not None:
+                if keyword:
                     # It's a keyword
                     token = keyword
 
@@ -2075,7 +2075,7 @@ class Kconfig(object):
 
         # End of file reached. Terminate the final node and return it.
 
-        if end_token is not None:
+        if end_token:
             raise KconfigError("Unexpected end of file " + self._filename)
 
         prev.next = None
@@ -5239,7 +5239,8 @@ STR_TO_TRI = {
 # Are we running on Python 2?
 _IS_PY2 = sys.version_info[0] < 3
 
-# Tokens
+# Tokens, with values 1, 2, ... . Avoiding 0 simplifies some checks by making
+# all tokens except empty strings truthy.
 (
     _T_ALLNOCONFIG_Y,
     _T_AND,
@@ -5288,7 +5289,7 @@ _IS_PY2 = sys.version_info[0] < 3
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(47)
+) = range(1, 48)
 
 # Public integers representing expression types
 #
