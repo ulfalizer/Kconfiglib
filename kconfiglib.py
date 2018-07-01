@@ -2029,14 +2029,14 @@ class Kconfig(object):
                 prev.next = prev = node
 
             elif t0 == _T_CHOICE:
-                name = self._next_token()
-                if name is None:
+                if self._peek_token() is None:
                     choice = Choice()
                     choice.direct_dep = self.n
 
                     self.choices.append(choice)
                 else:
                     # Named choice
+                    name = self._expect_str_and_eol()
                     choice = self.named_choices.get(name)
                     if not choice:
                         choice = Choice()
