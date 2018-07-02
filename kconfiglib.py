@@ -610,9 +610,7 @@ class Kconfig(object):
         """
         self.srctree = os.environ.get("srctree")
 
-        self.config_prefix = os.environ.get("CONFIG_")
-        if self.config_prefix is None:
-            self.config_prefix = "CONFIG_"
+        self.config_prefix = os.environ.get("CONFIG_", "CONFIG_")
 
         # Regular expressions for parsing .config files, with the match()
         # method assigned directly as a small optimization (microscopic in this
@@ -4643,8 +4641,7 @@ def standard_config_filename():
     Helper for tools. Returns the value of KCONFIG_CONFIG (which specifies the
     .config file to load/save) if it is set, and ".config" otherwise.
     """
-    config_filename = os.environ.get("KCONFIG_CONFIG")
-    return config_filename if config_filename is not None else ".config"
+    return os.environ.get("KCONFIG_CONFIG", ".config")
 
 #
 # Internal functions
