@@ -1316,12 +1316,12 @@ class Kconfig(object):
 
         self._filename = None
 
-        self._line = "if " + s
-        self._tokenize()
-        # Remove the "if " to avoid giving confusing error messages
+        # Don't include the "if " from below to avoid giving confusing error
+        # messages
         self._line = s
         # Remove the _T_IF token
-        del self._tokens[0]
+        self._tokens = self._tokenize("if " + s)[1:]
+        self._tokens_i = -1
 
         return expr_value(self._parse_expr(True))  # transform_m
 
@@ -1523,7 +1523,9 @@ class Kconfig(object):
             self._line = self._line[:-2] + self._file.readline()
             self._linenr += 1
 
-        self._tokenize()
+        self._tokens = self._tokenize(self._line)
+        self._tokens_i = -1  # Token index (minus one)
+
         return True
 
 
@@ -1569,24 +1571,18 @@ class Kconfig(object):
 
         return sym
 
-    def _tokenize(self):
-        # Parses Kconfig._line, putting the tokens in Kconfig._tokens.
-        # Registers any new symbols encountered with _lookup(_const)_sym().
+    def _tokenize(self, s):
+        # Parses 's', returning a None-terminated list of tokens. Registers any
+        # new symbols encountered with _lookup(_const)_sym().
         #
         # Tries to be reasonably speedy by processing chunks of text via
         # regexes and string operations where possible. This is the biggest
         # hotspot during parsing.
 
-        s = self._line
-
-        # Token index (minus one). Set for later -- not further updated here.
-        self._tokens_i = -1
-
         # Initial token on the line
         command_match = _command_re_match(s)
         if not command_match:
-            self._tokens = (None,)
-            return
+            return (None,)
 
         # Tricky implementation detail: While parsing a token, 'token' refers
         # to the previous token. See _STRING_LEX for why this is needed.
@@ -1594,7 +1590,7 @@ class Kconfig(object):
         if not token:
             self._parse_error("expected keyword as first token")
 
-        self._tokens = [token]
+        tokens = [token]
         # The current index in the string being tokenized
         i = command_match.end()
 
@@ -1699,7 +1695,7 @@ class Kconfig(object):
                     # refer to a constant symbol named "FOO".
                     token = val \
                             if token in _STRING_LEX or \
-                                self._tokens[0] == _T_OPTION else \
+                                tokens[0] == _T_OPTION else \
                             self._lookup_const_sym(val)
 
                 elif c == "&":
@@ -1758,11 +1754,13 @@ class Kconfig(object):
                 while i < len(s) and s[i].isspace():
                     i += 1
 
-            self._tokens.append(token)
+            tokens.append(token)
 
-        # None-terminating token streams makes the token fetching functions
+        # None-terminating the token list makes the token fetching functions
         # simpler/faster
-        self._tokens.append(None)
+        tokens.append(None)
+
+        return tokens
 
     def _next_token(self):
         self._tokens_i += 1

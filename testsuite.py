@@ -190,15 +190,15 @@ def run_selftests():
     # Dummy empty configuration just to get a Kconfig object
     c = Kconfig("Kconfiglib/tests/empty")
 
-    def verify_string_lex(s, res):
+    def verify_string_lex(s, expected):
         """
         Verifies that a constant symbol with the name 'res' is produced from
         lexing 's'
         """
-        c.eval_string(s)
-        verify(c._tokens[0].name == res,
+        res = c._tokenize("if " + s)[1].name
+        verify(res == expected,
                "expected <{}> to produced the constant symbol <{}>, "
-               'produced <{}>'.format(s[1:-1], c._tokens[0].name, res))
+               'produced <{}>'.format(s[1:-1], expected, res))
 
     verify_string_lex(r""" "" """, "")
     verify_string_lex(r""" '' """, "")
@@ -1046,9 +1046,9 @@ g
 
     def verify_split(to_split, op, operand_strs):
         # The same hackage as in Kconfig.eval_string()
-        c._line = "if " + to_split
-        c._tokenize()
-        del c._tokens[0]
+        c._tokens = c._tokenize("if " + to_split)[1:]
+        c._tokens_i = -1
+
         operands = split_expr(c._parse_expr(False), op)
 
         verify(len(operands) == len(operand_strs),
