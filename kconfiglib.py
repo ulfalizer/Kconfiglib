@@ -2257,13 +2257,13 @@ class Kconfig(object):
         # a symbol, but additional prompts can be added by defining the symbol
         # multiple times
         if node.prompt:
-            self._warn("{} defined with multiple prompts in single location"
-                       .format(_name_and_loc(node.item)))
+            self._warn(_name_and_loc(node.item) +
+                       " defined with multiple prompts in single location")
 
         prompt = self._expect_str()
         if prompt != prompt.strip():
-            self._warn("{} has leading or trailing whitespace in its prompt"
-                       .format(_name_and_loc(node.item)))
+            self._warn(_name_and_loc(node.item) +
+                       " has leading or trailing whitespace in its prompt")
 
             # This avoid issues for e.g. reStructuredText documentation, where
             # '*prompt *' is invalid
@@ -2275,9 +2275,9 @@ class Kconfig(object):
         # Find first non-blank (not all-space) line and get its indentation
 
         if node.help is not None:
-            self._warn("{} defined with more than one help text -- only the "
-                       "last one will be used"
-                       .format(_name_and_loc(node.item)))
+            self._warn(_name_and_loc(node.item) +
+                       " defined with more than one help text -- only the "
+                       "last one will be used")
 
         # Small optimization. This code is pretty hot.
         readline = self._file.readline
@@ -2289,8 +2289,8 @@ class Kconfig(object):
                 break
 
         if not line:
-            self._warn("{} has 'help' but empty help text"
-                       .format(_name_and_loc(node.item)))
+            self._warn(_name_and_loc(node.item) +
+                       " has 'help' but empty help text")
 
             node.help = ""
             return
@@ -2299,8 +2299,8 @@ class Kconfig(object):
         if indent == 0:
             # If the first non-empty lines has zero indent, there is no help
             # text
-            self._warn("{} has 'help' but empty help text"
-                       .format(_name_and_loc(node.item)))
+            self._warn(_name_and_loc(node.item) +
+                       " has 'help' but empty help text")
 
             node.help = ""
             self._saved_line = line  # "Unget" the line
@@ -5142,8 +5142,8 @@ def _check_choice_sanity(choice):
         if node.prompt:
             break
     else:
-        choice.kconfig._warn("{} defined without a prompt"
-                             .format(_name_and_loc(choice)))
+        choice.kconfig._warn(_name_and_loc(choice) +
+                             " defined without a prompt")
 
     for default, _ in choice.defaults:
         if not isinstance(default, Symbol):
