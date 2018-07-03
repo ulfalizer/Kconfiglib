@@ -12,12 +12,6 @@
 # Some additional options can be turned on by passing them as arguments. They
 # default to off.
 #
-#  - speedy:
-#    Run scripts/kconfig/conf directly instead of using 'make' targets. Makes
-#    things a lot faster, but could break if Kconfig files start referencing
-#    additional environment variables beyond ARCH, SRCARCH, and KERNELVERSION.
-#    Safe as of Linux 4.14-rc3.
-#
 #  - obsessive:
 #    By default, only valid arch/defconfig pairs are tested. In obsessive mode,
 #    every arch will be tested with every defconfig. Increases the testing time
@@ -31,10 +25,10 @@
 #    Log timestamped defconfig test failures to the file test_defconfig_fails.
 #    Handy in obsessive mode.
 #
-# For example, this commands runs the test suite in speedy mode with logging
+# For example, this commands runs the test suite in obsessive mode with logging
 # enabled:
 #
-#   $ python(3) Kconfiglib/testsuite.py speedy log
+#   $ python(3) Kconfiglib/testsuite.py obsessive log
 #
 # pypy works too, and runs most tests much faster than CPython.
 #
@@ -79,30 +73,18 @@ def verify_equal(x, y):
     if x != y:
         fail("'{}' does not equal '{}'".format(x, y))
 
-# Referenced inside the kernel Kconfig files.
-#
-# The str() makes the type of the value 'str' on both Python 2 and Python 3,
-# which is nice for some later dictionary key sanity checks.
-os.environ["KERNELVERSION"] = str(
-    subprocess.check_output(("make", "kernelversion")).decode("utf-8").rstrip()
-)
-
 # Prevent accidental loading of configuration files by removing
 # KCONFIG_ALLCONFIG from the environment
 os.environ.pop("KCONFIG_ALLCONFIG", None)
 
-speedy = False
 obsessive = False
 obsessive_min_config = False
 log = False
 
 def run_tests():
-    global speedy, obsessive, log
+    global obsessive, log
     for s in sys.argv[1:]:
-        if s == "speedy":
-            speedy = True
-            print("Speedy mode enabled")
-        elif s == "obsessive":
+        if s == "obsessive":
             obsessive = True
             print("Obsessive mode enabled")
         elif s == "obsessive-min-config":
@@ -825,7 +807,7 @@ comment "advanced comment"
     print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Linux Kernel Configuration", srctree not set, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
+<configuration with 14 symbols, main menu prompt "Main menu", srctree not set, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
 """)
 
     os.environ["srctree"] = "srctree value"
@@ -838,7 +820,7 @@ comment "advanced comment"
     c.enable_undef_warnings()
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Linux Kernel Configuration", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
+<configuration with 14 symbols, main menu prompt "Main menu", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
 """)
 
     os.environ.pop("srctree", None)
@@ -1474,7 +1456,7 @@ g
     print("Testing mainmenu_text")
 
     c = Kconfig("Kconfiglib/tests/empty")
-    verify(c.mainmenu_text == "Linux Kernel Configuration",
+    verify(c.mainmenu_text == "Main menu",
            "An empty Kconfig should get a default main menu prompt")
 
     # Expanded in the mainmenu text
@@ -2012,6 +1994,111 @@ g
             fail("dependency loop in {} not detected".format(filename))
 
 
+    print("Testing preprocessor")
+
+    os.environ["ENV_VAR"] = "env"
+    # We verify warnings manually
+    c = Kconfig("Kconfiglib/tests/Kpreprocess", warn_to_stderr=False)
+
+    def verify_variable(name, unexp_value, exp_value, recursive):
+        var = c.variables[name]
+
+        verify(var.value == unexp_value,
+               "expected variable '{}' to have the unexpanded value '{}', had "
+               "the value '{}'".format(name, unexp_value, var.value))
+
+        verify(var.expanded_value == exp_value,
+               "expected variable '{}' to have the expanded value '{}', had "
+               "the value '{}'".format(name, exp_value, var.expanded_value))
+
+        verify(var.is_recursive == recursive,
+               "{} was {}, shouldn't be"
+               .format(name, "recursive" if var.is_recursive else "simple"))
+
+    verify_variable("simple-recursive", "foo", "foo", True)
+    verify_variable("simple-immediate", "bar", "bar", False)
+    verify_variable("simple-recursive-2", "baz", "baz", True)
+
+    verify_variable("whitespaced", "foo", "foo", True)
+
+    verify_variable("preserve-recursive", "foo bar", "foo bar", True)
+    verify_variable("preserve-immediate", "foo bar", "foo bar", False)
+
+    verify_variable("recursive",
+                    "$(foo) $(bar) $($(b-char)a$(z-char)) $(indir)",
+                    "abc def ghi jkl mno",
+                    True)
+
+    verify_variable("immediate", "foofoo", "foofoo", False)
+
+    verify_variable("messy-fn-res",
+                    "$($(fn-indir)-unused-arg, a  b , c  d )",
+                    'surround-rev-quote " c  d " " a  b " surround-rev-quote ',
+                    True)
+
+    verify_variable("special-chars-fn-res",
+                    "$(fn,$(comma)$(dollar)$(left-paren)foo$(right-paren))",
+                    '",$(foo)"',
+                    True)
+
+    verify_str(c.syms["PRINT_ME"], r"""
+config PRINT_ME
+	string
+	prompt "env" if (FOO && BAR) || !BAZ || !QAZ
+	default "\"foo\"" if "foo \"bar\" baz" = ""
+""")
+
+    def verify_recursive(name):
+        try:
+            c.variables[name].expanded_value
+        except KconfigError:
+            pass
+        else:
+            fail("Expected '{}' expansion to flag recursive expansion, didn't"
+                 .format(name))
+
+    verify_recursive("rec-1")
+    # Indirectly verifies that it's not recursive
+    verify_variable("safe-fn-rec-res",
+                    "$(safe-fn-rec,safe-fn-rec-2)",
+                    "foo",
+                    True)
+    verify_recursive("unsafe-fn-rec")
+
+    verify_variable("foo-bar-baz", "$(rhs)", "value", True)
+
+    verify_variable("space-var-res", "$(foo bar)", "value", True)
+
+    verify_variable("shell-res",
+                    "$(shell,false && echo foo bar || echo baz qaz)",
+                    "baz qaz",
+                    True)
+
+    verify_variable("shell-stderr-res", "", "", False)
+
+    verify_variable("location-res",
+                    "Kconfiglib/tests/Kpreprocess:119",
+                    "Kconfiglib/tests/Kpreprocess:119",
+                    False)
+
+    verify_variable("warning-res", "", "", False)
+    verify_variable("error-n-res", "", "", False)
+
+    try:
+        c.variables["error-y-res"].expanded_value
+    except KconfigError:
+        pass
+    else:
+        fail("expanding error-y-res didn't raise an exception")
+
+    # Check that the expected warnings were generated
+    verify_equal(c.warnings, [
+        "Kconfiglib/tests/Kpreprocess:116: warning: 'echo message on stderr >&2' wrote to stderr: message on stderr",
+        "Kconfiglib/tests/Kpreprocess:124: warning: a warning"
+    ])
+
+
+
     print("\nAll selftests passed\n" if all_passed else
           "\nSome selftests failed\n")
 
@@ -2020,14 +2107,31 @@ def run_compatibility_tests():
     Runs tests on configurations from the kernel. Tests compability with the
     C implementation by comparing outputs.
     """
-    os.environ.pop("ARCH", None)
-    os.environ.pop("SRCARCH", None)
-    os.environ.pop("srctree", None)
 
-    if speedy and not os.path.exists("scripts/kconfig/conf"):
+    # Referenced inside the kernel Kconfig files.
+    #
+    # The str() makes the type of the value 'str' on both Python 2 and Python 3,
+    # which is nice for some later dictionary key sanity checks.
+
+    os.environ["KERNELVERSION"] = str(
+        subprocess.check_output("make kernelversion", shell=True)
+            .decode("utf-8").rstrip()
+    )
+
+    os.environ["CC_VERSION_TEXT"] = str(
+        subprocess.check_output("gcc --version | head -n1", shell=True)
+            .decode("utf-8").rstrip()
+    )
+
+    os.environ["srctree"] = "."
+    os.environ["CC"] = "gcc"
+
+
+    if not os.path.exists("scripts/kconfig/conf"):
         print("\nscripts/kconfig/conf does not exist -- running "
               "'make allnoconfig' to build it...")
         shell("make allnoconfig")
+
 
     print("Running compatibility tests...\n")
 
@@ -2047,20 +2151,27 @@ def run_compatibility_tests():
         # function
         print(textwrap.dedent(test_fn.__doc__))
 
-        # Previously we used to load all the arches once and keep them around
-        # for the tests. That now uses a lot of memory (pypy helps a bit), so
-        # reload them for each test instead.
-        for kconf, arch, srcarch in all_arch_srcarch_kconfigs():
+        for arch, srcarch in all_arch_srcarch():
+            # Referenced inside the Kconfig files
+            os.environ["ARCH"] = arch
+            os.environ["SRCARCH"] = srcarch
+
             rm_configs()
-            test_fn(kconf, arch, srcarch)
+
+            test_fn(arch, srcarch)
 
     if all_passed:
         print("All selftests and compatibility tests passed")
     else:
         sys.exit("Some tests failed")
 
-def all_arch_srcarch_pairs():
+def all_arch_srcarch():
     for srcarch in os.listdir("arch"):
+        # These are currently broken with the C tools on linux-next as well.
+        # Perhaps they require cross-compilers to be installed.
+        if srcarch in ("arc", "h8300"):
+            continue
+
         if os.path.exists(os.path.join("arch", srcarch, "Kconfig")):
             yield (srcarch, srcarch)
 
@@ -2075,81 +2186,59 @@ def all_arch_srcarch_pairs():
 
     yield ("sh64", "sh")
 
-def all_arch_srcarch_kconfigs():
-    for arch, srcarch in all_arch_srcarch_pairs():
-        os.environ["ARCH"] = arch
-        os.environ["SRCARCH"] = srcarch
-        yield (Kconfig(), arch, srcarch)
-
-def test_allnoconfig(conf, arch, srcarch):
+def test_allnoconfig(arch, srcarch):
     """
     Verify that allnoconfig.py generates the same .config as
     'make allnoconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    'make scriptconfig'.
     """
-    # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/allnoconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
-    if speedy:
-        shell("scripts/kconfig/conf --allnoconfig Kconfig")
-    else:
-        shell("make allnoconfig")
+    shell("scripts/kconfig/conf --allnoconfig Kconfig")
 
     compare_configs(arch)
 
-def test_allnoconfig_walk(conf, arch, srcarch):
+def test_allnoconfig_walk(arch, srcarch):
     """
     Verify that examples/allnoconfig_walk.py generates the same .config as
-    'make allnoconfig', for each architecture. Runs the script via 'make
-    scriptconfig', so kinda slow even in speedy mode.
+    'make allnoconfig', for each architecture. Runs the script via
+    'make scriptconfig'.
     """
-    # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_walk.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
-    if speedy:
-        shell("scripts/kconfig/conf --allnoconfig Kconfig")
-    else:
-        shell("make allnoconfig")
+    shell("scripts/kconfig/conf --allnoconfig Kconfig")
 
     compare_configs(arch)
 
-def test_allmodconfig(conf, arch, srcarch):
+def test_allmodconfig(arch, srcarch):
     """
     Verify that allmodconfig.py generates the same .config as
     'make allmodconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    'make scriptconfig'.
     """
-    # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/allmodconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
-    if speedy:
-        shell("scripts/kconfig/conf --allmodconfig Kconfig")
-    else:
-        shell("make allmodconfig")
+    shell("scripts/kconfig/conf --allmodconfig Kconfig")
 
     compare_configs(arch)
 
-def test_allyesconfig(conf, arch, srcarch):
+def test_allyesconfig(arch, srcarch):
     """
     Verify that allyesconfig.py generates the same .config as
     'make allyesconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    'make scriptconfig'.
     """
-    # TODO: Support speedy mode for running the script
     shell("make scriptconfig SCRIPT=Kconfiglib/allyesconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
-    if speedy:
-        shell("scripts/kconfig/conf --allyesconfig Kconfig")
-    else:
-        shell("make allyesconfig")
+    shell("scripts/kconfig/conf --allyesconfig Kconfig")
 
     compare_configs(arch)
 
-def test_sanity(conf, arch, srcarch):
+def test_sanity(arch, srcarch):
     """
     Do sanity checks on each configuration and call all public methods on all
     symbols, choices, and menu nodes for all architectures to make sure we
@@ -2157,35 +2246,37 @@ def test_sanity(conf, arch, srcarch):
     """
     print("For {}...".format(arch))
 
-    conf.modules
-    conf.defconfig_list
-    conf.defconfig_filename
-    conf.enable_redun_warnings()
-    conf.disable_redun_warnings()
-    conf.enable_undef_warnings()
-    conf.disable_undef_warnings()
-    conf.enable_warnings()
-    conf.disable_warnings()
-    conf.enable_stderr_warnings()
-    conf.disable_stderr_warnings()
-    conf.mainmenu_text
-    conf.unset_values()
+    kconf = Kconfig()
 
-    conf.write_autoconf("/dev/null")
+    kconf.modules
+    kconf.defconfig_list
+    kconf.defconfig_filename
+    kconf.enable_redun_warnings()
+    kconf.disable_redun_warnings()
+    kconf.enable_undef_warnings()
+    kconf.disable_undef_warnings()
+    kconf.enable_warnings()
+    kconf.disable_warnings()
+    kconf.enable_stderr_warnings()
+    kconf.disable_stderr_warnings()
+    kconf.mainmenu_text
+    kconf.unset_values()
+
+    kconf.write_autoconf("/dev/null")
 
     # No tempfile.TemporaryDirectory in Python 2
     tmpdir = tempfile.mkdtemp()
-    conf.sync_deps(os.path.join(tmpdir, "deps"))  # Create
-    conf.sync_deps(os.path.join(tmpdir, "deps"))  # Update
+    kconf.sync_deps(os.path.join(tmpdir, "deps"))  # Create
+    kconf.sync_deps(os.path.join(tmpdir, "deps"))  # Update
     shutil.rmtree(tmpdir)
 
     # Python 2/3 compatible
-    for key, sym in conf.syms.items():
+    for key, sym in kconf.syms.items():
         verify(isinstance(key, str), "weird key '{}' in syms dict".format(key))
 
         verify(not sym.is_constant, sym.name + " in 'syms' and constant")
 
-        verify(sym not in conf.const_syms,
+        verify(sym not in kconf.const_syms,
                sym.name + " in both 'syms' and 'const_syms'")
 
         for dep in sym._dependents:
@@ -2196,18 +2287,18 @@ def test_sanity(conf, arch, srcarch):
         sym.__repr__()
         sym.__str__()
         sym.assignable
-        conf.disable_warnings()
+        kconf.disable_warnings()
         sym.set_value(2)
         sym.set_value("foo")
         sym.unset_value()
-        conf.enable_warnings()
+        kconf.enable_warnings()
         sym.str_value
         sym.tri_value
         sym.type
         sym.user_value
         sym.visibility
 
-    for sym in conf.defined_syms:
+    for sym in kconf.defined_syms:
        verify(sym.nodes, sym.name + " is defined but lacks menu nodes")
 
        verify(not (sym.orig_type not in (BOOL, TRISTATE) and sym.choice),
@@ -2217,7 +2308,7 @@ def test_sanity(conf, arch, srcarch):
               "{} has broken dependency loop detection (_checked = {})"
               .format(sym.name, sym._checked))
 
-    for key, sym in conf.const_syms.items():
+    for key, sym in kconf.const_syms.items():
         verify(isinstance(key, str),
                "weird key '{}' in const_syms dict".format(key))
 
@@ -2238,17 +2329,17 @@ def test_sanity(conf, arch, srcarch):
         sym.__repr__()
         sym.__str__()
         sym.assignable
-        conf.disable_warnings()
+        kconf.disable_warnings()
         sym.set_value(2)
         sym.set_value("foo")
         sym.unset_value()
-        conf.enable_warnings()
+        kconf.enable_warnings()
         sym.str_value
         sym.tri_value
         sym.type
         sym.visibility
 
-    for choice in conf.choices:
+    for choice in kconf.choices:
         for sym in choice.syms:
             verify(sym.choice is choice,
                    "{0} is in choice.syms but 'sym.choice' is not the choice"
@@ -2270,7 +2361,7 @@ def test_sanity(conf, arch, srcarch):
 
     # Menu nodes
 
-    node = conf.top_node
+    node = kconf.top_node
 
     while 1:
         # Everything else should be well exercised elsewhere
@@ -2295,23 +2386,20 @@ def test_sanity(conf, arch, srcarch):
             else:
                 break
 
-def test_alldefconfig(conf, arch, srcarch):
+def test_alldefconfig(arch, srcarch):
     """
     Verify that alldefconfig.py generates the same .config as
     'make alldefconfig', for each architecture. Runs the script via
-    'make scriptconfig', so kinda slow even in speedy mode.
+    'make scriptconfig'.
     """
     shell("make scriptconfig SCRIPT=Kconfiglib/alldefconfig.py "
           "PYTHONCMD='{}'".format(sys.executable))
     shell("mv .config ._config")
-    if speedy:
-        shell("scripts/kconfig/conf --alldefconfig Kconfig")
-    else:
-        shell("make alldefconfig")
+    shell("scripts/kconfig/conf --alldefconfig Kconfig")
 
     compare_configs(arch)
 
-def test_defconfig(conf, arch, srcarch):
+def test_defconfig(arch, srcarch):
     """
     Verify that Kconfiglib generates the same .config as scripts/kconfig/conf,
     for each architecture/defconfig pair. In obsessive mode, this test includes
@@ -2322,6 +2410,8 @@ def test_defconfig(conf, arch, srcarch):
     With logging enabled, this test appends any failures to a file
     test_defconfig_fails in the root.
     """
+    kconf = Kconfig()
+
     if obsessive:
         defconfigs = []
 
@@ -2337,20 +2427,10 @@ def test_defconfig(conf, arch, srcarch):
     for defconfig in defconfigs:
         rm_configs()
 
-        conf.load_config(defconfig)
-        conf.write_config("._config")
-        if speedy:
-            shell("scripts/kconfig/conf --defconfig='{}' Kconfig".
-                  format(defconfig))
-        else:
-            shell("cp {} .config".format(defconfig))
-            # It would be a bit neater if we could use 'make *_defconfig'
-            # here (for example, 'make i386_defconfig' loads
-            # arch/x86/configs/i386_defconfig' if ARCH = x86/i386/x86_64),
-            # but that wouldn't let us test nonsensical combinations of
-            # arches and defconfigs, which is a nice way to find obscure
-            # bugs.
-            shell("make kconfiglibtestconfig")
+        kconf.load_config(defconfig)
+        kconf.write_config("._config")
+        shell("scripts/kconfig/conf --defconfig='{}' Kconfig".
+              format(defconfig))
 
         arch_defconfig_str = "  {:14}with {:60} ".format(arch, defconfig)
 
@@ -2364,11 +2444,13 @@ def test_defconfig(conf, arch, srcarch):
                     fail_log.write("{} with {} did not match\n"
                                    .format(arch, defconfig))
 
-def test_min_config(conf, arch, srcarch):
+def test_min_config(arch, srcarch):
     """
     Verify that Kconfiglib generates the same .config as 'make savedefconfig'
     for each architecture/defconfig pair.
     """
+    kconf = Kconfig()
+
     if obsessive_min_config:
         defconfigs = []
         for srcarch_ in os.listdir("arch"):
@@ -2377,16 +2459,12 @@ def test_min_config(conf, arch, srcarch):
         defconfigs = defconfig_files(srcarch)
 
     for defconfig in defconfigs:
-        conf.load_config(defconfig)
-        conf.write_min_config("._config")
+        kconf.load_config(defconfig)
+        kconf.write_min_config("._config")
 
         shell("cp {} .config".format(defconfig))
 
-        if speedy:
-            shell("scripts/kconfig/conf --savedefconfig=.config Kconfig")
-        else:
-            shell("make savedefconfig")
-            shell("mv defconfig .config")
+        shell("scripts/kconfig/conf --savedefconfig=.config Kconfig")
 
         arch_defconfig_str = "  {:14}with {:60} ".format(arch, defconfig)
 

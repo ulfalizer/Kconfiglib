@@ -23,7 +23,7 @@ test_script() {
 for py in python2 python3; do
     echo -e "\n================= Test suite with $py =================\n"
 
-    if ! $py Kconfiglib/testsuite.py speedy; then
+    if ! $py Kconfiglib/testsuite.py; then
         echo "test suite failed for $py"
         exit 1
     fi

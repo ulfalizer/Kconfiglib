@@ -18,6 +18,14 @@ should be relatively easy, if needed.
 The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib
 exclusively, with lots of small helper scripts in other projects.
 
+Kconfiglib implements the recently added `Kconfig preprocessor
+<https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_.
+For backwards compatibility, environment variables can be referenced both as
+``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). Support for the
+old syntax might be removed in the future (the major version would be increased
+at the same time). Using the old syntax with an undefined environment variable
+keeps the string as is.
+
 Installation
 ------------
 
@@ -193,10 +201,14 @@ The following Kconfig extensions are available:
 - Environment variables are expanded directly in e.g. ``source``
   and ``mainmenu`` statements, meaning ``option env`` symbols
   are redundant.
+
+  This is the standard behavior with the new `Kconfig preprocessor
+  <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_,
+  which Kconfiglib implements.
   
-  ``option env`` symbols are still supported for compatibility,
-  with the caveat that they must have the same name as the environment
-  variables they reference. A warning is printed if the names differ.
+  ``option env`` symbols are supported for backwards compatibility, with the
+  caveat that they must have the same name as the environment variables they
+  reference. A warning is printed if the names differ.
 
 Other features
 --------------

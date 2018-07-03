@@ -79,14 +79,16 @@ Using Kconfiglib without the Makefile targets
 =============================================
 
 The make targets are only needed for a trivial reason: The Kbuild makefiles
-export environment variables which are referenced inside the Kconfig files
-(via e.g. 'source "arch/$SRCARCH/Kconfig").
+export environment variables which are referenced inside the Kconfig files and
+in scripts run from the Kconfig files (via e.g. 'source
+"arch/$(SRCARCH)/Kconfig" and '$(shell,...)').
 
-In practice, the only variables referenced (as of writing, and for many years)
-are ARCH, SRCARCH, and KERNELVERSION. To run Kconfiglib without the Makefile
-patch, do this:
+The environment variables referenced as of writing (Linux 4.2.18-rc4) are
+srctree, ARCH, SRCARCH, CC, and KERNELVERSION.
 
-  $ ARCH=x86 SRCARCH=x86 KERNELVERSION=`make kernelversion` python
+To run Kconfiglib without the Makefile patch, you can do this:
+
+  $ srctree=. ARCH=x86 SRCARCH=x86 CC=gcc KERNELVERSION=`make kernelversion` python(3)
   >>> import kconfiglib
   >>> kconf = kconfiglib.Kconfig()  # filename defaults to "Kconfig"
 
@@ -200,8 +202,8 @@ Intro to the menu tree
 The menu structure, as seen in e.g. menuconfig, is represented by a tree of
 MenuNode objects. The top node of the configuration corresponds to an implicit
 top-level menu, the title of which is shown at the top in the standard
-menuconfig interface. (The title with variables expanded is available in
-Kconfig.mainmenu_text in Kconfiglib.)
+menuconfig interface. (The title is also available in Kconfig.mainmenu_text in
+Kconfiglib.)
 
 The top node is found in Kconfig.top_node. From there, you can visit child menu
 nodes by following the 'list' pointer, and any following menu nodes by
@@ -371,6 +373,7 @@ import glob
 import os
 import platform
 import re
+import subprocess
 import sys
 import textwrap
 
@@ -457,9 +460,6 @@ class Kconfig(object):
       not found and $srctree was set when the Kconfig was created,
       $srctree/foo/defconfig is looked up as well.
 
-      References to Kconfig symbols ("$FOO") in the 'default' properties of the
-      defconfig_filename symbol are are expanded before the file is looked up.
-
       'defconfig_filename' is None if either no defconfig_list symbol exists,
       or if the defconfig_list symbol has no 'default' with a satisfied
       condition that specifies a file that exists.
@@ -474,10 +474,12 @@ class Kconfig(object):
       Acts as the root of the menu tree.
 
     mainmenu_text:
-      The prompt (title) of the top_node menu, with Kconfig variable references
-      ("$FOO") expanded. Defaults to "Linux Kernel Configuration" (like in the
-      C tools). Can be changed with the 'mainmenu' statement (see
-      kconfig-language.txt).
+      The prompt (title) of the top menu (top_node). Defaults to "Main menu".
+      Can be changed with the 'mainmenu' statement (see kconfig-language.txt).
+
+    variables:
+      A dictionary with all preprocessor variables, indexed by name. See the
+      Variable class.
 
     warnings:
       A list of strings containing all warnings that have been generated. This
@@ -514,8 +516,9 @@ class Kconfig(object):
     """
     __slots__ = (
         "_encoding",
-        "_set_re_match",
-        "_unset_re_match",
+        "_functions",
+        "_set_match",
+        "_unset_match",
         "_warn_for_no_prompt",
         "_warn_for_redun_assign",
         "_warn_for_undef_assign",
@@ -528,6 +531,7 @@ class Kconfig(object):
         "defconfig_list",
         "defined_syms",
         "m",
+        "mainmenu_text",
         "menus",
         "modules",
         "n",
@@ -535,6 +539,7 @@ class Kconfig(object):
         "srctree",
         "syms",
         "top_node",
+        "variables",
         "warnings",
         "y",
 
@@ -609,20 +614,15 @@ class Kconfig(object):
           Related PEP: https://www.python.org/dev/peps/pep-0538/
         """
         self.srctree = os.environ.get("srctree")
-
         self.config_prefix = os.environ.get("CONFIG_", "CONFIG_")
 
         # Regular expressions for parsing .config files, with the match()
         # method assigned directly as a small optimization (microscopic in this
         # case, but it's consistent with the other regexes)
 
-        self._set_re_match = \
-            re.compile(r"{}([^=]+)=(.*)".format(self.config_prefix),
-                       _RE_ASCII).match
-
-        self._unset_re_match = \
-            re.compile(r"# {}([^ ]+) is not set".format(self.config_prefix),
-                       _RE_ASCII).match
+        self._set_match = _re_match(self.config_prefix + r"([^=]+)=(.*)")
+        self._unset_match = \
+            _re_match(r"# {}([^ ]+) is not set".format(self.config_prefix))
 
 
         self.warnings = []
@@ -665,6 +665,21 @@ class Kconfig(object):
             sym = self.const_syms[nmy]
             sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
 
+
+        # Maps preprocessor variables names to Variable instances
+        self.variables = {}
+
+        # Predefined preprocessor functions, with min/max number of arguments
+        self._functions = {
+            "info":       (_info_fn,       1, 1),
+            "error-if":   (_error_if_fn,   2, 2),
+            "filename":   (_filename_fn,   0, 0),
+            "lineno":     (_lineno_fn,     0, 0),
+            "shell":      (_shell_fn,      1, 1),
+            "warning-if": (_warning_if_fn, 2, 2),
+        }
+
+
         # This is used to determine whether previously unseen symbols should be
         # registered. They shouldn't be if we parse expressions after parsing,
         # as part of Kconfig.eval_string().
@@ -678,7 +693,7 @@ class Kconfig(object):
         self.top_node.item = MENU
         self.top_node.is_menuconfig = True
         self.top_node.visibility = self.y
-        self.top_node.prompt = ("Linux Kernel Configuration", self.y)
+        self.top_node.prompt = ("Main menu", self.y)
         self.top_node.parent = None
         self.top_node.dep = self.y
         self.top_node.filename = filename
@@ -698,9 +713,11 @@ class Kconfig(object):
         self._filename = filename
         self._linenr = 0
 
+        # Open the top-level Kconfig file
         self._file = self._open(filename)
 
         try:
+            # Parse everything
             self._parse_block(None, self.top_node, self.top_node)
         except UnicodeDecodeError as e:
             _decoding_error(e, self._filename)
@@ -735,14 +752,10 @@ class Kconfig(object):
         # awkward during dependency loop detection
         self._add_choice_deps()
 
+
         self._warn_for_no_prompt = True
 
-    @property
-    def mainmenu_text(self):
-        """
-        See the class documentation.
-        """
-        return _expand(self.top_node.prompt[0])
+        self.mainmenu_text = self.top_node.prompt[0]
 
     @property
     def defconfig_filename(self):
@@ -755,7 +768,7 @@ class Kconfig(object):
         for filename, cond in self.defconfig_list.defaults:
             if expr_value(cond):
                 try:
-                    with self._open(_expand(filename.str_value)) as f:
+                    with self._open(filename.str_value) as f:
                         return f.name
                 except IOError:
                     continue
@@ -811,17 +824,17 @@ class Kconfig(object):
                     choice._was_set = False
 
             # Small optimizations
-            set_re_match = self._set_re_match
-            unset_re_match = self._unset_re_match
+            set_match = self._set_match
+            unset_match = self._unset_match
             syms = self.syms
 
             for linenr, line in enumerate(f, 1):
                 # The C tools ignore trailing whitespace
                 line = line.rstrip()
 
-                set_match = set_re_match(line)
-                if set_match:
-                    name, val = set_match.groups()
+                match = set_match(line)
+                if match:
+                    name, val = match.groups()
                     if name not in syms:
                         self._warn_undef_assign_load(name, val, filename,
                                                      linenr)
@@ -866,22 +879,22 @@ class Kconfig(object):
                             sym.choice.set_value(val)
 
                     elif sym.orig_type == STRING:
-                        string_match = _conf_string_re_match(val)
-                        if not string_match:
+                        match = _conf_string_match(val)
+                        if not match:
                             self._warn("malformed string literal in "
                                        "assignment to {}. Assignment ignored."
                                        .format(_name_and_loc(sym)),
                                        filename, linenr)
                             continue
 
-                        val = unescape(string_match.group(1))
+                        val = unescape(match.group(1))
 
                 else:
-                    unset_match = unset_re_match(line)
-                    if not unset_match:
+                    match = unset_match(line)
+                    if not match:
                         # Print a warning for lines that match neither
-                        # set_re_match() nor unset_re_match() and that are not
-                        # blank lines or comments. 'line' has already been
+                        # set_match() nor unset_match() and that are not blank
+                        # lines or comments. 'line' has already been
                         # rstrip()'d, so blank lines show up as "" here.
                         if line and not line.lstrip().startswith("#"):
                             self._warn("ignoring malformed line '{}'"
@@ -890,7 +903,7 @@ class Kconfig(object):
 
                         continue
 
-                    name = unset_match.group(1)
+                    name = match.group(1)
                     if name not in syms:
                         self._warn_undef_assign_load(name, "n", filename,
                                                      linenr)
@@ -1273,21 +1286,21 @@ class Kconfig(object):
 
         with self._open_enc("auto.conf", _UNIVERSAL_NEWLINES_MODE) as f:
             for line in f:
-                set_match = self._set_re_match(line)
-                if not set_match:
+                match = self._set_match(line)
+                if not match:
                     # We only expect CONFIG_FOO=... (and possibly a header
                     # comment) in auto.conf
                     continue
 
-                name, val = set_match.groups()
+                name, val = match.groups()
                 if name in self.syms:
                     sym = self.syms[name]
 
                     if sym.orig_type == STRING:
-                        string_match = _conf_string_re_match(val)
-                        if not string_match:
+                        match = _conf_string_match(val)
+                        if not match:
                             continue
-                        val = unescape(string_match.group(1))
+                        val = unescape(match.group(1))
 
                     self.syms[name]._old_val = val
 
@@ -1480,14 +1493,11 @@ class Kconfig(object):
             # Extend the error message a bit in this case
             raise IOError(textwrap.fill(
                 "{}:{}: {} Also note that Kconfiglib expands references to "
-                "environment variables directly (via os.path.expandvars()), "
+                "environment variables directly, "
                 "meaning you do not need \"bounce\" symbols with "
                 "'option env=\"FOO\"'. For compatibility with the C tools, "
                 "name the bounce symbols the same as the environment variable "
-                "they reference (like the Linux kernel does). This change is "
-                "likely to soon appear in the C tools as well, and simplifies "
-                "the parsing implementation (symbols no longer need to be "
-                "evaluated during parsing)."
+                "they reference (like the Linux kernel does)."
                 .format(self._filename, self._linenr, e),
                 80))
 
@@ -1580,36 +1590,41 @@ class Kconfig(object):
         # hotspot during parsing.
 
         # Initial token on the line
-        command_match = _command_re_match(s)
-        if not command_match:
-            return (None,)
+        match = _command_match(s)
+        if not match:
+            if s.isspace() or s.lstrip().startswith("#"):
+                return (None,)
+            self._parse_error("unknown token at start of line")
 
         # Tricky implementation detail: While parsing a token, 'token' refers
         # to the previous token. See _STRING_LEX for why this is needed.
-        token = _get_keyword(command_match.group(1))
+        token = _get_keyword(match.group(1))
         if not token:
-            self._parse_error("expected keyword as first token")
+            # If the first token is not a keyword, we have a preprocessor
+            # variable assignment (or a bare macro on a line)
+            self._parse_assignment(s)
+            return (None,)
 
         tokens = [token]
         # The current index in the string being tokenized
-        i = command_match.end()
+        i = match.end()
 
         # Main tokenization loop (for tokens past the first one)
         while i < len(s):
             # Test for an identifier/keyword first. This is the most common
             # case.
-            id_keyword_match = _id_keyword_re_match(s, i)
-            if id_keyword_match:
+            match = _id_keyword_match(s, i)
+            if match:
                 # We have an identifier or keyword
 
                 # Jump past it
-                i = id_keyword_match.end()
+                i = match.end()
 
                 # Check what it is. lookup_sym() will take care of allocating
                 # new symbols for us the first time we see them. Note that
                 # 'token' still refers to the previous token.
 
-                name = id_keyword_match.group(1)
+                name = match.group(1)
                 keyword = _get_keyword(name)
                 if keyword:
                     # It's a keyword
@@ -1636,59 +1651,28 @@ class Kconfig(object):
                     token = name
 
             else:
-                # Not keyword/non-const symbol
+                # Neither a keyword nor a non-const symbol (except
+                # $()-expansion might still yield a non-const symbol).
 
-                # Note: _id_keyword_match and _initial_token_match strip
-                # trailing whitespace, making it safe to assume s[i] is the
-                # start of a token here. We manually strip trailing whitespace
-                # below as well.
-                #
-                # An old version stripped whitespace in this spot instead, but
-                # that leads to some redundancy and would cause
-                # _id_keyword_match to be tried against just "\n" fairly often
-                # (because file.readlines() keeps newlines).
-
+                # We always strip whitespace after tokens, so it is safe to
+                # assume that s[i] is the start of a token here.
                 c = s[i]
-                i += 1
 
                 if c in "\"'":
-                    # String literal/constant symbol
-                    if "\\" not in s:
-                        # Fast path: If the line contains no backslashes, we
-                        # can just find the matching quote.
+                    s, end_i = self._expand_str(s, i, c)
 
-                        end = s.find(c, i)
-                        if end == -1:
-                            self._parse_error("unterminated string")
+                    # os.path.expandvars() and the $UNAME_RELEASE replace() is
+                    # a backwards compatibility hack, which should be
+                    # reasonably safe as expandvars() leaves references to
+                    # undefined env. vars. as is.
+                    #
+                    # The preprocessor functionality changed how environment
+                    # variables are referenced, to $(FOO).
+                    val = os.path.expandvars(
+                        s[i + 1:end_i - 1].replace("$UNAME_RELEASE",
+                                                   platform.uname()[2]))
 
-                        val = s[i:end]
-                        i = end + 1
-                    else:
-                        # Slow path for lines with backslashes (very rare,
-                        # performance irrelevant)
-
-                        quote = c
-                        val = ""
-
-                        while 1:
-                            if i >= len(s):
-                                self._parse_error("unterminated string")
-
-                            c = s[i]
-                            if c == quote:
-                                break
-
-                            if c == "\\":
-                                if i + 1 >= len(s):
-                                    self._parse_error("unterminated string")
-
-                                val += s[i + 1]
-                                i += 2
-                            else:
-                                val += c
-                                i += 1
-
-                        i += 1
+                    i = end_i
 
                     # This is the only place where we don't survive with a
                     # single token of lookback: 'option env="FOO"' does not
@@ -1698,62 +1682,84 @@ class Kconfig(object):
                                 tokens[0] == _T_OPTION else \
                             self._lookup_const_sym(val)
 
-                elif c == "&":
-                    if i >= len(s) or s[i] != "&":
-                        self._parse_error("malformed operator")
-
+                elif s.startswith("&&", i):
                     token = _T_AND
-                    i += 1
+                    i += 2
 
-                elif c == "|":
-                    if i >= len(s) or s[i] != "|":
-                        self._parse_error("malformed operator")
-
+                elif s.startswith("||", i):
                     token = _T_OR
-                    i += 1
-
-                elif c == "!":
-                    if i < len(s) and s[i] == "=":
-                        token = _T_UNEQUAL
-                        i += 1
-                    else:
-                        token = _T_NOT
+                    i += 2
 
                 elif c == "=":
                     token = _T_EQUAL
+                    i += 1
+
+                elif s.startswith("!=", i):
+                    token = _T_UNEQUAL
+                    i += 2
+
+                elif c == "!":
+                    token = _T_NOT
+                    i += 1
 
                 elif c == "(":
                     token = _T_OPEN_PAREN
+                    i += 1
 
                 elif c == ")":
                     token = _T_CLOSE_PAREN
+                    i += 1
+
+                elif c == "$":
+                    s, end_i = self._expand_macro(s, i, ())
+                    val = s[i:end_i]
+                    # isspace() is False for empty strings
+                    if not val.strip():
+                        # Avoid creating a Kconfig symbol with a blank name.
+                        # It's almost guaranteed to be an error.
+                        self._parse_error("macro expanded to blank string")
+                    i = end_i
+
+                    # Compatibility with what the C implementation does. Might
+                    # be unexpected that you can reference non-constant symbols
+                    # this way though...
+                    token = self.const_syms[val] \
+                            if val in ("n", "m", "y") else \
+                            self._lookup_sym(val)
 
                 elif c == "#":
                     break
 
-                # Very rare
-                elif c == "<":
-                    if i < len(s) and s[i] == "=":
-                        token = _T_LESS_EQUAL
-                        i += 1
-                    else:
-                        token = _T_LESS
 
                 # Very rare
+
+                elif s.startswith("<=", i):
+                    token = _T_LESS_EQUAL
+                    i += 2
+
+                elif c == "<":
+                    token = _T_LESS
+                    i += 1
+
+                elif s.startswith(">=", i):
+                    token = _T_GREATER_EQUAL
+                    i += 2
+
                 elif c == ">":
-                    if i < len(s) and s[i] == "=":
-                        token = _T_GREATER_EQUAL
-                        i += 1
-                    else:
-                        token = _T_GREATER
+                    token = _T_GREATER
+                    i += 1
+
 
                 else:
-                    self._parse_error("invalid character in line")
+                    self._parse_error("unknown tokens in line")
+
 
                 # Skip trailing whitespace
                 while i < len(s) and s[i].isspace():
                     i += 1
 
+
+            # Add the token
             tokens.append(token)
 
         # None-terminating the token list makes the token fetching functions
@@ -1826,7 +1832,6 @@ class Kconfig(object):
 
         return token
 
-
     def _check_token(self, token):
         # If the next token is 'token', removes it and returns True
 
@@ -1834,6 +1839,223 @@ class Kconfig(object):
             self._tokens_i += 1
             return True
         return False
+
+
+    #
+    # Preprocessor logic
+    #
+
+    def _parse_assignment(self, s):
+        # Parses a preprocessor variable assignment, registering the variable
+        # if it doesn't already exist. Also takes care of bare macros on lines
+        # (which are allowed, and can be useful for their side effects).
+
+        # Expand any macros in the left-hand side of the assignment (the
+        # variable name)
+        s = s.lstrip()
+        i = 0
+        while 1:
+            i = _assignment_lhs_fragment_match(s, i).end()
+            if s.startswith("$(", i):
+                s, i = self._expand_macro(s, i, ())
+            else:
+                break
+
+        if s.isspace():
+            # We also accept a bare macro on a line (e.g.
+            # $(warning-if,$(foo),ops)), provided it expands to a blank string
+            return
+
+        # Assigned variable
+        name = s[:i]
+
+
+        # Extract assignment operator (=, :=, or +=) and value
+        rhs_match = _assignment_rhs_match(s, i)
+        if not rhs_match:
+            self._parse_error("syntax error")
+
+        op, val = rhs_match.groups()
+
+
+        if name in self.variables:
+            # Already seen variable
+            var = self.variables[name]
+        else:
+            # New variable
+            var = Variable()
+            var.kconfig = self
+            var.name = name
+            var._n_expansions = 0
+            self.variables[name] = var
+
+            # += acts like = on undefined variables (defines a recursive
+            # variable)
+            if op == "+=":
+                op = "="
+
+        if op == "=":
+            var.is_recursive = True
+            var.value = val
+        elif op == ":=":
+            var.is_recursive = False
+            var.value = self._expand_whole(val, ())
+        else:  # op == "+="
+            # += does immediate expansion if the variable was last set
+            # with :=
+            var.value += " " + (val if var.is_recursive else \
+                                self._expand_whole(val, ()))
+
+    def _expand_whole(self, s, args):
+        # Expands preprocessor macros in all of 's'. Used whenever we don't
+        # have to worry about delimiters. See _expand_macro() re. the 'args'
+        # parameter.
+        #
+        # Returns the expanded string.
+
+        i = 0
+        while 1:
+            i = s.find("$(", i)
+            if i == -1:
+                break
+            s, i = self._expand_macro(s, i, args)
+        return s
+
+    def _expand_str(self, s, i, quote):
+        # Expands a quoted string starting at index 'i' in 's'. Handles both
+        # backslash escapes and macro expansion.
+        #
+        # Returns the expanded 's' (including the part before the string) and
+        # the index of the first character after the expanded string in 's'.
+
+        i += 1  # Skip over initial "/'
+        while 1:
+            match = _string_special_search(s, i)
+            if not match:
+                self._parse_error("unterminated string")
+
+
+            if match.group() == quote:
+                # Found the end of the string
+                return (s, match.end())
+
+            elif match.group() == "\\":
+                # Replace '\x' with 'x'. 'i' ends up pointing to the character
+                # after 'x', which allows macros to be canceled with '\$(foo)'.
+                i = match.end()
+                s = s[:match.start()] + s[i:]
+
+            elif match.group() == "$(":
+                # A macro call within the string
+                s, i = self._expand_macro(s, match.start(), ())
+
+            else:
+                # A ' quote within " quotes or vice versa
+                i += 1
+
+    def _expand_macro(self, s, i, args):
+        # Expands a macro starting at index 'i' in 's'. If this macro resulted
+        # from the expansion of another macro, 'args' holds the arguments
+        # passed to that macro.
+        #
+        # Returns the expanded 's' (including the part before the macro) and
+        # the index of the first character after the expanded macro in 's'.
+
+        start = i
+        i += 2  # Skip over "$("
+
+        # Start of current macro argument
+        arg_start = i
+
+        # Arguments of this macro call
+        new_args = []
+
+        while 1:
+            match = _macro_special_search(s, i)
+            if not match:
+                self._parse_error("missing end parenthesis in macro expansion")
+
+
+            if match.group() == ")":
+                # Found the end of the macro
+
+                new_args.append(s[arg_start:match.start()])
+
+                prefix = s[:start]
+
+                # $(1) is replaced by the first argument to the function, etc.,
+                # provided at least that many arguments were passed
+
+                try:
+                    # Does the macro look like an integer, with a corresponding
+                    # argument? If so, expand it to the value of the argument.
+                    prefix += args[int(new_args[0])]
+                except (ValueError, IndexError):
+                    # Regular variables are just functions without arguments,
+                    # and also go through the function value path
+                    prefix += self._fn_val(new_args)
+
+                return (prefix + s[match.end():],
+                        len(prefix))
+
+            elif match.group() == ",":
+                # Found the end of a macro argument
+                new_args.append(s[arg_start:match.start()])
+                arg_start = i = match.end()
+
+            else:  # match.group() == "$("
+                # A nested macro call within the macro
+                s, i = self._expand_macro(s, match.start(), args)
+
+    def _fn_val(self, args):
+        # Returns the result of calling the function args[0] with the arguments
+        # args[1..len(args)-1]. Plain variables are treated as functions
+        # without arguments.
+
+        fn = args[0]
+
+        if fn in self.variables:
+            var = self.variables[fn]
+
+            if len(args) == 1:
+                # Plain variable
+                if var._n_expansions:
+                    self._parse_error("Preprocessor variable {} recursively "
+                                      "references itself".format(var.name))
+            elif var._n_expansions > 100:
+                # Allow functions to call themselves, but guess that functions
+                # that are overly recursive are stuck
+                self._parse_error("Preprocessor function {} seems stuck "
+                                  "in infinite recursion".format(var.name))
+
+            var._n_expansions += 1
+            res = self._expand_whole(self.variables[fn].value, args)
+            var._n_expansions -= 1
+            return res
+
+        if fn in self._functions:
+            # Built-in function
+
+            py_fn, min_arg, max_arg = self._functions[fn]
+
+            if not min_arg <= len(args) - 1 <= max_arg:
+                if min_arg == max_arg:
+                    expected_args = min_arg
+                else:
+                    expected_args = "{}-{}".format(min_arg, max_arg)
+
+                raise KconfigError("{}:{}: bad number of arguments in call "
+                                   "to {}, expected {}, got {}"
+                                   .format(self._filename, self._linenr, fn,
+                                           expected_args, len(args) - 1))
+
+            return py_fn(self, args)
+
+        # Environment variables are tried last
+        if fn in os.environ:
+            return os.environ[fn]
+
+        return ""
 
 
     #
@@ -1927,20 +2149,20 @@ class Kconfig(object):
                 prev.next = prev = node
 
             elif t0 == _T_SOURCE:
-                self._enter_file(_expand(self._expect_str_and_eol()))
+                self._enter_file(self._expect_str_and_eol())
                 prev = self._parse_block(None, parent, prev)
                 self._leave_file()
 
             elif t0 == _T_RSOURCE:
                 self._enter_file(os.path.join(
                     os.path.dirname(self._filename),
-                    _expand(self._expect_str_and_eol())
+                    self._expect_str_and_eol()
                 ))
                 prev = self._parse_block(None, parent, prev)
                 self._leave_file()
 
             elif t0 in (_T_GSOURCE, _T_GRSOURCE):
-                pattern = _expand(self._expect_str_and_eol())
+                pattern = self._expect_str_and_eol()
                 if t0 == _T_GRSOURCE:
                     # Relative gsource
                     pattern = os.path.join(os.path.dirname(self._filename),
@@ -2691,7 +2913,7 @@ class Kconfig(object):
             loc = "{}:{}: ".format(self._filename, self._linenr)
 
         raise KconfigError(
-            "{}Couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
+            "{}couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
 
     def _open_enc(self, filename, mode):
         # open() wrapper for forcing the encoding on Python 3. Forcing the
@@ -4423,6 +4645,41 @@ class MenuNode(object):
 
         return "\n".join(lines) + "\n"
 
+class Variable(object):
+    """
+    Represents a preprocessor variable/function.
+
+    The following attributes are available:
+
+    name:
+      The name of the variable.
+
+    value:
+      The unexpanded value of the variable.
+
+    expanded_value:
+      The expanded value of the variable. For simple variables (those defined
+      with :=), this will equal 'value'. Accessing this property will raise a
+      KconfigError if any variable in the expansion expands to itself.
+
+    is_recursive:
+      True if the variable is recursive (defined with =).
+    """
+    __slots__ = (
+        "_n_expansions",
+        "is_recursive",
+        "kconfig",
+        "name",
+        "value",
+    )
+
+    @property
+    def expanded_value(self):
+        """
+        See the class documentation.
+        """
+        return self.kconfig._expand_whole(self.value, ())
+
 class KconfigError(Exception):
     """
     Exception raised for Kconfig-related errors.
@@ -4616,14 +4873,14 @@ def escape(s):
     return s.replace("\\", r"\\").replace('"', r'\"')
 
 # unescape() helper
-_unescape_re_sub = re.compile(r"\\(.)").sub
+_unescape_sub = re.compile(r"\\(.)").sub
 
 def unescape(s):
     r"""
     Unescapes the string 's'. \ followed by any character is replaced with just
     that character. Used internally when reading .config files.
     """
-    return _unescape_re_sub(r"\1", s)
+    return _unescape_sub(r"\1", s)
 
 def standard_kconfig():
     """
@@ -4697,15 +4954,6 @@ def _make_depend_on(sc, expr):
         # Non-constant symbol, or choice
         expr._dependents.add(sc)
 
-def _expand(s):
-    # A predefined UNAME_RELEASE symbol is expanded in one of the 'default's of
-    # the DEFCONFIG_LIST symbol in the Linux kernel. This function maintains
-    # compatibility with it even though environment variables in strings are
-    # now expanded directly.
-
-    # platform.uname() has an internal cache, so this is speedy enough
-    return os.path.expandvars(s.replace("$UNAME_RELEASE", platform.uname()[2]))
-
 def _parenthesize(expr, type_):
     # expr_str() helper. Adds parentheses around expressions of type 'type_'.
 
@@ -4749,9 +4997,18 @@ def _internal_error(msg):
         "email service to tell me about this. Include the message above and "
         "the stack trace and describe what you were doing.")
 
-def _decoding_error(e, filename):
+def _decoding_error(e, filename, macro_linenr=None):
     # Gives the filename and context for UnicodeDecodeError's, which are a pain
     # to debug otherwise. 'e' is the UnicodeDecodeError object.
+    #
+    # If the decoding error is for the output of a $(shell,...) command,
+    # macro_linenr holds the line number where it was run (the exact line
+    # number isn't available for decoding errors in files).
+
+    if macro_linenr is None:
+        loc = filename
+    else:
+        loc = "output from macro at {}:{}".format(filename, macro_linenr)
 
     raise KconfigError(
         "\n"
@@ -4759,7 +5016,7 @@ def _decoding_error(e, filename):
         "Context: {}\n"
         "Problematic data: {}\n"
         "Reason: {}".format(
-            e.encoding, filename,
+            e.encoding, loc,
             e.object[max(e.start - 40, 0):e.end + 40],
             e.object[e.start:e.end],
             e.reason))
@@ -5189,6 +5446,51 @@ def _warn_choice_select_imply(sym, expr, expr_type):
 
     sym.kconfig._warn(msg)
 
+# Predefined preprocessor functions
+
+def _filename_fn(kconf, args):
+    return kconf._filename
+
+def _lineno_fn(kconf, args):
+    return str(kconf._linenr)
+
+def _info_fn(kconf, args):
+    print("{}:{}: {}".format(kconf._filename, kconf._linenr, args[1]))
+
+    return ""
+
+def _warning_if_fn(kconf, args):
+    if args[1] == "y":
+        kconf._warn(args[2], kconf._filename, kconf._linenr)
+
+    return ""
+
+def _error_if_fn(kconf, args):
+    if args[1] == "y":
+        raise KconfigError("{}:{}: {}".format(
+            kconf._filename, kconf._linenr, args[2]))
+
+    return ""
+
+def _shell_fn(kconf, args):
+    stdout, stderr = subprocess.Popen(
+        args[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ).communicate()
+
+    if not _IS_PY2:
+        try:
+            stdout = stdout.decode(kconf._encoding)
+            stderr = stderr.decode(kconf._encoding)
+        except UnicodeDecodeError as e:
+            _decoding_error(e, kconf._filename, kconf._linenr)
+
+    if stderr:
+        kconf._warn(
+            "'{}' wrote to stderr: {}".format(args[1], stderr.rstrip("\n")),
+            kconf._filename, kconf._linenr)
+
+    return stdout.rstrip("\n").replace("\n", " ")
+
 #
 # Public global constants
 #
@@ -5382,22 +5684,53 @@ _TYPE_TOKENS = frozenset((
     _T_STRING,
 ))
 
+
+# Helper functions for getting compiled regular expressions, with the needed
+# matching function returned directly as a small optimization.
+#
 # Use ASCII regex matching on Python 3. It's already the default on Python 2.
-_RE_ASCII = 0 if _IS_PY2 else re.ASCII
+
+def _re_match(regex):
+    return re.compile(regex, 0 if _IS_PY2 else re.ASCII).match
+
+def _re_search(regex):
+    return re.compile(regex, 0 if _IS_PY2 else re.ASCII).search
+
+
+# Various regular expressions used during parsing
 
 # The initial token on a line. Also eats leading and trailing whitespace, so
 # that we can jump straight to the next token (or to the end of the line if
 # there is only one token).
 #
 # This regex will also fail to match for empty lines and comment lines.
-_command_re_match = re.compile(r"\s*([A-Za-z0-9_-]+)\s*", _RE_ASCII).match
+#
+# '$' is included to detect a variable assignment left-hand side with a $ in it
+# (which might be from a macro expansion).
+_command_match = _re_match(r"\s*([$A-Za-z0-9_-]+)\s*")
 
-# Matches an identifier/keyword, also eating trailing whitespace
-_id_keyword_re_match = re.compile(r"([A-Za-z0-9_/.-]+)\s*", _RE_ASCII).match
+# An identifier/keyword after the first token. Also eats trailing whitespace.
+_id_keyword_match = _re_match(r"([A-Za-z0-9_/.-]+)\s*")
 
-# Matches a valid right-hand side for an assignment to a string symbol in a
-# .config file, including escaped characters. Extracts the contents.
-_conf_string_re_match = re.compile(r'"((?:[^\\"]|\\.)*)"', _RE_ASCII).match
+# A fragment in the left-hand side of a preprocessor variable assignment. These
+# are the portions between macro expansions ($(foo)). Macros are supported in
+# the LHS (variable name).
+_assignment_lhs_fragment_match = _re_match("[A-Za-z0-9_-]*")
+
+# The assignment operator and value (right-hand side) in a preprocessor
+# variable assignment
+_assignment_rhs_match = _re_match(r"\s*(=|:=|\+=)\s*(.*)")
+
+# Special characters/strings while expanding a macro (')', ',', and '$(')
+_macro_special_search = _re_search(r"\)|,|\$\(")
+
+# Special characters/strings while expanding a string (quotes, '\', and '$(')
+_string_special_search = _re_search(r'"|\'|\\|\$\(')
+
+# A valid right-hand side for an assignment to a string symbol in a .config
+# file, including escaped characters. Extracts the contents.
+_conf_string_match = _re_match(r'"((?:[^\\"]|\\.)*)"')
+
 
 # Token to type mapping
 _TOKEN_TO_TYPE = {
