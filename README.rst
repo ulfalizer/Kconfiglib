@@ -26,6 +26,9 @@ old syntax might be removed in the future (the major version would be increased
 at the same time). Using the old syntax with an undefined environment variable
 keeps the string as is.
 
+Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`_ if you run into
+a "macro expanded to blank string" error with kernel 4.18+.
+
 Installation
 ------------
 
