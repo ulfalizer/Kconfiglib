@@ -3334,6 +3334,13 @@ class Symbol(object):
             return self._cached_tri_val
 
         if self.orig_type not in (BOOL, TRISTATE):
+            if self.orig_type != UNKNOWN:
+                # Would take some work to give the location here
+                self.kconfig._warn(
+                    "The {} symbol {} is being evaluated in a logical context "
+                    "somewhere. It will always evaluate to n."
+                    .format(TYPE_TO_STR[self.orig_type], _name_and_loc(self)))
+
             self._cached_tri_val = 0
             return 0
 
