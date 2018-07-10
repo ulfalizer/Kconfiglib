@@ -3846,7 +3846,7 @@ class Symbol(object):
         # Helper for printing an informative warning when a symbol with
         # unsatisfied direct dependencies (dependencies from 'depends on', ifs,
         # and menus) is selected by some other symbol. Also warn if a symbol
-        # whose direct dependencies evaluate to m is selected to y. 
+        # whose direct dependencies evaluate to m is selected to y.
 
         dir_dep_val = expr_value(self.direct_dep)
 
