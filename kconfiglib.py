@@ -3151,11 +3151,11 @@ class Symbol(object):
             # Reverse (select-related) dependencies take precedence
             rev_dep_val = expr_value(self.rev_dep)
             if rev_dep_val:
+                if expr_value(self.direct_dep) < rev_dep_val:
+                    self._warn_select_unsatisfied_deps()
+
                 val = max(rev_dep_val, val)
                 self._write_to_conf = True
-
-                if not expr_value(self.direct_dep):
-                    self._warn_select_unsatisfied_deps()
 
             # m is promoted to y for (1) bool symbols and (2) symbols with a
             # weak_rev_dep (from imply) of y
@@ -3604,17 +3604,22 @@ class Symbol(object):
     def _warn_select_unsatisfied_deps(self):
         # Helper for printing an informative warning when a symbol with
         # unsatisfied direct dependencies (dependencies from 'depends on', ifs,
-        # and menus) is selected by some other symbol
+        # and menus) is selected by some other symbol. Also warn if a symbol
+        # whose direct dependencies evaluate to m is selected to y. 
 
-        msg = "{} has unsatisfied direct dependencies ({}), but is " \
-              "currently being selected by the following symbols:" \
-              .format(_name_and_loc(self), expr_str(self.direct_dep))
+        dir_dep_val = expr_value(self.direct_dep)
+
+        msg = "{} has direct dependencies {} with value {}, but is " \
+              "currently being {}-selected by the following symbols:" \
+              .format(_name_and_loc(self), expr_str(self.direct_dep),
+                      TRI_TO_STR[dir_dep_val],
+                      TRI_TO_STR[expr_value(self.rev_dep)])
 
         # The reverse dependencies from each select are ORed together
         for select in split_expr(self.rev_dep, OR):
             select_val = expr_value(select)
-            if not select_val:
-                # Only include selects that are not n
+            if select_val <= dir_dep_val:
+                # Only include selects that exceed the direct dependencies
                 continue
 
             # - 'select A if B' turns into A && B
