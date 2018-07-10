@@ -256,7 +256,7 @@ def run_selftests():
 
     print("Testing expression evaluation")
 
-    c = Kconfig("Kconfiglib/tests/Keval")
+    c = Kconfig("Kconfiglib/tests/Keval", warn=False)
 
     def verify_eval(expr, val):
         res = c.eval_string(expr)
@@ -1297,7 +1297,7 @@ g
 
     print("Testing hex/int ranges")
 
-    c = Kconfig("Kconfiglib/tests/Krange")
+    c = Kconfig("Kconfiglib/tests/Krange", warn=False)
 
     for sym_name in "HEX_NO_RANGE", "INT_NO_RANGE", "HEX_40", "INT_40":
         sym = c.syms[sym_name]

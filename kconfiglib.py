@@ -3272,11 +3272,14 @@ class Symbol(object):
             if use_defaults:
                 # No user value or invalid user value. Look at defaults.
 
-                for val_expr, cond in self.defaults:
-                    if expr_value(cond):
-                        self._write_to_conf = True
+                # Used to implement the warning below
+                has_default = False
 
-                        val = val_expr.str_value
+                for val_sym, cond in self.defaults:
+                    if expr_value(cond):
+                        has_default = self._write_to_conf = True
+
+                        val = val_sym.str_value
 
                         if _is_base_n(val, base):
                             val_num = int(val, base)
@@ -3302,15 +3305,24 @@ class Symbol(object):
                               if self.orig_type == INT else \
                               hex(clamp)
 
+                        if has_default:
+                            num2str = str if base == 10 else hex
+                            self.kconfig._warn(
+                                "default value {} on {} clamped to {} due to "
+                                "being outside the active range ([{}, {}])"
+                                .format(val_num, _name_and_loc(self),
+                                        num2str(clamp), num2str(low),
+                                        num2str(high)))
+
         elif self.orig_type == STRING:
             if vis and self.user_value is not None:
                 # If the symbol is visible and has a user value, use that
                 val = self.user_value
             else:
                 # Otherwise, look at defaults
-                for val_expr, cond in self.defaults:
+                for val_sym, cond in self.defaults:
                     if expr_value(cond):
-                        val = val_expr.str_value
+                        val = val_sym.str_value
                         self._write_to_conf = True
                         break
 
