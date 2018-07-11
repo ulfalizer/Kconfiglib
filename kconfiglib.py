@@ -2835,25 +2835,21 @@ class Kconfig(object):
                                   self._make_and(cur.prompt[1], visible_if))
 
                 # Propagate dependencies to defaults
-
                 if cur.defaults:
                     cur.defaults = [(default, self._make_and(cond, dep))
                                     for default, cond in cur.defaults]
 
                 # Propagate dependencies to ranges
-
                 if cur.ranges:
                     cur.ranges = [(low, high, self._make_and(cond, dep))
                                   for low, high, cond in cur.ranges]
 
                 # Propagate dependencies to selects
-
                 if cur.selects:
                     cur.selects = [(target, self._make_and(cond, dep))
                                    for target, cond in cur.selects]
 
                 # Propagate dependencies to implies
-
                 if cur.implies:
                     cur.implies = [(target, self._make_and(cond, dep))
                                    for target, cond in cur.implies]
