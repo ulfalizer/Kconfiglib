@@ -417,11 +417,14 @@ class Kconfig(object):
 
     defined_syms:
       A list with all defined symbols, in the same order as they appear in the
-      Kconfig files
+      Kconfig files. Symbols defined in multiple locations appear multiple
+      times. Iterating over set(defined_syms) will visit each defined symbol
+      once.
 
     choices:
       A list with all choices, in the same order as they appear in the Kconfig
-      files
+      files. Named choices defined in multiple locations appear multiple times.
+      Iterating over set(choices) will visit each choice once.
 
     menus:
       A list with all menus, in the same order as they appear in the Kconfig
@@ -515,6 +518,7 @@ class Kconfig(object):
       loaded matters.
     """
     __slots__ = (
+        "_defined_syms_set",
         "_encoding",
         "_functions",
         "_set_match",
@@ -725,6 +729,12 @@ class Kconfig(object):
         self.top_node.list = self.top_node.next
         self.top_node.next = None
 
+        # Projects like U-Boot and Zephyr make heavy use of being able to
+        # define a symbol in multiple locations. Removing duplicates makes a
+        # massive difference for U-Boot, speeding up parsing from ~4 seconds to
+        # ~0.6 seconds on my machine.
+        self._defined_syms_set = set(self.defined_syms)
+
         self._parsing_kconfigs = False
 
         # Do various post-processing of the menu tree
@@ -734,7 +744,7 @@ class Kconfig(object):
         # Do sanity checks. Some of these depend on everything being
         # finalized.
 
-        for sym in self.defined_syms:
+        for sym in self._defined_syms_set:
             _check_sym_sanity(sym)
 
         for choice in self.choices:
@@ -745,7 +755,7 @@ class Kconfig(object):
         self._build_dep()
 
         # Check for dependency loops
-        for sym in self.defined_syms:
+        for sym in self._defined_syms_set:
             _check_dep_loop_sym(sym, False)
 
         # Add extra dependencies from choices to choice symbols that get
@@ -817,7 +827,7 @@ class Kconfig(object):
                 # Another benefit is that invalidation must be rock solid for
                 # it to work, making it a good test.
 
-                for sym in self.defined_syms:
+                for sym in self._defined_syms_set:
                     sym._was_set = False
 
                 for choice in self.choices:
@@ -939,7 +949,7 @@ class Kconfig(object):
             # If we're replacing the configuration, unset the symbols that
             # didn't get set
 
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 if not sym._was_set:
                     sym.unset_value()
 
@@ -969,10 +979,10 @@ class Kconfig(object):
             f.write(header)
 
             # Avoid duplicates -- see write_config()
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 sym._written = False
 
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 if not sym._written:
                     sym._written = True
                     # Note: _write_to_conf is determined when the value is
@@ -1039,7 +1049,7 @@ class Kconfig(object):
             # The C tools reuse _write_to_conf for this, but we cache
             # _write_to_conf together with the value and don't invalidate
             # cached values when writing .config files, so that won't work.
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 sym._written = False
 
             node = self.top_node.list
@@ -1100,10 +1110,10 @@ class Kconfig(object):
             f.write(header)
 
             # Avoid duplicates -- see write_config()
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 sym._written = False
 
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 if not sym._written:
                     sym._written = True
 
@@ -1202,7 +1212,7 @@ class Kconfig(object):
         # Load old values from auto.conf, if any
         self._load_old_vals()
 
-        for sym in self.defined_syms:
+        for sym in self._defined_syms_set:
             # Note: _write_to_conf is determined when the value is
             # calculated. This is a hidden function call due to
             # property magic.
@@ -1259,10 +1269,10 @@ class Kconfig(object):
         # by passing a flag to it, plus we only need to look at symbols here.
 
         with self._open_enc("auto.conf", "w") as f:
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 sym._written = False
 
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 if not sym._written:
                     sym._written = True
                     if not (sym.orig_type in (BOOL, TRISTATE) and
@@ -1277,7 +1287,7 @@ class Kconfig(object):
         # symbol values and restoring them later, but this is simpler and
         # faster. The C tools also use a dedicated field for this purpose.
 
-        for sym in self.defined_syms:
+        for sym in self._defined_syms_set:
             sym._old_val = None
 
         if not os.path.exists("auto.conf"):
@@ -1348,7 +1358,7 @@ class Kconfig(object):
             # set_value() already rejects undefined symbols, and they don't
             # need to be invalidated (because their value never changes), so we
             # can just iterate over defined symbols
-            for sym in self.defined_syms:
+            for sym in self._defined_syms_set:
                 sym.unset_value()
 
             for choice in self.choices:
@@ -2652,7 +2662,7 @@ class Kconfig(object):
         # Only calculate _dependents for defined symbols. Constant and
         # undefined symbols could theoretically be selected/implied, but it
         # wouldn't change their value, so it's not a true dependency.
-        for sym in self.defined_syms:
+        for sym in self._defined_syms_set:
             # Symbols depend on the following:
 
             # The prompt conditions
@@ -2719,7 +2729,7 @@ class Kconfig(object):
         # Undefined symbols never change value and don't need to be
         # invalidated, so we can just iterate over defined symbols.
         # Invalidating constant symbols would break things horribly.
-        for sym in self.defined_syms:
+        for sym in self._defined_syms_set:
             sym._invalidate()
 
         for choice in self.choices:

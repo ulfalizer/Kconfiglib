@@ -31,7 +31,9 @@ def main():
     #    symbol types, which is what we want.
     kconf.disable_warnings()
 
-    for sym in kconf.defined_syms:
+    # The set() speeds things up for projects that use multiple definition
+    # locations a lot
+    for sym in set(kconf.defined_syms):
         sym.set_value(2 if sym.is_allnoconfig_y else 0)
 
     kconf.write_config(kconfiglib.standard_config_filename())
