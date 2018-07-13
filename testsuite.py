@@ -890,53 +890,54 @@ g
 
     os.environ["TESTS_DIR_FROM_ENV"] = "tests"
     os.environ["SUB_DIR_FROM_ENV"] = "sub"
-    os.environ["srctree"] = "Kconfiglib/"
 
     os.environ["_SOURCED"] = "_sourced"
     os.environ["_RSOURCED"] = "_rsourced"
     os.environ["_GSOURCED"] = "_gsourced"
     os.environ["_GRSOURCED"] = "_grsourced"
 
+    # Test twice, with $srctree as a relative and an absolute path,
+    # respectively
+    for srctree in "Kconfiglib", os.path.abspath("Kconfiglib"):
+        os.environ["srctree"] = srctree
 
-    # Has symbol with empty help text, so disable warnings
-    c = Kconfig("tests/Klocation", warn=False)
+        # Has symbol with empty help text, so disable warnings
+        c = Kconfig("tests/Klocation", warn=False)
 
-    os.environ.pop("TESTS_DIR_FROM_ENV", None)
-    os.environ.pop("SUB_DIR_FROM_ENV", None)
+        verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
+
+        verify_locations(c.syms["MULTI_DEF"].nodes,
+          "tests/Klocation:7",
+          "tests/Klocation:37",
+          "tests/Klocation_sourced:3",
+          "tests/sub/Klocation_rsourced:2",
+          "tests/sub/Klocation_gsourced1:1",
+          "tests/sub/Klocation_gsourced2:1",
+          "tests/sub/Klocation_grsourced1:1",
+          "tests/sub/Klocation_grsourced2:1",
+          "tests/Klocation:60")
+
+        verify_locations(c.named_choices["CHOICE"].nodes,
+                         "tests/Klocation_sourced:5")
+
+        verify_locations([c.syms["MENU_HOOK"].nodes[0].next],
+                         "tests/Klocation_sourced:12")
+
+        verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
+                         "tests/Klocation_sourced:18")
+
+        # Test recursive 'source' detection
+
+        try:
+            Kconfig("Kconfiglib/tests/Krecursive1")
+        except KconfigError:
+            pass
+        except:
+            fail("recursive 'source' raised wrong exception")
+        else:
+            fail("recursive 'source' did not raise exception")
+
     os.environ.pop("srctree", None)
-
-    verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
-
-    verify_locations(c.syms["MULTI_DEF"].nodes,
-      "tests/Klocation:7",
-      "tests/Klocation:37",
-      "tests/Klocation_sourced:3",
-      "tests/sub/Klocation_rsourced:2",
-      "tests/sub/Klocation_gsourced1:1",
-      "tests/sub/Klocation_gsourced2:1",
-      "tests/sub/Klocation_grsourced1:1",
-      "tests/sub/Klocation_grsourced2:1",
-      "tests/Klocation:60")
-
-    verify_locations(c.named_choices["CHOICE"].nodes,
-                     "tests/Klocation_sourced:5")
-
-    verify_locations([c.syms["MENU_HOOK"].nodes[0].next],
-                     "tests/Klocation_sourced:12")
-
-    verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
-                     "tests/Klocation_sourced:18")
-
-    # Test recursive 'source' detection
-
-    try:
-        Kconfig("Kconfiglib/tests/Krecursive1")
-    except KconfigError:
-        pass
-    except:
-        fail("recursive 'source' raised wrong exception")
-    else:
-        fail("recursive 'source' did not raise exception")
 
 
     print("Testing Kconfig.choices/menus/comments")
