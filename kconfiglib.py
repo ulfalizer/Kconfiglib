@@ -342,24 +342,33 @@ Using 'rsource' it can be rewritten as:
 If absolute path is given to 'rsource' then it follows behavior of 'source'.
 
 
-Globbed sourcing with 'gsource' and 'grsource'
-----------------------------------------------
+Globbed sourcing
+----------------
 
-The 'gsource' statement works like 'source', but takes a glob pattern and
-sources all matching Kconfig files. For example, the following statement might
-source 'sub1/foofoofoo' and 'sub2/foobarfoo':
+'source' and 'rsource' accept glob patterns, sourcing all matching Kconfig
+files. They require at least one matching file, throwing a KconfigError
+otherwise.
 
-  gsource "sub[12]/foo*foo"
+For example, the following statement might source sub1/foofoofoo and
+sub2/foobarfoo:
+
+  source "sub[12]/foo*foo"
 
 The glob patterns accepted are the same as for the standard glob.glob()
 function.
 
-If no file matches the pattern, gsource is a no-op, and hence doubles as an
-include-if-exists function when given a plain filename (similar to '-include'
-in 'make'). It might help to think of the 'g' as "generalized" in that case.
+Two additional statements are provided for cases where it's acceptable for a
+pattern to match no files: 'osource' and 'orsource' (the o is for "optional").
 
-'grsource' is the 'rsource' version of 'gsource' and globs relative to the
-directory of the current Kconfig file.
+For example, the following statements will be no-ops if neither "foo" nor any
+files matching "bar*" exist:
+
+  osource "foo"
+  osource "bar*"
+
+'orsource' does a relative optional source.
+
+'source' and 'osource' are analogous to 'include' and '-include' in Make.
 
 
 Feedback
@@ -499,10 +508,15 @@ class Kconfig(object):
 
     srctree:
       The value of the $srctree environment variable when the configuration was
-      loaded, or None if $srctree wasn't set. Kconfig and .config files are
-      looked up relative to $srctree if they are not found in the base path
-      (unless absolute paths are used). This is used to support out-of-tree
-      builds. The C tools use this environment variable in the same way.
+      loaded, or the empty string if $srctree wasn't set. This gives nice
+      behavior with os.path.join(), which treats "" as the current directory,
+      without adding "./".
+
+      Kconfig files are looked up relative to $srctree (unless absolute paths
+      are used), and .config files are looked up relative to $srctree if they
+      are not found in the current directory. This is used to support
+      out-of-tree builds. The C tools use this environment variable in the same
+      way.
 
       Changing $srctree after creating the Kconfig instance has no effect. Only
       the value when the configuration is loaded matters. This avoids surprises
@@ -572,7 +586,7 @@ class Kconfig(object):
         as .config files (which store configuration symbol values).
 
         filename (default: "Kconfig"):
-          The base Kconfig file. For the Linux kernel, you'll want "Kconfig"
+          The Kconfig file to load. For the Linux kernel, you'll want "Kconfig"
           from the top-level directory, as environment variables will make sure
           the right Kconfig is included from there (arch/$SRCARCH/Kconfig as of
           writing).
@@ -581,8 +595,15 @@ class Kconfig(object):
           the base base Kconfig file will be in sys.argv[1]. It's currently
           always "Kconfig" in practice.
 
-          The $srctree environment variable is used to look up Kconfig files if
-          set. See the class documentation.
+          The $srctree environment variable is used to look up Kconfig files
+          referenced in Kconfig files if set. See the class documentation.
+
+          Note: '(o)source' statements in Kconfig files always work relative to
+          $srctree (or the current directory if $srctree is unset), even if
+          'filename' is a path with directories. This allows a subset of
+          Kconfig files to be loaded without breaking references to other
+          Kconfig files, e.g. by doing Kconfig("./sub/Kconfig"). sub/Kconfig
+          might expect to be sourced by ./Kconfig.
 
         warn (default: True):
           True if warnings related to this configuration should be generated.
@@ -617,7 +638,7 @@ class Kconfig(object):
 
           Related PEP: https://www.python.org/dev/peps/pep-0538/
         """
-        self.srctree = os.environ.get("srctree")
+        self.srctree = os.environ.get("srctree") or ""
         self.config_prefix = os.environ.get("CONFIG_", "CONFIG_")
 
         # Regular expressions for parsing .config files, with the match()
@@ -700,7 +721,7 @@ class Kconfig(object):
         self.top_node.prompt = ("Main menu", self.y)
         self.top_node.parent = None
         self.top_node.dep = self.y
-        self.top_node.filename = filename
+        self.top_node.filename = os.path.relpath(filename, self.srctree)
         self.top_node.linenr = 1
 
         # Parse the Kconfig files
@@ -714,11 +735,11 @@ class Kconfig(object):
         self._filestack = []
 
         # The current parsing location
-        self._filename = filename
+        self._filename = os.path.relpath(filename, self.srctree)
         self._linenr = 0
 
         # Open the top-level Kconfig file
-        self._file = self._open(filename)
+        self._file = self._open_enc(filename, _UNIVERSAL_NEWLINES_MODE)
 
         try:
             # Parse everything
@@ -778,7 +799,7 @@ class Kconfig(object):
         for filename, cond in self.defconfig_list.defaults:
             if expr_value(cond):
                 try:
-                    with self._open(filename.str_value) as f:
+                    with self._open_config(filename.str_value) as f:
                         return f.name
                 except IOError:
                     continue
@@ -819,7 +840,7 @@ class Kconfig(object):
             self._warn_for_no_prompt = True
 
     def _load_config(self, filename, replace):
-        with self._open(filename) as f:
+        with self._open_config(filename) as f:
             if replace:
                 # If we're replacing the configuration, keep track of which
                 # symbols and choices got set so that we can unset the rest
@@ -1428,7 +1449,7 @@ class Kconfig(object):
         return "<{}>".format(", ".join((
             "configuration with {} symbols".format(len(self.syms)),
             'main menu prompt "{}"'.format(self.mainmenu_text),
-            "srctree not set" if self.srctree is None else
+            "srctree is current directory" if not self.srctree else
                 'srctree "{}"'.format(self.srctree),
             'config symbol prefix "{}"'.format(self.config_prefix),
             "warnings " +
@@ -1450,33 +1471,30 @@ class Kconfig(object):
     # File reading
     #
 
-    def _open(self, filename):
-        # First tries to open 'filename', then '$srctree/filename' if $srctree
-        # was set when the configuration was loaded
+    def _open_config(self, filename):
+        # Opens a .config file. First tries to open 'filename', then
+        # '$srctree/filename' if $srctree was set when the configuration was
+        # loaded.
 
         try:
             return self._open_enc(filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
-            if not os.path.isabs(filename) and self.srctree is not None:
-                filename = os.path.join(self.srctree, filename)
-                try:
-                    return self._open_enc(filename, _UNIVERSAL_NEWLINES_MODE)
-                except IOError as e2:
-                    # This is needed for Python 3, because e2 is deleted after
-                    # the try block:
-                    #
-                    # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
-                    e = e2
+            # This will try opening the same file twice if $srctree is unset,
+            # but it's not a big deal
+            try:
+                return self._open_enc(os.path.join(self.srctree, filename),
+                                      _UNIVERSAL_NEWLINES_MODE)
+            except IOError as e2:
+                # This is needed for Python 3, because e2 is deleted after
+                # the try block:
+                #
+                # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
+                e = e2
 
-            raise IOError(textwrap.fill(
-                "Could not open '{}' ({}: {}). Perhaps the $srctree "
-                "environment variable (which was {}) is set incorrectly. Note "
-                "that the current value of $srctree is saved when the Kconfig "
-                "instance is created (for consistency and to cleanly "
-                "separate instances)."
-                .format(filename, errno.errorcode[e.errno], e.strerror,
-                        "unset" if self.srctree is None else
-                        '"{}"'.format(self.srctree)),
+            raise IOError("\n" + textwrap.fill(
+                "Could not open '{}' ({}: {}){}".format(
+                    filename, errno.errorcode[e.errno], e.strerror,
+                    self._srctree_hint()),
                 80))
 
     def _enter_file(self, filename):
@@ -1497,22 +1515,22 @@ class Kconfig(object):
                                       for name, linenr, _
                                       in reversed(self._filestack))))
 
+        # Open 'filename' relative to $srctree
+        #
+        # Note: We already know that the file exists
+
+        full_filename = os.path.join(self.srctree, filename)
         try:
-            self._file = self._open(filename)
+            self._file = self._open_enc(
+                full_filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
-            # Extend the error message a bit in this case
-            raise IOError(textwrap.fill(
-                "{}:{}: {} Also note that Kconfiglib expands references to "
-                "environment variables directly, "
-                "meaning you do not need \"bounce\" symbols with "
-                "'option env=\"FOO\"'. For compatibility with the C tools, "
-                "name the bounce symbols the same as the environment variable "
-                "they reference (like the Linux kernel does)."
-                .format(self._filename, self._linenr, e),
-                80))
+            raise IOError("{}:{}: Could not open '{}' ({}: {})".format(
+                self._filename, self._linenr, full_filename,
+                errno.errorcode[e.errno], e.strerror))
 
         self._filename = filename
         self._linenr = 0
+
 
     def _leave_file(self):
         # Returns from a Kconfig file to the file that sourced it
@@ -2158,40 +2176,34 @@ class Kconfig(object):
                 # Tricky Python semantics: This assign prev.next before prev
                 prev.next = prev = node
 
-            elif t0 == _T_SOURCE:
-                self._enter_file(self._expect_str_and_eol())
-                prev = self._parse_block(None, parent, prev)
-                self._leave_file()
-
-            elif t0 == _T_RSOURCE:
-                self._enter_file(os.path.join(
-                    os.path.dirname(self._filename),
-                    self._expect_str_and_eol()
-                ))
-                prev = self._parse_block(None, parent, prev)
-                self._leave_file()
-
-            elif t0 in (_T_GSOURCE, _T_GRSOURCE):
+            elif t0 in (_T_SOURCE, _T_RSOURCE, _T_OSOURCE, _T_ORSOURCE):
                 pattern = self._expect_str_and_eol()
-                if t0 == _T_GRSOURCE:
-                    # Relative gsource
+
+                # Check if the pattern is absolute and avoid stripping srctree
+                # from it below in that case. We must do the check before
+                # join()'ing, as srctree might be an absolute path.
+                isabs = os.path.isabs(pattern)
+
+                if t0 in (_T_RSOURCE, _T_ORSOURCE):
+                    # Relative source
                     pattern = os.path.join(os.path.dirname(self._filename),
                                            pattern)
-
-                if self.srctree is None:
-                    strip_srctree = False
-                else:
-                    # $srctree set and pattern not absolute?
-                    strip_srctree = not os.path.isabs(pattern)
-
-                    # If $srctree is set, glob relative to it
-                    pattern = os.path.join(self.srctree, pattern)
 
                 # Sort the glob results to ensure a consistent ordering of
                 # Kconfig symbols, which indirectly ensures a consistent
                 # ordering in e.g. .config files
-                for filename in sorted(glob.iglob(pattern)):
-                    if strip_srctree:
+                filenames = \
+                    sorted(glob.iglob(os.path.join(self.srctree, pattern)))
+
+                if not filenames and t0 in (_T_SOURCE, _T_RSOURCE):
+                    raise KconfigError("\n" + textwrap.fill(
+                        "{}:{}: '{}' does not exist{}".format(
+                            self._filename, self._linenr, pattern,
+                            self._srctree_hint()),
+                        80))
+
+                for filename in filenames:
+                    if not isabs:
                         # Strip the $srctree prefix from the filename and let
                         # the normal $srctree logic find the file. This makes
                         # the globbed filenames appear without a $srctree
@@ -2964,6 +2976,16 @@ class Kconfig(object):
 
         if self._warn_for_redun_assign:
             self._warn(msg, filename, linenr)
+
+    def _srctree_hint(self):
+        # Hint printed when Kconfig files can't be found or .config files can't
+        # be opened
+
+        return ". Perhaps the $srctree environment variable (set to '{}') " \
+               "is set incorrectly. Note that the current value of $srctree " \
+               "is saved when the Kconfig instance is created (for " \
+               "consistency and to cleanly separate instances)." \
+               .format(self.srctree if self.srctree else "unset or blank")
 
 class Symbol(object):
     """
@@ -5593,8 +5615,6 @@ _IS_PY2 = sys.version_info[0] < 3
     _T_EQUAL,
     _T_GREATER,
     _T_GREATER_EQUAL,
-    _T_GRSOURCE,
-    _T_GSOURCE,
     _T_HELP,
     _T_HEX,
     _T_IF,
@@ -5612,6 +5632,8 @@ _IS_PY2 = sys.version_info[0] < 3
     _T_OPTION,
     _T_OPTIONAL,
     _T_OR,
+    _T_ORSOURCE,
+    _T_OSOURCE,
     _T_PROMPT,
     _T_RANGE,
     _T_RSOURCE,
@@ -5656,8 +5678,8 @@ _get_keyword = {
     "endif":          _T_ENDIF,
     "endmenu":        _T_ENDMENU,
     "env":            _T_ENV,
-    "grsource":       _T_GRSOURCE,
-    "gsource":        _T_GSOURCE,
+    "grsource":       _T_ORSOURCE,  # Backwards compatibility
+    "gsource":        _T_OSOURCE,   # Backwards compatibility
     "help":           _T_HELP,
     "hex":            _T_HEX,
     "if":             _T_IF,
@@ -5670,6 +5692,8 @@ _get_keyword = {
     "on":             _T_ON,
     "option":         _T_OPTION,
     "optional":       _T_OPTIONAL,
+    "orsource":       _T_ORSOURCE,
+    "osource":        _T_OSOURCE,
     "prompt":         _T_PROMPT,
     "range":          _T_RANGE,
     "rsource":        _T_RSOURCE,
@@ -5691,12 +5715,12 @@ _STRING_LEX = frozenset((
     _T_BOOL,
     _T_CHOICE,
     _T_COMMENT,
-    _T_GRSOURCE,
-    _T_GSOURCE,
     _T_HEX,
     _T_INT,
     _T_MAINMENU,
     _T_MENU,
+    _T_ORSOURCE,
+    _T_OSOURCE,
     _T_PROMPT,
     _T_RSOURCE,
     _T_SOURCE,

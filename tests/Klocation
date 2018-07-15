@@ -47,14 +47,24 @@ rsource "$SUB_DIR_FROM_ENV/Klocation$_RSOURCED"
 
 # Expands to "tests/*ub/Klocation_gsourced[12]", matching
 # tests/sub/Klocation_gsourced{1,2}
+source "$TESTS_DIR_FROM_ENV/*ub/Klocation$_GSOURCED[12]"
+# Test old syntax too
 gsource "$TESTS_DIR_FROM_ENV/*ub/Klocation$_GSOURCED[12]"
 
 # Expands to "sub/Klocation_grsourced[12]", matching
 # tests/sub/Klocation_grsourced{1,2}
+rsource "$SUB_DIR_FROM_ENV/Klocation$_GRSOURCED[12]"
+# Test old syntax too
 grsource "$SUB_DIR_FROM_ENV/Klocation$_GRSOURCED[12]"
 
 # No-ops
-gsource "nonexistent file"
-grsource "nonexistent file"
+osource "nonexistent"
+osource "nonexistent*"
+gsource "nonexistent"
+gsource "nonexistent*"
+orsource "nonexistent"
+orsource "nonexistent*"
+grsource "nonexistent"
+grsource "nonexistent*"
 
 config MULTI_DEF

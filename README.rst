@@ -194,17 +194,19 @@ Kconfig language extensions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following Kconfig extensions are available:
+
+- ``source`` supports glob patterns and includes each matching file. At pattern
+  is required to match at least one file.
+
+  A separate ``osource`` statement is available for cases where it's okay for
+  the pattern to match no files (in which case ``osource`` turns into a no-op).
   
-- A relative ``source`` statement (``rsource``) where Kconfig
-  file paths are specified relative to the directory of
-  the current Kconfig file.
+- A relative ``source`` statement (``rsource``) is available, where file paths
+  are specified relative to the directory of the current Kconfig file. An
+  ``orsource`` statement is available as well, analogous to ``osource``.
   
-- A globbing ``source`` (``gsource``) that doubles
-  as an include-if-exists function.
-  
-- Environment variables are expanded directly in e.g. ``source``
-  and ``mainmenu`` statements, meaning ``option env`` symbols
-  are redundant.
+- Environment variables are expanded directly in e.g. ``source`` and
+  ``mainmenu`` statements, meaning ``option env`` symbols are redundant.
 
   This is the standard behavior with the new `Kconfig preprocessor
   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_,

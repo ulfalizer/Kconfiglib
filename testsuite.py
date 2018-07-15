@@ -807,7 +807,7 @@ comment "advanced comment"
     print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Main menu", srctree not set, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
+<configuration with 14 symbols, main menu prompt "Main menu", srctree is current directory, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
 """)
 
     os.environ["srctree"] = "srctree value"
@@ -902,7 +902,7 @@ g
         os.environ["srctree"] = srctree
 
         # Has symbol with empty help text, so disable warnings
-        c = Kconfig("tests/Klocation", warn=False)
+        c = Kconfig("Kconfiglib/tests/Klocation", warn=False)
 
         verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
 
@@ -913,9 +913,13 @@ g
           "tests/sub/Klocation_rsourced:2",
           "tests/sub/Klocation_gsourced1:1",
           "tests/sub/Klocation_gsourced2:1",
+          "tests/sub/Klocation_gsourced1:1",
+          "tests/sub/Klocation_gsourced2:1",
           "tests/sub/Klocation_grsourced1:1",
           "tests/sub/Klocation_grsourced2:1",
-          "tests/Klocation:60")
+          "tests/sub/Klocation_grsourced1:1",
+          "tests/sub/Klocation_grsourced2:1",
+          "tests/Klocation:70")
 
         verify_locations(c.named_choices["CHOICE"].nodes,
                          "tests/Klocation_sourced:5")
@@ -936,6 +940,27 @@ g
             fail("recursive 'source' raised wrong exception")
         else:
             fail("recursive 'source' did not raise exception")
+
+        # Verify that source and rsource throw exceptions for missing files
+        # TODO: Make an exception test helper
+
+        try:
+            Kconfig("Kconfiglib/tests/Kmissingsource")
+        except KconfigError:
+            pass
+        except:
+            fail("'source' with missing file raised wrong exception")
+        else:
+            fail("'source' with missing file did not raise exception")
+
+        try:
+            Kconfig("Kconfiglib/tests/Kmissingrsource")
+        except KconfigError:
+            pass
+        except:
+            fail("'rsource' with missing file raised wrong exception")
+        else:
+            fail("'rsource' with missing file did not raise exception")
 
     os.environ.pop("srctree", None)
 
@@ -1452,6 +1477,8 @@ g
     c = Kconfig("Kconfiglib/tests/Kdefconfig_srctree")
     verify(c.defconfig_filename == "Kconfiglib/tests/sub/defconfig_in_sub",
            "defconfig_filename gave wrong file with $srctree set")
+
+    os.environ.pop("srctree", None)
 
 
     print("Testing mainmenu_text")
