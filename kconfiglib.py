@@ -1531,7 +1531,6 @@ class Kconfig(object):
         self._filename = filename
         self._linenr = 0
 
-
     def _leave_file(self):
         # Returns from a Kconfig file to the file that sourced it
 
