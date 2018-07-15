@@ -196,7 +196,7 @@ Kconfig language extensions
 
 The following Kconfig extensions are available:
 
-- ``source`` supports glob patterns and includes each matching file. At pattern
+- ``source`` supports glob patterns and includes each matching file. A pattern
   is required to match at least one file.
 
   A separate ``osource`` statement is available for cases where it's okay for
