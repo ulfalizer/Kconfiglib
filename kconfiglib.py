@@ -1483,10 +1483,10 @@ class Kconfig(object):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
         # position and file object
 
-        self._filestack.append((self._file, self._filename, self._linenr))
+        self._filestack.append((self._filename, self._linenr, self._file))
 
         # Check for recursive 'source'
-        for _, name, _ in self._filestack:
+        for name, _, _ in self._filestack:
             if name == filename:
                 raise KconfigError(
                     "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
@@ -1494,7 +1494,7 @@ class Kconfig(object):
                     "Backtrace:\n{}"
                     .format(self._filename, self._linenr, filename,
                             "\n".join("{}:{}".format(name, linenr)
-                                      for _, name, linenr
+                                      for name, linenr, _
                                       in reversed(self._filestack))))
 
         try:
@@ -1518,7 +1518,7 @@ class Kconfig(object):
         # Returns from a Kconfig file to the file that sourced it
 
         self._file.close()
-        self._file, self._filename, self._linenr = self._filestack.pop()
+        self._filename, self._linenr, self._file = self._filestack.pop()
 
     def _next_line(self):
         # Fetches and tokenizes the next line from the current Kconfig file.
