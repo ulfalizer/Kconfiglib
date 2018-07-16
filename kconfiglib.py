@@ -1497,15 +1497,23 @@ class Kconfig(object):
                     self._srctree_hint()),
                 80))
 
-    def _enter_file(self, filename):
+    def _enter_file(self, full_filename, rel_filename):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
-        # position and file object
+        # position and file object.
+        #
+        # full_filename:
+        #   Actual path to the file.
+        #
+        # rel_filename:
+        #   File path with $srctree prefix stripped, stored in e.g.
+        #   self._filename (which makes it indirectly show up in
+        #   MenuNode.filename). Equals full_filename for absolute paths.
 
         self._filestack.append((self._filename, self._linenr, self._file))
 
         # Check for recursive 'source'
         for name, _, _ in self._filestack:
-            if name == filename:
+            if name == rel_filename:
                 raise KconfigError(
                     "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
                     "environment variables are set correctly.\n"
@@ -1519,16 +1527,15 @@ class Kconfig(object):
         #
         # Note: We already know that the file exists
 
-        full_filename = os.path.join(self.srctree, filename)
         try:
-            self._file = self._open_enc(
-                full_filename, _UNIVERSAL_NEWLINES_MODE)
+            self._file = \
+                self._open_enc(full_filename, _UNIVERSAL_NEWLINES_MODE)
         except IOError as e:
             raise IOError("{}:{}: Could not open '{}' ({}: {})".format(
                 self._filename, self._linenr, full_filename,
                 errno.errorcode[e.errno], e.strerror))
 
-        self._filename = filename
+        self._filename = rel_filename
         self._linenr = 0
 
     def _leave_file(self):
@@ -2202,14 +2209,18 @@ class Kconfig(object):
                         80))
 
                 for filename in filenames:
-                    if not isabs:
-                        # Strip the $srctree prefix from the filename, so that
-                        # it appears without a $srctree prefix in
-                        # MenuNode.filename
-                        filename = os.path.relpath(filename, self.srctree)
+                    self._enter_file(
+                        filename,
+                        # Unless an absolute path is passed to *source, strip
+                        # the $srctree prefix from the filename. That way it
+                        # appears without a $srctree prefix in
+                        # MenuNode.filename, which is nice e.g. when generating
+                        # documentation.
+                        filename if isabs else
+                            os.path.relpath(filename, self.srctree))
 
-                    self._enter_file(filename)
                     prev = self._parse_block(None, parent, prev)
+
                     self._leave_file()
 
             elif t0 == end_token:
