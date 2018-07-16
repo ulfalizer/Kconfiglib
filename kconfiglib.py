@@ -2203,13 +2203,9 @@ class Kconfig(object):
 
                 for filename in filenames:
                     if not isabs:
-                        # Strip the $srctree prefix from the filename and let
-                        # the normal $srctree logic find the file. This makes
-                        # the globbed filenames appear without a $srctree
-                        # prefix in MenuNode.filename, which is consistent with
-                        # how 'source' and 'rsource' work. We get the same
-                        # behavior as if the files had been 'source'd one by
-                        # one.
+                        # Strip the $srctree prefix from the filename, so that
+                        # it appears without a $srctree prefix in
+                        # MenuNode.filename
                         filename = os.path.relpath(filename, self.srctree)
 
                     self._enter_file(filename)
