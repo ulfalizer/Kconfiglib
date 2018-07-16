@@ -793,16 +793,14 @@ class Kconfig(object):
         """
         See the class documentation.
         """
-        if not self.defconfig_list:
-            return None
-
-        for filename, cond in self.defconfig_list.defaults:
-            if expr_value(cond):
-                try:
-                    with self._open_config(filename.str_value) as f:
-                        return f.name
-                except IOError:
-                    continue
+        if self.defconfig_list:
+            for filename, cond in self.defconfig_list.defaults:
+                if expr_value(cond):
+                    try:
+                        with self._open_config(filename.str_value) as f:
+                            return f.name
+                    except IOError:
+                        continue
 
         return None
 
