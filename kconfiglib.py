@@ -1523,8 +1523,6 @@ class Kconfig(object):
                                       for name, linenr, _
                                       in reversed(self._filestack))))
 
-        # Open 'filename' relative to $srctree
-        #
         # Note: We already know that the file exists
 
         try:
