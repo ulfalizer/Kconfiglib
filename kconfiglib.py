@@ -3549,14 +3549,13 @@ class Symbol(object):
             return True
 
         # Check if the value is valid for our type
-        if not ((self.orig_type == BOOL     and value in (0, 2, "n", "y")        ) or
-                (self.orig_type == TRISTATE and value in (0, 1, 2, "n", "m", "y")) or
-                (self.orig_type == STRING   and isinstance(value, str)           ) or
-                (self.orig_type == INT      and isinstance(value, str)
-                                            and _is_base_n(value, 10)            ) or
-                (self.orig_type == HEX      and isinstance(value, str)
-                                            and _is_base_n(value, 16)
-                                            and int(value, 16) >= 0)):
+        if not (self.orig_type == BOOL     and value in (0, 2, "n", "y")         or
+                self.orig_type == TRISTATE and value in (0, 1, 2, "n", "m", "y") or
+                (isinstance(value, str)    and
+                 (self.orig_type == STRING                        or
+                  self.orig_type == INT and _is_base_n(value, 10) or
+                  self.orig_type == HEX and _is_base_n(value, 16)
+                                        and int(value, 16) >= 0))):
 
             # Display tristate values as n, m, y in the warning
             self.kconfig._warn(
