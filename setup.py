@@ -1,3 +1,4 @@
+import io
 import os
 import setuptools
 
@@ -6,12 +7,20 @@ setuptools.setup(
     # MAJOR.MINOR.PATCH, per http://semver.org
     version="9.0.0",
     description="A flexible Python Kconfig parser",
+
+    # Make sure that README.rst decodes on Python 3 in environments that use
+    # the C locale (which implies ASCII), by explicitly giving the encoding.
+    #
+    # io.open() has the 'encoding' parameter on both Python 2 and 3. open()
+    # doesn't have it on Python 2. This lets us to use the same code for both.
     long_description=
-        open(os.path.join(os.path.dirname(__file__), "README.rst")).read(),
+        io.open(os.path.join(os.path.dirname(__file__), "README.rst"),
+                encoding="utf-8").read(),
+
     url="https://github.com/ulfalizer/Kconfiglib",
     author='Ulf "Ulfalizer" Magnusson',
     author_email="ulfalizer@gmail.com",
-    keywords="kconfig, kbuild",
+    keywords="kconfig, kbuild, menuconfig",
     license="ISC",
 
     py_modules=(
