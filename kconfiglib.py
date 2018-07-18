@@ -739,7 +739,7 @@ class Kconfig(object):
         self._linenr = 0
 
         # Open the top-level Kconfig file
-        self._file = self._open_enc(filename, _UNIVERSAL_NEWLINES_MODE)
+        self._file = self._open(filename, "r")
 
         try:
             # Parse everything
@@ -994,7 +994,7 @@ class Kconfig(object):
           would usually want it enclosed in '/* */' to make it a C comment,
           and include a final terminating newline.
         """
-        with self._open_enc(filename, "w") as f:
+        with self._open(filename, "w") as f:
             f.write(header)
 
             # Avoid duplicates -- see write_config()
@@ -1055,7 +1055,7 @@ class Kconfig(object):
           would usually want each line to start with '#' to make it a comment,
           and include a final terminating newline.
         """
-        with self._open_enc(filename, "w") as f:
+        with self._open(filename, "w") as f:
             f.write(header)
 
             # Symbol._written is set to True when a symbol config string is
@@ -1125,7 +1125,7 @@ class Kconfig(object):
           would usually want each line to start with '#' to make it a comment,
           and include a final terminating newline.
         """
-        with self._open_enc(filename, "w") as f:
+        with self._open(filename, "w") as f:
             f.write(header)
 
             # Avoid duplicates -- see write_config()
@@ -1287,7 +1287,7 @@ class Kconfig(object):
         # A separate helper function is neater than complicating write_config()
         # by passing a flag to it, plus we only need to look at symbols here.
 
-        with self._open_enc("auto.conf", "w") as f:
+        with self._open("auto.conf", "w") as f:
             for sym in self._defined_syms_set:
                 sym._written = False
 
@@ -1313,7 +1313,7 @@ class Kconfig(object):
             # No old values
             return
 
-        with self._open_enc("auto.conf", _UNIVERSAL_NEWLINES_MODE) as f:
+        with self._open("auto.conf", "r") as f:
             for line in f:
                 match = self._set_match(line)
                 if not match:
@@ -1475,13 +1475,12 @@ class Kconfig(object):
         # loaded.
 
         try:
-            return self._open_enc(filename, _UNIVERSAL_NEWLINES_MODE)
+            return self._open(filename, "r")
         except IOError as e:
             # This will try opening the same file twice if $srctree is unset,
             # but it's not a big deal
             try:
-                return self._open_enc(os.path.join(self.srctree, filename),
-                                      _UNIVERSAL_NEWLINES_MODE)
+                return self._open(os.path.join(self.srctree, filename), "r")
             except IOError as e2:
                 # This is needed for Python 3, because e2 is deleted after
                 # the try block:
@@ -1524,8 +1523,7 @@ class Kconfig(object):
         # Note: We already know that the file exists
 
         try:
-            self._file = \
-                self._open_enc(full_filename, _UNIVERSAL_NEWLINES_MODE)
+            self._file = self._open(full_filename, "r")
         except IOError as e:
             raise IOError("{}:{}: Could not open '{}' ({}: {})".format(
                 self._filename, self._linenr, full_filename,
@@ -1618,6 +1616,10 @@ class Kconfig(object):
         # Tries to be reasonably speedy by processing chunks of text via
         # regexes and string operations where possible. This is the biggest
         # hotspot during parsing.
+        #
+        # Note: It might be possible to rewrite this to 'yield' tokens instead,
+        # working across multiple lines. The 'option env' lookback thing below
+        # complicates things though.
 
         # Initial token on the line
         match = _command_match(s)
@@ -2941,12 +2943,41 @@ class Kconfig(object):
         raise KconfigError(
             "{}couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
 
-    def _open_enc(self, filename, mode):
-        # open() wrapper for forcing the encoding on Python 3. Forcing the
-        # encoding on Python 2 turns strings into Unicode strings, which gets
-        # messy. Python 2 doesn't decode regular strings anyway.
-
-        return open(filename, mode) if _IS_PY2 else \
+    def _open(self, filename, mode):
+        # open() wrapper:
+        #
+        # - Enable universal newlines mode on Python 2 to ease
+        #   interoperability between Linux and Windows. It's already the
+        #   default on Python 3.
+        #
+        #   The "U" flag would currently work for both Python 2 and 3, but it's
+        #   deprecated on Python 3, so play it future-safe.
+        #
+        #   A simpler solution would be to use io.open(), which defaults to
+        #   universal newlines on both Python 2 and 3 (and is an alias for
+        #   open() on Python 3), but it's appreciably slower on Python 2:
+        #
+        #     Parsing x86 Kconfigs on Python 2
+        #
+        #     with open(..., "rU"):
+        #
+        #       real  0m0.930s
+        #       user  0m0.905s
+        #       sys   0m0.025s
+        #
+        #     with io.open():
+        #
+        #       real  0m1.069s
+        #       user  0m1.040s
+        #       sys   0m0.029s
+        #
+        #   There's no appreciable performance difference between "r" and
+        #   "rU" for parsing performance on Python 2.
+        #
+        # - For Python 3, force the encoding. Forcing the encoding on Python 2
+        #   turns strings into Unicode strings, which gets messy. Python 2
+        #   doesn't decode regular strings anyway.
+        return open(filename, "rU" if mode == "r" else mode) if _IS_PY2 else \
                open(filename, mode, encoding=self._encoding)
 
     def _warn(self, msg, filename=None, linenr=None):
@@ -5841,31 +5872,3 @@ _REL_TO_STR = {
     GREATER:       ">",
     GREATER_EQUAL: ">=",
 }
-
-# Enable universal newlines mode on Python 2 to ease interoperability between
-# Linux and Windows. It's already the default on Python 3.
-#
-# The "U" flag would currently work for both Python 2 and 3, but it's
-# deprecated on Python 3, so play it future-safe.
-#
-# A simpler solution would be to use io.open(), which defaults to universal
-# newlines on both Python 2 and 3 (and is an alias for open() on Python 3), but
-# it's appreciably slower on Python 2:
-#
-#   Parsing x86 Kconfigs on Python 2
-#
-#   with open(..., "rU"):
-#
-#     real  0m0.930s
-#     user  0m0.905s
-#     sys   0m0.025s
-#
-#   with io.open():
-#
-#     real  0m1.069s
-#     user  0m1.040s
-#     sys   0m0.029s
-#
-# There's no appreciable performance difference between "r" and "rU" for
-# parsing performance on Python 2.
-_UNIVERSAL_NEWLINES_MODE = "rU" if _IS_PY2 else "r"
