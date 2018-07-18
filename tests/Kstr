@@ -53,15 +53,20 @@ config ONLY_DIRECT_DEPS
     depends on DEP2
 
 config STRING
-    string
-    default "foo"
+    def_string "foo"
     default "bar" if DEP
     default STRING2
     default STRING3 if DEP
 
 config INT
-    int 
+    def_int 7 if DEP
     range 1 2
+    range FOO BAR
+    range BAZ QAZ if DEP
+
+config HEX
+    def_hex 0x123
+    range 0x100 0x200
     range FOO BAR
     range BAZ QAZ if DEP
 

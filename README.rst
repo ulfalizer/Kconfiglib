@@ -205,6 +205,13 @@ The following Kconfig extensions are available:
 - A relative ``source`` statement (``rsource``) is available, where file paths
   are specified relative to the directory of the current Kconfig file. An
   ``orsource`` statement is available as well, analogous to ``osource``.
+
+- ``def_int``, ``def_hex``, and ``def_string`` are available in addition to
+  ``def_bool`` and ``def_tristate``, allowing ``int``, ``hex``, and ``string``
+  symbols to be given a type and a default at the same time.
+
+  These can be useful in projects that make use of symbols defined in multiple
+  locations, and remove some Kconfig inconsistency.
   
 - Environment variables are expanded directly in e.g. ``source`` and
   ``mainmenu`` statements, meaning ``option env`` symbols are redundant.

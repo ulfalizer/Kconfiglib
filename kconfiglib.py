@@ -2394,7 +2394,8 @@ class Kconfig(object):
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
-            elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE):
+            elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE, _T_DEF_INT, _T_DEF_HEX,
+                        _T_DEF_STRING):
                 self._set_type(node, _TOKEN_TO_TYPE[t0])
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
@@ -5607,6 +5608,9 @@ _IS_PY2 = sys.version_info[0] < 3
     _T_DEFAULT,
     _T_DEFCONFIG_LIST,
     _T_DEF_BOOL,
+    _T_DEF_HEX,
+    _T_DEF_INT,
+    _T_DEF_STRING,
     _T_DEF_TRISTATE,
     _T_DEPENDS,
     _T_ENDCHOICE,
@@ -5644,7 +5648,7 @@ _IS_PY2 = sys.version_info[0] < 3
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(1, 48)
+) = range(1, 51)
 
 # Public integers representing expression types
 #
@@ -5671,6 +5675,9 @@ _get_keyword = {
     "comment":        _T_COMMENT,
     "config":         _T_CONFIG,
     "def_bool":       _T_DEF_BOOL,
+    "def_hex":        _T_DEF_HEX,
+    "def_int":        _T_DEF_INT,
+    "def_string":     _T_DEF_STRING,
     "def_tristate":   _T_DEF_TRISTATE,
     "default":        _T_DEFAULT,
     "defconfig_list": _T_DEFCONFIG_LIST,
@@ -5791,6 +5798,9 @@ _conf_string_match = _re_match(r'"((?:[^\\"]|\\.)*)"')
 _TOKEN_TO_TYPE = {
     _T_BOOL:         BOOL,
     _T_DEF_BOOL:     BOOL,
+    _T_DEF_HEX:      HEX,
+    _T_DEF_INT:      INT,
+    _T_DEF_STRING:   STRING,
     _T_DEF_TRISTATE: TRISTATE,
     _T_HEX:          HEX,
     _T_INT:          INT,

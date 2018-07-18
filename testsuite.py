@@ -467,7 +467,7 @@ def run_selftests():
     verify_eval_bad("|| X")
 
 
-    print("Testing Symbol.__str__()")
+    print("Testing Symbol.__str__() and def_{int,hex,string}")
 
     def verify_str(item, s):
         verify_equal(str(item), s[1:])
@@ -545,6 +545,16 @@ config INT
 	range 1 2
 	range FOO BAR
 	range BAZ QAZ if DEP
+	default 7 if DEP
+""")
+
+    verify_str(c.syms["HEX"], """
+config HEX
+	hex
+	range 0x100 0x200
+	range FOO BAR
+	range BAZ QAZ if DEP
+	default 0x123
 """)
 
     verify_str(c.modules, """
