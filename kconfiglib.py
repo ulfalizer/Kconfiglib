@@ -5136,7 +5136,7 @@ def _is_num(s):
     try:
         int(s)
     except ValueError:
-        if s.startswith(("0x", "0X")):
+        if not s.startswith(("0x", "0X")):
             return False
 
         try:

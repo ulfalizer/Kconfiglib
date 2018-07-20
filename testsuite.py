@@ -2153,7 +2153,7 @@ config BOOL
 	default UNDEF_2
 
 
-- Referenced at Kconfiglib/tests/Kstrict:12:
+- Referenced at Kconfiglib/tests/Kstrict:19:
 
 menu "menu"
 	depends on UNDEF_1
@@ -2174,10 +2174,12 @@ config BOOL
 config INT
 	int
 	range UNDEF_2 8
+	range 5 15
+	default 10
 
 warning: undefined symbol UNDEF_3:
 
-- Referenced at Kconfiglib/tests/Kstrict:12:
+- Referenced at Kconfiglib/tests/Kstrict:19:
 
 menu "menu"
 	depends on UNDEF_1

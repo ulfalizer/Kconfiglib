@@ -8,6 +8,13 @@ config BOOL
 config INT
 	int
 	range UNDEF_2 8
+	default 10
+	range 5 15
+
+config HEX
+	hex
+	range 0x123 0X456
+	default 0x200
 
 menu "menu"
 	depends on UNDEF_1
