@@ -585,12 +585,12 @@ class Kconfig(object):
         KconfigError on syntax errors. Note that Kconfig files are not the same
         as .config files (which store configuration symbol values).
 
-        If KCONFIG_STRICT is set in the environment (to any value), warnings
-        will be generated for all references to undefined symbols within
-        Kconfig files. The reason this isn't the default is that some projects
-        (e.g. the Linux kernel) use multiple Kconfig trees (one per
-        architecture) with many shared Kconfig files, leading to some safe
-        references to undefined symbols.
+        If the environment variable KCONFIG_STRICT is set to "y", warnings will
+        be generated for all references to undefined symbols within Kconfig
+        files. The reason this isn't the default is that some projects (e.g.
+        the Linux kernel) use multiple Kconfig trees (one per architecture)
+        with many shared Kconfig files, leading to some safe references to
+        undefined symbols.
 
         KCONFIG_STRICT relies on literal hex values being prefixed with 0x/0X.
         They are indistinguishable from references to undefined symbols

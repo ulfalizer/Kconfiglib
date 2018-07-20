@@ -8,7 +8,7 @@ Kconfiglib is a `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
 implementation in Python 2/3. It started out as a helper library, but now has a
 enough functionality to also work well as a standalone Kconfig implementation
-(including ``menuconfig`` implementations).
+(including `menuconfig interfaces`_ and `Kconfig extensions`_).
 
 The entire library is contained in `kconfiglib.py
 <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_. The
@@ -191,8 +191,8 @@ Kconfiglib can do the following, among other things:
   <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_
   example.
 
-Kconfig language extensions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Kconfig extensions
+~~~~~~~~~~~~~~~~~~
 
 The following Kconfig extensions are available:
 
@@ -223,6 +223,15 @@ The following Kconfig extensions are available:
   ``option env`` symbols are supported for backwards compatibility, with the
   caveat that they must have the same name as the environment variables they
   reference. A warning is printed if the names differ.
+
+- Setting the environment variable ``KCONFIG_STRICT`` to "y" will cause warnings to be printed
+  for all references to undefined Kconfig symbols within Kconfig files. The only gotcha is
+  that all ``hex`` literals must be prefixed by "0x" or "0X", to make it possible to distuinguish
+  them from symbol references.
+
+  Some projects (e.g. the Linux kernel) use multiple Kconfig trees with many shared ``Kconfig``
+  files, leading to some safe undefined symbol references. ``KCONFIG_STRICT`` is useful in
+  projects that only have a single ``Kconfig`` tree though.
 
 Other features
 --------------
@@ -296,6 +305,8 @@ Other features
 - **Internals that (mostly) mirror the C implementation**
   
   While being simpler to understand and tweak.
+
+.. menuconfig_implementations:
 
 Menuconfig interfaces
 ---------------------
