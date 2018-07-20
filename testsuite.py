@@ -2136,6 +2136,56 @@ config PRINT_ME
     ])
 
 
+    print("Testing KCONFIG_STRICT")
+
+    os.environ["KCONFIG_STRICT"] = "y"
+    c = Kconfig("Kconfiglib/tests/Kstrict", warn_to_stderr=False)
+
+    verify_equal("\n".join(c.warnings), """
+warning: the int symbol INT (defined at Kconfiglib/tests/Kstrict:8) has a non-int range [UNDEF_2 (undefined), 8 (undefined)]
+warning: undefined symbol UNDEF_1:
+
+- Referenced at Kconfiglib/tests/Kstrict:4:
+
+config BOOL
+	bool
+	prompt "foo" if DEF || !UNDEF_1
+	default UNDEF_2
+
+
+- Referenced at Kconfiglib/tests/Kstrict:12:
+
+menu "menu"
+	depends on UNDEF_1
+	visible if UNDEF_3
+
+warning: undefined symbol UNDEF_2:
+
+- Referenced at Kconfiglib/tests/Kstrict:4:
+
+config BOOL
+	bool
+	prompt "foo" if DEF || !UNDEF_1
+	default UNDEF_2
+
+
+- Referenced at Kconfiglib/tests/Kstrict:8:
+
+config INT
+	int
+	range UNDEF_2 8
+
+warning: undefined symbol UNDEF_3:
+
+- Referenced at Kconfiglib/tests/Kstrict:12:
+
+menu "menu"
+	depends on UNDEF_1
+	visible if UNDEF_3
+"""[1:])
+
+    os.environ.pop("KCONFIG_STRICT")
+
 
     print("\nAll selftests passed\n" if all_passed else
           "\nSome selftests failed\n")

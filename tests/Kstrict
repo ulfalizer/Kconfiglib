@@ -1,0 +1,16 @@
+config DEF
+	bool
+
+config BOOL
+	bool "foo" if DEF || !UNDEF_1
+	default UNDEF_2
+
+config INT
+	int
+	range UNDEF_2 8
+
+menu "menu"
+	depends on UNDEF_1
+	visible if UNDEF_3
+
+endmenu

@@ -585,6 +585,20 @@ class Kconfig(object):
         KconfigError on syntax errors. Note that Kconfig files are not the same
         as .config files (which store configuration symbol values).
 
+        If KCONFIG_STRICT is set in the environment (to any value), warnings
+        will be generated for all references to undefined symbols within
+        Kconfig files. The reason this isn't the default is that some projects
+        (e.g. the Linux kernel) use multiple Kconfig trees (one per
+        architecture) with many shared Kconfig files, leading to some safe
+        references to undefined symbols.
+
+        KCONFIG_STRICT relies on literal hex values being prefixed with 0x/0X.
+        They are indistinguishable from references to undefined symbols
+        otherwise.
+
+        KCONFIG_STRICT might enable other warnings that depend on there being
+        just a single Kconfig tree in the future.
+
         filename (default: "Kconfig"):
           The Kconfig file to load. For the Linux kernel, you'll want "Kconfig"
           from the top-level directory, as environment variables will make sure
@@ -641,10 +655,7 @@ class Kconfig(object):
         self.srctree = os.environ.get("srctree", "")
         self.config_prefix = os.environ.get("CONFIG_", "CONFIG_")
 
-        # Regular expressions for parsing .config files, with the match()
-        # method assigned directly as a small optimization (microscopic in this
-        # case, but it's consistent with the other regexes)
-
+        # Regular expressions for parsing .config files
         self._set_match = _re_match(self.config_prefix + r"([^=]+)=(.*)")
         self._unset_match = \
             _re_match(r"# {}([^ ]+) is not set".format(self.config_prefix))
@@ -770,6 +781,9 @@ class Kconfig(object):
 
         for choice in self.choices:
             _check_choice_sanity(choice)
+
+        if os.environ.get("KCONFIG_STRICT") == "y":
+            self._check_undefined_syms()
 
 
         # Build Symbol._dependents for all symbols and choices
@@ -2980,6 +2994,50 @@ class Kconfig(object):
         return open(filename, "rU" if mode == "r" else mode) if _IS_PY2 else \
                open(filename, mode, encoding=self._encoding)
 
+    def _check_undefined_syms(self):
+        # Prints warnings for all references to undefined symbols within the
+        # Kconfig files
+
+        for sym in (self.syms.viewvalues() if _IS_PY2 else self.syms.values()):
+            # - sym.nodes empty means the symbol is undefined (has no
+            #   definition locations)
+            #
+            # - Due to Kconfig internals, numbers show up as undefined Kconfig
+            #   symbols, but shouldn't be flagged
+            #
+            # - The MODULES symbol always exists
+            if not sym.nodes and not _is_num(sym.name) and \
+               sym.name != "MODULES":
+
+                self._warn_undefined_sym(sym)
+
+    def _warn_undefined_sym(self, sym):
+        # _check_undefined_syms() helper. Generates a warning that lists the
+        # locations where the undefined symbol 'sym' is referenced, including
+        # the referencing menu nodes in Kconfig format.
+
+        referencing_nodes = []
+
+        def find_refs(node):
+            while node:
+                if sym in node.referenced:
+                    referencing_nodes.append(node)
+
+                if node.list:
+                    find_refs(node.list)
+
+                node = node.next
+
+        find_refs(self.top_node)
+
+        msg = "undefined symbol {}:".format(sym.name)
+
+        for node in referencing_nodes:
+            msg += "\n\n- Referenced at {}:{}:\n\n{}" \
+                   .format(node.filename, node.linenr, node)
+
+        self._warn(msg)
+
     def _warn(self, msg, filename=None, linenr=None):
         # For printing general warnings
 
@@ -5064,6 +5122,29 @@ def _strcmp(s1, s2):
     # strcmp()-alike that returns -1, 0, or 1
 
     return (s1 > s2) - (s1 < s2)
+
+def _is_num(s):
+    # Returns True if the string 's' looks like a number.
+    #
+    # Internally, all operands in Kconfig are symbols, only undefined symbols
+    # (which numbers usually are) get their name as their value.
+    #
+    # Only hex numbers that start with 0x/0X are classified as numbers.
+    # Otherwise, symbols whose names happen to contain only the letters A-F
+    # would trigger false positives.
+
+    try:
+        int(s)
+    except ValueError:
+        if s.startswith(("0x", "0X")):
+            return False
+
+        try:
+            int(s, 16)
+        except ValueError:
+            return False
+
+    return True
 
 def _sym_to_num(sym):
     # expr_value() helper for converting a symbol to a number. Raises

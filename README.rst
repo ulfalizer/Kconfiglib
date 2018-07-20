@@ -272,14 +272,10 @@ Other features
   `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_
   module. No global state is kept.
 
-- **Warning parity with the C implementation**
+- **Generates more warnings than the C implementation**
 
-  Generates the same warnings as the C implementation, plus a few extra ones.
-  Also detects dependency loops and ``source`` loops.
-
-  This is less important if the input is assumed to be well-formed, but makes
-  Kconfiglib a viable replacement for the C tools if e.g. a ``menuconfig``
-  interface is added.
+  Generates the same warnings as the C implementation, plus additional ones.
+  Also detects dependency and ``source`` loops.
 
   All warnings point out the location(s) in the ``Kconfig`` files where a
   symbol is defined, where applicable.
