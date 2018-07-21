@@ -1646,10 +1646,18 @@ class Kconfig(object):
         # to the previous token. See _STRING_LEX for why this is needed.
         token = _get_keyword(match.group(1))
         if not token:
-            # If the first token is not a keyword, we have a preprocessor
-            # variable assignment (or a bare macro on a line)
-            self._parse_assignment(s)
-            return (None,)
+            # Some commands may be not match, such as "----help----" and "--- help ---".
+            # we need rematch it again. This problem will happen in linux kernel Kconfig file.
+            if "---" in match.group(1):
+                _help_command_match = _re_match(r"\s*(-+\s*help\s*-+)\s*")
+                match = _help_command_match(s)
+                if match:
+                    token = _get_keyword("help")
+            if not token:
+                # If the first token is not a keyword, we have a preprocessor
+                # variable assignment (or a bare macro on a line)
+                self._parse_assignment(s)
+                return (None,)
 
         tokens = [token]
         # The current index in the string being tokenized
