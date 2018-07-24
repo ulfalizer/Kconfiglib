@@ -5639,14 +5639,26 @@ def _error_if_fn(kconf, args):
     return ""
 
 def _shell_fn(kconf, args):
-    stdout, stderr = subprocess.Popen(
-        args[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    ).communicate()
+    # Use universal newlines mode to prevent e.g. stray \r's in command output
+    # on Windows
 
-    if not _IS_PY2:
+    if _IS_PY2:
+        # No decoding on Python 2
+        stdout, stderr = subprocess.Popen(
+            args[1], shell=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            universal_newlines=True
+        ).communicate()
+
+    else:
+        # Passing universal_newlines=True and/or 'encoding' on Python 3 turns
+        # on decoding of the output (bytes -> str), which might fail
         try:
-            stdout = stdout.decode(kconf._encoding)
-            stderr = stderr.decode(kconf._encoding)
+            stdout, stderr = subprocess.Popen(
+                args[1], shell=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True, encoding=kconf._encoding
+            ).communicate()
         except UnicodeDecodeError as e:
             _decoding_error(e, kconf._filename, kconf._linenr)
 
