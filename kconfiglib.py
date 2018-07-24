@@ -1646,8 +1646,17 @@ class Kconfig(object):
         # to the previous token. See _STRING_LEX for why this is needed.
         token = _get_keyword(match.group(1))
         if not token:
-            # If the first token is not a keyword, we have a preprocessor
-            # variable assignment (or a bare macro on a line)
+            # Backwards compatibility with old versions of the C tools, which
+            # (accidentally) accepted stuff like "--help--" and "-help---".
+            # This was fixed in the C tools by commit c2264564 ("kconfig: warn
+            # of unhandled characters in Kconfig commands"), committed in July
+            # 2015, but it seems people still run Kconfiglib on older kernels.
+            if s.strip(" \t\n-") == "help":
+                return (_T_HELP, None)
+
+            # If the first token is not a keyword (and not a weird help token),
+            # we have a preprocessor variable assignment (or a bare macro on a
+            # line)
             self._parse_assignment(s)
             return (None,)
 
