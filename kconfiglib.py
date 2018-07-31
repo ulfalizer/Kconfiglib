@@ -1765,7 +1765,7 @@ class Kconfig(object):
                     token = _T_CLOSE_PAREN
                     i += 1
 
-                elif c == "$":
+                elif s.startswith("$(", i):
                     s, end_i = self._expand_macro(s, i, ())
                     val = s[i:end_i]
                     # isspace() is False for empty strings
