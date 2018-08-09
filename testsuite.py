@@ -467,10 +467,13 @@ def run_selftests():
     verify_eval_bad("|| X")
 
 
-    print("Testing Symbol.__str__() and def_{int,hex,string}")
+    print("Testing Symbol.__str__()/custom_str() and def_{int,hex,string}")
 
     def verify_str(item, s):
         verify_equal(str(item), s[1:])
+
+    def verify_custom_str(item, s):
+        verify_equal(item.custom_str(lambda sc: "[{}]".format(sc.name)), s[1:])
 
     c = Kconfig("Kconfiglib/tests/Kstr", warn=False)
 
@@ -523,6 +526,35 @@ config ADVANCED
 	help
 	  second help text
 """)
+
+    verify_custom_str(c.syms["ADVANCED"], """
+config ADVANCED
+	tristate
+	prompt "prompt" if [DEP]
+	default [DEFAULT_1]
+	default [DEFAULT_2] if [DEP]
+	select [SELECTED_1]
+	select [SELECTED_2] if [DEP]
+	imply [IMPLIED_1]
+	imply [IMPLIED_2] if [DEP]
+	help
+	  first help text
+
+config ADVANCED
+	tristate
+	prompt "prompt 2"
+
+menuconfig ADVANCED
+	tristate
+	prompt "prompt 3"
+
+config ADVANCED
+	tristate
+	depends on ([A] || ![B] || ([C] && [D]) || !([E] && [F]) || [G] = [H] || ([I] && ![J] && ([K] || [L]) && !([M] || [N]) && [O] = [P])) && [DEP4] && [DEP3]
+	help
+	  second help text
+""")
+
 
     verify_str(c.syms["ONLY_DIRECT_DEPS"], """
 config ONLY_DIRECT_DEPS
@@ -626,8 +658,23 @@ config CORRECT_PROP_LOCS_INT
 	depends on LOC_2
 """)
 
+    verify_custom_str(c.syms["CORRECT_PROP_LOCS_INT"], """
+config CORRECT_PROP_LOCS_INT
+	int
+	range [1] [2] if [LOC_1]
+	range [3] [4] if [LOC_1]
+	depends on [LOC_1]
 
-    print("Testing Choice.__str__()")
+config CORRECT_PROP_LOCS_INT
+	int
+	range [5] [6] if [LOC_2]
+	range [7] [8] if [LOC_2]
+	depends on [LOC_2]
+""")
+
+
+
+    print("Testing Choice.__str__()/custom_str()")
 
     verify_str(c.named_choices["CHOICE"], """
 choice CHOICE
@@ -661,8 +708,25 @@ choice CORRECT_PROP_LOCS_CHOICE
 	depends on LOC_3
 """)
 
+    verify_custom_str(c.named_choices["CORRECT_PROP_LOCS_CHOICE"], """
+choice CORRECT_PROP_LOCS_CHOICE
+	bool
+	default [CHOICE_3] if [LOC_1]
+	depends on [LOC_1]
 
-    print("Testing MenuNode.__str__() for menus and comments")
+choice CORRECT_PROP_LOCS_CHOICE
+	bool
+	default [CHOICE_4] if [LOC_2]
+	depends on [LOC_2]
+
+choice CORRECT_PROP_LOCS_CHOICE
+	bool
+	default [CHOICE_5] if [LOC_3]
+	depends on [LOC_3]
+""")
+
+
+    print("Testing MenuNode.__str__()/custom_str() for menus and comments")
 
     verify_str(c.syms["SIMPLE_MENU_HOOK"].nodes[0].next, """
 menu "simple menu"
@@ -674,6 +738,12 @@ menu "advanced menu"
 	visible if B && (C || D)
 """)
 
+    verify_custom_str(c.syms["ADVANCED_MENU_HOOK"].nodes[0].next, """
+menu "advanced menu"
+	depends on [A]
+	visible if [B] && ([C] || [D])
+""")
+
     verify_str(c.syms["SIMPLE_COMMENT_HOOK"].nodes[0].next, """
 comment "simple comment"
 """)
@@ -681,6 +751,11 @@ comment "simple comment"
     verify_str(c.syms["ADVANCED_COMMENT_HOOK"].nodes[0].next, """
 comment "advanced comment"
 	depends on A && B
+""")
+
+    verify_custom_str(c.syms["ADVANCED_COMMENT_HOOK"].nodes[0].next, """
+comment "advanced comment"
+	depends on [A] && [B]
 """)
 
 

@@ -3786,7 +3786,14 @@ class Symbol(object):
 
         An empty string is returned for undefined and constant symbols.
         """
-        return "\n".join(str(node) for node in self.nodes)
+        return self.custom_str(standard_sc_str_fn)
+
+    def custom_str(self, sc_str_fn):
+        """
+        Works like Symbol.__str__(), but allows a custom format to be used for
+        all symbol/choice references. See expr_str().
+        """
+        return "\n".join(node.custom_str(sc_str_fn) for node in self.nodes)
 
     #
     # Private methods
@@ -4318,8 +4325,7 @@ class Choice(object):
         """
         fields = []
 
-        fields.append("choice" if self.name is None else \
-                      "choice " + self.name)
+        fields.append("choice " + self.name if self.name else "choice")
         fields.append(TYPE_TO_STR[self.type])
 
         for node in self.nodes:
@@ -4361,7 +4367,14 @@ class Choice(object):
 
         See Symbol.__str__() as well.
         """
-        return "\n".join(str(node) for node in self.nodes)
+        return self.custom_str(standard_sc_str_fn)
+
+    def custom_str(self, sc_str_fn):
+        """
+        Works like Choice.__str__(), but allows a custom format to be used for
+        all symbol/choice references. See expr_str().
+        """
+        return "\n".join(node.custom_str(sc_str_fn) for node in self.nodes)
 
     #
     # Private methods
@@ -4709,24 +4722,31 @@ class MenuNode(object):
         node are shown on all menu nodes ('option env=...', 'optional' for
         choices, etc.).
         """
+        return self.custom_str(standard_sc_str_fn)
 
-        return self._menu_comment_node_str() \
+    def custom_str(self, sc_str_fn):
+        """
+        Works like MenuNode.__str__(), but allows a custom format to be used
+        for all symbol/choice references. See expr_str().
+        """
+        return self._menu_comment_node_str(sc_str_fn) \
                if self.item in (MENU, COMMENT) else \
-               self._sym_choice_node_str()
+               self._sym_choice_node_str(sc_str_fn)
 
-    def _menu_comment_node_str(self):
+    def _menu_comment_node_str(self, sc_str_fn):
         s = '{} "{}"\n'.format("menu" if self.item == MENU else "comment",
                                self.prompt[0])
 
         if self.dep is not self.kconfig.y:
-            s += "\tdepends on {}\n".format(expr_str(self.dep))
+            s += "\tdepends on {}\n".format(expr_str(self.dep, sc_str_fn))
 
         if self.item == MENU and self.visibility is not self.kconfig.y:
-            s += "\tvisible if {}\n".format(expr_str(self.visibility))
+            s += "\tvisible if {}\n".format(expr_str(self.visibility,
+                                                     sc_str_fn))
 
         return s
 
-    def _sym_choice_node_str(self):
+    def _sym_choice_node_str(self, sc_str_fn):
         lines = []
 
         def indent_add(s):
@@ -4734,66 +4754,65 @@ class MenuNode(object):
 
         def indent_add_cond(s, cond):
             if cond is not self.kconfig.y:
-                s += " if " + expr_str(cond)
+                s += " if " + expr_str(cond, sc_str_fn)
             indent_add(s)
 
-        if isinstance(self.item, (Symbol, Choice)):
-            sc = self.item
+        sc = self.item
 
-            if isinstance(sc, Symbol):
-                lines.append(
-                    ("menuconfig " if self.is_menuconfig else "config ")
-                    + sc.name)
-            else:
-                lines.append(
-                    "choice" if sc.name is None else "choice " + sc.name)
+        if isinstance(sc, Symbol):
+            lines.append(
+                ("menuconfig " if self.is_menuconfig else "config ")
+                + sc.name)
+        else:
+            lines.append("choice " + sc.name if sc.name else "choice")
 
-            if sc.orig_type != UNKNOWN:
-                indent_add(TYPE_TO_STR[sc.orig_type])
+        if sc.orig_type != UNKNOWN:
+            indent_add(TYPE_TO_STR[sc.orig_type])
 
-            if self.prompt:
+        if self.prompt:
+            indent_add_cond(
+                'prompt "{}"'.format(escape(self.prompt[0])),
+                self.prompt[1])
+
+        if isinstance(sc, Symbol):
+            if sc.is_allnoconfig_y:
+                indent_add("option allnoconfig_y")
+
+            if sc is sc.kconfig.defconfig_list:
+                indent_add("option defconfig_list")
+
+            if sc.env_var is not None:
+                indent_add('option env="{}"'.format(sc.env_var))
+
+            if sc is sc.kconfig.modules:
+                indent_add("option modules")
+
+            for low, high, cond in self.ranges:
                 indent_add_cond(
-                    'prompt "{}"'.format(escape(self.prompt[0])),
-                    self.prompt[1])
+                    "range {} {}".format(sc_str_fn(low), sc_str_fn(high)),
+                    cond)
 
-            if isinstance(sc, Symbol):
-                if sc.is_allnoconfig_y:
-                    indent_add("option allnoconfig_y")
+        for default, cond in self.defaults:
+            indent_add_cond("default " + expr_str(default, sc_str_fn),
+                            cond)
 
-                if sc is sc.kconfig.defconfig_list:
-                    indent_add("option defconfig_list")
+        if isinstance(sc, Choice) and sc.is_optional:
+            indent_add("optional")
 
-                if sc.env_var is not None:
-                    indent_add('option env="{}"'.format(sc.env_var))
+        if isinstance(sc, Symbol):
+            for select, cond in self.selects:
+                indent_add_cond("select " + sc_str_fn(select), cond)
 
-                if sc is sc.kconfig.modules:
-                    indent_add("option modules")
+            for imply, cond in self.implies:
+                indent_add_cond("imply " + sc_str_fn(imply), cond)
 
-                for low, high, cond in self.ranges:
-                    indent_add_cond(
-                        "range {} {}".format(expr_str(low), expr_str(high)),
-                        cond)
+        if self.dep is not sc.kconfig.y:
+            indent_add("depends on " + expr_str(self.dep, sc_str_fn))
 
-            for default, cond in self.defaults:
-                indent_add_cond("default " + expr_str(default), cond)
-
-            if isinstance(sc, Choice) and sc.is_optional:
-                indent_add("optional")
-
-            if isinstance(sc, Symbol):
-                for select, cond in self.selects:
-                    indent_add_cond("select " + expr_str(select), cond)
-
-                for imply, cond in self.implies:
-                    indent_add_cond("imply " + expr_str(imply), cond)
-
-            if self.dep is not sc.kconfig.y:
-                indent_add("depends on " + expr_str(self.dep))
-
-            if self.help is not None:
-                indent_add("help")
-                for line in self.help.splitlines():
-                    indent_add("  " + line)
+        if self.help is not None:
+            indent_add("help")
+            for line in self.help.splitlines():
+                indent_add("  " + line)
 
         return "\n".join(lines) + "\n"
 
@@ -4909,42 +4928,61 @@ def expr_value(expr):
     _internal_error("Internal error while evaluating expression: "
                     "unknown operation {}.".format(expr[0]))
 
-def expr_str(expr):
+def standard_sc_str_fn(sc):
+    """
+    Standard symbol/choice printing function. Uses plain Kconfig syntax, and
+    displays choices as <choice> (or <choice NAME>, for named choices).
+
+    See expr_str().
+    """
+    if isinstance(sc, Symbol):
+        return '"{}"'.format(escape(sc.name)) if sc.is_constant else sc.name
+
+    # Choice
+    return "<choice {}>".format(sc.name) if sc.name else "<choice>"
+
+def expr_str(expr, sc_str_fn=standard_sc_str_fn):
     """
     Returns the string representation of the expression 'expr', as in a Kconfig
     file.
 
     Passing subexpressions of expressions to this function works as expected.
-    """
-    if isinstance(expr, Symbol):
-        if expr.is_constant:
-            return '"{}"'.format(escape(expr.name))
-        return expr.name
 
-    if isinstance(expr, Choice):
-        if expr.name is not None:
-            return "<choice {}>".format(expr.name)
-        return "<choice>"
+    sc_str_fn (default: standard_sc_str_fn):
+      This function is called for every symbol/choice (hence "sc") appearing in
+      the expression, with the symbol/choice as the argument. It is expected to
+      return a string to be used for the symbol/choice.
+
+      This can be used e.g. to turn symbols/choices into links when generating
+      documentation, or for printing the value of each symbol/choice after it.
+
+      Note that quoted values are represented as constants symbols
+      (Symbol.is_constant == True).
+    """
+    if isinstance(expr, (Symbol, Choice)):
+        return sc_str_fn(expr)
 
     if expr[0] == NOT:
         if isinstance(expr[1], tuple):
-            return "!({})".format(expr_str(expr[1]))
-        return "!" + expr_str(expr[1])  # Symbol
+            return "!({})".format(expr_str(expr[1], sc_str_fn))
+        return "!" + sc_str_fn(expr[1])  # Symbol
 
     if expr[0] == AND:
-        return "{} && {}".format(_parenthesize(expr[1], OR),
-                                 _parenthesize(expr[2], OR))
+        return "{} && {}".format(_parenthesize(expr[1], OR, sc_str_fn),
+                                 _parenthesize(expr[2], OR, sc_str_fn))
 
     if expr[0] == OR:
         # This turns A && B || C && D into "(A && B) || (C && D)", which is
         # redundant, but more readable
-        return "{} || {}".format(_parenthesize(expr[1], AND),
-                                 _parenthesize(expr[2], AND))
+        return "{} || {}".format(_parenthesize(expr[1], AND, sc_str_fn),
+                                 _parenthesize(expr[2], AND, sc_str_fn))
 
     # Relation
-    return "{} {} {}".format(expr_str(expr[1]),
-                             _REL_TO_STR[expr[0]],
-                             expr_str(expr[2]))
+    #
+    # Relation operands are always symbols (quoted strings are constant
+    # symbols)
+    return "{} {} {}".format(sc_str_fn(expr[1]), _REL_TO_STR[expr[0]],
+                             sc_str_fn(expr[2]))
 
 def expr_items(expr):
     """
@@ -5106,12 +5144,12 @@ def _make_depend_on(sc, expr):
         # Non-constant symbol, or choice
         expr._dependents.add(sc)
 
-def _parenthesize(expr, type_):
+def _parenthesize(expr, type_, sc_str_fn):
     # expr_str() helper. Adds parentheses around expressions of type 'type_'.
 
     if isinstance(expr, tuple) and expr[0] == type_:
-        return "({})".format(expr_str(expr))
-    return expr_str(expr)
+        return "({})".format(expr_str(expr, sc_str_fn))
+    return expr_str(expr, sc_str_fn)
 
 def _indentation(line):
     # Returns the length of the line's leading whitespace, treating tab stops
