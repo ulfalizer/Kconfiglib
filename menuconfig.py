@@ -90,7 +90,7 @@ import re
 import textwrap
 
 from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
-                       BOOL, STRING, INT, HEX, UNKNOWN, \
+                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        AND, OR, NOT, \
                        expr_str, expr_value, split_expr, \
                        standard_sc_str_fn, \
@@ -1979,8 +1979,13 @@ def _defaults_info(sc):
     for val, cond in sc.defaults:
         s += "  - "
         if isinstance(sc, Symbol):
-            s += '{} (value: "{}")' \
-                 .format(_expr_str(val), TRI_TO_STR[expr_value(val)])
+            s += _expr_str(val)
+
+            # Don't show the value hint for string/int/hex symbols. The default
+            # can only be a single symbol there, and it makes no sense to show
+            # its tristate value (_expr_str() already shows its string value)
+            if sc.orig_type in (BOOL, TRISTATE):
+                s += ' (value: "{}")'.format(TRI_TO_STR[expr_value(val)])
         else:
             # Don't print the value next to the symbol name for choice
             # defaults, as it looks a bit confusing
