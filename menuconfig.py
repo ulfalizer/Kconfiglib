@@ -259,7 +259,7 @@ def _name_and_val_str_fn(sc):
             # Undefined symbol reference
             return "{}(undefined/n)".format(sc.name)
 
-        return '{}(="{}")'.format(sc.name, sc.str_value)
+        return '{}(={})'.format(sc.name, sc.str_value)
 
     # For other symbols, use the standard format
     return standard_sc_str_fn(sc)
@@ -1635,7 +1635,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
             sym = matches[i].item
 
-            sym_str = '{}(="{}")'.format(sym.name, sym.str_value)
+            sym_str = _name_and_val_str_fn(sym)
             if matches[i].prompt:
                 sym_str += ' "{}"'.format(matches[i].prompt[0])
 
@@ -1884,7 +1884,7 @@ def _info_str(node):
             _name_info(sym) +
             _prompt_info(sym) +
             "Type: {}\n".format(TYPE_TO_STR[sym.type]) +
-            'Value: "{}"\n\n'.format(sym.str_value) +
+            _value_info(sym) +
             _help_info(sym) +
             _direct_dep_info(sym) +
             _defaults_info(sym) +
@@ -1899,7 +1899,7 @@ def _info_str(node):
             _name_info(choice) +
             _prompt_info(choice) +
             "Type: {}\n".format(TYPE_TO_STR[choice.type]) +
-            'Mode: "{}"\n\n'.format(choice.str_value) +
+            'Mode: {}\n'.format(choice.str_value) +
             _help_info(choice) +
             _choice_syms_info(choice) +
             _direct_dep_info(choice) +
@@ -1927,6 +1927,15 @@ def _prompt_info(sc):
 
     return s
 
+def _value_info(sym):
+    # Returns a string showing 'sym's value
+
+    # Only put quotes around the value for string symbols
+    return "Value: {}\n".format(
+        '"{}"'.format(sym.str_value)
+        if sym.orig_type == STRING
+        else sym.str_value)
+
 def _choice_syms_info(choice):
     # Returns a string listing the choice symbols in 'choice'. Adds
     # "(selected)" next to the selected one.
@@ -1946,7 +1955,7 @@ def _help_info(sc):
     # Symbols and choices defined in multiple locations can have multiple help
     # texts.
 
-    s = ""
+    s = "\n"
 
     for node in sc.nodes:
         if node.help is not None:
@@ -1964,7 +1973,7 @@ def _direct_dep_info(sc):
     if sc.direct_dep is _kconf.y:
         return ""
 
-    return 'Direct dependencies (value: "{}"):\n{}\n' \
+    return 'Direct dependencies (={}):\n{}\n' \
            .format(TRI_TO_STR[expr_value(sc.direct_dep)],
                    _split_expr_info(sc.direct_dep, 2))
 
@@ -1981,11 +1990,16 @@ def _defaults_info(sc):
         if isinstance(sc, Symbol):
             s += _expr_str(val)
 
-            # Don't show the value hint for string/int/hex symbols. The default
-            # can only be a single symbol there, and it makes no sense to show
-            # its tristate value (_expr_str() already shows its string value)
-            if sc.orig_type in (BOOL, TRISTATE):
-                s += ' (value: "{}")'.format(TRI_TO_STR[expr_value(val)])
+            # Skip the value hint in these cases:
+            #
+            # - For string/int/hex symbols. The default can only be a single
+            #   symbol there, and it makes no sense to show its tristate value
+            #   (_expr_str() already shows its string value)
+            #
+            # - If the expression is just a symbol. _expr_str() already shows
+            #   its value in that case.
+            if sc.orig_type in (BOOL, TRISTATE) and isinstance(val, tuple):
+                s += '  (={})'.format(TRI_TO_STR[expr_value(val)])
         else:
             # Don't print the value next to the symbol name for choice
             # defaults, as it looks a bit confusing
@@ -1993,9 +2007,9 @@ def _defaults_info(sc):
         s += "\n"
 
         if cond is not _kconf.y:
-            s += '    Condition (value: "{}"):\n{}' \
+            s += '    Condition (={}):\n{}' \
                  .format(TRI_TO_STR[expr_value(cond)],
-                         _split_expr_info(cond, 7))
+                         _split_expr_info(cond, 4))
 
     return s + "\n"
 
@@ -2017,11 +2031,17 @@ def _split_expr_info(expr, indent):
 
     s = ""
     for i, term in enumerate(split_expr(expr, split_op)):
-        s += '{}{} {} (value: "{}")\n' \
-             .format(" "*indent,
-                     "  " if i == 0 else op_str,
-                     _expr_str(term),
-                     TRI_TO_STR[expr_value(term)])
+        s += "{}{} {}".format(" "*indent,
+                              "  " if i == 0 else op_str,
+                              _expr_str(term))
+
+        # Don't bother showing the value hint if the expression is just a
+        # single symbol. _expr_str() already shows its value.
+        if isinstance(term, tuple):
+            s += "  (={})".format(TRI_TO_STR[expr_value(term)])
+
+        s += "\n"
+
     return s
 
 def _select_imply_info(sym):
