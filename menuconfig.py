@@ -89,13 +89,11 @@ import platform
 import re
 import textwrap
 
-# We need this double import for the _expr_str() override below
-import kconfiglib
-
 from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
                        BOOL, STRING, INT, HEX, UNKNOWN, \
                        AND, OR, NOT, \
-                       expr_value, split_expr, \
+                       expr_str, expr_value, split_expr, \
+                       standard_sc_str_fn, \
                        TRI_TO_STR, TYPE_TO_STR, \
                        standard_kconfig, standard_config_filename
 
@@ -244,42 +242,32 @@ def _style(fg_color, bg_color, attribs, no_color_extra_attribs=0,
 
     return color_attribs[(fg_color, bg_color)] | attribs
 
-# "Extend" the standard kconfiglib.expr_str() to show values for symbols
-# appearing in expressions, for the information dialog.
-#
-# This is a bit hacky, but officially supported. It beats having to reimplement
-# expression printing just to tweak it a bit.
 
-def _expr_str_val(expr):
-    if isinstance(expr, Symbol) and not expr.is_constant and \
-       not _is_num(expr.name):
-        # Show the values of non-constant (non-quoted) symbols that don't look
-        # like numbers. Things like 123 are actually a symbol references, and
-        # only work as expected due to undefined symbols getting their name as
-        # their value. Showing the symbol value there isn't helpful though.
+def _name_and_val_str_fn(sc):
+    # Custom symbol printer that shows the symbol value after the symbol, used
+    # for the information display
 
-        if not expr.nodes:
+    # Show the values of non-constant (non-quoted) symbols that don't look like
+    # numbers. Things like 123 are actually symbol references, and only work as
+    # expected due to undefined symbols getting their name as their value.
+    # Showing the symbol value for those isn't helpful though.
+    if isinstance(sc, Symbol) and \
+       not sc.is_constant and \
+       not _is_num(sc.name):
+
+        if not sc.nodes:
             # Undefined symbol reference
-            return "{}(undefined/n)".format(expr.name)
+            return "{}(undefined/n)".format(sc.name)
 
-        return '{}(="{}")'.format(expr.name, expr.str_value)
+        return '{}(="{}")'.format(sc.name, sc.str_value)
 
-    if isinstance(expr, tuple) and expr[0] == NOT and \
-       isinstance(expr[1], Symbol):
+    # For other symbols, use the standard format
+    return standard_sc_str_fn(sc)
 
-        # Put a space after "!" before a symbol, since '! FOO(="y")' makes it
-        # clearer than '!FOO(="y")' that "y" is the value of FOO itself
-        return "! " + _expr_str(expr[1])
+def _expr_str(expr):
+    # Custom expression printer that shows symbol values
+    return expr_str(expr, _name_and_val_str_fn)
 
-    # We'll end up back in _expr_str_val() when _expr_str_orig() does recursive
-    # calls for subexpressions
-    return _expr_str_orig(expr)
-
-# Do hacky expr_str() extension. The rest of the code will just call
-# _expr_str().
-_expr_str_orig = kconfiglib.expr_str
-kconfiglib.expr_str = _expr_str_val
-_expr_str = _expr_str_val
 
 # Entry point when run as an executable, split out so that setuptools'
 # 'entry_points' can be used. It produces a handy menuconfig.exe launcher on
@@ -294,11 +282,12 @@ def menuconfig(kconf):
     kconf:
       Kconfig instance to be configured
     """
-
-    globals()["_kconf"] = kconf
+    global _kconf
     global _config_filename
     global _show_all
     global _conf_changed
+
+    _kconf = kconf
 
 
     _config_filename = standard_config_filename()
@@ -2073,7 +2062,8 @@ def _kconfig_def_info(item):
 
     s += "\n\n".join("At {}:{}, in menu {}:\n\n{}".format(
                          node.filename, node.linenr, _menu_path_info(node),
-                         textwrap.indent(str(node), "  "))
+                         textwrap.indent(node.custom_str(_name_and_val_str_fn),
+                                         "  "))
                      for node in nodes)
 
     return s
