@@ -93,7 +93,7 @@ from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        AND, OR, NOT, \
                        expr_str, expr_value, split_expr, \
-                       standard_sc_str_fn, \
+                       standard_sc_expr_str, \
                        TRI_TO_STR, TYPE_TO_STR, \
                        standard_kconfig, standard_config_filename
 
@@ -243,7 +243,7 @@ def _style(fg_color, bg_color, attribs, no_color_extra_attribs=0,
     return color_attribs[(fg_color, bg_color)] | attribs
 
 
-def _name_and_val_str_fn(sc):
+def _name_and_val_str(sc):
     # Custom symbol printer that shows the symbol value after the symbol, used
     # for the information display
 
@@ -262,11 +262,11 @@ def _name_and_val_str_fn(sc):
         return '{}(={})'.format(sc.name, sc.str_value)
 
     # For other symbols, use the standard format
-    return standard_sc_str_fn(sc)
+    return standard_sc_expr_str(sc)
 
 def _expr_str(expr):
     # Custom expression printer that shows symbol values
-    return expr_str(expr, _name_and_val_str_fn)
+    return expr_str(expr, _name_and_val_str)
 
 
 # Entry point when run as an executable, split out so that setuptools'
@@ -1635,7 +1635,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
             sym = matches[i].item
 
-            sym_str = _name_and_val_str_fn(sym)
+            sym_str = _name_and_val_str(sym)
             if matches[i].prompt:
                 sym_str += ' "{}"'.format(matches[i].prompt[0])
 
@@ -2087,7 +2087,7 @@ def _kconfig_def_info(item):
 
     s += "\n\n".join("At {}:{}, in menu {}:\n\n{}".format(
                          node.filename, node.linenr, _menu_path_info(node),
-                         textwrap.indent(node.custom_str(_name_and_val_str_fn),
+                         textwrap.indent(node.custom_str(_name_and_val_str),
                                          "  "))
                      for node in nodes)
 
