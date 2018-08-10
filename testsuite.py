@@ -2549,6 +2549,8 @@ def test_min_config(arch, srcarch):
         defconfigs = defconfig_files(srcarch)
 
     for defconfig in defconfigs:
+        rm_configs()
+
         kconf.load_config(defconfig)
         kconf.write_min_config("._config")
 
