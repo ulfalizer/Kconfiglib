@@ -5689,35 +5689,31 @@ def _error_if_fn(kconf, args):
     return ""
 
 def _shell_fn(kconf, args):
-    # Use universal newlines mode to prevent e.g. stray \r's in command output
-    # on Windows
+    stdout, stderr = subprocess.Popen(
+        args[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    ).communicate()
 
-    if _IS_PY2:
-        # No decoding on Python 2
-        stdout, stderr = subprocess.Popen(
-            args[1], shell=True,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            universal_newlines=True
-        ).communicate()
-
-    else:
-        # Passing universal_newlines=True and/or 'encoding' on Python 3 turns
-        # on decoding of the output (bytes -> str), which might fail
+    if not _IS_PY2:
         try:
-            stdout, stderr = subprocess.Popen(
-                args[1], shell=True,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                universal_newlines=True, encoding=kconf._encoding
-            ).communicate()
+            stdout = stdout.decode(kconf._encoding)
+            stderr = stderr.decode(kconf._encoding)
         except UnicodeDecodeError as e:
             _decoding_error(e, kconf._filename, kconf._linenr)
 
     if stderr:
-        kconf._warn(
-            "'{}' wrote to stderr: {}".format(args[1], stderr.rstrip("\n")),
-            kconf._filename, kconf._linenr)
+        kconf._warn("'{}' wrote to stderr: {}".format(
+                        args[1], "\n".join(stderr.splitlines())),
+                    kconf._filename, kconf._linenr)
 
-    return stdout.rstrip("\n").replace("\n", " ")
+    # Manual universal newlines with splitlines() (to prevent e.g. stray \r's
+    # in command output on Windows), trailing newline removal, and
+    # newline-to-space conversion.
+    #
+    # On Python 3 versions before 3.6, it's not possible to specify the
+    # encoding when passing universal_newlines=True to Popen() (the 'encoding'
+    # parameter was added in 3.6), so we do this manual version instead.
+    return "\n".join(stdout.splitlines()).rstrip("\n").replace("\n", " ")
+
 
 #
 # Public global constants
