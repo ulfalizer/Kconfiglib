@@ -3989,18 +3989,15 @@ class Symbol(object):
         # and menus) is selected by some other symbol. Also warn if a symbol
         # whose direct dependencies evaluate to m is selected to y.
 
-        dir_dep_val = expr_value(self.direct_dep)
-
         msg = "{} has direct dependencies {} with value {}, but is " \
               "currently being {}-selected by the following symbols:" \
               .format(_name_and_loc(self), expr_str(self.direct_dep),
-                      TRI_TO_STR[dir_dep_val],
+                      TRI_TO_STR[expr_value(self.direct_dep)],
                       TRI_TO_STR[expr_value(self.rev_dep)])
 
         # The reverse dependencies from each select are ORed together
         for select in split_expr(self.rev_dep, OR):
-            select_val = expr_value(select)
-            if select_val <= dir_dep_val:
+            if expr_value(select) <= expr_value(self.direct_dep):
                 # Only include selects that exceed the direct dependencies
                 continue
 
