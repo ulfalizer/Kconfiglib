@@ -2198,7 +2198,7 @@ class Kconfig(object):
 
                 if node.is_menuconfig and not node.prompt:
                     self._warn("the menuconfig symbol {} has no prompt"
-                               .format(_name_and_loc(node.item)))
+                               .format(_name_and_loc(sym)))
 
                 # Tricky Python semantics: This assign prev.next before prev
                 prev.next = prev = node
