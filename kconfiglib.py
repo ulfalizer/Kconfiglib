@@ -2927,14 +2927,15 @@ class Kconfig(object):
         # See the Symbol class docstring
         sc.direct_dep = self._make_or(sc.direct_dep, node.dep)
 
-        if node.defaults:
-            sc.defaults.extend(node.defaults)
+        sc.defaults += node.defaults
+
+        # The properties below aren't available on choices
 
         if node.ranges:
-            sc.ranges.extend(node.ranges)
+            sc.ranges += node.ranges
 
         if node.selects:
-            sc.selects.extend(node.selects)
+            sc.selects += node.selects
 
             # Modify the reverse dependencies of the selected symbol
             for target, cond in node.selects:
@@ -2943,7 +2944,7 @@ class Kconfig(object):
                     self._make_and(sc, cond))
 
         if node.implies:
-            sc.implies.extend(node.implies)
+            sc.implies += node.implies
 
             # Modify the weak reverse dependencies of the implied
             # symbol
