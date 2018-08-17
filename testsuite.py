@@ -895,17 +895,17 @@ comment "advanced comment"
 <configuration with 14 symbols, main menu prompt "Main menu", srctree is current directory, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
 """)
 
-    os.environ["srctree"] = "Kconfiglib"
+    os.environ["srctree"] = "srctree value"
     os.environ["CONFIG_"] = "CONFIG_ value"
 
-    c = Kconfig("tests/Krepr", warn=False)
+    c = Kconfig("Kconfiglib/tests/Krepr", warn=False)
     c.enable_warnings()
     c.disable_stderr_warnings()
     c.disable_redun_warnings()
     c.enable_undef_warnings()
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Main menu", srctree "Kconfiglib", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
+<configuration with 14 symbols, main menu prompt "Main menu", srctree "srctree value", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
 """)
 
     os.environ.pop("srctree", None)
@@ -987,7 +987,7 @@ g
         os.environ["srctree"] = srctree
 
         # Has symbol with empty help text, so disable warnings
-        c = Kconfig("tests/Klocation", warn=False)
+        c = Kconfig("Kconfiglib/tests/Klocation", warn=False)
 
         verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
 
@@ -1018,7 +1018,7 @@ g
         # Test recursive 'source' detection
 
         try:
-            Kconfig("tests/Krecursive1")
+            Kconfig("Kconfiglib/tests/Krecursive1")
         except KconfigError:
             pass
         except:
@@ -1030,7 +1030,7 @@ g
         # TODO: Make an exception test helper
 
         try:
-            Kconfig("tests/Kmissingsource")
+            Kconfig("Kconfiglib/tests/Kmissingsource")
         except KconfigError:
             pass
         except:
@@ -1039,7 +1039,7 @@ g
             fail("'source' with missing file did not raise exception")
 
         try:
-            Kconfig("tests/Kmissingrsource")
+            Kconfig("Kconfiglib/tests/Kmissingrsource")
         except KconfigError:
             pass
         except:
@@ -1559,7 +1559,7 @@ g
            "defconfig_filename gave wrong file with $srctree unset")
 
     os.environ["srctree"] = "Kconfiglib/tests"
-    c = Kconfig("Kdefconfig_srctree")
+    c = Kconfig("Kconfiglib/tests/Kdefconfig_srctree")
     verify(c.defconfig_filename == "Kconfiglib/tests/sub/defconfig_in_sub",
            "defconfig_filename gave wrong file with $srctree set")
 
