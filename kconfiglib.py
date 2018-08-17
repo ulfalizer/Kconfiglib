@@ -311,10 +311,10 @@ Kconfiglib implements two Kconfig extensions related to 'source':
 'source' with relative path
 ---------------------------
 
-The library implements a custom 'rsource' statement that allows to import
-Kconfig file by specifying path relative to directory of the currently parsed
-file, instead of path relative to project root.
-This extension is not supported by Linux kernel tools (yet).
+Kconfiglib supports a custom 'rsource' statement that sources Kconfig files
+with a path relative to directory of the Kconfig file containing the 'rsource'
+statement, instead of relative to the project root. This extension is not
+supported by Linux kernel tools as of writing.
 
 Consider following directory tree:
 
@@ -330,16 +330,21 @@ Consider following directory tree:
         +--ModuleA
            +--Kconfig
 
-In above example, src/SubSystem1/Kconfig imports Kconfig for ModuleA.
-With default 'source' it looks like:
+In this example, assume that src/SubSystem1/Kconfig wants to source
+src/SubSystem1/ModuleA/Kconfig.
+
+With 'source', the following statement would be used:
 
   source "src/SubSystem1/ModuleA/Kconfig"
 
-Using 'rsource' it can be rewritten as:
+Using 'rsource', it can be rewritten as:
 
   rsource "ModuleA/Kconfig"
 
-If absolute path is given to 'rsource' then it follows behavior of 'source'.
+If an absolute path is given to 'rsource', it acts the same as 'source'.
+
+'rsource' can be used to create "position-independent" Kconfig trees that can
+be moved around freely.
 
 
 Globbed sourcing
