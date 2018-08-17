@@ -610,19 +610,13 @@ class Kconfig(object):
           the right Kconfig is included from there (arch/$SRCARCH/Kconfig as of
           writing).
 
+          If $srctree is set, 'filename' will be looked up relative to it.
+          $srctree is also used to look up source'd files within Kconfig files.
+          See the class documentation.
+
           If you are using Kconfiglib via 'make scriptconfig', the filename of
           the base base Kconfig file will be in sys.argv[1]. It's currently
           always "Kconfig" in practice.
-
-          The $srctree environment variable is used to look up Kconfig files
-          referenced in Kconfig files if set. See the class documentation.
-
-          Note: '(o)source' statements in Kconfig files always work relative to
-          $srctree (or the current directory if $srctree is unset), even if
-          'filename' is a path with directories. This allows a subset of
-          Kconfig files to be loaded without breaking references to other
-          Kconfig files, e.g. by doing Kconfig("./sub/Kconfig"). sub/Kconfig
-          might expect to be sourced by ./Kconfig.
 
         warn (default: True):
           True if warnings related to this configuration should be generated.
@@ -737,7 +731,7 @@ class Kconfig(object):
         self.top_node.prompt = ("Main menu", self.y)
         self.top_node.parent = None
         self.top_node.dep = self.y
-        self.top_node.filename = os.path.relpath(filename, self.srctree)
+        self.top_node.filename = filename
         self.top_node.linenr = 1
 
         # Parse the Kconfig files
@@ -751,11 +745,17 @@ class Kconfig(object):
         self._filestack = []
 
         # The current parsing location
-        self._filename = os.path.relpath(filename, self.srctree)
+        self._filename = filename
         self._linenr = 0
 
         # Open the top-level Kconfig file
-        self._file = self._open(filename, "r")
+        try:
+            self._file = self._open(os.path.join(self.srctree, filename), "r")
+        except IOError as e:
+            if self.srctree:
+                print(textwrap.fill(
+                    _INIT_SRCTREE_NOTE.format(self.srctree), 80))
+            raise
 
         try:
             # Parse everything
@@ -6014,3 +6014,12 @@ _REL_TO_STR = {
     GREATER:       ">",
     GREATER_EQUAL: ">=",
 }
+
+_INIT_SRCTREE_NOTE = """
+NOTE: Starting with Kconfiglib 10.0.0, the Kconfig filename passed to
+Kconfig.__init__() is looked up relative to the $srctree (which is set to '{}')
+instead of relative to the working directory. Previously, $srctree only applied
+to files being source'd within Kconfig files. This change makes running scripts
+out-of-tree work seamlessly, with no special coding required. Sorry for the
+backwards compatibility break!
+"""[1:]
