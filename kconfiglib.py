@@ -605,19 +605,13 @@ class Kconfig(object):
           the right Kconfig is included from there (arch/$SRCARCH/Kconfig as of
           writing).
 
+          If $srctree is set, 'filename' will be looked up relative to it.
+          $srctree is also used to look up source'd files within Kconfig files.
+          See the class documentation.
+
           If you are using Kconfiglib via 'make scriptconfig', the filename of
           the base base Kconfig file will be in sys.argv[1]. It's currently
           always "Kconfig" in practice.
-
-          The $srctree environment variable is used to look up Kconfig files
-          referenced in Kconfig files if set. See the class documentation.
-
-          Note: '(o)source' statements in Kconfig files always work relative to
-          $srctree (or the current directory if $srctree is unset), even if
-          'filename' is a path with directories. This allows a subset of
-          Kconfig files to be loaded without breaking references to other
-          Kconfig files, e.g. by doing Kconfig("./sub/Kconfig"). sub/Kconfig
-          might expect to be sourced by ./Kconfig.
 
         warn (default: True):
           True if warnings related to this configuration should be generated.
@@ -732,7 +726,7 @@ class Kconfig(object):
         self.top_node.prompt = ("Main menu", self.y)
         self.top_node.parent = None
         self.top_node.dep = self.y
-        self.top_node.filename = os.path.relpath(filename, self.srctree)
+        self.top_node.filename = filename
         self.top_node.linenr = 1
 
         # Parse the Kconfig files
@@ -746,11 +740,11 @@ class Kconfig(object):
         self._filestack = []
 
         # The current parsing location
-        self._filename = os.path.relpath(filename, self.srctree)
+        self._filename = filename
         self._linenr = 0
 
         # Open the top-level Kconfig file
-        self._file = self._open(filename, "r")
+        self._file = self._open(os.path.join(self.srctree, filename), "r")
 
         try:
             # Parse everything
