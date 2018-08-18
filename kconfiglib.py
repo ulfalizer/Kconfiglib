@@ -4588,7 +4588,9 @@ class MenuNode(object):
       ignored internally by Kconfiglib, except when printing symbols.
 
     filename/linenr:
-      The location where the menu node appears.
+      The location where the menu node appears. The filename is relative to
+      $srctree (or to the current directory if $srctree isn't set), except
+      absolute paths passed to 'source' and Kconfig.__init__() are preserved.
 
     kconfig:
       The Kconfig instance the menu node is from.
