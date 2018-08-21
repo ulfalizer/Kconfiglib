@@ -995,13 +995,13 @@ class Kconfig(object):
                 if not choice._was_set:
                     choice.unset_value()
 
-    def _node_items(self):
+    def node_iter(self, skip_duplicates=False):
         r"""
         Return an iterator that traverses all nodes in the configuration.
         Internall used bye write_*_config() and related methods.
         """
 
-        # Symbol._written is set to True when a symbol config string is
+        # Symbol._visited is set to True when a symbol config string is
         # fetched, so that symbols defined in multiple locations only get
         # one .config entry. We reset it prior to writing out a new
         # .config. It only needs to be reset for defined symbols, because
@@ -1011,15 +1011,16 @@ class Kconfig(object):
         # The C tools reuse _write_to_conf for this, but we cache
         # _write_to_conf together with the value and don't invalidate
         # cached values when writing .config files, so that won't work.
-        for sym in self._defined_syms_set:
-            sym._written = False
+        if skip_duplicates:
+            for sym in self._defined_syms_set:
+                sym._visited = False
 
         node = self.top_node.list
         while node:
-            if isinstance(node.item, Symbol):
-                # Yield symbols only if _written is False
-                if not node.item._written:
-                    node.item._written = True
+            if skip_duplicates and isinstance(node.item, Symbol):
+                # Yield symbols only if _visited is False
+                if not node.item._visited:
+                    node.item._visited = True
                     yield node
             else:
                 yield node
@@ -1060,7 +1061,7 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            for node in self._node_items():
+            for node in self.node_iter(skip_duplicates=True):
                 if isinstance(node.item, Symbol):
                     sym = node.item
                     # Note: _write_to_conf is determined when the value is
@@ -1122,7 +1123,7 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            for node in self._node_items():
+            for node in self.node_iter(skip_duplicates=True):
                 if isinstance(node.item, Symbol):
                     f.write(node.item.config_string)
                 elif expr_value(node.dep) and \
@@ -1155,7 +1156,7 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            for node in self._node_items():
+            for node in self.node_iter(skip_duplicates=True):
                 if isinstance(node.item, Symbol):
                     sym = node.item
                     # Skip symbols that cannot be changed. Only check
@@ -1178,7 +1179,7 @@ class Kconfig(object):
                        sym.choice._get_selection_from_defaults() is sym and \
                        sym.orig_type == BOOL and \
                        sym.tri_value == 2:
-                            continue
+                        continue
 
                     f.write(node.item.config_string)
 
@@ -1315,7 +1316,7 @@ class Kconfig(object):
         # by passing a flag to it, plus we only need to look at symbols here.
 
         with self._open("auto.conf", "w") as f:
-            for node in self._node_items():
+            for node in self.node_iter(skip_duplicates=True):
                 if not isinstance(node.item, Symbol): continue
                 sym = node.item
                 if not (sym.orig_type in (BOOL, TRISTATE) and
@@ -3306,7 +3307,7 @@ class Symbol(object):
         "_old_val",
         "_was_set",
         "_write_to_conf",
-        "_written",
+        "_visited",
         "choice",
         "defaults",
         "direct_dep",
@@ -3818,7 +3819,7 @@ class Symbol(object):
         """
         # These attributes are always set on the instance from outside and
         # don't need defaults:
-        #   _written
+        #   _visited
         #   kconfig
         #   direct_dep
         #   is_constant
