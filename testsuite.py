@@ -1764,20 +1764,21 @@ g
     c.load_config("Kconfiglib/tests/config_indented")
     verify_value("IGNOREME", "y")
 
-    # Symbol order should match definition order in headers
+    # Symbol order in headers and minimal configuration files should match
+    # definition order, like in .config files
 
     c = Kconfig("Kconfiglib/tests/Korder")
 
-    c.write_config(config_test_file, header="")
+    c.write_autoconf(config_test_file, header="")
     verify_file_contents(config_test_file, """
-CONFIG_O=0
-CONFIG_R=1
-CONFIG_D=2
-CONFIG_E=3
-CONFIG_R2=4
-CONFIG_I=5
-CONFIG_N=6
-CONFIG_G=7
+#define CONFIG_O 0
+#define CONFIG_R 1
+#define CONFIG_D 2
+#define CONFIG_E 3
+#define CONFIG_R2 4
+#define CONFIG_I 5
+#define CONFIG_N 6
+#define CONFIG_G 7
 """[1:])
 
     # Differs from defaults
