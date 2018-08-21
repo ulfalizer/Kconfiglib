@@ -40,6 +40,7 @@ from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, MenuNode, \
                        TRI_TO_STR, \
                        escape, unescape, \
                        expr_str, expr_value, expr_items, split_expr, \
+                       _ordered_unique, \
                        OR, AND, \
                        KconfigError
 import difflib
@@ -252,6 +253,19 @@ def run_selftests():
     # Backslashes before any character should be unescaped, not just before "
     # and \
     verify_equal(unescape(r"\afoo\b\c\\d\\\e\\\\f"), r"afoobc\d\e\\f")
+
+
+    print("Testing _ordered_unique()")
+
+    verify_equal(_ordered_unique([]), [])
+    verify_equal(_ordered_unique([1]), [1])
+    verify_equal(_ordered_unique([1, 2]), [1, 2])
+    verify_equal(_ordered_unique([1, 1]), [1])
+    verify_equal(_ordered_unique([1, 1, 2]), [1, 2])
+    verify_equal(_ordered_unique([1, 2, 1]), [1, 2])
+    verify_equal(_ordered_unique([1, 2, 2]), [1, 2])
+    verify_equal(_ordered_unique([1, 2, 3, 2, 1, 2, 3, 4, 3, 2, 1, 0]),
+                                 [1, 2, 3, 4, 0])
 
 
     print("Testing expression evaluation")
