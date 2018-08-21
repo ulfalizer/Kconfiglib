@@ -2461,6 +2461,11 @@ def test_sanity(arch, srcarch):
 
     kconf = Kconfig()
 
+    for sym in kconf.defined_syms:
+        verify(sym._visited == 2,
+               "{} has broken dependency loop detection (_visited = {})"
+               .format(sym.name, sym._visited))
+
     kconf.modules
     kconf.defconfig_list
     kconf.defconfig_filename
@@ -2512,14 +2517,10 @@ def test_sanity(arch, srcarch):
         sym.visibility
 
     for sym in kconf.defined_syms:
-       verify(sym.nodes, sym.name + " is defined but lacks menu nodes")
+        verify(sym.nodes, sym.name + " is defined but lacks menu nodes")
 
-       verify(not (sym.orig_type not in (BOOL, TRISTATE) and sym.choice),
-              sym.name + " is a choice symbol but not bool/tristate")
-
-       verify(sym._checked == 2,
-              "{} has broken dependency loop detection (_checked = {})"
-              .format(sym.name, sym._checked))
+        verify(not (sym.orig_type not in (BOOL, TRISTATE) and sym.choice),
+               sym.name + " is a choice symbol but not bool/tristate")
 
     for key, sym in kconf.const_syms.items():
         verify(isinstance(key, str),

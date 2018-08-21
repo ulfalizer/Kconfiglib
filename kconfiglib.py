@@ -1079,18 +1079,22 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            # Symbol._written is set to True when a symbol config string is
-            # fetched, so that symbols defined in multiple locations only get
-            # one .config entry. We reset it prior to writing out a new
-            # .config. It only needs to be reset for defined symbols, because
-            # undefined symbols will never be written out (because they do not
-            # appear in the menu tree rooted at Kconfig.top_node).
+            # Symbol._visited is set to True when we visit a symbol, so that
+            # symbols defined in multiple locations only get one .config entry.
+            # We reset it prior to writing out a new .config. It only needs to
+            # be reset for defined symbols, because undefined symbols will
+            # never be written out (because they do not appear in the menu tree
+            # rooted at Kconfig.top_node).
             #
             # The C tools reuse _write_to_conf for this, but we cache
             # _write_to_conf together with the value and don't invalidate
             # cached values when writing .config files, so that won't work.
+            #
+            # Note: The usage of _visited here is completely independent from
+            # the usage during dependency loop detection (which runs at the end
+            # of parsing). The attribute is just reused.
             for sym in self._unique_def_syms:
-                sym._written = False
+                sym._visited = False
 
             # The 'top_node' menu node itself doesn't generate any output, so
             # it's skipped over below
@@ -1115,8 +1119,8 @@ class Kconfig(object):
                 item = node.item
 
                 if isinstance(item, Symbol):
-                    if not item._written:
-                        item._written = True
+                    if not item._visited:
+                        item._visited = True
                         f.write(item.config_string)
 
                 elif expr_value(node.dep) and \
@@ -3286,12 +3290,11 @@ class Symbol(object):
         "_cached_str_val",
         "_cached_tri_val",
         "_cached_vis",
-        "_checked",
         "_dependents",
         "_old_val",
+        "_visited",
         "_was_set",
         "_write_to_conf",
-        "_written",
         "choice",
         "defaults",
         "direct_dep",
@@ -3803,7 +3806,6 @@ class Symbol(object):
         """
         # These attributes are always set on the instance from outside and
         # don't need defaults:
-        #   _written
         #   kconfig
         #   direct_dep
         #   is_constant
@@ -3835,8 +3837,9 @@ class Symbol(object):
         # See Kconfig._build_dep()
         self._dependents = set()
 
-        # Used during dependency loop detection
-        self._checked = 0
+        # Used during dependency loop detection and (independently) in
+        # write_config()
+        self._visited = 0
 
     def _assignable(self):
         # Worker function for the 'assignable' attribute
@@ -4163,8 +4166,8 @@ class Choice(object):
         "_cached_assignable",
         "_cached_selection",
         "_cached_vis",
-        "_checked",
         "_dependents",
+        "_visited",
         "_was_set",
         "defaults",
         "direct_dep",
@@ -4405,7 +4408,7 @@ class Choice(object):
         self._dependents = set()
 
         # Used during dependency loop detection
-        self._checked = 0
+        self._visited = 0
 
     def _assignable(self):
         # Worker function for the 'assignable' attribute
@@ -5365,20 +5368,20 @@ def _check_dep_loop_sym(sym, ignore_choice):
     #
     # Algorithm:
     #
-    #  1. Symbols/choices start out with _checked = 0, meaning unvisited.
+    #  1. Symbols/choices start out with _visited = 0, meaning unvisited.
     #
-    #  2. When a symbol/choice is first visited, _checked is set to 1, meaning
+    #  2. When a symbol/choice is first visited, _visited is set to 1, meaning
     #     "visited, potentially part of a dependency loop". The recursive
     #     search then continues from the symbol/choice.
     #
-    #  3. If we run into a symbol/choice X with _checked already set to 1,
+    #  3. If we run into a symbol/choice X with _visited already set to 1,
     #     there's a dependency loop. The loop is found on the call stack by
     #     recording symbols while returning ("on the way back") until X is seen
     #     again.
     #
     #  4. Once a symbol/choice and all its dependencies (or dependents in this
     #     case) have been checked recursively without detecting any loops, its
-    #     _checked is set to 2, meaning "visited, not part of a dependency
+    #     _visited is set to 2, meaning "visited, not part of a dependency
     #     loop".
     #
     #     This saves work if we run into the symbol/choice again in later calls
@@ -5392,10 +5395,10 @@ def _check_dep_loop_sym(sym, ignore_choice):
     # Maybe there's a better way to handle this (different flags or the
     # like...)
 
-    if not sym._checked:
-        # sym._checked == 0, unvisited
+    if not sym._visited:
+        # sym._visited == 0, unvisited
 
-        sym._checked = 1
+        sym._visited = 1
 
         for dep in sym._dependents:
             # Choices show up in Symbol._dependents when the choice has the
@@ -5419,25 +5422,25 @@ def _check_dep_loop_sym(sym, ignore_choice):
                 return _found_dep_loop(loop, sym)
 
         # The symbol is not part of a dependency loop
-        sym._checked = 2
+        sym._visited = 2
 
         # No dependency loop found
         return None
 
-    if sym._checked == 2:
+    if sym._visited == 2:
         # The symbol was checked earlier and is already known to not be part of
         # a dependency loop
         return None
 
-    # sym._checked == 1, found a dependency loop. Return the symbol as the
+    # sym._visited == 1, found a dependency loop. Return the symbol as the
     # first element in it.
     return (sym,)
 
 def _check_dep_loop_choice(choice, skip):
-    if not choice._checked:
-        # choice._checked == 0, unvisited
+    if not choice._visited:
+        # choice._visited == 0, unvisited
 
-        choice._checked = 1
+        choice._visited = 1
 
         # Check for loops involving choice symbols. If we came here via a
         # choice symbol, skip that one, as we'd get a false positive
@@ -5452,17 +5455,17 @@ def _check_dep_loop_choice(choice, skip):
                     return _found_dep_loop(loop, choice)
 
         # The choice is not part of a dependency loop
-        choice._checked = 2
+        choice._visited = 2
 
         # No dependency loop found
         return None
 
-    if choice._checked == 2:
+    if choice._visited == 2:
         # The choice was checked earlier and is already known to not be part of
         # a dependency loop
         return None
 
-    # choice._checked == 1, found a dependency loop. Return the choice as the
+    # choice._visited == 1, found a dependency loop. Return the choice as the
     # first element in it.
     return (choice,)
 
