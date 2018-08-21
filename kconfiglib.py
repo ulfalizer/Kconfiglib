@@ -1312,7 +1312,7 @@ class Kconfig(object):
             for sym in self._defined_syms_set:
                 sym._written = False
 
-            for sym in self._defined_syms_set:
+            for sym in self.defined_syms:
                 if not sym._written:
                     sym._written = True
                     if not (sym.orig_type in (BOOL, TRISTATE) and
