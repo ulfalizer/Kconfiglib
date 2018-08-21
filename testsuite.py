@@ -1764,6 +1764,39 @@ g
     c.load_config("Kconfiglib/tests/config_indented")
     verify_value("IGNOREME", "y")
 
+    # Symbol order should match definition order in headers
+
+    c = Kconfig("Kconfiglib/tests/Korder")
+
+    c.write_config(config_test_file, header="")
+    verify_file_contents(config_test_file, """
+CONFIG_O=0
+CONFIG_R=1
+CONFIG_D=2
+CONFIG_E=3
+CONFIG_R2=4
+CONFIG_I=5
+CONFIG_N=6
+CONFIG_G=7
+"""[1:])
+
+    # Differs from defaults
+    c.syms["O"].set_value("-1")
+    c.syms["R"].set_value("-1")
+    c.syms["E"].set_value("-1")
+    c.syms["R2"].set_value("-1")
+    c.syms["N"].set_value("-1")
+    c.syms["G"].set_value("-1")
+    c.write_min_config(config_test_file, header="")
+    verify_file_contents(config_test_file, """
+CONFIG_O=-1
+CONFIG_R=-1
+CONFIG_E=-1
+CONFIG_R2=-1
+CONFIG_N=-1
+CONFIG_G=-1
+"""[1:])
+
 
     print("Testing Kconfig fetching and separation")
 

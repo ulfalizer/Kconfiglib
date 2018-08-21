@@ -1020,7 +1020,8 @@ class Kconfig(object):
             for sym in self._defined_syms_set:
                 sym._written = False
 
-            for sym in self._defined_syms_set:
+            # Using 'defined_syms' gives us the same order as in .config files
+            for sym in self.defined_syms:
                 if not sym._written:
                     sym._written = True
                     # Note: _write_to_conf is determined when the value is
@@ -1151,7 +1152,8 @@ class Kconfig(object):
             for sym in self._defined_syms_set:
                 sym._written = False
 
-            for sym in self._defined_syms_set:
+            # Using 'defined_syms' gives us the same order as in .config files
+            for sym in self.defined_syms:
                 if not sym._written:
                     sym._written = True
 
