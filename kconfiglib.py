@@ -782,6 +782,9 @@ class Kconfig(object):
         except UnicodeDecodeError as e:
             _decoding_error(e, self._filename)
 
+        # Close the top-level Kconfig file
+        self._file.close()
+
         self.top_node.list = self.top_node.next
         self.top_node.next = None
 
