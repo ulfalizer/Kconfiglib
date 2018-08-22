@@ -432,13 +432,31 @@ class Kconfig(object):
     defined_syms:
       A list with all defined symbols, in the same order as they appear in the
       Kconfig files. Symbols defined in multiple locations appear multiple
-      times. Iterating over set(defined_syms) will visit each defined symbol
-      once.
+      times.
+
+      Note: You probably want to use 'unique_defined_syms' instead. This
+      attribute is mostly maintained for backwards compatibility.
+
+    unique_defined_syms:
+      A list like 'defined_syms', but with duplicates removed. Just the first
+      instance is kept for symbols defined in multiple locations. Kconfig order
+      is preserved otherwise.
+
+      Using this attribute instead of 'defined_syms' can save work, and
+      automatically gives reasonable behavior when writing configuration output
+      (symbols defined in multiple locations only generate output once, while
+      still preserving Kconfig order for readability).
 
     choices:
       A list with all choices, in the same order as they appear in the Kconfig
-      files. Named choices defined in multiple locations appear multiple times.
-      Iterating over set(choices) will visit each choice once.
+      files.
+
+      Note: You probably want to use 'unique_choices' instead. This attribute
+      is mostly maintained for backwards compatibility.
+
+    unique_choices:
+      Analogous to 'unique_defined_syms', for choices. Named choices can have
+      multiple definition locations.
 
     menus:
       A list with all menus, in the same order as they appear in the Kconfig
@@ -540,7 +558,6 @@ class Kconfig(object):
         "_encoding",
         "_functions",
         "_set_match",
-        "_unique_def_syms",
         "_unset_match",
         "_warn_for_no_prompt",
         "_warn_for_redun_assign",
@@ -562,6 +579,8 @@ class Kconfig(object):
         "srctree",
         "syms",
         "top_node",
+        "unique_choices",
+        "unique_defined_syms",
         "variables",
         "warnings",
         "y",
@@ -766,21 +785,10 @@ class Kconfig(object):
         self.top_node.list = self.top_node.next
         self.top_node.next = None
 
-        # 'defined_syms' with duplicates removed, preserving order.
-        #
-        # Symbols defined in multiple locations only generate a single output
-        # line in .config files and headers, at their first definition
-        # location, so this format is handy.
-        #
-        # U-Boot and Zephyr make heavy use of being able to define a symbol in
-        # multiple locations. Iterating over '_unique_def_syms' wherever
-        # possible makes a huge performance difference for U-Boot, speeding up
-        # parsing from ~4 seconds to ~0.6 seconds on my machine.
-        #
-        # Maybe it would make sense to expose this in the API at some point.
-        self._unique_def_syms = _ordered_unique(self.defined_syms)
-
         self._parsing_kconfigs = False
+
+        self.unique_defined_syms = _ordered_unique(self.defined_syms)
+        self.unique_choices = _ordered_unique(self.choices)
 
         # Do various post-processing of the menu tree
         self._finalize_tree(self.top_node, self.y)
@@ -789,10 +797,10 @@ class Kconfig(object):
         # Do sanity checks. Some of these depend on everything being
         # finalized.
 
-        for sym in self._unique_def_syms:
+        for sym in self.unique_defined_syms:
             _check_sym_sanity(sym)
 
-        for choice in self.choices:
+        for choice in self.unique_choices:
             _check_choice_sanity(choice)
 
         if os.environ.get("KCONFIG_STRICT") == "y":
@@ -803,7 +811,7 @@ class Kconfig(object):
         self._build_dep()
 
         # Check for dependency loops
-        for sym in self._unique_def_syms:
+        for sym in self.unique_defined_syms:
             _check_dep_loop_sym(sym, False)
 
         # Add extra dependencies from choices to choice symbols that get
@@ -873,10 +881,10 @@ class Kconfig(object):
                 # Another benefit is that invalidation must be rock solid for
                 # it to work, making it a good test.
 
-                for sym in self._unique_def_syms:
+                for sym in self.unique_defined_syms:
                     sym._was_set = False
 
-                for choice in self.choices:
+                for choice in self.unique_choices:
                     choice._was_set = False
 
             # Small optimizations
@@ -995,11 +1003,11 @@ class Kconfig(object):
             # If we're replacing the configuration, unset the symbols that
             # didn't get set
 
-            for sym in self._unique_def_syms:
+            for sym in self.unique_defined_syms:
                 if not sym._was_set:
                     sym.unset_value()
 
-            for choice in self.choices:
+            for choice in self.unique_choices:
                 if not choice._was_set:
                     choice.unset_value()
 
@@ -1024,7 +1032,7 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            for sym in self._unique_def_syms:
+            for sym in self.unique_defined_syms:
                 # Note: _write_to_conf is determined when the value is
                 # calculated. This is a hidden function call due to
                 # property magic.
@@ -1093,7 +1101,7 @@ class Kconfig(object):
             # Note: The usage of _visited here is completely independent from
             # the usage during dependency loop detection (which runs at the end
             # of parsing). The attribute is just reused.
-            for sym in self._unique_def_syms:
+            for sym in self.unique_defined_syms:
                 sym._visited = False
 
             # The 'top_node' menu node itself doesn't generate any output, so
@@ -1153,7 +1161,7 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            for sym in self._unique_def_syms:
+            for sym in self.unique_defined_syms:
                 # Skip symbols that cannot be changed. Only check
                 # non-choice symbols, as selects don't affect choice
                 # symbols.
@@ -1249,7 +1257,7 @@ class Kconfig(object):
         # Load old values from auto.conf, if any
         self._load_old_vals()
 
-        for sym in self._unique_def_syms:
+        for sym in self.unique_defined_syms:
             # Note: _write_to_conf is determined when the value is
             # calculated. This is a hidden function call due to
             # property magic.
@@ -1306,7 +1314,7 @@ class Kconfig(object):
         # by passing a flag to it, plus we only need to look at symbols here.
 
         with self._open("auto.conf", "w") as f:
-            for sym in self._unique_def_syms:
+            for sym in self.unique_defined_syms:
                 if not (sym.orig_type in (BOOL, TRISTATE) and
                         not sym.tri_value):
                     f.write(sym.config_string)
@@ -1319,7 +1327,7 @@ class Kconfig(object):
         # symbol values and restoring them later, but this is simpler and
         # faster. The C tools also use a dedicated field for this purpose.
 
-        for sym in self._unique_def_syms:
+        for sym in self.unique_defined_syms:
             sym._old_val = None
 
         if not os.path.exists("auto.conf"):
@@ -1390,10 +1398,10 @@ class Kconfig(object):
             # set_value() already rejects undefined symbols, and they don't
             # need to be invalidated (because their value never changes), so we
             # can just iterate over defined symbols
-            for sym in self._unique_def_syms:
+            for sym in self.unique_defined_syms:
                 sym.unset_value()
 
-            for choice in self.choices:
+            for choice in self.unique_choices:
                 choice.unset_value()
         finally:
             self._warn_for_no_prompt = True
@@ -2706,7 +2714,7 @@ class Kconfig(object):
         # Only calculate _dependents for defined symbols. Constant and
         # undefined symbols could theoretically be selected/implied, but it
         # wouldn't change their value, so it's not a true dependency.
-        for sym in self._unique_def_syms:
+        for sym in self.unique_defined_syms:
             # Symbols depend on the following:
 
             # The prompt conditions
@@ -2741,7 +2749,7 @@ class Kconfig(object):
             # propagated to the conditions of the properties before
             # _build_dep() runs.
 
-        for choice in self.choices:
+        for choice in self.unique_choices:
             # Choices depend on the following:
 
             # The prompt conditions
@@ -2763,7 +2771,7 @@ class Kconfig(object):
         # <choice symbol> <-> <choice> dependency loops, but they make loop
         # detection awkward.
 
-        for choice in self.choices:
+        for choice in self.unique_choices:
             # The choice symbols themselves, because the y mode selection might
             # change if a choice symbol's visibility changes
             for sym in choice.syms:
@@ -2773,10 +2781,10 @@ class Kconfig(object):
         # Undefined symbols never change value and don't need to be
         # invalidated, so we can just iterate over defined symbols.
         # Invalidating constant symbols would break things horribly.
-        for sym in self._unique_def_syms:
+        for sym in self.unique_defined_syms:
             sym._invalidate()
 
-        for choice in self.choices:
+        for choice in self.unique_choices:
             choice._invalidate()
 
 

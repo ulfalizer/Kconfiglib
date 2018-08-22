@@ -29,7 +29,7 @@ kconf.write_config(".config")
 # Mirrors the second oldconfig
 kconf.load_config(".config")
 kconf.syms["ETHERNET"].set_value(2)
-for s in kconf.defined_syms:
+for s in kconf.unique_defined_syms:
     if s.user_value is None and 0 in s.assignable:
         s.set_value(0)
 

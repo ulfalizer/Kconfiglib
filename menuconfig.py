@@ -1565,14 +1565,12 @@ def _searched_nodes(cached_search_nodes=[]):
     # Returns a list of menu nodes to search, sorted by symbol name
 
     if not cached_search_nodes:
-        # Sort symbols by name and remove duplicates, then add all nodes for
-        # each symbol.
-        #
-        # Duplicates appear when symbols have multiple menu nodes (definition
-        # locations), but they appear in menu order, which isn't what we want
-        # here. We'd still need to go through sym.nodes as well.
-        for sym in sorted(set(_kconf.defined_syms), key=lambda sym: sym.name):
-            cached_search_nodes.extend(sym.nodes)
+        # Sort symbols by name, then add all nodes for each symbol
+        for sym in sorted(_kconf.unique_defined_syms,
+                          key=lambda sym: sym.name):
+
+            # += is in-place for lists
+            cached_search_nodes += sym.nodes
 
     return cached_search_nodes
 

@@ -44,10 +44,7 @@ def main():
     #
     # Assigning 0/1/2 to non-bool/tristate symbols has no effect (int/hex
     # symbols still take a string, because they preserve formatting).
-    #
-    # The set() speeds things up for projects that use multiple definition
-    # locations a lot
-    for sym in set(kconf.defined_syms):
+    for sym in kconf.unique_defined_syms:
         # Set choice symbols to 'm'. This value will be ignored for choices in
         # 'y' mode (the "normal" mode), which will instead just get their
         # default selection, but will set all symbols in m-mode choices to 'm',
@@ -55,7 +52,7 @@ def main():
         sym.set_value(1 if sym.choice else 2)
 
     # Set all choices to the highest possible mode
-    for choice in kconf.choices:
+    for choice in kconf.unique_choices:
         choice.set_value(2)
 
     kconf.write_config(kconfiglib.standard_config_filename())

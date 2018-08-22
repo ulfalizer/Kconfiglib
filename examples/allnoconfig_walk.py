@@ -40,7 +40,7 @@ def do_allnoconfig(node):
 kconf = Kconfig(sys.argv[1])
 
 # Do an initial pass to set 'option allnoconfig_y' symbols to y
-for sym in kconf.defined_syms:
+for sym in kconf.unique_defined_syms:
     if sym.is_allnoconfig_y:
         sym.set_value(2)
 

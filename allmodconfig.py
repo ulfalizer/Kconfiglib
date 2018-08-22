@@ -25,9 +25,7 @@ def main():
     BOOL = kconfiglib.BOOL
     TRISTATE = kconfiglib.TRISTATE
 
-    # The set() speeds things up for projects that use multiple definition
-    # locations a lot
-    for sym in set(kconf.defined_syms):
+    for sym in kconf.unique_defined_syms:
         if sym.orig_type == BOOL:
             # 'bool' choice symbols get their default value, as determined by
             # e.g. 'default's on the choice
@@ -37,7 +35,7 @@ def main():
         elif sym.orig_type == TRISTATE:
             sym.set_value(1)
 
-    for choice in kconf.choices:
+    for choice in kconf.unique_choices:
         choice.set_value(2 if choice.orig_type == BOOL else 1)
 
     kconf.write_config(kconfiglib.standard_config_filename())
