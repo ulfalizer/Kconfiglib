@@ -1087,49 +1087,11 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            # Symbol._visited is set to True when we visit a symbol, so that
-            # symbols defined in multiple locations only get one .config entry.
-            # We reset it prior to writing out a new .config. It only needs to
-            # be reset for defined symbols, because undefined symbols will
-            # never be written out (because they do not appear in the menu tree
-            # rooted at Kconfig.top_node).
-            #
-            # The C tools reuse _write_to_conf for this, but we cache
-            # _write_to_conf together with the value and don't invalidate
-            # cached values when writing .config files, so that won't work.
-            #
-            # Note: The usage of _visited here is completely independent from
-            # the usage during dependency loop detection (which runs at the end
-            # of parsing). The attribute is just reused.
-            for sym in self.unique_defined_syms:
-                sym._visited = False
-
-            # The 'top_node' menu node itself doesn't generate any output, so
-            # it's skipped over below
-            node = self.top_node
-            while 1:
-                # Jump to the next node with an iterative tree walk
-                if node.list:
-                    node = node.list
-                elif node.next:
-                    node = node.next
-                else:
-                    while node.parent:
-                        node = node.parent
-                        if node.next:
-                            node = node.next
-                            break
-                    else:
-                        return
-
-                # Write node
-
+            for node in self.node_iter(unique_syms=True):
                 item = node.item
 
                 if isinstance(item, Symbol):
-                    if not item._visited:
-                        item._visited = True
-                        f.write(item.config_string)
+                    f.write(item.config_string)
 
                 elif expr_value(node.dep) and \
                      ((item == MENU and expr_value(node.visibility)) or
@@ -1353,6 +1315,56 @@ class Kconfig(object):
                         val = unescape(match.group(1))
 
                     self.syms[name]._old_val = val
+
+    def node_iter(self, unique_syms=False):
+        """
+        Returns a generator for iterating through all MenuNode's in the Kconfig
+        tree. The iteration is done in Kconfig definition order (the children
+        of a node are visited before the next node is visited).
+
+        The Kconfig.top_node menu node is skipped. It contains an implicit menu
+        that holds the top-level items.
+
+        As an example, the following code will produce a list equal to
+        Kconfig.defined_syms:
+
+          defined_syms = [node.item for node in kconf.node_iter()
+                          if isinstance(node.item, Symbol)]
+
+        unique_syms (default: False):
+          If True, only the first MenuNode will be included for symbols defined
+          in multiple locations.
+
+          Using kconf.node_iter(True) in the example above would give a list
+          equal to unique_defined_syms.
+        """
+        if unique_syms:
+            for sym in self.unique_defined_syms:
+                sym._visited = False
+
+        node = self.top_node
+        while 1:
+            # Jump to the next node with an iterative tree walk
+            if node.list:
+                node = node.list
+            elif node.next:
+                node = node.next
+            else:
+                while node.parent:
+                    node = node.parent
+                    if node.next:
+                        node = node.next
+                        break
+                else:
+                    # No more nodes
+                    return
+
+            if unique_syms and isinstance(node.item, Symbol):
+                if node.item._visited:
+                    continue
+                node.item._visited = True
+
+            yield node
 
     def eval_string(self, s):
         """

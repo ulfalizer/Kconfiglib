@@ -464,9 +464,7 @@ def run_selftests():
             fail('expected eval_string("{}") to throw KconfigError, '
                  "didn't".format(expr))
 
-    # The C implementation's parser can be pretty lax about syntax. Kconfiglib
-    # sometimes needs to emulate that. Verify that some bad stuff throws
-    # KconfigError at least.
+    # Verify that some bad stuff throws KconfigError's
     verify_eval_bad("")
     verify_eval_bad("&")
     verify_eval_bad("|")
@@ -1061,6 +1059,37 @@ g
         else:
             fail("'rsource' with missing file did not raise exception")
 
+
+    print("Testing Kconfig.node_iter()")
+
+    # Reuse tests/Klocation. The node_iter(unique_syms=True) case already gets
+    # plenty of testing from write_config() as well.
+
+    c = Kconfig("tests/Klocation", warn=False)
+
+    verify_equal(
+        [node.item.name for node in c.node_iter()
+         if isinstance(node.item, Symbol)],
+        ["SINGLE_DEF", "MULTI_DEF", "HELP_1", "HELP_2", "HELP_3", "MULTI_DEF",
+         "MULTI_DEF", "MENU_HOOK", "COMMENT_HOOK"] + 10*["MULTI_DEF"])
+
+    verify_equal(
+        [node.item.name for node in c.node_iter(True)
+         if isinstance(node.item, Symbol)],
+        ["SINGLE_DEF", "MULTI_DEF", "HELP_1", "HELP_2", "HELP_3", "MENU_HOOK",
+         "COMMENT_HOOK"])
+
+    verify_equal(
+        [node.prompt[0] for node in c.node_iter()
+         if not isinstance(node.item, Symbol)],
+        ["choice", "menu", "comment"])
+
+    verify_equal(
+        [node.prompt[0] for node in c.node_iter(True)
+         if not isinstance(node.item, Symbol)],
+        ["choice", "menu", "comment"])
+
+    # Get rid of custom 'srctree' from Klocation test
     os.environ.pop("srctree", None)
 
 

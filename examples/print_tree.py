@@ -2,6 +2,9 @@
 # sometimes implicitly alter the menu structure (see kconfig-language.txt), and
 # that's implemented too.
 #
+# Note: See the Kconfig.node_iter() function as well, which provides a simpler
+# interface for walking the menu tree.
+#
 # Usage:
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/print_tree.py
