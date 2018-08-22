@@ -1394,11 +1394,11 @@ class Kconfig(object):
         # Don't include the "if " from below to avoid giving confusing error
         # messages
         self._line = s
-        # Remove the _T_IF token
+        # [1:] removes the _T_IF token
         self._tokens = self._tokenize("if " + s)[1:]
         self._tokens_i = -1
 
-        return expr_value(self._parse_expr(True))  # transform_m
+        return expr_value(self._expect_expr_and_eol())  # transform_m
 
     def unset_values(self):
         """
@@ -1849,9 +1849,9 @@ class Kconfig(object):
     def _peek_token(self):
         return self._tokens[self._tokens_i + 1]
 
-    # The functions below are just _next_token() with extra syntax checking.
-    # Inlining _next_token() and _peek_token() into them saves a few % of
-    # parsing time.
+    # The functions below are just _next_token() and _parse_expr() with extra
+    # syntax checking. Inlining _next_token() and _peek_token() into them saves
+    # a few % of parsing time.
     #
     # See the 'Intro to expressions' section for what a constant symbol is.
 
@@ -1905,6 +1905,14 @@ class Kconfig(object):
             self._parse_error("extra tokens at end of line")
 
         return token
+
+    def _expect_expr_and_eol(self):
+        expr = self._parse_expr(True)
+
+        if self._peek_token() is not None:
+            self._parse_error("extra tokens at end of line")
+
+        return expr
 
     def _check_token(self, token):
         # If the next token is 'token', removes it and returns True
@@ -2276,7 +2284,7 @@ class Kconfig(object):
                 node.filename = self._filename
                 node.linenr = self._linenr
 
-                node.dep = self._parse_expr(True)
+                node.dep = self._expect_expr_and_eol()
 
                 self._parse_block(_T_ENDIF, node, node)
                 node.list = node.next
@@ -2376,10 +2384,8 @@ class Kconfig(object):
         # Parses an optional 'if <expr>' construct and returns the parsed
         # <expr>, or self.y if the next token is not _T_IF
 
-        expr = self._parse_expr(True) if self._check_token(_T_IF) else self.y
-        if self._peek_token() is not None:
-            self._parse_error("extra tokens at end of line")
-        return expr
+        return self._expect_expr_and_eol() if self._check_token(_T_IF) \
+            else self.y
 
     def _parse_properties(self, node):
         # Parses and adds properties to the MenuNode 'node' (type, 'prompt',
@@ -2415,7 +2421,8 @@ class Kconfig(object):
                 if not self._check_token(_T_ON):
                     self._parse_error('expected "on" after "depends"')
 
-                node.dep = self._make_and(node.dep, self._parse_expr(True))
+                node.dep = self._make_and(node.dep,
+                                          self._expect_expr_and_eol())
 
             elif t0 == _T_HELP:
                 self._parse_help(node)
@@ -2521,8 +2528,8 @@ class Kconfig(object):
                 if not self._check_token(_T_IF):
                     self._parse_error('expected "if" after "visible"')
 
-                node.visibility = \
-                    self._make_and(node.visibility, self._parse_expr(True))
+                node.visibility = self._make_and(node.visibility,
+                                                 self._expect_expr_and_eol())
 
             elif t0 == _T_OPTIONAL:
                 if not isinstance(node.item, Choice):
