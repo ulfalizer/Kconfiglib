@@ -2508,9 +2508,12 @@ def run_compatibility_tests():
 
 def all_arch_srcarch():
     for srcarch in os.listdir("arch"):
-        # These are currently broken with the C tools on linux-next as well.
-        # Perhaps they require cross-compilers to be installed.
-        if srcarch in ("arc", "h8300"):
+        # arc and h8300 are currently broken with the C tools on linux-next as
+        # well. Perhaps they require cross-compilers to be installed.
+        #
+        # User-mode Linux has an unorthodox Kconfig setup that would require a
+        # different testing setup. Skip it too.
+        if srcarch in ("arc", "h8300", "um"):
             continue
 
         if os.path.exists(os.path.join("arch", srcarch, "Kconfig")):
