@@ -590,6 +590,7 @@ class Kconfig(object):
         "_file",
         "_filename",
         "_linenr",
+        "_include_path",
         "_filestack",
         "_line",
         "_saved_line",
@@ -752,6 +753,7 @@ class Kconfig(object):
         self.top_node.dep = self.y
         self.top_node.filename = filename
         self.top_node.linenr = 1
+        self.top_node.include_path = ()
 
         # Parse the Kconfig files
 
@@ -760,8 +762,9 @@ class Kconfig(object):
         self._has_tokens = False
 
         # Keeps track of the location in the parent Kconfig files. Kconfig
-        # files usually source other Kconfig files.
+        # files usually source other Kconfig files. See _enter_file().
         self._filestack = []
+        self._include_path = ()
 
         # The current parsing location
         self._filename = filename
@@ -1542,19 +1545,35 @@ class Kconfig(object):
         #   self._filename (which makes it indirectly show up in
         #   MenuNode.filename). Equals full_filename for absolute paths.
 
-        self._filestack.append((self._filename, self._linenr, self._file))
+        # The parent Kconfig files are represented as a list of
+        # (<include path>, <Python 'file' object for Kconfig file>) tuples.
+        #
+        # <include path> is immutable and holds a *tuple* of
+        # (<filename>, <linenr>) tuples, giving the locations of the 'source'
+        # statements in the parent Kconfig files. The current include path is
+        # also available in Kconfig._include_path.
+        #
+        # The point of this redundant setup is to allow Kconfig._include_path
+        # to be assigned directly to MenuNode.include_path without having to
+        # copy it, sharing it wherever possible.
+
+        # Save include path and 'file' object before entering the file
+        self._filestack.append((self._include_path, self._file))
+
+        # _include_path is a tuple, so this rebinds the variable instead of
+        # doing in-place modification
+        self._include_path += ((self._filename, self._linenr),)
 
         # Check for recursive 'source'
-        for name, _, _ in self._filestack:
+        for name, _ in self._include_path:
             if name == rel_filename:
                 raise KconfigError(
                     "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
                     "environment variables are set correctly.\n"
-                    "Backtrace:\n{}"
+                    "Include path:\n{}"
                     .format(self._filename, self._linenr, rel_filename,
                             "\n".join("{}:{}".format(name, linenr)
-                                      for name, linenr, _
-                                      in reversed(self._filestack))))
+                                      for name, linenr in self._include_path)))
 
         # Note: We already know that the file exists
 
@@ -1569,10 +1588,14 @@ class Kconfig(object):
         self._linenr = 0
 
     def _leave_file(self):
-        # Returns from a Kconfig file to the file that sourced it
+        # Returns from a Kconfig file to the file that sourced it. See
+        # _enter_file().
 
         self._file.close()
-        self._filename, self._linenr, self._file = self._filestack.pop()
+        # Restore location from parent Kconfig file
+        self._filename, self._linenr = self._include_path[-1]
+        # Restore include path and 'file' object
+        self._include_path, self._file = self._filestack.pop()
 
     def _next_line(self):
         # Fetches and tokenizes the next line from the current Kconfig file.
@@ -2221,6 +2244,7 @@ class Kconfig(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
+                node.include_path = self._include_path
 
                 sym.nodes.append(node)
 
@@ -2304,6 +2328,7 @@ class Kconfig(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
+                node.include_path = self._include_path
 
                 self.menus.append(node)
 
@@ -2323,6 +2348,7 @@ class Kconfig(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
+                node.include_path = self._include_path
 
                 self.comments.append(node)
 
@@ -2358,6 +2384,7 @@ class Kconfig(object):
                 node.parent = parent
                 node.filename = self._filename
                 node.linenr = self._linenr
+                node.include_path = self._include_path
 
                 choice.nodes.append(node)
 
@@ -3112,11 +3139,12 @@ class Kconfig(object):
         # Hint printed when Kconfig files can't be found or .config files can't
         # be opened
 
-        return ". Perhaps the $srctree environment variable (set to '{}') " \
+        return ". Perhaps the $srctree environment variable ({}) " \
                "is set incorrectly. Note that the current value of $srctree " \
                "is saved when the Kconfig instance is created (for " \
                "consistency and to cleanly separate instances)." \
-               .format(self.srctree if self.srctree else "unset or blank")
+               .format("set to '{}'".format(self.srctree) if self.srctree
+                           else "unset or blank")
 
 class Symbol(object):
     """
@@ -3868,7 +3896,7 @@ class Symbol(object):
         self._dependents = set()
 
         # Used during dependency loop detection and (independently) in
-        # write_config()
+        # node_iter()
         self._visited = 0
 
     def _assignable(self):
@@ -4615,6 +4643,15 @@ class MenuNode(object):
       $srctree (or to the current directory if $srctree isn't set), except
       absolute paths passed to 'source' and Kconfig.__init__() are preserved.
 
+    include_path:
+      A tuple of (filename, linenr) tuples, giving the locations of the
+      'source' statements via which the Kconfig file containing this menu node
+      was included. The first element is the location of the 'source' statement
+      in the top-level Kconfig file passed to Kconfig.__init__(), etc.
+
+      Note that the Kconfig file of the menu node itself isn't included. Check
+      'filename' and 'linenr' for that.
+
     kconfig:
       The Kconfig instance the menu node is from.
     """
@@ -4622,6 +4659,7 @@ class MenuNode(object):
         "dep",
         "filename",
         "help",
+        "include_path",
         "is_menuconfig",
         "item",
         "kconfig",

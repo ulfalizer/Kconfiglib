@@ -2075,21 +2075,30 @@ def _select_imply_info(sym):
 
 def _kconfig_def_info(item):
     # Returns a string with the definition of 'item' in Kconfig syntax,
-    # together with the definition location(s)
+    # together with the definition location(s) and their include and menu paths
 
     nodes = [item] if isinstance(item, MenuNode) else item.nodes
 
     s = "Kconfig definition{}, with propagated dependencies\n" \
         .format("s" if len(nodes) > 1 else "")
-    s += (len(s) - 1)*"=" + "\n\n"
+    s += (len(s) - 1)*"="
 
-    s += "\n\n".join("At {}:{}, in menu {}:\n\n{}".format(
-                         node.filename, node.linenr, _menu_path_info(node),
-                         textwrap.indent(node.custom_str(_name_and_val_str),
-                                         "  "))
-                     for node in nodes)
+    for node in nodes:
+        s += "\n\n" \
+             "At {}:{}\n" \
+             "Included via {}\n" \
+             "Menu path: {}\n\n" \
+             "{}" \
+             .format(node.filename, node.linenr,
+                     _include_path_info(node),
+                     _menu_path_info(node),
+                     textwrap.indent(node.custom_str(_name_and_val_str), "  "))
 
     return s
+
+def _include_path_info(node):
+    return " -> ".join("{}:{}".format(filename, linenr)
+                       for filename, linenr in node.include_path)
 
 def _menu_path_info(node):
     # Returns a string describing the menu path leading up to 'node'

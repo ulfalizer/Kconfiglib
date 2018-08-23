@@ -1041,9 +1041,9 @@ g
         except KconfigError as e:
             verify_equal(str(e), """
 tests/Krecursive2:1: Recursive 'source' of 'tests/Krecursive1' detected. Check that environment variables are set correctly.
-Backtrace:
-tests/Krecursive2:1
+Include path:
 tests/Krecursive1:1
+tests/Krecursive2:1
 """[:-1])
         except:
             fail("recursive 'source' raised wrong exception")
@@ -1105,6 +1105,48 @@ tests/Krecursive1:1
         ["choice", "menu", "comment"])
 
     # Get rid of custom 'srctree' from Klocation test
+    os.environ.pop("srctree", None)
+
+
+    print("Testing MenuNode.include_path")
+
+    os.environ["srctree"] = "Kconfiglib/tests"
+
+    c = Kconfig("Kinclude_path")
+
+    def verify_node_path(node, *expected):
+        if node.include_path != expected:
+            fail("Wrong include path for node {!r}. Got {}, expected {}."
+                 .format(node, node.include_path, expected))
+
+    def verify_sym_path(sym_name, node_i, *expected):
+        verify_node_path(c.syms[sym_name].nodes[node_i], *expected)
+
+    verify_sym_path("TOP", 0)
+    verify_sym_path("TOP", 1)
+    verify_sym_path("TOP", 2)
+
+    verify_sym_path("ONE_DOWN", 0, ("Kinclude_path", 4))
+    verify_sym_path("ONE_DOWN", 1, ("Kinclude_path", 4))
+    verify_sym_path("ONE_DOWN", 2, ("Kinclude_path", 4))
+    verify_sym_path("ONE_DOWN", 3, ("Kinclude_path", 9))
+    verify_sym_path("ONE_DOWN", 4, ("Kinclude_path", 9))
+    verify_sym_path("ONE_DOWN", 5, ("Kinclude_path", 9))
+
+    verify_sym_path("TWO_DOWN", 0,
+                    ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
+    verify_sym_path("TWO_DOWN", 1,
+                    ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 9))
+    verify_sym_path("TWO_DOWN", 2,
+                    ('Kinclude_path', 9), ('Kinclude_path_sourced_1', 4))
+    verify_sym_path("TWO_DOWN", 3,
+                    ('Kinclude_path', 9), ('Kinclude_path_sourced_1', 9))
+
+    verify_node_path(c.top_node)
+    verify_node_path(c.menus[0], ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
+    verify_node_path(c.comments[0], ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
+    verify_node_path(c.choices[0].nodes[0], ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
+
     os.environ.pop("srctree", None)
 
 
