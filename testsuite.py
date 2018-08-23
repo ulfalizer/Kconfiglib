@@ -1038,20 +1038,27 @@ g
 
         try:
             Kconfig("tests/Krecursive1")
-        except KconfigError:
-            pass
+        except KconfigError as e:
+            verify_equal(str(e), """
+tests/Krecursive2:1: Recursive 'source' of 'tests/Krecursive1' detected. Check that environment variables are set correctly.
+Backtrace:
+tests/Krecursive2:1
+tests/Krecursive1:1
+"""[:-1])
         except:
             fail("recursive 'source' raised wrong exception")
         else:
             fail("recursive 'source' did not raise exception")
 
         # Verify that source and rsource throw exceptions for missing files
+
         # TODO: Make an exception test helper
 
         try:
             Kconfig("tests/Kmissingsource")
-        except KconfigError:
-            pass
+        except KconfigError as e:
+            if "does not exist" not in str(e):
+                fail("'source' with missing file raised wrong KconfigError")
         except:
             fail("'source' with missing file raised wrong exception")
         else:
@@ -1059,8 +1066,9 @@ g
 
         try:
             Kconfig("tests/Kmissingrsource")
-        except KconfigError:
-            pass
+        except KconfigError as e:
+            if "does not exist" not in str(e):
+                fail("'rsource' with missing file raised wrong KconfigError")
         except:
             fail("'rsource' with missing file raised wrong exception")
         else:
@@ -2186,9 +2194,93 @@ CONFIG_G=-1
         try:
             Kconfig(filename)
         except KconfigError as e:
-            pass
+            if "Dependency loop" not in str(e):
+                fail("dependency loop in {} raised wrong KconfigError"
+                     .format(filename))
+        except:
+            fail("dependency loop in {} raised wrong exception"
+                 .format(filename))
         else:
             fail("dependency loop in {} not detected".format(filename))
+
+    # Check the most complicated message completely
+    try:
+        Kconfig("Kconfiglib/tests/Kdeploop10")
+    except KconfigError as e:
+        verify_equal(str(e), """
+Dependency loop
+===============
+
+A (defined at Kconfiglib/tests/Kdeploop10:1), with definition...
+
+config A
+	bool
+	depends on B
+
+...depends on B (defined at Kconfiglib/tests/Kdeploop10:5), with definition...
+
+config B
+	bool
+	depends on C = 7
+
+...depends on C (defined at Kconfiglib/tests/Kdeploop10:9), with definition...
+
+config C
+	int
+	range D 8
+
+...depends on D (defined at Kconfiglib/tests/Kdeploop10:13), with definition...
+
+config D
+	int
+	default 3 if E
+	default 8
+
+...depends on E (defined at Kconfiglib/tests/Kdeploop10:18), with definition...
+
+config E
+	bool
+
+(select-related dependencies: F && G)
+
+...depends on G (defined at Kconfiglib/tests/Kdeploop10:25), with definition...
+
+config G
+	bool
+	depends on H
+
+...depends on the choice symbol H (defined at Kconfiglib/tests/Kdeploop10:32), with definition...
+
+config H
+	bool
+	prompt "H" if I && <choice>
+	depends on I && <choice>
+
+...depends on the choice symbol I (defined at Kconfiglib/tests/Kdeploop10:41), with definition...
+
+config I
+	bool
+	prompt "I" if <choice>
+	depends on <choice>
+
+...depends on <choice> (defined at Kconfiglib/tests/Kdeploop10:38), with definition...
+
+choice
+	bool
+	prompt "choice" if J
+
+...depends on J (defined at Kconfiglib/tests/Kdeploop10:46), with definition...
+
+config J
+	bool
+	depends on A
+
+...depends again on A (defined at Kconfiglib/tests/Kdeploop10:1)
+"""[:-1])
+    except:
+        fail("Loop detection message check raised wrong exception")
+    else:
+        fail("Loop detection message check did not raise exception")
 
 
     print("Testing preprocessor")

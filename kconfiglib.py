@@ -1551,7 +1551,7 @@ class Kconfig(object):
                     "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
                     "environment variables are set correctly.\n"
                     "Backtrace:\n{}"
-                    .format(self._filename, self._linenr, filename,
+                    .format(self._filename, self._linenr, rel_filename,
                             "\n".join("{}:{}".format(name, linenr)
                                       for name, linenr, _
                                       in reversed(self._filestack))))

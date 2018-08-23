@@ -1,1 +1,1 @@
-source "Kconfiglib/tests/Krecursive2"
+source "tests/Krecursive2"
