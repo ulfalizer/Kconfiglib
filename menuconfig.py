@@ -2086,7 +2086,7 @@ def _kconfig_def_info(item):
     for node in nodes:
         s += "\n\n" \
              "At {}:{}\n" \
-             "Included via {}\n" \
+             "{}" \
              "Menu path: {}\n\n" \
              "{}" \
              .format(node.filename, node.linenr,
@@ -2097,8 +2097,13 @@ def _kconfig_def_info(item):
     return s
 
 def _include_path_info(node):
-    return " -> ".join("{}:{}".format(filename, linenr)
-                       for filename, linenr in node.include_path)
+    if not node.include_path:
+        # In the top-level Kconfig file
+        return ""
+
+    return "Included via {}\n".format(
+        " -> ".join("{}:{}".format(filename, linenr)
+                    for filename, linenr in node.include_path))
 
 def _menu_path_info(node):
     # Returns a string describing the menu path leading up to 'node'
