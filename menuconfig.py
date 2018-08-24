@@ -987,7 +987,24 @@ def _shown_nodes(menu):
 
             node = node.next
 
-    rec(menu.list)
+    if isinstance(menu.item, Choice):
+        # For named choices defined in multiple locations, entering the choice
+        # at a particular menu node would normally only show the choice symbols
+        # defined there (because that's what the MenuNode tree looks like).
+        #
+        # That might look confusing, and makes extending choices by defining
+        # them in multiple locations less useful. Instead, gather all the child
+        # menu nodes for all the choices whenever a choice is entered. That
+        # makes all choice symbols visible at all locations.
+        #
+        # Choices can contain non-symbol items (people do all sorts of weird
+        # stuff with them), hence the generality here. We really need to
+        # preserve the menu tree at each choice location.
+        for node in menu.item.nodes:
+            rec(node.list)
+    else:
+        rec(menu.list)
+
     return res
 
 def _change_node(node):
