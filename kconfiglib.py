@@ -5028,13 +5028,8 @@ def expr_str(expr, sc_expr_str_fn=standard_sc_expr_str):
       Note that quoted values are represented as constants symbols
       (Symbol.is_constant == True).
     """
-    if isinstance(expr, (Symbol, Choice)):
+    if not isinstance(expr, tuple):
         return sc_expr_str_fn(expr)
-
-    if expr[0] == NOT:
-        if isinstance(expr[1], tuple):
-            return "!({})".format(expr_str(expr[1], sc_expr_str_fn))
-        return "!" + sc_expr_str_fn(expr[1])  # Symbol
 
     if expr[0] == AND:
         return "{} && {}".format(_parenthesize(expr[1], OR, sc_expr_str_fn),
@@ -5045,6 +5040,11 @@ def expr_str(expr, sc_expr_str_fn=standard_sc_expr_str):
         # redundant, but more readable
         return "{} || {}".format(_parenthesize(expr[1], AND, sc_expr_str_fn),
                                  _parenthesize(expr[2], AND, sc_expr_str_fn))
+
+    if expr[0] == NOT:
+        if isinstance(expr[1], tuple):
+            return "!({})".format(expr_str(expr[1], sc_expr_str_fn))
+        return "!" + sc_expr_str_fn(expr[1])  # Symbol
 
     # Relation
     #
