@@ -466,6 +466,19 @@ class Kconfig(object):
       A list with all comments, in the same order as they appear in the Kconfig
       files
 
+    kconfig_filenames:
+      A list with the filenames of all Kconfig files included in the
+      configuration, relative to $srctree (or relative to the current directory
+      if $srctree isn't set).
+
+      The files are listed in the order they are source'd, starting with the
+      top-level Kconfig file. If a file is source'd multiple times, it will
+      appear multiple times. Use set() to get unique filenames.
+
+      Note: Using this for incremental builds is redundant. Kconfig.sync_deps()
+      already indirectly catches any file modifications that change the
+      configuration output.
+
     n/m/y:
       The predefined constant symbols n/m/y. Also available in const_syms.
 
@@ -570,6 +583,7 @@ class Kconfig(object):
         "const_syms",
         "defconfig_list",
         "defined_syms",
+        "kconfig_filenames",
         "m",
         "mainmenu_text",
         "menus",
@@ -756,6 +770,9 @@ class Kconfig(object):
         self.top_node.include_path = ()
 
         # Parse the Kconfig files
+
+        # Not used internally. Provided as a convenience.
+        self.kconfig_filenames = [filename]
 
         # These implement a single line of "unget" for the parser
         self._saved_line = None
@@ -1545,6 +1562,8 @@ class Kconfig(object):
         #   self._filename (which makes it indirectly show up in
         #   MenuNode.filename). Equals full_filename for absolute paths.
 
+        self.kconfig_filenames.append(rel_filename)
+
         # The parent Kconfig files are represented as a list of
         # (<include path>, <Python 'file' object for Kconfig file>) tuples.
         #
@@ -2254,7 +2273,7 @@ class Kconfig(object):
                     self._warn("the menuconfig symbol {} has no prompt"
                                .format(_name_and_loc(sym)))
 
-                # Tricky Python semantics: This assign prev.next before prev
+                # Tricky Python semantics: This assigns prev.next before prev
                 prev.next = prev = node
 
             elif t0 in (_T_SOURCE, _T_RSOURCE, _T_OSOURCE, _T_ORSOURCE):

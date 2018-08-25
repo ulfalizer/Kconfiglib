@@ -978,7 +978,8 @@ g
 """)
 
 
-    print("Testing locations and source/rsource/gsource/grsource")
+    print("Testing locations, source/rsource/gsource/grsource, and "
+          "Kconfig.kconfig_filenames")
 
     def verify_locations(nodes, *expected_locs):
         verify(len(nodes) == len(expected_locs),
@@ -1033,6 +1034,22 @@ g
 
         verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
                          "tests/Klocation_sourced:18")
+
+        # Test Kconfig.kconfig_filenames
+
+        verify_equal(c.kconfig_filenames, [
+            "tests/Klocation",
+            "tests/Klocation_sourced",
+            "tests/sub/Klocation_rsourced",
+            "tests/sub/Klocation_gsourced1",
+            "tests/sub/Klocation_gsourced2",
+            "tests/sub/Klocation_gsourced1",
+            "tests/sub/Klocation_gsourced2",
+            "tests/sub/Klocation_grsourced1",
+            "tests/sub/Klocation_grsourced2",
+            "tests/sub/Klocation_grsourced1",
+            "tests/sub/Klocation_grsourced2"
+        ])
 
         # Test recursive 'source' detection
 
@@ -1134,18 +1151,18 @@ tests/Krecursive2:1
     verify_sym_path("ONE_DOWN", 5, ("Kinclude_path", 9))
 
     verify_sym_path("TWO_DOWN", 0,
-                    ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
+                    ("Kinclude_path", 4), ("Kinclude_path_sourced_1", 4))
     verify_sym_path("TWO_DOWN", 1,
-                    ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 9))
+                    ("Kinclude_path", 4), ("Kinclude_path_sourced_1", 9))
     verify_sym_path("TWO_DOWN", 2,
-                    ('Kinclude_path', 9), ('Kinclude_path_sourced_1', 4))
+                    ("Kinclude_path", 9), ("Kinclude_path_sourced_1", 4))
     verify_sym_path("TWO_DOWN", 3,
-                    ('Kinclude_path', 9), ('Kinclude_path_sourced_1', 9))
+                    ("Kinclude_path", 9), ("Kinclude_path_sourced_1", 9))
 
     verify_node_path(c.top_node)
-    verify_node_path(c.menus[0], ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
-    verify_node_path(c.comments[0], ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
-    verify_node_path(c.choices[0].nodes[0], ('Kinclude_path', 4), ('Kinclude_path_sourced_1', 4))
+    verify_node_path(c.menus[0], ("Kinclude_path", 4), ("Kinclude_path_sourced_1", 4))
+    verify_node_path(c.comments[0], ("Kinclude_path", 4), ("Kinclude_path_sourced_1", 4))
+    verify_node_path(c.choices[0].nodes[0], ("Kinclude_path", 4), ("Kinclude_path_sourced_1", 4))
 
     os.environ.pop("srctree", None)
 
