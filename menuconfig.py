@@ -268,10 +268,7 @@ def _expr_str(expr):
     # Custom expression printer that shows symbol values
     return expr_str(expr, _name_and_val_str)
 
-
-# Entry point when run as an executable, split out so that setuptools'
-# 'entry_points' can be used. It produces a handy menuconfig.exe launcher on
-# Windows.
+# Note: Used as the entry point in setup.py
 def _main():
     menuconfig(standard_kconfig())
 

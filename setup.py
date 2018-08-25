@@ -40,7 +40,7 @@ setuptools.setup(
         "console_scripts": (
             "menuconfig = menuconfig:_main",
             "genconfig = genconfig:main",
-            "oldconfig = oldconfig:main",
+            "oldconfig = oldconfig:_main",
             "alldefconfig = alldefconfig:main",
             "allnoconfig = allnoconfig:main",
             "allmodconfig = allmodconfig:main",
