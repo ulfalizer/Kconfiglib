@@ -479,6 +479,24 @@ class Kconfig(object):
       already indirectly catches any file modifications that change the
       configuration output.
 
+    env_vars:
+      A set() with the names of all environment variables referenced in the
+      Kconfig files.
+
+      Only environment variables referenced with the preprocessor $(FOO) syntax
+      will be registered. The older $FOO syntax is only supported for backwards
+      compatibility.
+
+      Also note that $(FOO) won't be registered unless the environment variable
+      $FOO is actually set. If it isn't, $(FOO) is an expansion of an unset
+      preprocessor variable (which gives the empty string).
+
+      Another gotcha is that environment variables referenced in the values of
+      recursively expanded preprocessor variables (those defined with =) will
+      only be registered if the variable is actually used (expanded) somewhere.
+
+      The note from the 'kconfig_filenames' documentation applies here too.
+
     n/m/y:
       The predefined constant symbols n/m/y. Also available in const_syms.
 
@@ -583,6 +601,7 @@ class Kconfig(object):
         "const_syms",
         "defconfig_list",
         "defined_syms",
+        "env_vars",
         "kconfig_filenames",
         "m",
         "mainmenu_text",
@@ -773,6 +792,7 @@ class Kconfig(object):
 
         # Not used internally. Provided as a convenience.
         self.kconfig_filenames = [filename]
+        self.env_vars = set()
 
         # These implement a single line of "unget" for the parser
         self._saved_line = None
@@ -2180,6 +2200,7 @@ class Kconfig(object):
 
         # Environment variables are tried last
         if fn in os.environ:
+            self.env_vars.add(fn)
             return os.environ[fn]
 
         return ""

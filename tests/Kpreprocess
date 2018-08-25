@@ -69,7 +69,7 @@ qaz = QAZ
 echo = $(1)
 
 config PRINT_ME
-	string "$(ENV_VAR)" if ($(echo,FOO) && $(echo,BAR)) || !$(echo,BAZ) || !(($(qaz)))
+	string "$(ENV_1)" if ($(echo,FOO) && $(echo,BAR)) || !$(echo,BAZ) || !(($(qaz)))
 	default "$(echo,"foo")" if "foo $(echo,"bar") baz" = "$(undefined)"
 
 
@@ -128,3 +128,14 @@ error-n-res := $(error-if,n,oops)
 
 # Causes an error when expanded
 error-y-res = $(error-if,y,oops)
+
+
+# Environment variables (for testing Kconfig.env_vars). ENV_1 is already
+# referenced above.
+env_ref_1 := xxx $(ENV_2) xxx
+env_ref_2 := $(shell,echo $(ENV_3))
+env_ref_3 :=
+env_ref_3 += $(ENV_4)
+$(warning-if,$(ENV_5),$(ENV_UNDEFINED))
+source "$(ENV_6)"
+env_ref_4 = $(ENV_7)  # Never evaluated

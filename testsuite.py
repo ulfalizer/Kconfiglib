@@ -2344,7 +2344,13 @@ config J
 
     print("Testing preprocessor")
 
-    os.environ["ENV_VAR"] = "env"
+    os.environ["ENV_1"] = "env_1"
+    os.environ["ENV_2"] = "env_2"
+    os.environ["ENV_3"] = "env_3"
+    os.environ["ENV_4"] = "env_4"
+    os.environ["ENV_5"] = "n"
+    os.environ["ENV_6"] = "Kconfiglib/tests/empty"
+    os.environ["ENV_7"] = "env_7"
     # We verify warnings manually
     c = Kconfig("Kconfiglib/tests/Kpreprocess", warn_to_stderr=False)
 
@@ -2392,7 +2398,7 @@ config J
     verify_str(c.syms["PRINT_ME"], r"""
 config PRINT_ME
 	string
-	prompt "env" if (FOO && BAR) || !BAZ || !QAZ
+	prompt "env_1" if (FOO && BAR) || !BAZ || !QAZ
 	default "\"foo\"" if "foo \"bar\" baz" = ""
 """)
 
@@ -2438,6 +2444,10 @@ config PRINT_ME
         pass
     else:
         fail("expanding error-y-res didn't raise an exception")
+
+    # Check Kconfig.env_vars
+    verify_equal(c.env_vars,
+                 set(("ENV_1", "ENV_2", "ENV_3", "ENV_4", "ENV_5", "ENV_6")))
 
     # Check that the expected warnings were generated
     verify_equal(c.warnings, [
