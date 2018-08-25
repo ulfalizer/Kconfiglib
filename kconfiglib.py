@@ -810,7 +810,7 @@ class Kconfig(object):
             _check_choice_sanity(choice)
 
         if os.environ.get("KCONFIG_STRICT") == "y":
-            self._check_undefined_syms()
+            self._check_undef_syms()
 
 
         # Build Symbol._dependents for all symbols and choices
@@ -3060,7 +3060,7 @@ class Kconfig(object):
         return open(filename, "rU" if mode == "r" else mode) if _IS_PY2 else \
                open(filename, mode, encoding=self._encoding)
 
-    def _check_undefined_syms(self):
+    def _check_undef_syms(self):
         # Prints warnings for all references to undefined symbols within the
         # Kconfig files
 
@@ -3075,34 +3075,14 @@ class Kconfig(object):
             if not sym.nodes and not _is_num(sym.name) and \
                sym.name != "MODULES":
 
-                self._warn_undefined_sym(sym)
+                msg = "undefined symbol {}:".format(sym.name)
 
-    def _warn_undefined_sym(self, sym):
-        # _check_undefined_syms() helper. Generates a warning that lists the
-        # locations where the undefined symbol 'sym' is referenced, including
-        # the referencing menu nodes in Kconfig format.
+                for node in self.node_iter():
+                    if sym in node.referenced:
+                        msg += "\n\n- Referenced at {}:{}:\n\n{}" \
+                               .format(node.filename, node.linenr, node)
 
-        referencing_nodes = []
-
-        def find_refs(node):
-            while node:
-                if sym in node.referenced:
-                    referencing_nodes.append(node)
-
-                if node.list:
-                    find_refs(node.list)
-
-                node = node.next
-
-        find_refs(self.top_node)
-
-        msg = "undefined symbol {}:".format(sym.name)
-
-        for node in referencing_nodes:
-            msg += "\n\n- Referenced at {}:{}:\n\n{}" \
-                   .format(node.filename, node.linenr, node)
-
-        self._warn(msg)
+                self._warn(msg)
 
     def _warn(self, msg, filename=None, linenr=None):
         # For printing general warnings
