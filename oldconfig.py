@@ -262,7 +262,7 @@ def do_oldconfig_for_node(node):
 
             sel_index = input("choice[1-{}]: ".format(len(options)))
 
-            if sel_index == "??":
+            if sel_index == "?":
                 print_help(node)
                 continue
 
