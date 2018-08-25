@@ -434,9 +434,12 @@ def _menuconfig(stdscr):
 
             else:
                 _change_node(sel_node)
-                if _is_y_mode_choice_sym(sel_node.item):
+                if _is_y_mode_choice_sym(sel_node.item) and not sel_node.list:
                     # Immediately jump to the parent menu after making a choice
-                    # selection, like 'make menuconfig' does
+                    # selection, like 'make menuconfig' does, except if the
+                    # menu node has children (which can happen if a symbol
+                    # 'depends on' a choice symbol that immediately precedes
+                    # it).
                     _leave_menu()
 
         elif c in ("n", "N"):
