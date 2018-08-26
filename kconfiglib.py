@@ -5389,9 +5389,16 @@ def _flatten(node):
     # symbols with children from automatic menu creation) so that their
     # children appear after them instead. This gives a clean menu structure
     # with no unexpected "jumps" in the indentation.
+    #
+    # Do not flatten promptless choices (which can appear "legitimitely" if a
+    # named choice is defined in multiple locations to add on symbols). It
+    # looks confusing, and the menuconfig already shows all choice symbols if
+    # you enter the choice at some location with a prompt.
 
     while node:
-        if node.list and not node.prompt:
+        if node.list and not node.prompt and \
+           not isinstance(node.item, Choice):
+
             last_node = node.list
             while 1:
                 last_node.parent = node.parent

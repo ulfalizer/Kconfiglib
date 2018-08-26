@@ -1000,6 +1000,9 @@ def _shown_nodes(menu):
         # Choices can contain non-symbol items (people do all sorts of weird
         # stuff with them), hence the generality here. We really need to
         # preserve the menu tree at each choice location.
+        #
+        # Note: Named choices are pretty broken in the C tools, and this is
+        # super obscure, so you probably won't find much that relies on this.
         for node in menu.item.nodes:
             rec(node.list)
     else:
