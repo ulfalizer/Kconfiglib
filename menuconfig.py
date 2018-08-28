@@ -45,6 +45,17 @@ it exists) and save. If KCONFIG_CONFIG is unset, ".config" is used.
 $srctree is supported through Kconfiglib.
 
 
+Color schemes
+=============
+
+Setting the environment variable MENUCONFIG_THEME to 'aquatic' will enable an
+alternative, less yellow, more 'make menuconfig'-like color scheme, contributed
+by Mitja Horvat (pinkfluid).
+
+See the _init_styles() function if you want to add additional themes. I'm happy
+to take them in upstream.
+
+
 Other features
 ==============
 
@@ -151,19 +162,17 @@ view the help of the selected item without leaving the dialog.
 """[1:-1].split("\n")
 
 def _init_styles():
+    global _PATH_STYLE
     global _SEPARATOR_STYLE
-    global _HELP_STYLE
     global _LIST_STYLE
     global _LIST_SEL_STYLE
     global _LIST_INVISIBLE_STYLE
     global _LIST_INVISIBLE_SEL_STYLE
-    global _INPUT_FIELD_STYLE
-
-    global _PATH_STYLE
-
+    global _HELP_STYLE
     global _DIALOG_FRAME_STYLE
     global _DIALOG_BODY_STYLE
-
+    global _DIALOG_EDIT_STYLE
+    global _JUMP_TO_EDIT_STYLE
     global _INFO_TEXT_STYLE
 
     # Initialize styles for different parts of the application. The arguments
@@ -181,36 +190,71 @@ def _init_styles():
     # https://blogs.msdn.microsoft.com/commandline/2017/08/02/updating-the-windows-console-colors/
     BOLD = curses.A_NORMAL if _IS_WINDOWS else curses.A_BOLD
 
+    # Default styling. Themes can override these settings below.
+
+    # Top row in the main display, with the menu path
+    PATH_STYLE               = (curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
 
     # Separator lines between windows. Also used for the top line in the symbol
     # information dialog.
-    _SEPARATOR_STYLE          = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
-
-    # Edit boxes
-    _INPUT_FIELD_STYLE        = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    SEPARATOR_STYLE          = (curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
 
     # List of items, e.g. the main display
-    _LIST_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
+    LIST_STYLE               = (curses.COLOR_BLACK, curses.COLOR_WHITE,  curses.A_NORMAL                   )
+
     # Style for the selected item
-    _LIST_SEL_STYLE           = _style(curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    LIST_SEL_STYLE           = (curses.COLOR_WHITE, curses.COLOR_BLUE,   BOLD,            curses.A_STANDOUT)
 
     # Like _LIST_(SEL_)STYLE, for invisible items. Used in show-all mode.
-    _LIST_INVISIBLE_STYLE     = _style(curses.COLOR_RED,   curses.COLOR_WHITE,  curses.A_NORMAL, BOLD             )
-    _LIST_INVISIBLE_SEL_STYLE = _style(curses.COLOR_RED,   curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+    LIST_INVISIBLE_STYLE     = (curses.COLOR_RED,   curses.COLOR_WHITE,  curses.A_NORMAL, BOLD             )
+    LIST_INVISIBLE_SEL_STYLE = (curses.COLOR_RED,   curses.COLOR_BLUE,   BOLD,            curses.A_STANDOUT)
 
     # Help text windows at the bottom of various fullscreen dialogs
-    _HELP_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
-
-    # Top row in the main display, with the menu path
-    _PATH_STYLE               = _style(curses.COLOR_BLACK, curses.COLOR_WHITE,  BOLD                              )
-
-    # Symbol information text
-    _INFO_TEXT_STYLE          = _LIST_STYLE
+    HELP_STYLE               = PATH_STYLE
 
     # Frame around dialog boxes
-    _DIALOG_FRAME_STYLE       = _style(curses.COLOR_BLACK, curses.COLOR_YELLOW, BOLD,            curses.A_STANDOUT)
+    DIALOG_FRAME_STYLE       = SEPARATOR_STYLE
+
     # Body of dialog boxes
-    _DIALOG_BODY_STYLE        = _style(curses.COLOR_WHITE, curses.COLOR_BLACK,  curses.A_NORMAL                   )
+    DIALOG_BODY_STYLE        = (curses.COLOR_WHITE, curses.COLOR_BLACK,  curses.A_NORMAL                   )
+
+    # Edit box in pop-up dialogs
+    DIALOG_EDIT_STYLE        = (curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL, curses.A_STANDOUT)
+
+    # Edit box in jump-to dialog
+    JUMP_TO_EDIT_STYLE       = (curses.COLOR_WHITE, curses.COLOR_BLUE,   curses.A_NORMAL,                  )
+
+    # Symbol information text
+    INFO_TEXT_STYLE          = LIST_STYLE
+
+    if os.environ.get("MENUCONFIG_THEME") == "aquatic":
+        # More 'make menuconfig'-like theme, contributed by Mitja Horvat
+        # (pinkfluid)
+        PATH_STYLE         = (curses.COLOR_CYAN,  curses.COLOR_BLUE,  BOLD                              )
+        SEPARATOR_STYLE    = (curses.COLOR_WHITE, curses.COLOR_CYAN,  BOLD,            curses.A_STANDOUT)
+        HELP_STYLE         = PATH_STYLE
+        DIALOG_FRAME_STYLE = SEPARATOR_STYLE
+        DIALOG_BODY_STYLE  = (curses.COLOR_WHITE, curses.COLOR_BLUE,  curses.A_NORMAL                   )
+        DIALOG_EDIT_STYLE  = (curses.COLOR_BLACK, curses.COLOR_WHITE, curses.A_NORMAL, curses.A_STANDOUT)
+
+    # Turn styles into attributes and store them in global variables. Doing
+    # this separately minimizes the number of curses color pairs, and shortens
+    # the style definitions a bit.
+    #
+    # Could do some locals()/globals() trickery here too, but keep it
+    # searchable.
+    _PATH_STYLE               = _style(*PATH_STYLE)
+    _SEPARATOR_STYLE          = _style(*SEPARATOR_STYLE)
+    _LIST_STYLE               = _style(*LIST_STYLE)
+    _LIST_SEL_STYLE           = _style(*LIST_SEL_STYLE)
+    _LIST_INVISIBLE_STYLE     = _style(*LIST_INVISIBLE_STYLE)
+    _LIST_INVISIBLE_SEL_STYLE = _style(*LIST_INVISIBLE_SEL_STYLE)
+    _HELP_STYLE               = _style(*HELP_STYLE)
+    _DIALOG_FRAME_STYLE       = _style(*DIALOG_FRAME_STYLE)
+    _DIALOG_BODY_STYLE        = _style(*DIALOG_BODY_STYLE)
+    _DIALOG_EDIT_STYLE        = _style(*DIALOG_EDIT_STYLE)
+    _JUMP_TO_EDIT_STYLE       = _style(*JUMP_TO_EDIT_STYLE)
+    _INFO_TEXT_STYLE          = _style(*INFO_TEXT_STYLE)
 
 
 #
@@ -1205,7 +1249,7 @@ def _draw_input_dialog(win, title, info_lines, s, i, hscroll):
     # Note: Perhaps having a separate window for the input field would be nicer
     visible_s = s[hscroll:hscroll + edit_width]
     _safe_addstr(win, 2, 2, visible_s + " "*(edit_width - len(visible_s)),
-                 _INPUT_FIELD_STYLE)
+                 _DIALOG_EDIT_STYLE)
 
     for linenr, line in enumerate(info_lines):
         _safe_addstr(win, 4 + linenr, 2, line)
@@ -1432,7 +1476,7 @@ def _jump_to_dialog():
     scroll = 0
 
     # Edit box at the top
-    edit_box = _styled_win(_INPUT_FIELD_STYLE)
+    edit_box = _styled_win(_JUMP_TO_EDIT_STYLE)
     edit_box.keypad(True)
 
     # List of matches
@@ -1707,9 +1751,8 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
         _safe_hline(edit_box, 2, 4, curses.ACS_UARROW, _N_SCROLL_ARROWS,
                     _DIALOG_FRAME_STYLE)
 
-    # Note: Perhaps having a separate window for the input field would be nicer
     visible_s = s[hscroll:hscroll + edit_width]
-    _safe_addstr(edit_box, 1, 1, visible_s, _INPUT_FIELD_STYLE)
+    _safe_addstr(edit_box, 1, 1, visible_s)
 
     _safe_move(edit_box, 1, 1 + s_i - hscroll)
 
