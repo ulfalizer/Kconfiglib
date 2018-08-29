@@ -3104,7 +3104,7 @@ class Kconfig(object):
         # Prints warnings for all references to undefined symbols within the
         # Kconfig files
 
-        for sym in (self.syms.viewvalues() if _IS_PY2 else self.syms.values()):
+        for sym in (self.syms.viewvalues if _IS_PY2 else self.syms.values)():
             # - sym.nodes empty means the symbol is undefined (has no
             #   definition locations)
             #
