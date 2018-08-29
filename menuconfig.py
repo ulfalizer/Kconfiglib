@@ -1021,30 +1021,40 @@ def _parent_menu(node):
     return menu
 
 def _shown_nodes(menu):
-    # Returns a list of the nodes in 'menu' (see _parent_menu()) that should be
-    # shown in the menu window
-
-    res = []
+    # Returns the list of menu nodes from 'menu' (see _parent_menu()) that
+    # would be shown when entering it
 
     def rec(node):
-        nonlocal res
+        res = []
 
         while node:
-            # Show the node if its prompt is visible. For menus, also check
-            # 'visible if'. In show-all mode, show everything.
-            if _show_all or \
-               (node.prompt and expr_value(node.prompt[1]) and not \
-                (node.item == MENU and not expr_value(node.visibility))):
+            # If a node has children but doesn't have the is_menuconfig flag
+            # set, the children come from a submenu created implicitly from
+            # dependencies, and are shown (indented) in the same menu as the
+            # parent node
+            shown_children = \
+                rec(node.list) if node.list and not node.is_menuconfig else []
 
+            # Always show the node if it is the root of an implicit submenu
+            # with visible items, even when the node itself is invisible. This
+            # can happen e.g. if the symbol has an optional prompt
+            # ('prompt "foo" if COND') that is currently invisible. The node
+            # will appear in the 'show-all' style (red).
+            if shown(node) or shown_children:
                 res.append(node)
 
-                # If a node has children but doesn't have the is_menuconfig
-                # flag set, the children come from a submenu created implicitly
-                # from dependencies. Show those in this menu too.
-                if node.list and not node.is_menuconfig:
-                    rec(node.list)
+            res.extend(shown_children)
 
             node = node.next
+
+        return res
+
+    def shown(node):
+        # Show the node if its prompt is visible. For menus, also check
+        # 'visible if'. In show-all mode, show everything.
+        return _show_all or \
+            (node.prompt and expr_value(node.prompt[1]) and not \
+             (node.item == MENU and not expr_value(node.visibility)))
 
     if isinstance(menu.item, Choice):
         # For named choices defined in multiple locations, entering the choice
@@ -1062,12 +1072,11 @@ def _shown_nodes(menu):
         #
         # Note: Named choices are pretty broken in the C tools, and this is
         # super obscure, so you probably won't find much that relies on this.
-        for node in menu.item.nodes:
-            rec(node.list)
-    else:
-        rec(menu.list)
+        return [node
+                for choice_node in menu.item.nodes
+                    for node in rec(choice_node.list)]
 
-    return res
+    return rec(menu.list)
 
 def _change_node(node):
     # Changes the value of the menu node 'node' if it is a symbol. Bools and
@@ -1077,7 +1086,9 @@ def _change_node(node):
     if not isinstance(node.item, (Symbol, Choice)):
         return
 
-    # This will hit for invisible symbols in show-all mode
+    # This will hit for invisible symbols, which appear in show-all mode and
+    # when an invisible symbol has visible children (which can happen e.g. for
+    # symbols with optional prompts)
     if not (node.prompt and expr_value(node.prompt[1])):
         return
 
