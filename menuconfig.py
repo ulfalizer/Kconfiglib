@@ -750,8 +750,7 @@ def _jump_to(node):
     _shown = _shown_nodes(_cur_menu)
     _sel_node_i = _shown.index(node)
 
-    # Center the jumped-to node vertically, if possible
-    _menu_scroll = max(_sel_node_i - _menu_win_height()//2, 0)
+    _center_vertically()
 
 def _leave_menu():
     # Jumps to the parent menu of the current menu. Does nothing if we're in
@@ -780,8 +779,8 @@ def _leave_menu():
         _menu_scroll = max(_sel_node_i - screen_row, 0)
     else:
         # No saved parent menu locations, meaning we jumped directly to some
-        # node earlier. Just center the node vertically if possible.
-        _menu_scroll = max(_sel_node_i - _menu_win_height()//2, 0)
+        # node earlier
+        _center_vertically()
 
 def _select_next_menu_entry():
     # Selects the menu entry after the current one, adjusting the scroll if
@@ -880,6 +879,13 @@ def _toggle_show_all():
     # Try to make the cursor stay on the same row in the menu window. This
     # might be impossible if too many nodes have disappeared above the node.
     _menu_scroll = max(_sel_node_i - old_row, 0)
+
+def _center_vertically():
+    # Centers the selected node vertically, if possible
+
+    global _menu_scroll
+
+    _menu_scroll = max(_sel_node_i - _menu_win_height()//2, 0)
 
 def _draw_main():
     # Draws the "main" display, with the list of symbols, the header, and the
