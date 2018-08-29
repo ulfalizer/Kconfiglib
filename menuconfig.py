@@ -969,7 +969,11 @@ def _draw_main():
 
         node = _shown[i]
 
-        if node.prompt and expr_value(node.prompt[1]):
+        # The 'not _show_all' test avoids showing invisible items in red
+        # outside show-all mode, which could look confusing/broken. Invisible
+        # symbols show up outside show-all mode if an invisible symbol has
+        # visible children in an implicit (indented) menu.
+        if not _show_all or (node.prompt and expr_value(node.prompt[1])):
             style = _LIST_SEL_STYLE if i == _sel_node_i else _LIST_STYLE
         else:
             style = _LIST_INVISIBLE_SEL_STYLE if i == _sel_node_i else \
@@ -2397,7 +2401,7 @@ def _value_str(node):
 
     tri_val_str = (" ", "M", "*")[item.tri_value]
 
-    if len(item.assignable) == 1:
+    if len(item.assignable) <= 1:
         # Pinned to a single value
         return "" if isinstance(item, Choice) else "-{}-".format(tri_val_str)
 
