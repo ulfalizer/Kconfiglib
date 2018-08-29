@@ -2066,15 +2066,12 @@ def _defaults_info(sc):
         if isinstance(sc, Symbol):
             s += _expr_str(val)
 
-            # Skip the value hint in these cases:
+            # Skip the tristate value hint if the expression is just a single
+            # symbol. _expr_str() already shows its value as a string.
             #
-            # - For string/int/hex symbols. The default can only be a single
-            #   symbol there, and it makes no sense to show its tristate value
-            #   (_expr_str() already shows its string value)
-            #
-            # - If the expression is just a symbol. _expr_str() already shows
-            #   its value in that case.
-            if sc.orig_type in (BOOL, TRISTATE) and isinstance(val, tuple):
+            # This also avoids showing the tristate value for string/int/hex
+            # defaults, which wouldn't make any sense.
+            if isinstance(val, tuple):
                 s += '  (={})'.format(TRI_TO_STR[expr_value(val)])
         else:
             # Don't print the value next to the symbol name for choice
