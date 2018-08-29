@@ -388,6 +388,9 @@ def menuconfig(kconf):
 
 # Global variables used below:
 #
+#   _stdscr:
+#     stdscr from curses
+#
 #   _cur_menu:
 #     Menu node of the menu (or menuconfig symbol, or choice) currently being
 #     shown
@@ -428,9 +431,11 @@ def menuconfig(kconf):
 def _menuconfig(stdscr):
     # Logic for the main display, with the list of symbols, etc.
 
-    globals()["stdscr"] = stdscr
+    global _stdscr
     global _conf_changed
     global _show_name
+
+    _stdscr = stdscr
 
     _init()
 
@@ -655,7 +660,7 @@ def _resize_main():
 
     global _menu_scroll
 
-    screen_height, screen_width = stdscr.getmaxyx()
+    screen_height, screen_width = _stdscr.getmaxyx()
 
     _path_win.resize(1, screen_width)
     _top_sep_win.resize(1, screen_width)
@@ -883,7 +888,7 @@ def _draw_main():
     # This could be optimized to only update the windows that have actually
     # changed, but keep it simple for now and let curses sort it out.
 
-    term_width = stdscr.getmaxyx()[1]
+    term_width = _stdscr.getmaxyx()[1]
 
 
     #
@@ -1227,7 +1232,7 @@ def _input_dialog(title, initial_text, info_text=None):
 def _resize_input_dialog(win, title, info_lines):
     # Resizes the input dialog to a size appropriate for the terminal size
 
-    screen_height, screen_width = stdscr.getmaxyx()
+    screen_height, screen_width = _stdscr.getmaxyx()
 
     win_height = 5
     if info_lines:
@@ -1418,7 +1423,7 @@ def _key_dialog(title, text, keys):
 def _resize_key_dialog(win, text):
     # Resizes the key dialog to a size appropriate for the terminal size
 
-    screen_height, screen_width = stdscr.getmaxyx()
+    screen_height, screen_width = _stdscr.getmaxyx()
 
     lines = text.split("\n")
 
@@ -1649,7 +1654,7 @@ def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
     # Returns the new scroll index. We adjust the scroll if needed so that the
     # selected node stays visible.
 
-    screen_height, screen_width = stdscr.getmaxyx()
+    screen_height, screen_width = _stdscr.getmaxyx()
 
     bot_sep_win.resize(1, screen_width)
 
@@ -1849,7 +1854,7 @@ def _info_dialog(node, from_jump_to_dialog):
 def _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win):
     # Resizes the info dialog to fill the terminal
 
-    screen_height, screen_width = stdscr.getmaxyx()
+    screen_height, screen_width = _stdscr.getmaxyx()
 
     top_line_win.resize(1, screen_width)
     bot_sep_win.resize(1, screen_width)
