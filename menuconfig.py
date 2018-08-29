@@ -2080,7 +2080,7 @@ def _defaults_info(sc):
         s += "\n"
 
         if cond is not _kconf.y:
-            s += '    Condition (={}):\n{}' \
+            s += "    Condition (={}):\n{}" \
                  .format(TRI_TO_STR[expr_value(cond)],
                          _split_expr_info(cond, 4))
 
