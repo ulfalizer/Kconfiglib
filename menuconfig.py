@@ -77,6 +77,10 @@ Other features
 
       * Kconfig definitions are printed
 
+      * The include path is shown, listing the locations of the 'source'
+        statements that included the Kconfig file of the symbol (or other
+        item)
+
 
 Limitations
 ===========
