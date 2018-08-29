@@ -78,23 +78,38 @@ See the examples/ subdirectory for example scripts.
 Using Kconfiglib without the Makefile targets
 =============================================
 
-The make targets are only needed for a trivial reason: The Kbuild makefiles
-export environment variables which are referenced inside the Kconfig files and
-in scripts run from the Kconfig files (via e.g. 'source
-"arch/$(SRCARCH)/Kconfig" and '$(shell,...)').
+The make targets are only needed to pick up environment variables exported from
+the Kbuild makefiles and referenced inside Kconfig files, via e.g.
+'source "arch/$(SRCARCH)/Kconfig" and '$(shell,...)'.
 
-The environment variables referenced as of writing (Linux 4.2.18-rc4) are
-srctree, ARCH, SRCARCH, CC, and KERNELVERSION.
+These variables are referenced as of writing (Linux 4.18), together with sample
+values:
 
-To run Kconfiglib without the Makefile patch, you can do this:
+  srctree          (.)
+  ARCH             (x86)
+  SRCARCH          (x86)
+  KERNELVERSION    (4.18.0)
+  CC               (gcc)
+  HOSTCC           (gcc)
+  HOSTCXX          (g++)
+  CC_VERSION_TEXT  (gcc (Ubuntu 7.3.0-16ubuntu3) 7.3.0)
 
-  $ srctree=. ARCH=x86 SRCARCH=x86 CC=gcc KERNELVERSION=`make kernelversion` python(3)
+To run Kconfiglib without the Makefile patch, set the environment variables
+manually:
+
+  $ srctree=. ARCH=x86 SRCARCH=x86 KERNELVERSION=`make kernelversion` ... python(3)
   >>> import kconfiglib
   >>> kconf = kconfiglib.Kconfig()  # filename defaults to "Kconfig"
 
 Search the top-level Makefile for "Additional ARCH settings" to see other
-possibilities for ARCH and SRCARCH. Kconfiglib will print a warning if an unset
-environment variable is referenced inside the Kconfig files.
+possibilities for ARCH and SRCARCH.
+
+To see a list of all referenced environment variables together with their
+values, run this code from e.g. 'make iscriptconfig':
+
+  import os
+  for var in kconf.env_vars:
+      print(var, os.environ[var])
 
 
 Intro to symbol values
