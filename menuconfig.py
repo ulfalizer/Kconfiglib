@@ -742,12 +742,16 @@ def _jump_to(node):
     # parent menus before.
     _parent_screen_rows = []
 
-    # Turn on show-all mode if the node isn't visible
-    if not (node.prompt and expr_value(node.prompt[1])):
-        _show_all = True
-
     _cur_menu = _parent_menu(node)
     _shown = _shown_nodes(_cur_menu)
+    if node not in _shown:
+        # Turn on show-all mode if the node wouldn't be shown. Checking whether
+        # the node is visible instead would needlessly turn on show-all mode in
+        # an obscure case: when jumping to an invisible symbol with visible
+        # children from an implicit submenu.
+        _show_all = True
+        _shown = _shown_nodes(_cur_menu)
+
     _sel_node_i = _shown.index(node)
 
     _center_vertically()
