@@ -3754,15 +3754,8 @@ class Symbol(object):
                 "assignment ignored"
                 .format(TRI_TO_STR[value] if value in (0, 1, 2) else
                             "'{}'".format(value),
-                        _name_and_loc(self),
-                        TYPE_TO_STR[self.orig_type]))
+                        _name_and_loc(self), TYPE_TO_STR[self.orig_type]))
 
-            return False
-
-        if self.env_var is not None:
-            self.kconfig._warn("ignored attempt to assign user value to "
-                               "{}, which is set from the environment"
-                               .format(_name_and_loc(self)))
             return False
 
         if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):

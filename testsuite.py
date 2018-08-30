@@ -1771,14 +1771,10 @@ tests/Krecursive2:1
 
     os.environ["ENV_VAR"] = "ENV_VAR value"
 
-    # References undefined env. var. and tries to assign 'option env' variable,
-    # so disable warnings
+    # References undefined env. var., so disable warnings
     c = Kconfig("Kconfiglib/tests/Kmisc", warn=False)
 
-    # Verify that 'option env' symbols can't be assigned user values, and that
-    # 'option env' is treated like a default
-    assign_and_verify_user_value("FROM_ENV", "foo", None, False)
-    assign_and_verify_user_value("FROM_ENV_MISSING", "foo", None, False)
+    # Verify that 'option env' is treated like a default
     verify_value("FROM_ENV", "ENV_VAR value")
     verify_value("FROM_ENV_MISSING", "missing")
 
