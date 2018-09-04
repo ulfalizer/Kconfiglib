@@ -1812,8 +1812,7 @@ class Kconfig(object):
                     i = match.end()
 
             else:
-                # Neither a keyword nor a non-const symbol (except
-                # $()-expansion might still yield a non-const symbol).
+                # Neither a keyword nor a non-const symbol
 
                 # We always strip whitespace after tokens, so it is safe to
                 # assume that s[i] is the start of a token here.
