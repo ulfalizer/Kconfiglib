@@ -2398,6 +2398,13 @@ config PRINT_ME
 	default "\"foo\"" if "foo \"bar\" baz" = ""
 """)
 
+    verify_str(c.syms["PRINT_ME_TOO"], r"""
+config PRINT_ME_TOO
+	bool
+	prompt "foo"
+	default FOOBARBAZQAZ if QAZ && QAZFOO && xxx
+""")
+
     def verify_recursive(name):
         try:
             c.variables[name].expanded_value
@@ -2427,8 +2434,8 @@ config PRINT_ME
     verify_variable("shell-stderr-res", "", "", False)
 
     verify_variable("location-res",
-                    "Kconfiglib/tests/Kpreprocess:119",
-                    "Kconfiglib/tests/Kpreprocess:119",
+                    "Kconfiglib/tests/Kpreprocess:125",
+                    "Kconfiglib/tests/Kpreprocess:125",
                     False)
 
     verify_variable("warning-res", "", "", False)
@@ -2447,8 +2454,8 @@ config PRINT_ME
 
     # Check that the expected warnings were generated
     verify_equal(c.warnings, [
-        "Kconfiglib/tests/Kpreprocess:116: warning: 'echo message on stderr >&2' wrote to stderr: message on stderr",
-        "Kconfiglib/tests/Kpreprocess:124: warning: a warning"
+        "Kconfiglib/tests/Kpreprocess:122: warning: 'echo message on stderr >&2' wrote to stderr: message on stderr",
+        "Kconfiglib/tests/Kpreprocess:130: warning: a warning"
     ])
 
 

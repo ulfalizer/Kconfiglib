@@ -67,10 +67,16 @@ special-chars-fn-res = $(fn,$(comma)$(dollar)$(left-paren)foo$(right-paren))
 
 qaz = QAZ
 echo = $(1)
+ignore-first = $(2)
 
 config PRINT_ME
 	string "$(ENV_1)" if ($(echo,FOO) && $(echo,BAR)) || !$(echo,BAZ) || !(($(qaz)))
 	default "$(echo,"foo")" if "foo $(echo,"bar") baz" = "$(undefined)"
+
+# Expansion within a symbol token, with deliberate sloppiness
+config PRINT_$(ignore-first,  ,ME)_TOO
+	bool "foo"
+	default FOO$(ignore-first,    ,BAR)BAZ$(qaz) if $(qaz)&&$(qaz)FOO&&x$(ignore-first,  ,xx)
 
 
 # Recursive expansion (throws an exception)

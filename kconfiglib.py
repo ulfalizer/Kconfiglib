@@ -1771,9 +1771,6 @@ class Kconfig(object):
             if match:
                 # We have an identifier or keyword
 
-                # Jump past it
-                i = match.end()
-
                 # Check what it is. lookup_sym() will take care of allocating
                 # new symbols for us the first time we see them. Note that
                 # 'token' still refers to the previous token.
@@ -1783,11 +1780,20 @@ class Kconfig(object):
                 if keyword:
                     # It's a keyword
                     token = keyword
+                    # Jump past it
+                    i = match.end()
 
                 elif token not in _STRING_LEX:
                     # It's a non-const symbol, except we translate n, m, and y
                     # into the corresponding constant symbols, like the C
                     # implementation
+
+                    if "$" in name:
+                        # Macro expansion within symbol name
+                        name, s, i = self._expand_name(s, i)
+                    else:
+                        i = match.end()
+
                     token = self.const_syms[name] \
                             if name in ("n", "m", "y") else \
                             self._lookup_sym(name)
@@ -1803,6 +1809,7 @@ class Kconfig(object):
                     #
                     #   endmenu
                     token = name
+                    i = match.end()
 
             else:
                 # Neither a keyword nor a non-const symbol (except
@@ -1813,7 +1820,7 @@ class Kconfig(object):
                 c = s[i]
 
                 if c in "\"'":
-                    s, end_i = self._expand_str(s, i, c)
+                    s, end_i = self._expand_str(s, i)
 
                     # os.path.expandvars() and the $UNAME_RELEASE replace() is
                     # a backwards compatibility hack, which should be
@@ -1863,23 +1870,6 @@ class Kconfig(object):
                 elif c == ")":
                     token = _T_CLOSE_PAREN
                     i += 1
-
-                elif s.startswith("$(", i):
-                    s, end_i = self._expand_macro(s, i, ())
-                    val = s[i:end_i]
-                    # isspace() is False for empty strings
-                    if not val.strip():
-                        # Avoid creating a Kconfig symbol with a blank name.
-                        # It's almost guaranteed to be an error.
-                        self._parse_error("macro expanded to blank string")
-                    i = end_i
-
-                    # Compatibility with what the C implementation does. Might
-                    # be unexpected that you can reference non-constant symbols
-                    # this way though...
-                    token = self.const_syms[val] \
-                            if val in ("n", "m", "y") else \
-                            self._lookup_sym(val)
 
                 elif c == "#":
                     break
@@ -2083,13 +2073,48 @@ class Kconfig(object):
             s, i = self._expand_macro(s, i, args)
         return s
 
-    def _expand_str(self, s, i, quote):
+    def _expand_name(self, s, i):
+        # Expands a symbol name starting at index 'i' in 's'.
+        #
+        # Returns the expanded name, the expanded 's' (including the part
+        # before the name), and the index of the next token after the name.
+
+        s, end_i = self._expand_name_iter(s, i)
+        name = s[i:end_i]
+        # isspace() is False for empty strings
+        if not name.strip():
+            # Avoid creating a Kconfig symbol with a blank name. It's almost
+            # guaranteed to be an error.
+            self._parse_error("macro expanded to blank string")
+
+        # Skip trailing whitespace
+        while end_i < len(s) and s[end_i].isspace():
+            end_i += 1
+
+        return name, s, end_i
+
+    def _expand_name_iter(self, s, i):
+        # Expands a symbol name starting at index 'i' in 's'.
+        #
+        # Returns the expanded 's' (including the part before the name), the
+        # index of the first character after the expanded string in 's'.
+
+        while 1:
+            match = _name_special_search(s, i)
+
+            if match.group() == "$(":
+                s, i = self._expand_macro(s, match.start(), ())
+            else:
+                return (s, match.start())
+
+    def _expand_str(self, s, i):
         # Expands a quoted string starting at index 'i' in 's'. Handles both
         # backslash escapes and macro expansion.
         #
         # Returns the expanded 's' (including the part before the string) and
         # the index of the first character after the expanded string in 's'.
 
+        quote = s[i]
         i += 1  # Skip over initial "/'
         while 1:
             match = _string_special_search(s, i)
@@ -6063,12 +6088,13 @@ def _re_search(regex):
 #
 # This regex will also fail to match for empty lines and comment lines.
 #
-# '$' is included to detect a variable assignment left-hand side with a $ in it
-# (which might be from a macro expansion).
+# '$' is included to detect preprocessor variable assignments with macro
+# expansions in the left-hand side.
 _command_match = _re_match(r"\s*([$A-Za-z0-9_-]+)\s*")
 
 # An identifier/keyword after the first token. Also eats trailing whitespace.
-_id_keyword_match = _re_match(r"([A-Za-z0-9_/.-]+)\s*")
+# '$' is included to detect identifiers containing macro expansions.
+_id_keyword_match = _re_match(r"([$A-Za-z0-9_/.-]+)\s*")
 
 # A fragment in the left-hand side of a preprocessor variable assignment. These
 # are the portions between macro expansions ($(foo)). Macros are supported in
@@ -6084,6 +6110,10 @@ _macro_special_search = _re_search(r"\)|,|\$\(")
 
 # Special characters/strings while expanding a string (quotes, '\', and '$(')
 _string_special_search = _re_search(r'"|\'|\\|\$\(')
+
+# Special characters/strings while expanding a symbol name. Also includes
+# end-of-line, in case the macro is the last thing on the line.
+_name_special_search = _re_search(r'[^$A-Za-z0-9_/.-]|\$\(|$')
 
 # A valid right-hand side for an assignment to a string symbol in a .config
 # file, including escaped characters. Extracts the contents.
