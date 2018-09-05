@@ -2076,7 +2076,8 @@ class Kconfig(object):
         # Expands a symbol name starting at index 'i' in 's'.
         #
         # Returns the expanded name, the expanded 's' (including the part
-        # before the name), and the index of the next token after the name.
+        # before the name), and the index of the first character in the next
+        # token after the name.
 
         s, end_i = self._expand_name_iter(s, i)
         name = s[i:end_i]
@@ -2095,8 +2096,8 @@ class Kconfig(object):
     def _expand_name_iter(self, s, i):
         # Expands a symbol name starting at index 'i' in 's'.
         #
-        # Returns the expanded 's' (including the part before the name), the
-        # index of the first character after the expanded string in 's'.
+        # Returns the expanded 's' (including the part before the name) and the
+        # index of the first character after the expanded name in 's'.
 
         while 1:
             match = _name_special_search(s, i)
