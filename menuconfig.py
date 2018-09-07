@@ -83,9 +83,11 @@ The color definition is a comma separated list of attributes:
     - fg:COLOR      Set the foreground/background colors. COLOR can be one of
       * or *        the basic 16 colors (black, red, green, yellow, blue,
     - bg:COLOR      magenta,cyan, white and brighter versions, for example,
-                    brightred). On terminals that support 256 color mode, you
-                    can also directly put in a color number, e.g. fg:123
+                    brightred). On terminals that support more than 8 colors,
+                    you can also directly put in a color number, e.g. fg:123
                     (hexadecimal and octal constants are accepted as well).
+                    Colors outside the range -1..curses.COLORS-1 (which is
+                    terminal-dependent) are ignored (with a warning).
 
                     If the background or foreground color of an element is not
                     specified, it defaults to -1, representing the default
@@ -105,8 +107,9 @@ For example, take the aquatic theme and give it a red selection bar:
 
 MENUCONFIG_STYLE="aquatic selection=fg:white,bg:red"
 
-If there's an error in the style definition, a StyleError exception will be
-thrown briefly describing the error.
+If there's an error in the style definition or if a missing style is assigned
+to, the assignment will be ignored, along with a warning being printed on
+stderr.
 
 The 'default' theme is always implicitly parsed first (or the 'monochrome'
 theme if the terminal lacks colors), so the following two settings have the
@@ -162,6 +165,7 @@ import locale
 import os
 import platform
 import re
+import sys
 import textwrap
 
 from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
@@ -297,22 +301,37 @@ _STYLE_STD_COLORS = {
 
 _style = {}
 
-class StyleError(Exception):
-    pass
+def _parse_style(style_str, parsing_default):
+    # Parses a string with '<element>=<style>' assignments. Anything not
+    # containing '=' is assumed to be a reference to a built-in style, which is
+    # treated as if all the assignments from the style were inserted at that
+    # point in the string.
+    #
+    # The parsing_default flag is set to True when we're implicitly parsing the
+    # 'default'/'monochrome' style, to prevent warnings.
 
-def _parse_style(style_str):
     global _style
 
     for sline in style_str.split():
         # Words without a "=" character represents a style template
         if "=" in sline:
-            key, data = sline.split("=")
+            key, data = sline.split("=", 1)
+
+            # The 'default' style template is assumed to define all keys. We
+            # run _style_to_curses() for non-existing keys as well, so that we
+            # print warnings for errors to the right of '=' for those too.
+            if key not in _style and not parsing_default:
+                _warn("Ignoring non-existent style", key)
+
             _style[key] = _style_to_curses(data)
 
         elif sline in _STYLES:
             # Recursively parse style template. Ignore styles that don't exist,
             # for backwards/forwards compatibility.
-            _parse_style(_STYLES[sline])
+            _parse_style(_STYLES[sline], parsing_default)
+
+        else:
+            _warn("Ignoring non-existent style template", sline)
 
 def _style_to_curses(cstr):
     """
@@ -329,24 +348,31 @@ def _style_to_curses(cstr):
         try:
             cnum = int(cdef, 0)
         except ValueError:
-            raise StyleError(
-                    "A color must either be predefined or a number. " \
-                    "Error near: {}".format(t))
+            _warn("Ignoring color in", t, "that's neither predefined "
+                  "nor a number")
+
+            return -1
 
         if not -1 <= cnum < curses.COLORS:
-            raise StyleError(
-                    "Fixed color must be in range -1..curses.COLORS-1 "
-                    "(-1..{}). Error near: {}".format(curses.COLORS - 1, t))
+            _warn("Ignoring color outside the range "
+                  "-1..curses.COLORS-1 (-1..{}) in {}"
+                  .format(curses.COLORS - 1, t))
+
+            return -1
 
         return cnum
 
-    attrs = 0
     fg_color = -1
     bg_color = -1
+    attrs = 0
 
     if cstr:
         for t in cstr.split(","):
-            if t == "bold":
+            if t.startswith("fg:"):
+                fg_color = parse_color(t)
+            elif t.startswith("bg:"):
+                bg_color = parse_color(t)
+            elif t == "bold":
                 # A_BOLD tends to produce faint and hard-to-read text on the
                 # Windows console, especially with the old color scheme, before
                 # the introduction of
@@ -356,12 +382,8 @@ def _style_to_curses(cstr):
                 attrs |= curses.A_STANDOUT
             elif t == "underline":
                 attrs |= curses.A_UNDERLINE
-            elif t.startswith("fg:"):
-                fg_color = parse_color(t)
-            elif t.startswith("bg:"):
-                bg_color = parse_color(t)
             else:
-                raise StyleError("Invalid style attribute: {}".format(cstr))
+                _warn("Ignoring unknown style attribute", t)
 
     return _style_attr(fg_color, bg_color, attrs)
 
@@ -371,11 +393,11 @@ def _init_styles():
 
     # Use the 'monochrome' style template as the base on terminals without
     # color
-    _parse_style("default" if curses.has_colors() else "monochrome")
+    _parse_style("default" if curses.has_colors() else "monochrome", True)
 
     # Add any user-defined style from the environment
     if "MENUCONFIG_STYLE" in os.environ:
-        _parse_style(os.environ["MENUCONFIG_STYLE"])
+        _parse_style(os.environ["MENUCONFIG_STYLE"], False)
 
 #
 # Main application
@@ -2614,6 +2636,14 @@ def _get_wch_compat(win):
             pass
 
     return c
+
+def _warn(*args):
+    # Temporarily returns from curses to shell mode and prints a warning to
+    # stderr. The warning would get lost in curses mode.
+    curses.endwin()
+    print("menuconfig warning: ", end="", file=sys.stderr)
+    print(*args, file=sys.stderr)
+    curses.doupdate()
 
 # Ignore exceptions from some functions that might fail, e.g. for small
 # windows. They usually do reasonable things anyway.
