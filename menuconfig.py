@@ -308,12 +308,10 @@ def _parse_style(style_str):
         if "=" in sline:
             key, data = sline.split("=")
             _style[key] = _style_to_curses(data)
-        else:
-            # Recursively expand style templates
-            if sline not in _STYLES:
-                raise StyleError("Unknown built-in style: {}".format(sline))
 
-            # Merge in the template
+        elif sline in _STYLES:
+            # Recursively parse style template. Ignore styles that don't exist,
+            # for backwards/forwards compatibility.
             _parse_style(_STYLES[sline])
 
 def _style_to_curses(cstr):
@@ -346,27 +344,24 @@ def _style_to_curses(cstr):
     fg_color = -1
     bg_color = -1
 
-    if not cstr:
-        return _style_attr(fg_color, bg_color, attrs)
-
-    # Parse attributes
-    for t in cstr.split(","):
-        if t == "bold":
-            # A_BOLD tends to produce faint and hard-to-read text on the Windows
-            # console, especially with the old color scheme, before the
-            # introduction of
-            # https://blogs.msdn.microsoft.com/commandline/2017/08/02/updating-the-windows-console-colors/
-            attrs |= curses.A_NORMAL if _IS_WINDOWS else curses.A_BOLD
-        elif t == "standout":
-            attrs |= curses.A_STANDOUT
-        elif t == "underline":
-            attrs |= curses.A_UNDERLINE
-        elif t.startswith("fg:"):
-            fg_color = parse_color(t)
-        elif t.startswith("bg:"):
-            bg_color = parse_color(t)
-        else:
-            raise StyleError("Invalid style attribute: {}".format(cstr))
+    if cstr:
+        for t in cstr.split(","):
+            if t == "bold":
+                # A_BOLD tends to produce faint and hard-to-read text on the
+                # Windows console, especially with the old color scheme, before
+                # the introduction of
+                # https://blogs.msdn.microsoft.com/commandline/2017/08/02/updating-the-windows-console-colors/
+                attrs |= curses.A_NORMAL if _IS_WINDOWS else curses.A_BOLD
+            elif t == "standout":
+                attrs |= curses.A_STANDOUT
+            elif t == "underline":
+                attrs |= curses.A_UNDERLINE
+            elif t.startswith("fg:"):
+                fg_color = parse_color(t)
+            elif t.startswith("bg:"):
+                bg_color = parse_color(t)
+            else:
+                raise StyleError("Invalid style attribute: {}".format(cstr))
 
     return _style_attr(fg_color, bg_color, attrs)
 
@@ -374,14 +369,11 @@ def _init_styles():
     if curses.has_colors():
         curses.use_default_colors()
 
-    # Force the monochrome style
-    if not curses.has_colors():
-        _parse_style("monochrome")
-    # Use the default style
-    else:
-        _parse_style("default")
+    # Use the 'monochrome' style template as the base on terminals without
+    # color
+    _parse_style("default" if curses.has_colors() else "monochrome")
 
-    # Use the user-defined style from the environemnt
+    # Add any user-defined style from the environment
     if "MENUCONFIG_STYLE" in os.environ:
         _parse_style(os.environ["MENUCONFIG_STYLE"])
 
