@@ -84,8 +84,12 @@ The color definition is a comma separated list of attributes:
       * or *        the basic 16 colors (black, red, green, yellow, blue,
     - bg:COLOR      magenta,cyan, white and brighter versions, for example,
                     brightred). On terminals that support 256 color mode, you
-                    can use the colorNN keyword, where NN is a number between 1
-                    and 255.
+                    can also directly put in a color number, e.g. fg:123
+                    (hexadecimal and octal constants are accepted as well).
+
+                    If the background or foreground color of an element is not
+                    specified, it defaults to -1, representing the default
+                    terminal foreground or background color.
 
                     Note: On some terminals a bright version of the color implies
                     bold.
@@ -289,7 +293,6 @@ _STYLE_STD_COLORS = {
     # Aliases
     "purple":       curses.COLOR_MAGENTA,
     "brightpurple": curses.COLOR_MAGENTA + 8,
-    "default":  -1
 }
 
 _style = {}
@@ -320,30 +323,24 @@ def _style_to_curses(cstr):
     This function returns a list of: (fg_color, bg_color, attributes)
     """
     def parse_color(t):
-        ts = t.split(":")
-        if len(ts) != 2:
-            raise StyleError("Invalid color notation: {}".format(t))
-
-        cdef = ts[1]
+        cdef = t.split(":", 1)[1]
 
         if cdef in _STYLE_STD_COLORS:
             return _STYLE_STD_COLORS[cdef]
 
-        if cdef.startswith("color"):
-            cnum = cdef[len("color"):]
-            if not cnum.isdigit():
-                raise StyleError(
-                        "Fixed color must be followed by a number. " \
-                        "Error near: {}".format(t))
+        try:
+            cnum = int(cdef, 0)
+        except ValueError:
+            raise StyleError(
+                    "A color must either be predefined or a number. " \
+                    "Error near: {}".format(t))
 
-            cnum = int(cnum)
-            if not -1 <= cnum <= curses.COLORS:
-                raise StyleError(
-                        "Fixed color must be in range 0..{}. " \
-                        "Error near: {}".format(curses.COLORS - 1, t))
-            return cnum
+        if not -1 <= cnum <= curses.COLORS:
+            raise StyleError(
+                    "Fixed color must be in range -1..{}. " \
+                    "Error near: {}".format(curses.COLORS - 1, t))
 
-        raise StyleError("Unknown color definition: {}".format(t))
+        return cnum
 
     attrs = 0
     fg_color = -1
