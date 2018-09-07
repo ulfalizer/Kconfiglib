@@ -335,10 +335,10 @@ def _style_to_curses(cstr):
                     "A color must either be predefined or a number. " \
                     "Error near: {}".format(t))
 
-        if not -1 <= cnum <= curses.COLORS:
+        if not -1 <= cnum < curses.COLORS:
             raise StyleError(
-                    "Fixed color must be in range -1..{}. " \
-                    "Error near: {}".format(curses.COLORS - 1, t))
+                    "Fixed color must be in range -1..curses.COLORS-1 "
+                    "(-1..{}). Error near: {}".format(curses.COLORS - 1, t))
 
         return cnum
 
