@@ -299,6 +299,8 @@ _STYLE_STD_COLORS = {
     "brightpurple": curses.COLOR_MAGENTA + 8,
 }
 
+# Dictionary mapping element types to the curses attributes used to display
+# them
 _style = {}
 
 def _parse_style(style_str, parsing_default):
@@ -759,20 +761,20 @@ def _init():
     # Initialize windows
 
     # Top row, with menu path
-    _path_win = _styled_win(_style["path"])
+    _path_win = _styled_win("path")
 
     # Separator below menu path, with title and arrows pointing up
-    _top_sep_win = _styled_win(_style["separator"])
+    _top_sep_win = _styled_win("separator")
 
     # List of menu entries with symbols, etc.
-    _menu_win = _styled_win(_style["list"])
+    _menu_win = _styled_win("list")
     _menu_win.keypad(True)
 
     # Row below menu list, with arrows pointing down
-    _bot_sep_win = _styled_win(_style["separator"])
+    _bot_sep_win = _styled_win("separator")
 
     # Help window with keys at the bottom
-    _help_win = _styled_win(_style["help"])
+    _help_win = _styled_win("help")
 
     # The rows we'd like the nodes in the parent menus to appear on. This
     # prevents the scroll from jumping around when going in and out of menus.
@@ -1339,7 +1341,7 @@ def _input_dialog(title, initial_text, info_text=None):
     #   String to show next to the input field. If None, just the input field
     #   is shown.
 
-    win = _styled_win(_style["body"])
+    win = _styled_win("body")
     win.keypad(True)
 
     info_lines = info_text.split("\n") if info_text else []
@@ -1552,7 +1554,7 @@ def _key_dialog(title, text, keys):
     #   converted to lowercase. ESC will always close the dialog, and returns
     #   None.
 
-    win = _styled_win(_style["body"])
+    win = _styled_win("body")
     win.keypad(True)
 
     _resize_key_dialog(win, text)
@@ -1645,17 +1647,17 @@ def _jump_to_dialog():
     scroll = 0
 
     # Edit box at the top
-    edit_box = _styled_win(_style["jump-edit"])
+    edit_box = _styled_win("jump-edit")
     edit_box.keypad(True)
 
     # List of matches
-    matches_win = _styled_win(_style["list"])
+    matches_win = _styled_win("list")
 
     # Bottom separator, with arrows pointing down
-    bot_sep_win = _styled_win(_style["separator"])
+    bot_sep_win = _styled_win("separator")
 
     # Help window with instructions at the bottom
-    help_win = _styled_win(_style["help"])
+    help_win = _styled_win("help")
 
     # Give windows their initial size
     _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
@@ -1936,17 +1938,17 @@ def _info_dialog(node, from_jump_to_dialog):
     # of the jump-to-dialog.
 
     # Top row, with title and arrows point up
-    top_line_win = _styled_win(_style["separator"])
+    top_line_win = _styled_win("separator")
 
     # Text display
-    text_win = _styled_win(_style["text"])
+    text_win = _styled_win("text")
     text_win.keypad(True)
 
     # Bottom separator, with arrows pointing down
-    bot_sep_win = _styled_win(_style["separator"])
+    bot_sep_win = _styled_win("separator")
 
     # Help window with keys at the bottom
-    help_win = _styled_win(_style["help"])
+    help_win = _styled_win("help")
 
     # Give windows their initial size
     _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
@@ -2347,12 +2349,12 @@ def _menu_path_info(node):
     return "(top menu)" + path
 
 def _styled_win(style):
-    # Returns a new curses window with background 'style' and space as the fill
+    # Returns a new curses window with style 'style' and space as the fill
     # character. The initial dimensions are (1, 1), so the window needs to be
     # sized and positioned separately.
 
     win = curses.newwin(1, 1)
-    win.bkgdset(" ", style)
+    win.bkgdset(" ", _style[style])
     return win
 
 def _max_scroll(lst, win):
