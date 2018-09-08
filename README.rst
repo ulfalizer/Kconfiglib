@@ -595,11 +595,18 @@ Notes
 Thanks
 ------
 
-Thanks to `Philip Craig <https://github.com/philipc>`_ for adding
-support for the ``allnoconfig_y`` option and fixing an obscure issue
-with ``comment``\s inside ``choice``\s (that didn't affect correctness but
-made outputs differ). ``allnoconfig_y`` is used to force certain symbols
-to ``y`` during ``make allnoconfig`` to improve coverage.
+- To `RomaVis <https://github.com/RomaVis>`_, for making
+  `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ and suggesting
+  the ``rsource`` keyword.
+
+- To `Mitja Horvat <https://github.com/pinkfluid>`_, for adding support
+  for user-defined styles to the terminal menuconfig.
+
+- To `Philip Craig <https://github.com/philipc>`_ for adding
+  support for the ``allnoconfig_y`` option and fixing an obscure issue
+  with ``comment``\s inside ``choice``\s (that didn't affect correctness but
+  made outputs differ). ``allnoconfig_y`` is used to force certain symbols
+  to ``y`` during ``make allnoconfig`` to improve coverage.
 
 License
 -------
