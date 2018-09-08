@@ -44,6 +44,13 @@ The targets added by the Makefile patch are described in the following
 sections.
 
 
+make kmenuconfig
+----------------
+
+This target runs the curses menuconfig interface with Python 3 (Python 2 is
+currently not supported for the menuconfig).
+
+
 make [ARCH=<arch>] iscriptconfig
 --------------------------------
 
@@ -75,12 +82,23 @@ argument, if given.
 See the examples/ subdirectory for example scripts.
 
 
+make dumpvarsconfig
+-------------------
+
+This target prints a list of all environment variables referenced from the
+Kconfig files, together with their values. See the
+Kconfiglib/examples/dumpvars.py script.
+
+Only environment variables that are referenced via the Kconfig preprocessor
+$(FOO) syntax are included. The preprocessor was added in Linux 4.18.
+
+
 Using Kconfiglib without the Makefile targets
 =============================================
 
 The make targets are only needed to pick up environment variables exported from
 the Kbuild makefiles and referenced inside Kconfig files, via e.g.
-'source "arch/$(SRCARCH)/Kconfig" and '$(shell,...)'.
+'source "arch/$(SRCARCH)/Kconfig" and commands run via '$(shell,...)'.
 
 These variables are referenced as of writing (Linux 4.18), together with sample
 values:
@@ -94,6 +112,12 @@ values:
   HOSTCXX          (g++)
   CC_VERSION_TEXT  (gcc (Ubuntu 7.3.0-16ubuntu3) 7.3.0)
 
+Older kernels only reference ARCH, SRCARCH, and KERNELVERSION.
+
+If your kernel is recent enough (4.18+), you can get a list of referenced
+environment variables via 'make dumpvarsconfig' (see above). Note that this
+command is added by the Makefile patch.
+
 To run Kconfiglib without the Makefile patch, set the environment variables
 manually:
 
@@ -103,13 +127,6 @@ manually:
 
 Search the top-level Makefile for "Additional ARCH settings" to see other
 possibilities for ARCH and SRCARCH.
-
-To see a list of all referenced environment variables together with their
-values, run this code from e.g. 'make iscriptconfig':
-
-  import os
-  for var in kconf.env_vars:
-      print(var, os.environ[var])
 
 
 Intro to symbol values

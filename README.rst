@@ -21,10 +21,10 @@ exclusively, with lots of small helper scripts in other projects.
 Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_.
 For backwards compatibility, environment variables can be referenced both as
-``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). Support for the
-old syntax might be removed in the future (the major version would be increased
-at the same time). Using the old syntax with an undefined environment variable
-keeps the string as is.
+``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). The old syntax is
+deprecated, but will probably be supported for a very long time (the major
+version would be increased if support is ever dropped). Using the old syntax
+with an undefined environment variable keeps the string as is.
 
 Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`_ if you run into
 a "macro expanded to blank string" error with kernel 4.18+.
