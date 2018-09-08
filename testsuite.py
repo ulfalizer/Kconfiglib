@@ -2538,6 +2538,7 @@ def run_compatibility_tests():
 
     os.environ["srctree"] = "."
     os.environ["CC"] = "gcc"
+    os.environ["LD"] = "ld"
 
 
     if not os.path.exists("scripts/kconfig/conf"):
