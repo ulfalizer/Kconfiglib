@@ -1112,10 +1112,9 @@ def _draw_main():
         # symbols show up outside show-all mode if an invisible symbol has
         # visible children in an implicit (indented) menu.
         if not _show_all or (node.prompt and expr_value(node.prompt[1])):
-            style = _style["selection"] if i == _sel_node_i else _style["list"]
+            style = _style["selection" if i == _sel_node_i else "list"]
         else:
-            style = _style["inv-selection"] if i == _sel_node_i else \
-                    _style["inv-list"]
+            style = _style["inv-selection" if i == _sel_node_i else "inv-list"]
 
         _safe_addstr(_menu_win, i - _menu_scroll, 0, _node_str(node), style)
 
