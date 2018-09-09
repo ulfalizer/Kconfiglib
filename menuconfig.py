@@ -1088,7 +1088,7 @@ def _draw_main():
 
     # Add the 'mainmenu' text as the title, centered at the top
     _safe_addstr(_top_sep_win,
-                 0, (term_width - len(_kconf.mainmenu_text))//2,
+                 0, max((term_width - len(_kconf.mainmenu_text))//2, 0),
                  _kconf.mainmenu_text)
 
     _top_sep_win.noutrefresh()
@@ -1415,8 +1415,6 @@ def _draw_input_dialog(win, title, info_lines, s, i, hscroll):
 
     win.erase()
 
-    _draw_frame(win, title)
-
     # Note: Perhaps having a separate window for the input field would be nicer
     visible_s = s[hscroll:hscroll + edit_width]
     _safe_addstr(win, 2, 2, visible_s + " "*(edit_width - len(visible_s)),
@@ -1424,6 +1422,9 @@ def _draw_input_dialog(win, title, info_lines, s, i, hscroll):
 
     for linenr, line in enumerate(info_lines):
         _safe_addstr(win, 4 + linenr, 2, line)
+
+    # Draw the frame last so that it overwrites the body text for small windows
+    _draw_frame(win, title)
 
     _safe_move(win, 2, 2 + i - hscroll)
 
@@ -1598,10 +1599,12 @@ def _resize_key_dialog(win, text):
 
 def _draw_key_dialog(win, title, text):
     win.erase()
-    _draw_frame(win, title)
 
     for i, line in enumerate(text.split("\n")):
         _safe_addstr(win, 2 + i, 2, line)
+
+    # Draw the frame last so that it overwrites the body text for small windows
+    _draw_frame(win, title)
 
     win.noutrefresh()
 
@@ -1621,7 +1624,7 @@ def _draw_frame(win, title):
     _safe_vline(win, 0, win_width - 1, " ", win_height)
 
     # Draw title
-    _safe_addstr(win, 0, (win_width - len(title))//2, title)
+    _safe_addstr(win, 0, max((win_width - len(title))//2, 0), title)
 
     win.attroff(_style["frame"])
 
@@ -2657,8 +2660,32 @@ def _safe_curs_set(visibility):
         pass
 
 def _safe_addstr(win, *args):
+    # Clip the line to avoid wrapping to the next line, which looks glitchy.
+    # addchstr() would do it for us, but it's not available in the 'curses'
+    # module.
+
+    attr = None
+    if isinstance(args[0], str):
+        y, x = win.getyx()
+        s = args[0]
+        if len(args) == 2:
+            attr = args[1]
+    else:
+        y, x, s = args[:3]
+        if len(args) == 4:
+            attr = args[3]
+
+    maxlen = win.getmaxyx()[1] - x
+    s = s.expandtabs()
+
     try:
-        win.addstr(*args)
+        # The 'curses' module uses wattr_set() internally if you pass 'attr',
+        # overwriting the background style, so setting 'attr' to 0 in the first
+        # case won't do the right thing
+        if attr is None:
+            win.addnstr(y, x, s, maxlen)
+        else:
+            win.addnstr(y, x, s, maxlen, attr)
     except curses.error:
         pass
 
