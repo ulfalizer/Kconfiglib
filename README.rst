@@ -316,48 +316,20 @@ Two configuration interfaces are currently available:
 
 - `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
   is a terminal-based configuration interface implemented using the standard
-  Python ``curses`` module.
-
-  Some screenshots below:
-
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss3.png
-
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss5.png
-
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss7.png
-
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss8.png
-
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss6.png
-
-  **"Show-all" mode, which includes promptless/invisible items:**
-
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss9.png
+  Python ``curses`` module. ``xconfig`` features like showing invisible symbols and
+  showing symbol names are included.
   
-  **Incremental search with regex support:**
-  
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss10.png
-  
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss11.png
-  
-  **Destination after pressing Enter, for the example above. "Show-all" mode is turned on automatically when jumping to invisible symbols.**
-  
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss13.png
-  
-  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/ss12.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/menuconfig.gif
 
-  (Sorry about that yellow color. See the styling code at the top of
-  ``menuconfig.py`` if you want to try to make it prettier. :))
+  ``menuconfig.py`` currently only supports Python 3, mostly due to
+  ``curses.get_wch()`` not being available on Python 2. It is needed
+  for Unicode support.
 
-  ``menuconfig.py`` only supports Python 3, mostly due to
-  ``curses.get_wch()`` being used, which is needed for Unicode support.
-  ``curses.get_wch()`` isn't available in the Python 2 version of the
-  ``curses`` module.
-
-  ``menuconfig.py`` has no third-party dependencies on \*nix.
-
-  On Windows, the ``curses`` modules is not available by default, but support
-  can be added by installing the ``windows-curses`` package:
+  There are no third-party dependencies on \*nix. On Windows,
+  the ``curses`` modules is not available by default, but support
+  can be added by installing the ``windows-curses`` package (which is
+  installed automatically when Kconfiglib is installed via ``pip``
+  on Windows):
   
   .. code-block:: shell
 
