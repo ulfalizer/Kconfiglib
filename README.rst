@@ -317,7 +317,8 @@ Two configuration interfaces are currently available:
 - `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
   is a terminal-based configuration interface implemented using the standard
   Python ``curses`` module. ``xconfig`` features like showing invisible symbols and
-  showing symbol names are included.
+  showing symbol names are included, and it's possible to jump directly to a symbol
+  in the menu tree (even if it's currently invisible).
   
   .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/menuconfig.gif
 
