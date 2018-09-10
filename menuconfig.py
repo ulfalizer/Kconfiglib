@@ -87,7 +87,11 @@ The color definition is a comma separated list of attributes:
                     you can also directly put in a color number, e.g. fg:123
                     (hexadecimal and octal constants are accepted as well).
                     Colors outside the range -1..curses.COLORS-1 (which is
-                    terminal-dependent) are ignored (with a warning).
+                    terminal-dependent) are ignored (with a warning). The COLOR
+                    can be also specified using a RGB value in the HTML
+                    notation, for example #RRGGBB. If the terminal supports
+                    color changing, the color is render accurately. Otherwise
+                    the visually nearest color is used.
 
                     If the background or foreground color of an element is not
                     specified, it defaults to -1, representing the default
@@ -98,6 +102,11 @@ The color definition is a comma separated list of attributes:
     - bold          Use bold text
     - underline     Use underline text
     - standout      Standout text attribute (reverse color)
+
+More often than not, some UI elements share the same color definition. In such
+cases the right value may specify an UI element from which the color definition
+will be copied. For example, "separator=help" will apply the current color
+definition for "help" to "separator".
 
 A keyword without the '=' is assumed to be a style template. The template name
 is looked up in the built-in styles list and the style definition is expanded
@@ -299,6 +308,166 @@ _STYLE_STD_COLORS = {
     "brightpurple": curses.COLOR_MAGENTA + 8,
 }
 
+def _rgb_to_6cube(r, g, b):
+    # Take an 888 RGB color value and return a 3 tuple representing the index
+    # in the xterm 6x6x6 color cube
+
+    # Xterm uses a RGB color palette, where the values of each component
+    # can be between 0-5 (therefore forming a 6x6x6 cube). The catch is
+    # that the mapping between RGB and the 6x6x6 cube is non-linear. The
+    # 6x6x6 cube index of 0 is mapped to a RGB value of 0. 1-5 are mapped
+    # to RGB values of 95 with increments of 40.
+
+    # Sources:
+    # https://commons.wikimedia.org/wiki/File:Xterm_256color_chart.svg
+    # https://github.com/tmux/tmux/blob/master/colour.c
+
+    # The formula for converting a single RGB value to the 6cube index
+    # 48 is the middle ground between 0 and 95
+    rgb_to_c6 = lambda x: 0 if x < 48 else max(1, int(round((x - 55) / 40)))
+
+    return rgb_to_c6(r), rgb_to_c6(g), rgb_to_c6(b)
+
+def _rgb_from_6cube(r6, g6, b6):
+    # Take a 666 xterm color cube index and convert it to a
+    # 3 tuple representing the RGB color
+
+    # The formula from converting the xterm 6cube index to a RGB value
+    rgb_from_c6 = lambda x: 0 if x == 0 else 55 + x*40
+
+    return rgb_from_c6(r6), rgb_from_c6(g6), rgb_from_c6(b6)
+
+def _rgb_to_gray_idx(r, g, b):
+    # Convert an 888 RGB color to the index of an xterm 256-color grayscale color
+    # with approx. the same perceived brightness. This "grayscale candidate" can
+    # be compared against the best "color candidate" to find a good xterm color
+    # to represent the color.
+
+    # Calculate the luminance (gray intensity) of a color from its R, G, B components
+    # Source: https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
+    luma = 0.299 * r + 0.587 * g + 0.114 * b
+
+    # Closests index in the grayscale palette, which starts at RGB 0x080808, with
+    # stepping 0x0A0A0A
+    idx = int(round((luma - 0x08) / 0x0A))
+
+    # Clamp the index to 0-23, corresponding to 232-255
+    return max(0, min(idx, 23))
+
+def _rgb_from_gray_idx(c):
+    # Convert a grayscale index to its closet single RGB component
+
+    g = c * 10 + 8
+    return (g, g, g)
+
+# Obscure Python: rgb2index is initialized from a reference to a global {}
+# Modification to this dictionary are retained between calls _rgb_alloc(), thus
+# making rgb2index a static variable
+def _rgb_alloc(rgb, rgb2index={}):
+    # Initialize a new entry in the xterm palette to the given RGB color, returning its
+    # index. If the color has already been initialized, the index of the existing entry is
+    # returned.
+
+    # Ncurses doesn't allow you to define new colors -- you are allowed only
+    # to overwrite existing ones.
+
+    # The colors from 0-15 are user-defined and there's no way to query the
+    # RGB values so we better leave them untouched.
+
+    # The RGB values of colors from 16-255 can be easily calculated. However,
+    # colors from 232-255 use a different formula (grayscale) so stick with
+    # colors from 16-231. 200+ colors should be plentiful.
+
+    if rgb in rgb2index:
+        return rgb2index[rgb]
+
+    # The first 16 colors are user defined and we should not change their
+    # values
+    cn = len(rgb2index) + 16
+    if cn >= curses.COLORS:
+        _warn("Unable to allocate new RGB color.", rgb)
+        return 0
+
+    # Map each RGB component from the range 0-255 to the range 0-1000, which
+    # is what curses uses
+    curses.init_color(cn, *(int(round(x * 1000 / 255)) for x in rgb))
+    rgb2index[rgb] = cn
+
+    return cn
+
+def _color_get(num):
+    # Returns the index of a color that looks like color 'num' in the xterm
+    # 256-color palette.
+
+    # If ncurses supports color changes, We can't return 'num' directly when
+    # redefining colors, since we might have overwritten the palette entry at
+    # 'num'. Instead, we allocate a new color for it, emulating the 256-color
+    # palette.
+
+    # Simplest case -- terminal doesn't support changing the definition of
+    # colors. _color_get_rgb() won't be changing the current palettte
+    # so we can return the color as-is
+    if not curses.can_change_color():
+        return num
+
+    # Standard colors, _rgb_alloc() doesn't touch these so
+    # we can return them as-is
+    if num < 16 or num >= 232:
+        return num
+
+    # We're in RGB mode. _rgb_alloc() will redefine the colors
+    # from 16-231. Since the RGB value of the "standard" 256 color
+    # palette can be easily calculated, we can emulate them in RGB
+    # mode rather easily
+    num -= 16
+    return _rgb_alloc(_rgb_from_6cube((num // 36) % 6, (num // 6) % 6, num % 6))
+
+def _color_get_rgb(rgb):
+    # Lambda for calculating the Euclidean distance between two RGB colors
+    dist = lambda r1, r2: sum((x - y)**2 for x, y in zip(r1, r2))
+
+    # Best case -- terminal supports the changing of colors
+    if curses.COLORS >= 256 and curses.can_change_color():
+        return _rgb_alloc(rgb)
+    # Second best case -- terminal supports 256 colors
+    # Find the closes matching color in the standard 6x6x6 color palette and
+    # the greyscale palette (232-255), compare the two and select the closest
+    # matching color
+    elif curses.COLORS >= 256:
+        # Calculate the indexes of the closest RGB color in the color palette
+        c6 = _rgb_to_6cube(*rgb)
+        # Calculate the RGB value of the closest color
+        crgb = _rgb_from_6cube(*c6)
+
+        # Calculate the index value of the closest gray palette color
+        gr = _rgb_to_gray_idx(*rgb)
+        # Calculate back RGB value
+        cgr = _rgb_from_gray_idx(gr)
+
+        if dist(rgb, crgb) < dist(rgb, cgr):
+            # Use the 6x6x6 color palette, calculate the color number
+            # from the 6cube index triplet
+            return 16 + (c6[0] * 36) + (c6[1] * 6) + c6[2]
+        else:
+            # Use the gray palette
+            return 232 + gr
+
+    # No support for color changes or 256 color mode, this is probably the best
+    # we can do, or is it? Submit patches :)
+    color = 0
+    dmin = 255**2 + 255**2 + 255**2
+    for x in range(0, curses.COLORS):
+        crgb = curses.color_content(x)
+        # ncurses returns colors with a range from 0..1000, scale that down
+        # to 0..255
+        crgb = [int(x * 255 / 1000) for x in crgb]
+        d = dist(rgb, crgb)
+        if d < dmin:
+            dmin = d
+            color = x
+
+    return color
+
 # Dictionary mapping element types to the curses attributes used to display
 # them
 _style = {}
@@ -325,7 +494,11 @@ def _parse_style(style_str, parsing_default):
             if key not in _style and not parsing_default:
                 _warn("Ignoring non-existent style", key)
 
-            _style[key] = _style_to_curses(data)
+            # If data is a reference to another key, copy its style
+            if data in _style:
+                _style[key] = _style[data]
+            else:
+                _style[key] = _style_to_curses(data)
 
         elif sline in _STYLES:
             # Recursively parse style template. Ignore styles that don't exist,
@@ -336,19 +509,25 @@ def _parse_style(style_str, parsing_default):
             _warn("Ignoring non-existent style template", sline)
 
 def _style_to_curses(cstr):
-    """
-    Parse a style definition and convert it to curses attributes
+    # Parse a style definition and convert it to curses attributes
+    # This function returns a list of: (fg_color, bg_color, attributes)
 
-    This function returns a list of: (fg_color, bg_color, attributes)
-    """
     def parse_color(t):
         cdef = t.split(":", 1)[1]
 
         if cdef in _STYLE_STD_COLORS:
-            return _STYLE_STD_COLORS[cdef]
+            return _color_get(_STYLE_STD_COLORS[cdef])
+
+        # HTML color #RRGGBB
+        if re.match("#[A-Fa-f0-9]{6}", cdef):
+            # Split the color into subcomponents
+            r = int(cdef[1:3], 16)
+            g = int(cdef[3:5], 16)
+            b = int(cdef[5:7], 16)
+            return _color_get_rgb((r, g, b))
 
         try:
-            cnum = int(cdef, 0)
+            cnum = _color_get(int(cdef, 0))
         except ValueError:
             _warn("Ignoring color in", t, "that's neither predefined "
                   "nor a number")
