@@ -468,8 +468,6 @@ def _parse_style(style_str, parsing_default):
     # The parsing_default flag is set to True when we're implicitly parsing the
     # 'default'/'monochrome' style, to prevent warnings.
 
-    global _style
-
     for sline in style_str.split():
         # Words without a "=" character represents a style template
         if "=" in sline:
@@ -647,7 +645,7 @@ def menuconfig(kconf):
         _kconf.load_config(_config_filename)
 
     else:
-        # Always prompt for save if the output configuration file doesn't exist
+        # Always prompt for save if the .config doesn't exist
         _conf_changed = True
 
         if kconf.defconfig_filename is not None:
@@ -752,7 +750,7 @@ def _menuconfig(stdscr):
         if c == curses.KEY_RESIZE:
             _resize_main()
 
-        if c in (curses.KEY_DOWN, "j", "J"):
+        elif c in (curses.KEY_DOWN, "j", "J"):
             _select_next_menu_entry()
 
         elif c in (curses.KEY_UP, "k", "K"):
@@ -949,8 +947,7 @@ def _init():
 
     _cur_menu = _kconf.top_node
     _shown = _shown_nodes(_cur_menu)
-    _sel_node_i = 0
-    _menu_scroll = 0
+    _sel_node_i = _menu_scroll = 0
 
     _show_name = False
 
@@ -1028,8 +1025,7 @@ def _enter_menu(menu):
         # Jump into menu
         _cur_menu = menu
         _shown = shown_sub
-        _sel_node_i = 0
-        _menu_scroll = 0
+        _sel_node_i = _menu_scroll = 0
 
 def _jump_to(node):
     # Jumps directly to the menu node 'node'
@@ -1733,14 +1729,13 @@ def _key_dialog(title, text, keys):
 
         c = _get_wch_compat(win)
 
-        if c == "\x1B":  # \x1B = ESC
-            return None
-
-
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
             _resize_main()
             _resize_key_dialog(win, text)
+
+        elif c == "\x1B":  # \x1B = ESC
+            return None
 
         elif isinstance(c, str):
             c = c.lower()
@@ -2040,7 +2035,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                 sym_str += ' "{}"'.format(matches[i].prompt[0])
 
             _safe_addstr(matches_win, i - scroll, 0, sym_str,
-                         _style["selection"] if i == sel_node_i else _style["list"])
+                         _style["selection" if i == sel_node_i else "list"])
 
     else:
         # bad_re holds the error message from the re.error exception on errors
@@ -2229,7 +2224,8 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
              "Choice" if isinstance(node.item, Choice) else
              "Menu"   if node.item == MENU else
              "Comment") + " information"
-    _safe_addstr(top_line_win, 0, (text_win_width - len(title))//2, title)
+    _safe_addstr(top_line_win, 0, max((text_win_width - len(title))//2, 0),
+                 title)
 
     top_line_win.noutrefresh()
 
