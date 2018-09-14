@@ -33,8 +33,8 @@ Running
 =======
 
 menuconfig.py can be run either as a standalone executable or by calling the
-menu.menuconfig() function with an existing Kconfig instance. The second option
-is a bit inflexible in that it will still load and save .config, etc.
+menuconfig() function with an existing Kconfig instance. The second option is a
+bit inflexible in that it will still load and save .config, etc.
 
 When run in standalone mode, the top-level Kconfig file to load can be passed
 as a command-line argument. With no argument, it defaults to "Kconfig".
