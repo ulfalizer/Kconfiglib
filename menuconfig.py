@@ -238,6 +238,10 @@ strings/regexes to find entries that match all of them. Type Ctrl-F to
 view the help of the selected item without leaving the dialog.
 """[1:-1].split("\n")
 
+#
+# Styling
+#
+
 _STYLES = {
     "default": """
     path=fg:black,bg:white,bold
@@ -564,10 +568,6 @@ def _init_styles():
     if "MENUCONFIG_STYLE" in os.environ:
         _parse_style(os.environ["MENUCONFIG_STYLE"], False)
 
-#
-# Main application
-#
-
 # color_attribs holds the color pairs we've already created, indexed by a
 # (<foreground color>, <background color>) tuple.
 #
@@ -592,33 +592,11 @@ def _style_attr(fg_color, bg_color, attribs, color_attribs={}):
 
     return color_attribs[(fg_color, bg_color)] | attribs
 
+#
+# Main application
+#
 
-def _name_and_val_str(sc):
-    # Custom symbol printer that shows the symbol value after the symbol, used
-    # for the information display
-
-    # Show the values of non-constant (non-quoted) symbols that don't look like
-    # numbers. Things like 123 are actually symbol references, and only work as
-    # expected due to undefined symbols getting their name as their value.
-    # Showing the symbol value for those isn't helpful though.
-    if isinstance(sc, Symbol) and \
-       not sc.is_constant and \
-       not _is_num(sc.name):
-
-        if not sc.nodes:
-            # Undefined symbol reference
-            return "{}(undefined/n)".format(sc.name)
-
-        return '{}(={})'.format(sc.name, sc.str_value)
-
-    # For other symbols, use the standard format
-    return standard_sc_expr_str(sc)
-
-def _expr_str(expr):
-    # Custom expression printer that shows symbol values
-    return expr_str(expr, _name_and_val_str)
-
-# Note: Used as the entry point in setup.py
+# Used as the entry point in setup.py
 def _main():
     menuconfig(standard_kconfig())
 
@@ -1534,19 +1512,18 @@ def _input_dialog(title, initial_text, info_text=None):
 
         c = _get_wch_compat(win)
 
-        if c == "\n":
-            _safe_curs_set(0)
-            return s
-
-        if c == "\x1B":  # \x1B = ESC
-            _safe_curs_set(0)
-            return None
-
-
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
             _resize_main()
             _resize_input_dialog(win, title, info_lines)
+
+        elif c == "\n":
+            _safe_curs_set(0)
+            return s
+
+        elif c == "\x1B":  # \x1B = ESC
+            _safe_curs_set(0)
+            return None
 
         else:
             s, i, hscroll = _edit_text(c, s, i, hscroll, edit_width())
@@ -2510,6 +2487,31 @@ def _menu_path_info(node):
         node = _parent_menu(node)
 
     return "(top menu)" + path
+
+def _name_and_val_str(sc):
+    # Custom symbol printer that shows the symbol value after the symbol, used
+    # for the information display
+
+    # Show the values of non-constant (non-quoted) symbols that don't look like
+    # numbers. Things like 123 are actually symbol references, and only work as
+    # expected due to undefined symbols getting their name as their value.
+    # Showing the symbol value for those isn't helpful though.
+    if isinstance(sc, Symbol) and \
+       not sc.is_constant and \
+       not _is_num(sc.name):
+
+        if not sc.nodes:
+            # Undefined symbol reference
+            return "{}(undefined/n)".format(sc.name)
+
+        return '{}(={})'.format(sc.name, sc.str_value)
+
+    # For other symbols, use the standard format
+    return standard_sc_expr_str(sc)
+
+def _expr_str(expr):
+    # Custom expression printer that shows symbol values
+    return expr_str(expr, _name_and_val_str)
 
 def _styled_win(style):
     # Returns a new curses window with style 'style' and space as the fill
