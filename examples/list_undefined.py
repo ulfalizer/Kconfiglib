@@ -70,9 +70,6 @@ def all_arch_srcarch_pairs():
 
     yield ("sh64", "sh")
 
-    yield ("tilepro", "tile")
-    yield ("tilegx", "tile")
-
     yield ("um", "um")
 
 
@@ -80,6 +77,13 @@ def all_arch_srcarch_kconfigs():
     """
     Generates Kconfig instances for all the architectures in the kernel
     """
+
+    os.environ["srctree"] = "."
+    os.environ["HOSTCC"] = "gcc"
+    os.environ["HOSTCXX"] = "g++"
+    os.environ["CC"] = "gcc"
+    os.environ["LD"] = "ld"
+
     for arch, srcarch in all_arch_srcarch_pairs():
         print("  Processing " + arch)
 
@@ -118,20 +122,15 @@ for kconf in all_arch_srcarch_kconfigs():
 
 print("\nFinding references to each undefined symbol")
 
-def referencing_nodes(node, name):
+def referencing_nodes(kconf, name):
     # Returns a list of all menu nodes that reference a symbol named 'name' in
     # any of their properties or property conditions
     res = []
 
-    while node:
+    for node in kconf.node_iter():
         for ref in node.referenced:
             if ref.name == name:
                 res.append(node)
-
-        if node.list:
-            res.extend(referencing_nodes(node.list, name))
-
-        node = node.next
 
     return res
 
@@ -145,7 +144,7 @@ for kconf in all_arch_srcarch_kconfigs():
         # undefined symbol, which is terribly inefficient. We could speed
         # things up by tweaking referencing_nodes() to compare each symbol to
         # multiple symbols while walking the configuration tree.
-        for node in referencing_nodes(kconf.top_node, name):
+        for node in referencing_nodes(kconf, name):
             refs.add("{}:{}".format(node.filename, node.linenr))
 
 

@@ -2,6 +2,9 @@
 # Verified by the test suite to generate identical output to 'make allnoconfig'
 # for all ARCHes.
 #
+# Note: A more practical version would use Kconfig.node_iter(). The manual tree
+# walking is for demonstration purposes.
+#
 # Usage for the Linux kernel:
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_walk.py

@@ -79,43 +79,25 @@ import sys
 import kconfiglib
 
 
-def referencing_nodes(node, sym):
-    # Returns a list of all menu nodes that reference 'sym' in any of their
-    # properties or property conditions
-
-    res = []
-
-    while node:
-        if sym in node.referenced:
-            res.append(node)
-
-        if node.list:
-            res.extend(referencing_nodes(node.list, sym))
-
-        node = node.next
-
-    return res
-
-
 if len(sys.argv) < 3:
     sys.exit('Pass symbol name (without "CONFIG_" prefix) with SCRIPT_ARG=<name>')
 
 kconf = kconfiglib.Kconfig(sys.argv[1])
 sym_name = sys.argv[2]
-
 if sym_name not in kconf.syms:
     print("No symbol {} exists in the configuration".format(sym_name))
     sys.exit(0)
 
-nodes = referencing_nodes(kconf.top_node, kconf.syms[sym_name])
-if not nodes:
-    print("No reference to {} found".format(sym_name))
+referencing = [node for node in kconf.node_iter()
+               if kconf.syms[sym_name] in node.referenced]
+if not referencing:
+    print("No references to {} found".format(sym_name))
     sys.exit(0)
 
 print("Found {} locations that reference {}:\n"
-      .format(len(nodes), sym_name))
+      .format(len(referencing), sym_name))
 
-for i, node in enumerate(nodes, 1):
+for i, node in enumerate(referencing, 1):
     print("========== Location {} ({}:{}) ==========\n\n{}"
           .format(i, node.filename, node.linenr, node))
 
