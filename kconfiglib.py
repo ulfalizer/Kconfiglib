@@ -989,7 +989,7 @@ class Kconfig(object):
                         # The C implementation only checks the first character
                         # to the right of '=', for whatever reason
                         if not ((sym.orig_type is BOOL and
-                                 val.startswith(("n", "y"))) or \
+                                 val.startswith(("n", "y"))) or
                                 (sym.orig_type is TRISTATE and
                                  val.startswith(("n", "m", "y")))):
                             self._warn("'{}' is not a valid value for the {} "
@@ -2071,7 +2071,7 @@ class Kconfig(object):
         else:  # op == "+="
             # += does immediate expansion if the variable was last set
             # with :=
-            var.value += " " + (val if var.is_recursive else \
+            var.value += " " + (val if var.is_recursive else
                                 self._expand_whole(val, ()))
 
     def _expand_whole(self, s, args):
@@ -3035,8 +3035,6 @@ class Kconfig(object):
                               self._make_and(cur.prompt[1], dep))
 
             if isinstance(cur.item, (Symbol, Choice)):
-                sc = cur.item
-
                 # Propagate 'visible if' dependencies to the prompt
                 if cur.prompt:
                     cur.prompt = (cur.prompt[0],
@@ -3460,6 +3458,7 @@ class Symbol(object):
         if self.orig_type is TRISTATE and \
            ((self.choice and self.choice.tri_value == 2) or
             not self.kconfig.modules.tri_value):
+
             return BOOL
 
         return self.orig_type
@@ -4830,7 +4829,7 @@ class MenuNode(object):
         fields.append("deps " + TRI_TO_STR[expr_value(self.dep)])
 
         if self.item is MENU:
-            fields.append("'visible if' deps " + \
+            fields.append("'visible if' deps " +
                           TRI_TO_STR[expr_value(self.visibility)])
 
         if isinstance(self.item, (Symbol, Choice)) and self.help is not None:
@@ -5417,7 +5416,7 @@ def _expr_depends_on(expr, sym):
         elif left is not sym:
             return False
 
-        return (expr[0] is EQUAL and right is sym.kconfig.m or \
+        return (expr[0] is EQUAL and right is sym.kconfig.m or
                                      right is sym.kconfig.y) or \
                (expr[0] is UNEQUAL and right is sym.kconfig.n)
 
@@ -5735,12 +5734,12 @@ def _check_sym_sanity(sym):
                 if not _int_hex_ok(low, sym.orig_type) or \
                    not _int_hex_ok(high, sym.orig_type):
 
-                   sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
-                                     "[{2}, {3}]"
-                                     .format(TYPE_TO_STR[sym.orig_type],
-                                             _name_and_loc(sym),
-                                             _name_and_loc(low),
-                                             _name_and_loc(high)))
+                    sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
+                                      "[{2}, {3}]"
+                                      .format(TYPE_TO_STR[sym.orig_type],
+                                              _name_and_loc(sym),
+                                              _name_and_loc(low),
+                                              _name_and_loc(high)))
 
 
 def _int_hex_ok(sym, type_):
