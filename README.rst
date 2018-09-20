@@ -207,6 +207,15 @@ The following Kconfig extensions are available:
   are specified relative to the directory of the current Kconfig file. An
   ``orsource`` statement is available as well, analogous to ``osource``.
 
+- Preprocessor user functions can be defined in Python, which makes it simple
+  to integrate information from existing Python tools into Kconfig (e.g. to
+  have Kconfig symbols depend on hardware information stored in some other
+  format).
+
+  See the *Kconfig extensions* section in the
+  `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_
+  module docstring for more information.
+
 - ``def_int``, ``def_hex``, and ``def_string`` are available in addition to
   ``def_bool`` and ``def_tristate``, allowing ``int``, ``hex``, and ``string``
   symbols to be given a type and a default at the same time.

@@ -2459,6 +2459,39 @@ config PRINT_ME_TOO
     ])
 
 
+    print("Testing user-defined preprocessor functions")
+
+    # Make Kconfiglib/tests/kconfigfunctions.py importable
+    sys.path.insert(0, "Kconfiglib/tests")
+
+    c = Kconfig("Kconfiglib/tests/Kuserfunctions")
+
+    verify_variable("add-zero",  "$(add)",          "0", True)
+    verify_variable("add-one",   "$(add,1)",        "1", True)
+    verify_variable("add-three", "$(add,1,-1,2,1)", "3", True)
+
+    verify_variable("one-one", "$(one,foo bar)", "onefoo barfoo bar", True)
+
+    verify_variable("one-or-more-one", "$(one-or-more,foo)", "foo + ", True)
+    verify_variable("one-or-more-three", "$(one-or-more,foo,bar,baz)",
+                    "foo + bar,baz", True)
+
+    def verify_bad_argno(name):
+        try:
+            c.variables[name].expanded_value
+        except KconfigError:
+            pass
+        else:
+            fail("Expected '{}' expansion to flag wrong number of arguments, "
+                 "didn't".format(name))
+
+    verify_bad_argno("one-zero")
+    verify_bad_argno("one-two")
+    verify_bad_argno("one-or-more-zero")
+
+    sys.path.pop(0)
+
+
     print("Testing KCONFIG_STRICT")
 
     os.environ["KCONFIG_STRICT"] = "y"
