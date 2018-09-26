@@ -276,8 +276,10 @@ Other features
   
   The `allyesconfig.py
   <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
-  script currently runs in about 1.3 seconds on a Core i7 2600K (with a warm
-  file cache), including the ``make`` overhead from ``make scriptconfig``.
+  script currently runs in about 1.3 seconds on the Linux kernel on a Core i7
+  2600K (with a warm file cache), including the ``make`` overhead from ``make
+  scriptconfig``. Note that the Linux kernel Kconfigs are absolutely massive
+  (over 14k symbols for x86) compared to most projects.
   
   Kconfiglib is especially speedy in cases where multiple ``.config`` files
   need to be processed, because the ``Kconfig`` files will only need to be parsed
