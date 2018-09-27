@@ -9,8 +9,9 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allnoconfig_walk.py
 
-from kconfiglib import Kconfig, Symbol
 import sys
+
+from kconfiglib import Kconfig, Symbol
 
 def do_allnoconfig(node):
     global changed

@@ -51,12 +51,14 @@
 #           [ ] Compile also drivers which will not load - Some drivers can be compiled on a different platform than they are intended to be run on. Despite they cannot be loaded there (or even when they load they cannot be used due to missing HW support), developers still, opposing to distributors, might want to build such drivers to compile-test them.  If you are a developer and want to build everything available, say Y here. If you are a user/distributor, say N here to exclude useless drivers to be distributed.  (COMPILE_TEST)
 #           ...
 
+import sys
+
 from kconfiglib import Kconfig, \
                        Symbol, Choice, MENU, COMMENT, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        expr_value, \
                        TRI_TO_STR
-import sys
+
 
 # Add help description to output
 WITH_HELP_DESC = False

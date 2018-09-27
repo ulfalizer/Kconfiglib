@@ -12,8 +12,10 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/defconfig_oldconfig.py
 
-import kconfiglib
 import sys
+
+import kconfiglib
+
 
 kconf = kconfiglib.Kconfig(sys.argv[1])
 

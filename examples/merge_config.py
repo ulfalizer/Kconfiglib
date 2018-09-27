@@ -59,8 +59,11 @@
 #     # CONFIG_FOO is not set
 #     CONFIG_BAR=y
 #     CONFIG_BAZ="baz string"
-from kconfiglib import Kconfig, Symbol, BOOL, TRISTATE, TRI_TO_STR
+
 import sys
+
+from kconfiglib import Kconfig, Symbol, BOOL, TRISTATE, TRI_TO_STR
+
 
 if len(sys.argv) < 4:
     sys.exit("usage: merge_config.py Kconfig merged_config config1 [config2 ...]")

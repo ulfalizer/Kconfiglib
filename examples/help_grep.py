@@ -33,9 +33,11 @@
 #   ...
 
 
-from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
 import re
 import sys
+
+from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
+
 
 if len(sys.argv) < 3:
     sys.exit("Pass the regex with SCRIPT_ARG=<regex>")

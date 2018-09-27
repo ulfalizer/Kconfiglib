@@ -117,13 +117,15 @@
 #  
 #   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): ^D
 
+import readline
+import sys
+
 from kconfiglib import Kconfig, \
                        Symbol, Choice, MENU, COMMENT, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        expr_value, \
                        TRI_TO_STR
-import readline
-import sys
+
 
 # Python 2/3 compatibility hack
 if sys.version_info[0] < 3:

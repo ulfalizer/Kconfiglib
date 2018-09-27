@@ -6,8 +6,10 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/eval_expr.py SCRIPT_ARG=<expr>
 
-import kconfiglib
 import sys
+
+import kconfiglib
+
 
 if len(sys.argv) < 3:
     sys.exit("Pass the expression to evaluate with SCRIPT_ARG=<expression>")

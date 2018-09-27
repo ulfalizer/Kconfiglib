@@ -4,9 +4,11 @@
 #
 #   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allyesconfig.py
 
-import kconfiglib
 import os
 import sys
+
+import kconfiglib
+
 
 kconf = kconfiglib.Kconfig(sys.argv[1])
 
