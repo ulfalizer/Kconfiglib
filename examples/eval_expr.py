@@ -12,9 +12,8 @@ import sys
 if len(sys.argv) < 3:
     sys.exit("Pass the expression to evaluate with SCRIPT_ARG=<expression>")
 
-expr = sys.argv[2]
-
 kconf = kconfiglib.Kconfig(sys.argv[1])
+expr = sys.argv[2]
 
 # Enable modules so that m doesn't get demoted to n
 kconf.modules.set_value(2)
