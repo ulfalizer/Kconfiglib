@@ -488,7 +488,7 @@ If my_fn() returns "n", this will result in
 
     config FOO
         ...
-	depends on n
+        depends on n
 
 Warning
 *******
