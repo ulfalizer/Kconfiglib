@@ -2606,7 +2606,15 @@ class Kconfig(object):
                 self.top_node.linenr = self._linenr
 
             else:
-                self._parse_error("unrecognized construct")
+                # A valid endchoice/endif/endmenu is caught by the 'end_token'
+                # check above
+                self._parse_error("no corresponding 'choice'"
+                                  if t0 is _T_ENDCHOICE else
+                                  "no corresponding 'if'"
+                                  if t0 is _T_ENDIF else
+                                  "no corresponding 'menu'"
+                                  if t0 is _T_ENDMENU else
+                                  "unrecognized construct")
 
         # End of file reached. Terminate the final node and return it.
 
