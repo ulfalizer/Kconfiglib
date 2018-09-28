@@ -12,12 +12,12 @@
 #   location: init/Kconfig:39
 #   
 #   config SYSVIPC
-#       bool
+#   	bool
 #   	prompt "System V IPC"
 #   	help
-#	  ...
+#   	  ...
 #   	  exchange information. It is generally considered to be a good thing,
-#	  ...
+#   	  ...
 #   
 #   location: init/Kconfig:233
 #   
@@ -25,8 +25,8 @@
 #   	bool
 #   	prompt "BSD Process Accounting" if MULTIUSER
 #   	help
-#	  ...
-#	  information.  This is generally a good idea, so say Y.
+#   	  ...
+#   	  information.  This is generally a good idea, so say Y.
 #
 #   location: init/Kconfig:403
 #
