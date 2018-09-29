@@ -1499,8 +1499,9 @@ class Kconfig(object):
     def node_iter(self, unique_syms=False):
         """
         Returns a generator for iterating through all MenuNode's in the Kconfig
-        tree. The iteration is done in Kconfig definition order (the children
-        of a node are visited before the next node is visited).
+        tree. The iteration is done in Kconfig definition order (each node is
+        visited before its children, and the children of a node are visited
+        before the next node).
 
         The Kconfig.top_node menu node is skipped. It contains an implicit menu
         that holds the top-level items.
