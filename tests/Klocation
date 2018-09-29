@@ -33,6 +33,8 @@ config HELP_3
       foo
       bar
     bool
+config \
+MULTI_DEF
 
 config MULTI_DEF
 

@@ -1014,6 +1014,7 @@ g
         verify_locations(c.syms["MULTI_DEF"].nodes,
           "tests/Klocation:7",
           "tests/Klocation:37",
+          "tests/Klocation:39",
           "tests/Klocation_sourced:3",
           "tests/sub/Klocation_rsourced:2",
           "tests/sub/Klocation_gsourced1:1",
@@ -1024,7 +1025,7 @@ g
           "tests/sub/Klocation_grsourced2:1",
           "tests/sub/Klocation_grsourced1:1",
           "tests/sub/Klocation_grsourced2:1",
-          "tests/Klocation:70")
+          "tests/Klocation:72")
 
         verify_locations(c.named_choices["CHOICE"].nodes,
                          "tests/Klocation_sourced:5")
@@ -1103,7 +1104,8 @@ tests/Krecursive2:1
         [node.item.name for node in c.node_iter()
          if isinstance(node.item, Symbol)],
         ["SINGLE_DEF", "MULTI_DEF", "HELP_1", "HELP_2", "HELP_3", "MULTI_DEF",
-         "MULTI_DEF", "MENU_HOOK", "COMMENT_HOOK"] + 10*["MULTI_DEF"])
+         "MULTI_DEF", "MULTI_DEF", "MENU_HOOK", "COMMENT_HOOK"] + \
+        10*["MULTI_DEF"])
 
     verify_equal(
         [node.item.name for node in c.node_iter(True)

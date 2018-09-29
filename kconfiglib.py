@@ -754,10 +754,9 @@ class Kconfig(object):
         "_include_path",
         "_filestack",
         "_line",
-        "_saved_line",
         "_tokens",
         "_tokens_i",
-        "_has_tokens",
+        "_reuse_tokens",
     )
 
     #
@@ -931,9 +930,10 @@ class Kconfig(object):
         self.kconfig_filenames = [filename]
         self.env_vars = set()
 
-        # These implement a single line of "unget" for the parser
-        self._saved_line = None
-        self._has_tokens = False
+        # Used to avoid retokenizing lines when we discover that they're not
+        # part of the construct currently being parsed. This is kinda like an
+        # unget operation.
+        self._reuse_tokens = False
 
         # Keeps track of the location in the parent Kconfig files. Kconfig
         # files usually source other Kconfig files. See _enter_file().
@@ -1777,19 +1777,19 @@ class Kconfig(object):
         # Fetches and tokenizes the next line from the current Kconfig file.
         # Returns False at EOF and True otherwise.
 
-        # _saved_line provides a single line of "unget", currently only used
-        # for help texts.
-        #
-        # This also works as expected if _saved_line is "", indicating EOF:
-        # "" is falsy, and readline() returns "" over and over at EOF.
-        if self._saved_line:
-            self._line = self._saved_line
-            self._saved_line = None
-        else:
-            self._line = self._file.readline()
-            if not self._line:
-                return False
-            self._linenr += 1
+        # We might already have tokens from parsing a line and discovering that
+        # it's part of a different construct
+        if self._reuse_tokens:
+            self._reuse_tokens = False
+            self._tokens_i = -1
+            return True
+
+        # Note: readline() returns '' over and over at EOF, which we rely on
+        # for help texts at the end of files (see _line_after_help())
+        self._line = self._file.readline()
+        if not self._line:
+            return False
+        self._linenr += 1
 
         # Handle line joining
         while self._line.endswith("\\\n"):
@@ -1800,6 +1800,26 @@ class Kconfig(object):
         self._tokens_i = -1  # Token index (minus one)
 
         return True
+
+    def _line_after_help(self, line):
+        # Tokenizes the line after a help text. This case is special in that
+        # the line has already been fetched (to discover that it isn't part of
+        # the help text).
+        #
+        # An earlier version used a _saved_line variable instead that was
+        # checked in _next_line(). This special-casing gets rid of it and makes
+        # _reuse_tokens alone sufficient to handle unget.
+
+        if line:
+            # Handle line joining
+            while line.endswith("\\\n"):
+                line = line[:-2] + self._file.readline()
+                self._linenr += 1
+
+            self._tokens = self._tokenize(line)
+            self._reuse_tokens = True
+
+        self._line = line
 
 
     #
@@ -2427,12 +2447,7 @@ class Kconfig(object):
         # Returns the final menu node in the block (or 'prev' if the block is
         # empty). This allows chaining.
 
-        # We might already have tokens from parsing a line to check if it's a
-        # property and discovering it isn't. self._has_tokens functions as a
-        # kind of "unget".
-        while self._has_tokens or self._next_line():
-            self._has_tokens = False
-
+        while self._next_line():
             t0 = self._next_token()
             if t0 is None:
                 continue
@@ -2781,8 +2796,7 @@ class Kconfig(object):
 
             else:
                 # Reuse the tokens for the non-property line later
-                self._has_tokens = True
-                self._tokens_i = -1
+                self._reuse_tokens = True
                 return
 
     def _set_type(self, node, new_type):
@@ -2844,7 +2858,7 @@ class Kconfig(object):
                        " has 'help' but empty help text")
 
             node.help = ""
-            self._saved_line = line  # "Unget" the line
+            self._line_after_help(line)
             return
 
         # The help text goes on till the first non-empty line with less indent
@@ -2871,7 +2885,7 @@ class Kconfig(object):
         self._linenr += len(help_lines)
 
         node.help = "\n".join(help_lines).rstrip() + "\n"
-        self._saved_line = line  # "Unget" the line
+        self._line_after_help(line)
 
     def _parse_expr(self, transform_m):
         # Parses an expression from the tokens in Kconfig._tokens using a
