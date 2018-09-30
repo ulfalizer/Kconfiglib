@@ -2530,9 +2530,6 @@ class Kconfig(object):
                 node = MenuNode()
                 node.item = node.prompt = None
                 node.parent = parent
-                node.filename = self._filename
-                node.linenr = self._linenr
-
                 node.dep = self._expect_expr_and_eol()
 
                 self._parse_block(_T_ENDIF, node, node)
