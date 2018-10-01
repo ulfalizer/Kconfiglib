@@ -785,7 +785,7 @@ def _menuconfig(stdscr):
                    "h", "H"):
 
             if c == "\x1B" and _cur_menu is _kconf.top_node:
-                res = quit_dialog()
+                res = _quit_dialog()
                 if res:
                     return res
             else:
@@ -836,11 +836,11 @@ def _menuconfig(stdscr):
             _show_name = not _show_name
 
         elif c in ("q", "Q"):
-            res = quit_dialog()
+            res = _quit_dialog()
             if res:
                 return res
 
-def quit_dialog():
+def _quit_dialog():
     if not _conf_changed:
         return "No changes to save"
 
