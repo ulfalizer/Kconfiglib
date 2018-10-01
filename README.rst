@@ -109,21 +109,30 @@ the following command:
 
 .. code:: sh
 
-    $ pydoc kconfiglib
+    $ pydoc(3) kconfiglib
 
 For HTML output, add ``-w``:
 
 .. code:: sh
 
-    $ pydoc -w kconfiglib
+    $ pydoc(3) -w kconfiglib
 
-A good starting point is to read the module docstring (which you could also just read directly
-at the beginning of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_). It gives an introduction to symbol
-values, the menu tree, and expressions.
+This will also work after installing Kconfiglib with ``pip(3)``.
 
-After reading the module docstring, a good next step is to read the ``Kconfig`` class
-documentation, and then the documentation for the ``Symbol``, ``Choice``, and ``MenuNode``
-classes.
+Documentation for the ``menuconfig`` interface can be viewed in the same way:
+
+.. code:: sh
+
+    $ pydoc3 menuconfig
+
+A good starting point for learning the library is to read the module docstring
+(which you could also just read directly at the beginning of `kconfiglib.py
+<https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_). It
+gives an introduction to symbol values, the menu tree, and expressions.
+
+After reading the module docstring, a good next step is to read the ``Kconfig``
+class documentation, and then the documentation for the ``Symbol``, ``Choice``,
+and ``MenuNode`` classes.
 
 Please tell me if something is unclear or can be explained better.
 
