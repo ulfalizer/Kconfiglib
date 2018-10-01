@@ -10,6 +10,9 @@
 #      aren't already set in the .config
 #   3. Write new .config
 #
+# The default input/output filename is '.config'. A different filename can be
+# passed in the KCONFIG_CONFIG environment variable.
+#
 # Unlike 'make oldconfig', this script doesn't print menu titles and comments,
 # but gives Kconfig definition locations. Printing menus and comments would be
 # pretty easy to add: Look at the parents of each item and print all menu
@@ -39,13 +42,11 @@ def _main():
     # visible symbols.
     global conf_changed
 
-    kconf = standard_kconfig()
-
     config_filename = standard_config_filename()
     if not os.path.exists(config_filename):
         sys.exit("{}: '{}' not found".format(sys.argv[0], config_filename))
 
-
+    kconf = standard_kconfig()
     kconf.load_config(config_filename)
 
     while True:
