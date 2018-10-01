@@ -65,7 +65,7 @@ setuptools.setup(
         "Examples": "https://github.com/ulfalizer/Kconfiglib/tree/master/examples",
     },
 
-    classifiers=(
+    classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Build Tools",
@@ -85,5 +85,5 @@ setuptools.setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
-    )
+    ]
 )
