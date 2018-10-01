@@ -4292,8 +4292,7 @@ class Choice(object):
 
     name:
       The name of the choice, e.g. "FOO" for 'choice FOO', or None if the
-      Choice has no name. I can't remember ever seeing named choices in
-      practice, but the C tools support them too.
+      Choice has no name.
 
     type:
       The type of the choice. One of BOOL, TRISTATE, UNKNOWN. UNKNOWN is for
@@ -4380,17 +4379,14 @@ class Choice(object):
     syms:
       List of symbols contained in the choice.
 
-      Gotcha: If a symbol depends on the previous symbol within a choice so
-      that an implicit menu is created, it won't be a choice symbol, and won't
-      be included in 'syms'. There are real-world examples of this, and it was
-      a PITA to support in older versions of Kconfiglib that didn't implement
-      the menu structure.
+      Obscure gotcha: If a symbol depends on the previous symbol within a
+      choice so that an implicit menu is created, it won't be a choice symbol,
+      and won't be included in 'syms'.
 
     nodes:
       A list of MenuNodes for this choice. In practice, the list will probably
       always contain a single MenuNode, but it is possible to give a choice a
-      name and define it in multiple locations (I've never even seen a named
-      choice though).
+      name and define it in multiple locations.
 
     defaults:
       List of (symbol, cond) tuples for the choice's 'defaults' properties. For
