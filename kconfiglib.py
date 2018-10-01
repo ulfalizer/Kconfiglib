@@ -4870,7 +4870,7 @@ class MenuNode(object):
         "defaults",
         "selects",
         "implies",
-        "ranges"
+        "ranges",
     )
 
     def __init__(self):
