@@ -1817,10 +1817,10 @@ class Kconfig(object):
                 line = line[:-2] + self._file.readline()
                 self._linenr += 1
 
+            self._line = line
+
             self._tokens = self._tokenize(line)
             self._reuse_tokens = True
-
-        self._line = line
 
 
     #
