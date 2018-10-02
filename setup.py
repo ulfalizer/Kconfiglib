@@ -5,7 +5,7 @@ import setuptools
 setuptools.setup(
     name="kconfiglib",
     # MAJOR.MINOR.PATCH, per http://semver.org
-    version="10.9.2",
+    version="10.9.3",
     description="A flexible Python Kconfig parser",
 
     # Make sure that README.rst decodes on Python 3 in environments that use
