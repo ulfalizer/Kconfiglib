@@ -18,6 +18,10 @@ should be relatively easy, if needed.
 The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib
 exclusively, with lots of small helper scripts in other projects.
 
+Since Kconfiglib is based around a library, it can be used e.g. to generate a
+`Kconfig cross-reference <https://docs.zephyrproject.org/latest/reference/kconfig/index.html>`_ (note: heavy page),
+using the same robust Kconfig parser used for other Kconfig tools, instead of brittle ad-hoc parsing. The documentation generation script can be found `here <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_.
+
 Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_.
 For backwards compatibility, environment variables can be referenced both as
