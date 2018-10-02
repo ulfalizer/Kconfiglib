@@ -86,7 +86,8 @@ eight small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6
 `7 <https://github.com/ulfalizer/Kconfiglib/commit/7a428aa415606820a44291f475248b08e3952c4b>`_,
 `8 <https://github.com/ulfalizer/Kconfiglib/commit/f247ddf618ad29718e5efd3e69f8baf75d4d347b>`_)
 to the behavior of the API, which is why the major version is at 10 rather than
-2. I do major version bumps for all behavior changes, even tiny ones.
+2. I do major version bumps for all behavior changes, even tiny ones, and most of these were
+fixes for baby issues in the early days of the Kconfiglib 2 API.
 
 Manual installation
 ~~~~~~~~~~~~~~~~~~~
