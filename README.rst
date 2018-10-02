@@ -55,6 +55,8 @@ executables. All but one mirror functionality available in the C tools.
 
 - `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
 
+- `olddefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/olddefconfig.py>`_
+
 - `alldefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
 
 - `allnoconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allnoconfig.py>`_
