@@ -5,7 +5,7 @@ Overview
 --------
 
 Kconfiglib is a `Kconfig
-<https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
+<https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
 implementation in Python 2/3. It started out as a helper library, but now has a
 enough functionality to also work well as a standalone Kconfig implementation
 (including `menuconfig interfaces <Menuconfig interfaces_>`_ and `Kconfig extensions`_).
@@ -115,7 +115,7 @@ Getting started
    you want to use the terminal ``menuconfig``.
 
 2. Write `Kconfig
-   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_
+   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`__
    files that describe the available configuration options.
 
 3. Generate an initial configuration with e.g. ``menuconfig`` or
