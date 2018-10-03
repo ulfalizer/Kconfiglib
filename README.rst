@@ -148,11 +148,12 @@ Make comment) in ``.config``, allowing them to be tested with ``ifdef`` in
 Make.
 
 If you make use of this, you might want to pass ``--config-out <filename>`` to
-``genconfig`` and include the generated configuration file instead of including
-``.config`` directly. This has the advantage that the generated configuration
-file will always be a "full" configuration file, even if ``.config`` is
-outdated. Otherwise, it might be necessary to run ``old(def)config`` or
-``menuconfig`` before rebuilding with an outdated ``.config``.
+``genconfig`` and include the configuration file it generates instead of
+including ``.config`` directly. This has the advantage that the generated
+configuration file will always be a "full" configuration file, even if
+``.config`` is outdated. Otherwise, it might be necessary to run
+``old(def)config`` or ``menuconfig`` before rebuilding with an outdated
+``.config``.
 
 If you use ``--sync-deps`` to generate incremental build information, you can
 include ``deps/auto.conf`` instead, which is also a full configuration file.
