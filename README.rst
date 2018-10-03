@@ -8,7 +8,7 @@ Kconfiglib is a `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`_
 implementation in Python 2/3. It started out as a helper library, but now has a
 enough functionality to also work well as a standalone Kconfig implementation
-(including `menuconfig interfaces`_ and `Kconfig extensions`_).
+(including `menuconfig interfaces <Menuconfig interfaces_>`_ and `Kconfig extensions`_).
 
 The entire library is contained in `kconfiglib.py
 <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_. The
@@ -107,6 +107,49 @@ Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 See the module docstring at the top of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+
+Getting started
+---------------
+
+1. `Install <Installation_>`_ the library and the utilities.
+
+2. Write `Kconfig
+   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_
+   files that describe the available configuration options.
+
+3. Generate an initial configuration with e.g. ``menuconfig`` or
+   ``alldefconfig``. The configuration is saved as ``.config`` by default.
+
+4. Run ``genconfig`` to generate a header file. By default, it is saved in
+   ``config.h``.
+
+   Normally, ``genconfig`` would be run automatically as part of the build.
+   
+   Adding new configuration output formats should be relatively straightforward.
+   See the implementation of ``write_config()`` in `kconfiglib.py
+   <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+   
+5. To update an old ``.config`` file after the Kconfig files have changed (e.g.
+   to add new options), run ``oldconfig`` (prompts for values for new options)
+   or ``olddefconfig`` (gives new options their default value).
+
+   Due to Kconfig semantics, simply loading an old ``.config`` file performs an
+   implicit ``olddefconfig``, so building will normally not be affected by
+   having an outdated configuration.
+
+Using ``.config`` files as Make input
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``.config`` files use Make syntax and can be included directly in Makefiles to
+read configuration values from there. This is why unset values are written out
+as ``# CONFIG_FOO is not set`` (a Make comment) in ``.config``.
+
+If you make use of this, you might want to pass ``--sync-deps`` to
+``genconfig`` and include ``deps/auto.conf`` in your Makefiles instead of
+including ``.config`` directly. This has the advantage that ``deps/auto.conf``
+will always be a "full" configuration file, even if ``.config`` is outdated.
+Otherwise, it might be necessary to run ``old(def)config`` or ``menuconfig``
+before rebuilding with an outdated configuration.
 
 Library documentation
 ---------------------
@@ -333,8 +376,6 @@ Other features
 - **Internals that (mostly) mirror the C implementation**
   
   While being simpler to understand and tweak.
-
-.. menuconfig_implementations:
 
 Menuconfig interfaces
 ---------------------
