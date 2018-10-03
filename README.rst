@@ -111,7 +111,8 @@ See the module docstring at the top of `kconfiglib.py <https://github.com/ulfali
 Getting started
 ---------------
 
-1. `Install <Installation_>`_ the library and the utilities.
+1. `Install <Installation_>`_ the library and the utilities. Use ``pip3`` is
+   you want to use the terminal ``menuconfig``.
 
 2. Write `Kconfig
    <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_
