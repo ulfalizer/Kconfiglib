@@ -20,7 +20,7 @@ exclusively, with lots of small helper scripts in other projects.
 
 Since Kconfiglib is based around a library, it can be used e.g. to generate a
 `Kconfig cross-reference <https://docs.zephyrproject.org/latest/reference/kconfig/index.html>`_ (note: heavy page),
-using the same robust Kconfig parser used for other Kconfig tools, instead of brittle ad-hoc parsing. The documentation generation script can be found `here <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_.
+using the same robust Kconfig parser used for other Kconfig tools, instead of brittle ad-hoc parsing. The documentation generation script can be found `here <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`__.
 
 Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_.
@@ -461,7 +461,7 @@ Real-world examples
 
 - `kconfig.py <https://github.com/zephyrproject-rtos/zephyr/blob/master/scripts/kconfig/kconfig.py>`_ from the `Zephyr <https://www.zephyrproject.org/>`_ project handles ``.config`` and header file generation, also doing configuration fragment merging.
 
-- `genrest.py <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_ generates a Kconfig symbol cross-reference, which can be viewed `here <http://docs.zephyrproject.org/reference/kconfig/index.html>`_.
+- `genrest.py <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_ generates a Kconfig symbol cross-reference, which can be viewed `here <http://docs.zephyrproject.org/reference/kconfig/index.html>`__.
 
 - `Various utilities <https://github.com/projectacrn/acrn-hypervisor/tree/master/scripts/kconfig>`_ from the `ACRN <https://projectacrn.org/>`_ project.
 
