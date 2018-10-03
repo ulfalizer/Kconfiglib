@@ -142,9 +142,10 @@ Using ``.config`` files as Make input
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``.config`` files use Make syntax and can be included directly in Makefiles to
-read configuration values from there. This is why ``n``-valued ``bool``/``tristate``
-values are written out as ``# CONFIG_FOO is not set`` (a Make comment) in ``.config``
-(allowing them to be tested with ``ifdef`` in Make).
+read configuration values from there. This is why ``n``-valued
+``bool``/``tristate`` values are written out as ``# CONFIG_FOO is not set`` (a
+Make comment) in ``.config``, allowing them to be tested with ``ifdef`` in
+Make.
 
 If you make use of this, you might want to pass ``--config-out <filename>`` to
 ``genconfig`` and include the generated configuration file instead of including
