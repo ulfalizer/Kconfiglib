@@ -115,7 +115,7 @@ Getting started
    you want to use the terminal ``menuconfig``.
 
 2. Write `Kconfig
-   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`__
+   <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
    files that describe the available configuration options.
 
 3. Generate an initial configuration with e.g. ``menuconfig`` or
