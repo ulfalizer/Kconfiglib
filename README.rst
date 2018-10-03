@@ -121,7 +121,7 @@ Getting started
 3. Generate an initial configuration with e.g. ``menuconfig`` or
    ``alldefconfig``. The configuration is saved as ``.config`` by default.
 
-4. Run ``genconfig`` to generate a header file. By default, it is saved in
+4. Run ``genconfig`` to generate a header file. By default, it is saved as
    ``config.h``.
 
    Normally, ``genconfig`` would be run automatically as part of the build.
@@ -146,12 +146,15 @@ read configuration values from there. This is why ``n``-valued ``bool``/``trista
 values are written out as ``# CONFIG_FOO is not set`` (a Make comment) in ``.config``
 (allowing them to be tested with ``ifdef`` in Make).
 
-If you make use of this, you might want to pass ``--sync-deps`` to
-``genconfig`` and include ``deps/auto.conf`` in your Makefiles instead of
-including ``.config`` directly. This has the advantage that ``deps/auto.conf``
-will always be a "full" configuration file, even if ``.config`` is outdated.
-Otherwise, it might be necessary to run ``old(def)config`` or ``menuconfig``
-before rebuilding with an outdated configuration.
+If you make use of this, you might want to pass ``--config-out <filename>`` to
+``genconfig`` and include the generated configuration file instead of including
+``.config`` directly. This has the advantage that the generated configuration
+file will always be a "full" configuration file, even if ``.config`` is
+outdated. Otherwise, it might be necessary to run ``old(def)config`` or
+``menuconfig`` before rebuilding with an outdated ``.config``.
+
+If you use ``--sync-deps`` to generate incremental build information, you can
+include ``deps/auto.conf`` instead, which is also a full configuration file.
 
 Library documentation
 ---------------------

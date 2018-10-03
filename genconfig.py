@@ -36,7 +36,7 @@ def main():
         "--header-path",
         metavar="HEADER_FILE",
         default=DEFAULT_HEADER_PATH,
-        help="path for the generated header file (default: {})"
+        help="Path for the generated header file (default: {})"
              .format(DEFAULT_HEADER_PATH))
 
     parser.add_argument(
@@ -44,29 +44,44 @@ def main():
         dest="sync_deps_path",
         metavar="OUTPUT_DIR",
         nargs="?",
-        default=None,
         const=DEFAULT_SYNC_DEPS_PATH,
-        help="enable generation of build dependency information for "
+        help="Enable generation of build dependency information for "
              "incremental builds, optionally specifying the output path "
              "(default: {})".format(DEFAULT_SYNC_DEPS_PATH))
+
+    parser.add_argument(
+        "--config-out",
+        dest="config_path",
+        metavar="CONFIG_FILE",
+        help="Write the configuration to the specified filename. "
+             "This is useful if you include .config files in Makefiles, as "
+             "the generated configuration file will be a full .config file "
+             "even if .config is outdated. The generated configuration "
+             "matches what olddefconfig would produce. If you use "
+             "--sync-deps, you can include deps/auto.conf instead. "
+             "--config-out is meant for cases where incremental build "
+             "information isn't needed.")
 
     parser.add_argument(
         "kconfig_filename",
         metavar="KCONFIG_FILENAME",
         nargs="?",
         default="Kconfig",
-        help="top-level Kconfig file (default: Kconfig)")
+        help="Top-level Kconfig file (default: Kconfig)")
 
     args = parser.parse_args()
 
 
     kconf = kconfiglib.Kconfig(args.kconfig_filename)
-
     kconf.load_config(kconfiglib.standard_config_filename())
 
     kconf.write_autoconf(args.header_path)
+
     if args.sync_deps_path is not None:
         kconf.sync_deps(args.sync_deps_path)
+
+    if args.config_path is not None:
+        kconf.write_config(args.config_path)
 
 if __name__ == "__main__":
     main()
