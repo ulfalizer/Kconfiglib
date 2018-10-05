@@ -16,7 +16,7 @@ inspired by Vi:
   J/K     : Down/Up
   L       : Enter menu/Toggle item
   H       : Leave menu
-  Ctrl-D/U: Page Down/Page Down
+  Ctrl-D/U: Page Down/Page Up
   G/End   : Jump to end of list
   g/Home  : Jump to beginning of list
 
