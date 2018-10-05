@@ -1382,7 +1382,7 @@ def _change_node(node):
         s = sc.str_value
 
         while True:
-            s = _input_dialog("Value for '{}' ({})".format(
+            s = _input_dialog("{} ({})".format(
                                   node.prompt[0], TYPE_TO_STR[sc.type]),
                               s, _range_info(sc))
 
