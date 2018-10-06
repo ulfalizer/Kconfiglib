@@ -5162,29 +5162,27 @@ def expr_value(expr):
         # kconfig in 31847b67 (kconfig: allow use of relations other than
         # (in)equality).
 
-        oper, op1, op2 = expr
+        rel, v1, v2 = expr
 
         # If both operands are strings...
-        if op1.orig_type is STRING and op2.orig_type is STRING:
+        if v1.orig_type is STRING and v2.orig_type is STRING:
             # ...then compare them lexicographically
-            comp = _strcmp(op1.str_value, op2.str_value)
+            comp = _strcmp(v1.str_value, v2.str_value)
         else:
             # Otherwise, try to compare them as numbers
             try:
-                comp = _sym_to_num(op1) - _sym_to_num(op2)
+                comp = _sym_to_num(v1) - _sym_to_num(v2)
             except ValueError:
                 # Fall back on a lexicographic comparison if the operands don't
                 # parse as numbers
-                comp = _strcmp(op1.str_value, op2.str_value)
+                comp = _strcmp(v1.str_value, v2.str_value)
 
-        if   oper is EQUAL:         res = comp == 0
-        elif oper is UNEQUAL:       res = comp != 0
-        elif oper is LESS:          res = comp < 0
-        elif oper is LESS_EQUAL:    res = comp <= 0
-        elif oper is GREATER:       res = comp > 0
-        elif oper is GREATER_EQUAL: res = comp >= 0
-
-        return 2*res
+        if   rel is EQUAL:         return 2*(comp == 0)
+        elif rel is UNEQUAL:       return 2*(comp != 0)
+        elif rel is LESS:          return 2*(comp < 0)
+        elif rel is LESS_EQUAL:    return 2*(comp <= 0)
+        elif rel is GREATER:       return 2*(comp > 0)
+        elif rel is GREATER_EQUAL: return 2*(comp >= 0)
 
     _internal_error("Internal error while evaluating expression: "
                     "unknown operation {}.".format(expr[0]))
