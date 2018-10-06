@@ -12,7 +12,9 @@
 #
 # Usage (see argument help texts for more information):
 #
-#   genconfig.py [-h] [--header-path HEADER_FILE] [--sync-deps [OUTPUT_DIR]] [KCONFIG_FILENAME]
+#   genconfig.py [-h] [--header-path HEADER_FILE]
+#                [--sync-deps [OUTPUT_DIR]] [--config-out CONFIG_FILE]
+#                [KCONFIG_FILENAME]
 
 import argparse
 
