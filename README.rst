@@ -158,6 +158,17 @@ configuration file will always be a "full" configuration file, even if
 If you use ``--sync-deps`` to generate incremental build information, you can
 include ``deps/auto.conf`` instead, which is also a full configuration file.
 
+Useful helper macros
+~~~~~~~~~~~~~~~~~~~~
+
+The `include/linux/kconfig.h
+<https://github.com/torvalds/linux/blob/master/include/linux/kconfig.h>`_
+header in the Linux kernel defines some useful helper macros for testing
+Kconfig configuration values.
+
+``IS_ENABLED()`` is generally useful, allowing configuration values to be
+tested in ``if`` statements with no runtime overhead.
+
 Library documentation
 ---------------------
 
