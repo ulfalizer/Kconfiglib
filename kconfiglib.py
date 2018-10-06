@@ -1038,7 +1038,7 @@ class Kconfig(object):
 
         replace (default: True):
           True if all existing user values should be cleared before loading the
-          .config.
+          .config. Pass False to merge configurations.
         """
         # Disable the warning about assigning to symbols without prompts. This
         # is normal and expected within a .config file.
