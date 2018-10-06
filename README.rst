@@ -169,6 +169,17 @@ Kconfig configuration values.
 ``IS_ENABLED()`` is generally useful, allowing configuration values to be
 tested in ``if`` statements with no runtime overhead.
 
+Incremental building
+~~~~~~~~~~~~~~~~~~~~
+
+See the docstring for ``Kconfig.sync_deps()`` in `kconfiglib.py
+<https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_ for hints
+on implementing incremental builds (rebuilding just source files that reference
+on changed configuration values).
+
+Running the ``scripts/basic/fixdep.c`` tool from the kernel on the output of
+``gcc -MD <source file>`` might give you an idea of how it all fits together.
+
 Library documentation
 ---------------------
 
