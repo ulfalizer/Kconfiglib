@@ -3769,27 +3769,27 @@ class Symbol(object):
                 # (implies)
 
                 for default, cond in self.defaults:
-                    cond_val = expr_value(cond)
-                    if cond_val:
-                        val = min(expr_value(default), cond_val)
+                    dep_val = expr_value(cond)
+                    if dep_val:
+                        val = min(expr_value(default), dep_val)
                         if val:
                             self._write_to_conf = True
                         break
 
                 # Weak reverse dependencies are only considered if our
                 # direct dependencies are met
-                weak_rev_dep_val = expr_value(self.weak_rev_dep)
-                if weak_rev_dep_val and expr_value(self.direct_dep):
-                    val = max(weak_rev_dep_val, val)
+                dep_val = expr_value(self.weak_rev_dep)
+                if dep_val and expr_value(self.direct_dep):
+                    val = max(dep_val, val)
                     self._write_to_conf = True
 
             # Reverse (select-related) dependencies take precedence
-            rev_dep_val = expr_value(self.rev_dep)
-            if rev_dep_val:
-                if expr_value(self.direct_dep) < rev_dep_val:
+            dep_val = expr_value(self.rev_dep)
+            if dep_val:
+                if expr_value(self.direct_dep) < dep_val:
                     self._warn_select_unsatisfied_deps()
 
-                val = max(rev_dep_val, val)
+                val = max(dep_val, val)
                 self._write_to_conf = True
 
             # m is promoted to y for (1) bool symbols and (2) symbols with a
