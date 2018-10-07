@@ -2943,8 +2943,7 @@ class Kconfig(object):
         if isinstance(token, Symbol):
             # Plain symbol or relation
 
-            next_token = self._peek_token()
-            if next_token not in _RELATIONS:
+            if self._peek_token() not in _RELATIONS:
                 # Plain symbol
 
                 # For conditional expressions ('depends on <expr>',
