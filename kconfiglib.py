@@ -5977,8 +5977,8 @@ def _shell_fn(kconf, _, command):
                         command, "\n".join(stderr.splitlines())),
                     kconf._filename, kconf._linenr)
 
-    # Manual universal newlines with splitlines() (to prevent e.g. stray \r's
-    # in command output on Windows), trailing newline removal, and
+    # Universal newlines with splitlines() (to prevent e.g. stray \r's in
+    # command output on Windows), trailing newline removal, and
     # newline-to-space conversion.
     #
     # On Python 3 versions before 3.6, it's not possible to specify the
