@@ -5176,12 +5176,12 @@ def expr_value(expr):
                 # parse as numbers
                 comp = _strcmp(v1.str_value, v2.str_value)
 
-        if   rel is EQUAL:         return 2*(comp == 0)
-        elif rel is UNEQUAL:       return 2*(comp != 0)
-        elif rel is LESS:          return 2*(comp < 0)
-        elif rel is LESS_EQUAL:    return 2*(comp <= 0)
-        elif rel is GREATER:       return 2*(comp > 0)
-        elif rel is GREATER_EQUAL: return 2*(comp >= 0)
+        if rel is EQUAL:         return 2*(comp == 0)
+        if rel is UNEQUAL:       return 2*(comp != 0)
+        if rel is LESS:          return 2*(comp < 0)
+        if rel is LESS_EQUAL:    return 2*(comp <= 0)
+        if rel is GREATER:       return 2*(comp > 0)
+        if rel is GREATER_EQUAL: return 2*(comp >= 0)
 
     _internal_error("Internal error while evaluating expression: "
                     "unknown operation {}.".format(expr[0]))
