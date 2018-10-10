@@ -1192,7 +1192,7 @@ def _draw_main():
     while menu is not _kconf.top_node:
         # Promptless choices can be entered in show-all mode. Use
         # standard_sc_expr_str() for them, so they show up as
-        # <choice (name if any)>.
+        # '<choice (name if any)>'.
         menu_prompts.append(menu.prompt[0] if menu.prompt else
                             standard_sc_expr_str(menu.item))
         menu = _parent_menu(menu)
@@ -2495,7 +2495,7 @@ def _menu_path_info(node):
     while node is not _kconf.top_node:
         # Promptless choices might appear among the parents. Use
         # standard_sc_expr_str() for them, so that they show up as
-        # <choice (name if any)>.
+        # '<choice (name if any)>'.
         path = " -> " + (node.prompt[0] if node.prompt else
                          standard_sc_expr_str(node.item)) + path
         node = _parent_menu(node)
@@ -2658,7 +2658,7 @@ def _node_str(node):
             s += " <{}>".format(node.item.name)
         else:
             # For choices, use standard_sc_expr_str(). That way they show up as
-            # <choice (name if any)>.
+            # '<choice (name if any)>'.
             s += " " + standard_sc_expr_str(node.item)
 
     if node.prompt:
