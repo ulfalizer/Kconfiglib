@@ -129,6 +129,8 @@ Getting started
    Adding new configuration output formats should be relatively straightforward.
    See the implementation of ``write_config()`` in `kconfiglib.py
    <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+   The documentation for the ``Symbol.config_string`` property has some tips as
+   well.
    
 5. To update an old ``.config`` file after the Kconfig files have changed (e.g.
    to add new options), run ``oldconfig`` (prompts for values for new options)
@@ -642,9 +644,12 @@ Notes
   2, see `kconfiglib-2-changes.txt
   <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt>`_.
 
-* I sometimes see people add custom output formats, which is pretty straightforward to do (see the implementations of 
-  ``write_autoconf()`` and ``write_config()`` for a template). If you come up with something you think might
-  be useful to other people, I'm happy to take it in upstream. Batteries included and all that.
+* I sometimes see people add custom output formats, which is pretty
+  straightforward to do (see the implementations of ``write_autoconf()`` and
+  ``write_config()`` for a template, and also the documentation of the
+  ``Symbol.config_string`` property). If you come up with something you think
+  might be useful to other people, I'm happy to take it in upstream. Batteries
+  included and all that.
 
 * Kconfiglib assumes the modules symbol is ``MODULES``, which is backwards-compatible.
   A warning is printed by default if ``option modules`` is set on some other symbol.
