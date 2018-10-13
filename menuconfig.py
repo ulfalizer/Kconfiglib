@@ -2779,16 +2779,14 @@ def _check_validity(sym, s):
 
 def _range_info(sym):
     # Returns a string with information about the valid range for the symbol
-    # 'sym', or None if 'sym' isn't an int/hex symbol
+    # 'sym', or None if 'sym' doesn't have a range
 
-    if sym.type not in (INT, HEX):
-        return None
+    if sym.type in (INT, HEX):
+        for low, high, cond in sym.ranges:
+            if expr_value(cond):
+                return "Range: {}-{}".format(low.str_value, high.str_value)
 
-    for low, high, cond in sym.ranges:
-        if expr_value(cond):
-            return "Range: {}-{}".format(low.str_value, high.str_value)
-
-    return "No range constraints."
+    return None
 
 def _is_num(name):
     # Heuristic to see if a symbol name looks like a number, for nicer output
