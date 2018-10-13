@@ -1019,17 +1019,32 @@ def _jump_to(node):
     # parent menus before.
     _parent_screen_rows = []
 
-    _cur_menu = _parent_menu(node)
+    old_show_all = _show_all
+    jump_into = (isinstance(node.item, Choice) or node.item == MENU) and \
+                node.list
+
+    # If we're jumping to a non-empty choice or menu, jump to the first entry
+    # in it instead of jumping to its menu node
+    if jump_into:
+        _cur_menu = node
+        node = node.list
+    else:
+        _cur_menu = _parent_menu(node)
+
     _shown = _shown_nodes(_cur_menu)
     if node not in _shown:
-        # Turn on show-all mode if the node wouldn't be shown. Checking whether
-        # the node is visible instead would needlessly turn on show-all mode in
-        # an obscure case: when jumping to an invisible symbol with visible
-        # children from an implicit submenu.
+        # The node wouldn't be shown. Turn on show-all to show it.
         _show_all = True
         _shown = _shown_nodes(_cur_menu)
 
     _sel_node_i = _shown.index(node)
+
+    if jump_into and not old_show_all and _show_all:
+        # If we're jumping into a choice or menu and were forced to turn on
+        # show-all because the first entry wasn't visible, try turning it off.
+        # That will land us at the first visible node if there are visible
+        # nodes, and is a no-op otherwise.
+        _toggle_show_all()
 
     _center_vertically()
 
@@ -1115,7 +1130,8 @@ def _select_first_menu_entry():
     _sel_node_i = _menu_scroll = 0
 
 def _toggle_show_all():
-    # Toggles show-all mode on/off
+    # Toggles show-all mode on/off. If turning it off would give no visible
+    # items in the current menu, it is left on.
 
     global _show_all
     global _shown
@@ -1854,19 +1870,35 @@ def _jump_to_dialog():
                 # List of matching nodes
                 matches = []
 
-                for node in _searched_nodes():
+                # Search symbols and choices
+
+                for node in _sorted_sc_nodes():
+                    # Symbol/choice
+                    sc = node.item
+
                     for search in regex_searches:
+                        # Both the name and the prompt might be missing, since
+                        # we're searching both symbols and choices
+
                         # Does the regex match either the symbol name or the
                         # prompt (if any)?
-                        if not (search(node.item.name.lower()) or
-                                (node.prompt and
-                                 search(node.prompt[0].lower()))):
+                        if not (sc.name and search(sc.name.lower()) or
+                                node.prompt and search(node.prompt[0].lower())):
 
                             # Give up on the first regex that doesn't match, to
                             # speed things up a bit when multiple regexes are
                             # entered
                             break
 
+                    else:
+                        matches.append(node)
+
+                # Search menus and comments
+
+                for node in _sorted_menu_comment_nodes():
+                    for search in regex_searches:
+                        if not search(node.prompt[0].lower()):
+                            break
                     else:
                         matches.append(node)
 
@@ -1937,20 +1969,43 @@ def _jump_to_dialog():
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
                                          edit_box.getmaxyx()[1] - 2)
 
-# Obscure Python: We never pass a value for cached_search_nodes, and it keeps
-# pointing to the same list. This avoids a global.
-def _searched_nodes(cached_search_nodes=[]):
-    # Returns a list of menu nodes to search, sorted by symbol name
+# Obscure Python: We never pass a value for cached_nodes, and it keeps pointing
+# to the same list. This avoids a global.
+def _sorted_sc_nodes(cached_nodes=[]):
+    # Returns a sorted list of symbol and choice nodes to search. The symbol
+    # nodes appear first, sorted by name, and then the choice nodes, sorted by
+    # prompt and (secondarily) name.
 
-    if not cached_search_nodes:
-        # Sort symbols by name, then add all nodes for each symbol
+    if not cached_nodes:
+        # Add symbol nodes
         for sym in sorted(_kconf.unique_defined_syms,
                           key=lambda sym: sym.name):
-
             # += is in-place for lists
-            cached_search_nodes += sym.nodes
+            cached_nodes += sym.nodes
 
-    return cached_search_nodes
+        # Add choice nodes
+
+        choices = sorted(_kconf.choices, key=lambda choice: choice.name or "")
+
+        cached_nodes += sorted(
+            [node
+             for choice in choices
+                 for node in choice.nodes],
+            key=lambda node: node.prompt[0] if node.prompt else "")
+
+    return cached_nodes
+
+def _sorted_menu_comment_nodes(cached_nodes=[]):
+    # Returns a list of menu and comment nodes to search, sorted by prompt,
+    # with the menus first
+
+    if not cached_nodes:
+        cached_nodes += sorted(_kconf.menus,
+                               key=lambda menu: menu.prompt[0])
+        cached_nodes += sorted(_kconf.comments,
+                               key=lambda comment: comment.prompt[0])
+
+    return cached_nodes
 
 def _resize_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                            sel_node_i, scroll):
@@ -2009,13 +2064,18 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
         for i in range(scroll,
                        min(scroll + matches_win.getmaxyx()[0], len(matches))):
 
-            sym = matches[i].item
+            node = matches[i]
 
-            sym_str = _name_and_val_str(sym)
-            if matches[i].prompt:
-                sym_str += ' "{}"'.format(matches[i].prompt[0])
+            if isinstance(node.item, (Symbol, Choice)):
+                node_str = _name_and_val_str(node.item)
+                if node.prompt:
+                    node_str += ' "{}"'.format(node.prompt[0])
+            elif node.item == MENU:
+                node_str = 'menu "{}"'.format(node.prompt[0])
+            else:  # node.item == COMMENT
+                node_str = 'comment "{}"'.format(node.prompt[0])
 
-            _safe_addstr(matches_win, i - scroll, 0, sym_str,
+            _safe_addstr(matches_win, i - scroll, 0, node_str,
                          _style["selection" if i == sel_node_i else "list"])
 
     else:
@@ -2503,24 +2563,20 @@ def _menu_path_info(node):
     return "(top menu)" + path
 
 def _name_and_val_str(sc):
-    # Custom symbol printer that shows the symbol value after the symbol, used
-    # for the information display
+    # Custom symbol/choice printer that shows symbol values after symbols
 
     # Show the values of non-constant (non-quoted) symbols that don't look like
     # numbers. Things like 123 are actually symbol references, and only work as
     # expected due to undefined symbols getting their name as their value.
     # Showing the symbol value for those isn't helpful though.
-    if isinstance(sc, Symbol) and \
-       not sc.is_constant and \
-       not _is_num(sc.name):
-
+    if isinstance(sc, Symbol) and not sc.is_constant and not _is_num(sc.name):
         if not sc.nodes:
             # Undefined symbol reference
             return "{}(undefined/n)".format(sc.name)
 
         return '{}(={})'.format(sc.name, sc.str_value)
 
-    # For other symbols, use the standard format
+    # For other items, use the standard format
     return standard_sc_expr_str(sc)
 
 def _expr_str(expr):
