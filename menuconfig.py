@@ -1941,13 +1941,14 @@ def _jump_to_dialog():
                 sel_node_i, scroll)
 
         elif c == "\x06":  # \x06 = Ctrl-F
-            _safe_curs_set(0)
-            _info_dialog(matches[sel_node_i], True)
-            _safe_curs_set(1)
+            if matches:
+                _safe_curs_set(0)
+                _info_dialog(matches[sel_node_i], True)
+                _safe_curs_set(1)
 
-            scroll = _resize_jump_to_dialog(
-                edit_box, matches_win, bot_sep_win, help_win,
-                sel_node_i, scroll)
+                scroll = _resize_jump_to_dialog(
+                    edit_box, matches_win, bot_sep_win, help_win,
+                    sel_node_i, scroll)
 
         elif c == curses.KEY_DOWN:
             select_next_match()
