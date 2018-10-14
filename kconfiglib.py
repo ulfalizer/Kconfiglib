@@ -3194,9 +3194,9 @@ class Kconfig(object):
         # symbol or choice.
         #
         # This can't be rolled into _propagate_deps(), because that function
-        # traverses the menu tree roughly breadth-first order, meaning
-        # properties on symbols and choices defined in multiple locations could
-        # end up in the wrong order.
+        # traverses the menu tree roughly breadth-first, meaning properties on
+        # symbols and choices defined in multiple locations could end up in the
+        # wrong order.
 
         # Symbol or choice
         sc = node.item
