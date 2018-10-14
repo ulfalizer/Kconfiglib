@@ -15,8 +15,9 @@ The entire library is contained in `kconfiglib.py
 bundled scripts are implemented on top of it. Implementing your own scripts
 should be relatively easy, if needed.
 
-The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib
-exclusively, with lots of small helper scripts in other projects.
+Kconfiglib is used exclusively by e.g. the `Zephyr <https://www.zephyrproject.org/>`_ 
+and `ACRN <https://projectacrn.org/>`_ projects. It is also used for many small helper
+scripts in various projects.
 
 Since Kconfiglib is based around a library, it can be used e.g. to generate a
 `Kconfig cross-reference <https://docs.zephyrproject.org/latest/reference/kconfig/index.html>`_ (note: heavy page),
