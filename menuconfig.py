@@ -22,8 +22,8 @@ inspired by Vi:
 
 The mconf feature where pressing a key jumps to a menu entry with that
 character in it in the current menu isn't supported. A jump-to feature for
-jumping directly to any symbol (including invisible symbols) is available
-instead.
+jumping directly to any symbol (including invisible symbols), choice, menu or
+comment (as in a Kconfig 'comment "Foo"') is available instead.
 
 Space and Enter are "smart" and try to do what you'd expect for the given
 menu entry.
