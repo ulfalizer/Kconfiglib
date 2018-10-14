@@ -1958,7 +1958,7 @@ def _jump_to_dialog():
             if matches:
                 _safe_curs_set(0)
                 _info_dialog(matches[sel_node_i], True)
-                _safe_curs_set(1)
+                _safe_curs_set(2)
 
                 scroll = _resize_jump_to_dialog(
                     edit_box, matches_win, bot_sep_win, help_win,
