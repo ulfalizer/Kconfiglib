@@ -669,6 +669,10 @@ def menuconfig(kconf):
     # report if you run into issues. Some suitable small default value could be
     # used here instead in that case. Maybe it's silly to not put in the
     # smallest imperceptible delay here already, though I don't like guessing.
+    #
+    # (From a quick glance at the ncurses source code, ESCDELAY might only be
+    # relevant for mouse events there, so maybe escapes are assumed to arrive
+    # in one piece already...)
     os.environ.setdefault("ESCDELAY", "0")
 
     # Enter curses mode. _menuconfig() returns a string to print on exit, after
