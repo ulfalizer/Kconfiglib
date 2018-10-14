@@ -1209,46 +1209,6 @@ def _draw_main():
 
 
     #
-    # Update the top row with the menu path
-    #
-
-    _path_win.erase()
-
-    # Draw the menu path ("(top menu) -> menu -> submenu -> ...")
-
-    menu_prompts = []
-
-    menu = _cur_menu
-    while menu is not _kconf.top_node:
-        # Promptless choices can be entered in show-all mode. Use
-        # standard_sc_expr_str() for them, so they show up as
-        # '<choice (name if any)>'.
-        menu_prompts.append(menu.prompt[0] if menu.prompt else
-                            standard_sc_expr_str(menu.item))
-        menu = _parent_menu(menu)
-    menu_prompts.append("(top menu)")
-    menu_prompts.reverse()
-
-    # Hack: We can't put ACS_RARROW directly in the string. Temporarily
-    # represent it with NULL. Maybe using a Unicode character would be better.
-    menu_path_str = " \0 ".join(menu_prompts)
-
-    # Scroll the menu path to the right if needed to make the current menu's
-    # title visible
-    if len(menu_path_str) > term_width:
-        menu_path_str = menu_path_str[len(menu_path_str) - term_width:]
-
-    # Print the path with the arrows reinserted
-    split_path = menu_path_str.split("\0")
-    _safe_addstr(_path_win, split_path[0])
-    for s in split_path[1:]:
-        _safe_addch(_path_win, curses.ACS_RARROW)
-        _safe_addstr(_path_win, s)
-
-    _path_win.noutrefresh()
-
-
-    #
     # Update the separator row below the menu path
     #
 
@@ -1266,6 +1226,7 @@ def _draw_main():
 
     _top_sep_win.noutrefresh()
 
+    # Note: The menu path at the top is deliberately updated last. See below.
 
     #
     # Update the symbol window
@@ -1327,6 +1288,51 @@ def _draw_main():
         _safe_addstr(_help_win, i, 0, line)
 
     _help_win.noutrefresh()
+
+
+    #
+    # Update the top row with the menu path.
+    #
+    # Doing this last leaves the cursor on the top row, which avoids some minor
+    # annoying jumpiness in gnome-terminal when reducing the height of the
+    # terminal. It seems to happen whenever the row with the cursor on it
+    # disappears.
+    #
+
+    _path_win.erase()
+
+    # Draw the menu path ("(top menu) -> menu -> submenu -> ...")
+
+    menu_prompts = []
+
+    menu = _cur_menu
+    while menu is not _kconf.top_node:
+        # Promptless choices can be entered in show-all mode. Use
+        # standard_sc_expr_str() for them, so they show up as
+        # '<choice (name if any)>'.
+        menu_prompts.append(menu.prompt[0] if menu.prompt else
+                            standard_sc_expr_str(menu.item))
+        menu = _parent_menu(menu)
+    menu_prompts.append("(top menu)")
+    menu_prompts.reverse()
+
+    # Hack: We can't put ACS_RARROW directly in the string. Temporarily
+    # represent it with NULL. Maybe using a Unicode character would be better.
+    menu_path_str = " \0 ".join(menu_prompts)
+
+    # Scroll the menu path to the right if needed to make the current menu's
+    # title visible
+    if len(menu_path_str) > term_width:
+        menu_path_str = menu_path_str[len(menu_path_str) - term_width:]
+
+    # Print the path with the arrows reinserted
+    split_path = menu_path_str.split("\0")
+    _safe_addstr(_path_win, split_path[0])
+    for s in split_path[1:]:
+        _safe_addch(_path_win, curses.ACS_RARROW)
+        _safe_addstr(_path_win, s)
+
+    _path_win.noutrefresh()
 
 def _parent_menu(node):
     # Returns the menu node of the menu that contains 'node'. In addition to
@@ -2264,27 +2270,7 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
     text_win_height, text_win_width = text_win.getmaxyx()
 
 
-    #
-    # Update top row
-    #
-
-    top_line_win.erase()
-
-    # Draw arrows pointing up if the information window is scrolled down. Draw
-    # them before drawing the title, so the title ends up on top for small
-    # windows.
-    if scroll > 0:
-        _safe_hline(top_line_win, 0, 4, curses.ACS_UARROW, _N_SCROLL_ARROWS)
-
-    title = ("Symbol" if isinstance(node.item, Symbol) else
-             "Choice" if isinstance(node.item, Choice) else
-             "Menu"   if node.item == MENU else
-             "Comment") + " information"
-    _safe_addstr(top_line_win, 0, max((text_win_width - len(title))//2, 0),
-                 title)
-
-    top_line_win.noutrefresh()
-
+    # Note: The top row is deliberately updated last. See _draw_main().
 
     #
     # Update text display
@@ -2321,6 +2307,28 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
         _safe_addstr(help_win, i, 0, line)
 
     help_win.noutrefresh()
+
+
+    #
+    # Update top row
+    #
+
+    top_line_win.erase()
+
+    # Draw arrows pointing up if the information window is scrolled down. Draw
+    # them before drawing the title, so the title ends up on top for small
+    # windows.
+    if scroll > 0:
+        _safe_hline(top_line_win, 0, 4, curses.ACS_UARROW, _N_SCROLL_ARROWS)
+
+    title = ("Symbol" if isinstance(node.item, Symbol) else
+             "Choice" if isinstance(node.item, Choice) else
+             "Menu"   if node.item == MENU else
+             "Comment") + " information"
+    _safe_addstr(top_line_win, 0, max((text_win_width - len(title))//2, 0),
+                 title)
+
+    top_line_win.noutrefresh()
 
 def _info_str(node):
     # Returns information about the menu node 'node' as a string.
