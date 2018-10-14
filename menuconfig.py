@@ -658,7 +658,17 @@ def menuconfig(kconf):
     if _CONVERT_C_LC_CTYPE_TO_UTF8:
         _convert_c_lc_ctype_to_utf8()
 
-    # Get rid of the delay between pressing ESC and jumping to the parent menu
+    # Get rid of the delay between pressing ESC and jumping to the parent menu,
+    # unless the user has set ESCDELAY (see ncurses(3)). This makes the UI much
+    # smoother to work with.
+    #
+    # Note: This is strictly pretty iffy, since escape codes for e.g. cursor
+    # keys start with ESC, but I've never seen it cause problems in practice
+    # (probably because it's unlikely that the escape code for a key would get
+    # split up across read()s, at least with a terminal emulator). Please
+    # report if you run into issues. Some suitable small default value could be
+    # used here instead in that case. Maybe it's silly to not put in the
+    # smallest imperceptible delay here already, though I don't like guessing.
     os.environ.setdefault("ESCDELAY", "0")
 
     # Enter curses mode. _menuconfig() returns a string to print on exit, after
