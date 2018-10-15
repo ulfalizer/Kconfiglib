@@ -2021,10 +2021,11 @@ def _sorted_menu_comment_nodes(cached_nodes=[]):
     # with the menus first
 
     if not cached_nodes:
-        cached_nodes += sorted(_kconf.menus,
-                               key=lambda menu: menu.prompt[0])
-        cached_nodes += sorted(_kconf.comments,
-                               key=lambda comment: comment.prompt[0])
+        def prompt_text(mc):
+            return mc.prompt[0]
+
+        cached_nodes += sorted(_kconf.menus, key=prompt_text) + \
+                        sorted(_kconf.comments, key=prompt_text)
 
     return cached_nodes
 
