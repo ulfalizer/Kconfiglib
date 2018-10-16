@@ -2006,7 +2006,8 @@ def _sorted_sc_nodes(cached_nodes=[]):
 
         # Add choice nodes
 
-        choices = sorted(_kconf.choices, key=lambda choice: choice.name or "")
+        choices = sorted(_kconf.unique_choices,
+                         key=lambda choice: choice.name or "")
 
         cached_nodes += sorted(
             [node
