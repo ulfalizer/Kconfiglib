@@ -19,6 +19,10 @@ choice
     bool "choice 3"
 endchoice
 
+choice NAMED
+    bool
+endchoice
+
 endmenu
 
 menu "menu 4"

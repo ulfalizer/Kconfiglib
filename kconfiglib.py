@@ -2579,8 +2579,6 @@ class Kconfig(object):
                 if self._peek_token() is None:
                     choice = Choice()
                     choice.direct_dep = self.n
-
-                    self.choices.append(choice)
                 else:
                     # Named choice
                     name = self._expect_str_and_eol()
@@ -2589,9 +2587,9 @@ class Kconfig(object):
                         choice = Choice()
                         choice.name = name
                         choice.direct_dep = self.n
-
-                        self.choices.append(choice)
                         self.named_choices[name] = choice
+
+                self.choices.append(choice)
 
                 choice.kconfig = self
 

@@ -1185,7 +1185,7 @@ tests/Krecursive2:1
                    "Wrong prompt for {}, expected '{}'"
                    .format(repr(item), expected_prompt))
 
-    verify_prompts(c.choices, "choice 1", "choice 2", "choice 3")
+    verify_prompts(c.choices, "choice 1", "choice 2", "choice 3", "choice 2")
     verify_prompts(c.menus, "menu 1", "menu 2", "menu 3", "menu 4", "menu 5")
     verify_prompts(c.comments, "comment 1", "comment 2", "comment 3")
 
