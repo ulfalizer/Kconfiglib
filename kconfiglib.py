@@ -2450,8 +2450,6 @@ class Kconfig(object):
 
         while self._next_line():
             t0 = self._next_token()
-            if t0 is None:
-                continue
 
             if t0 in (_T_CONFIG, _T_MENUCONFIG):
                 # The tokenizer allocates Symbol objects for us
@@ -2478,6 +2476,10 @@ class Kconfig(object):
 
                 # Tricky Python semantics: This assigns prev.next before prev
                 prev.next = prev = node
+
+            elif t0 is None:
+                # Blank line
+                continue
 
             elif t0 in (_T_SOURCE, _T_RSOURCE, _T_OSOURCE, _T_ORSOURCE):
                 pattern = self._expect_str_and_eol()
