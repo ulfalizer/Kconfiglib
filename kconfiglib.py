@@ -2643,7 +2643,8 @@ class Kconfig(object):
     def _parse_properties(self, node):
         # Parses and adds properties to the MenuNode 'node' (type, 'prompt',
         # 'default's, etc.) Properties are later copied up to symbols and
-        # choices in a separate pass after parsing, in _add_props_to_sc().
+        # choices in a separate pass after parsing, in e.g.
+        # _add_props_to_sym().
         #
         # An older version of this code added properties directly to symbols
         # and choices instead of to their menu nodes (and handled dependency
@@ -3103,7 +3104,7 @@ class Kconfig(object):
         elif isinstance(node.item, Symbol):
             # Add the node's non-node-specific properties (defaults, ranges,
             # etc.) to the Symbol
-            self._add_props_to_sc(node)
+            self._add_props_to_sym(node)
 
             # See if we can create an implicit menu rooted at the Symbol and
             # finalize each child menu node in that menu if so, like for the
@@ -3133,8 +3134,12 @@ class Kconfig(object):
         # Empty choices (node.list None) are possible, so this needs to go
         # outside
         if isinstance(node.item, Choice):
-            # Add the node's non-node-specific properties to the choice
-            self._add_props_to_sc(node)
+            # Add the node's non-node-specific properties to the choice, like
+            # _add_props_to_sym() does
+            choice = node.item
+            choice.direct_dep = self._make_or(choice.direct_dep, node.dep)
+            choice.defaults += node.defaults
+
             _finalize_choice(node)
 
     def _propagate_deps(self, node, visible_if):
@@ -3187,46 +3192,38 @@ class Kconfig(object):
 
             cur = cur.next
 
-    def _add_props_to_sc(self, node):
+    def _add_props_to_sym(self, node):
         # Copies properties from the menu node 'node' up to its contained
-        # symbol or choice.
+        # symbol, and adds (weak) reverse dependencies to selected/implied
+        # symbols.
         #
         # This can't be rolled into _propagate_deps(), because that function
         # traverses the menu tree roughly breadth-first, meaning properties on
-        # symbols and choices defined in multiple locations could end up in the
-        # wrong order.
+        # symbols defined in multiple locations could end up in the wrong
+        # order.
 
-        # Symbol or choice
-        sc = node.item
+        sym = node.item
 
         # See the Symbol class docstring
-        sc.direct_dep = self._make_or(sc.direct_dep, node.dep)
+        sym.direct_dep = self._make_or(sym.direct_dep, node.dep)
 
-        sc.defaults += node.defaults
+        sym.defaults += node.defaults
+        sym.ranges += node.ranges
+        sym.selects += node.selects
+        sym.implies += node.implies
 
-        # The properties below aren't available on choices
+        # Modify the reverse dependencies of the selected symbol
+        for target, cond in node.selects:
+            target.rev_dep = self._make_or(
+                target.rev_dep,
+                self._make_and(sym, cond))
 
-        if node.ranges:
-            sc.ranges += node.ranges
-
-        if node.selects:
-            sc.selects += node.selects
-
-            # Modify the reverse dependencies of the selected symbol
-            for target, cond in node.selects:
-                target.rev_dep = self._make_or(
-                    target.rev_dep,
-                    self._make_and(sc, cond))
-
-        if node.implies:
-            sc.implies += node.implies
-
-            # Modify the weak reverse dependencies of the implied
-            # symbol
-            for target, cond in node.implies:
-                target.weak_rev_dep = self._make_or(
-                    target.weak_rev_dep,
-                    self._make_and(sc, cond))
+        # Modify the weak reverse dependencies of the implied
+        # symbol
+        for target, cond in node.implies:
+            target.weak_rev_dep = self._make_or(
+                target.weak_rev_dep,
+                self._make_and(sym, cond))
 
 
     #
