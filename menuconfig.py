@@ -2743,11 +2743,10 @@ def _node_str(node):
             s += " " + standard_sc_expr_str(node.item)
 
     if node.prompt:
-        s += " "
         if node.item == COMMENT:
-            s += "*** {} ***".format(node.prompt[0])
+            s += " *** {} ***".format(node.prompt[0])
         else:
-            s += node.prompt[0]
+            s += " " + node.prompt[0]
 
         if isinstance(node.item, Symbol):
             sym = node.item
