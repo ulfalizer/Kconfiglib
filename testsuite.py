@@ -2352,16 +2352,21 @@ config J
     # We verify warnings manually
     c = Kconfig("Kconfiglib/tests/Kpreprocess", warn_to_stderr=False)
 
-    def verify_variable(name, unexp_value, exp_value, recursive):
+    def verify_variable(name, unexp_value, exp_value, recursive, *args):
         var = c.variables[name]
 
         verify(var.value == unexp_value,
                "expected variable '{}' to have the unexpanded value '{}', had "
                "the value '{}'".format(name, unexp_value, var.value))
 
-        verify(var.expanded_value == exp_value,
-               "expected variable '{}' to have the expanded value '{}', had "
-               "the value '{}'".format(name, exp_value, var.expanded_value))
+        if not args:
+            verify(var.expanded_value == exp_value,
+                   "expected expanded_value for {} to be '{}', was '{}'"
+                   .format(name, exp_value, var.expanded_value))
+
+        verify(var.expanded_value_w_args(*args) == exp_value,
+               "expected expanded_value_w_args() for '{}' to be '{}', was '{}'"
+               .format(name, exp_value, var.expanded_value_w_args(*args)))
 
         verify(var.is_recursive == recursive,
                "{} was {}, shouldn't be"
@@ -2393,6 +2398,14 @@ config J
                     '",$(foo)"',
                     True)
 
+    verify_variable("quote", '"$(1)" "$(2)"', '"" ""', True)
+    verify_variable("quote", '"$(1)" "$(2)"', '"one" ""', True,
+                    "one")
+    verify_variable("quote", '"$(1)" "$(2)"', '"one" "two"', True,
+                    "one", "two")
+    verify_variable("quote", '"$(1)" "$(2)"', '"one" "two"', True,
+                    "one", "two", "three")
+
     verify_str(c.syms["PRINT_ME"], r"""
 config PRINT_ME
 	string
@@ -2406,6 +2419,17 @@ config PRINT_ME_TOO
 	prompt "foo"
 	default FOOBARBAZQAZ if QAZ && QAZFOO && xxx
 """)
+
+    def verify_repr(name, s):
+        verify_equal(repr(c.variables[name]), s)
+
+    verify_repr(
+        "simple-immediate",
+        "<variable simple-immediate, immediate, value 'bar'>")
+
+    verify_repr(
+        "messy-fn-res",
+        "<variable messy-fn-res, recursive, value '$($(fn-indir)-unused-arg, a  b , c  d )'>")
 
     def verify_recursive(name):
         try:

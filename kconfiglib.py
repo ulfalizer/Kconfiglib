@@ -5112,7 +5112,11 @@ class Variable(object):
     expanded_value:
       The expanded value of the variable. For simple variables (those defined
       with :=), this will equal 'value'. Accessing this property will raise a
-      KconfigError if any variable in the expansion expands to itself.
+      KconfigError if the expansion seems to be stuck in a loop.
+
+      Note: Accessing this field is the same as calling expanded_value_w_args()
+      with no arguments. I hadn't considered function arguments when adding it.
+      It is retained for backwards compatibility though.
 
     is_recursive:
       True if the variable is recursive (defined with =).
@@ -5130,7 +5134,22 @@ class Variable(object):
         """
         See the class documentation.
         """
-        return self.kconfig._expand_whole(self.value, ())
+        return self.expanded_value_w_args()
+
+    def expanded_value_w_args(self, *args):
+        """
+        Returns the expanded value of the variable/function. Any arguments
+        passed will be substituted for $(1), $(2), etc.
+
+        Raises a KconfigError if the expansion seems to be stuck in a loop.
+        """
+        return self.kconfig._fn_val((self.name,) + args)
+
+    def __repr__(self):
+        return "<variable {}, {}, value '{}'>" \
+               .format(self.name,
+                       "recursive" if self.is_recursive else "immediate",
+                       self.value)
 
 class KconfigError(Exception):
     """
