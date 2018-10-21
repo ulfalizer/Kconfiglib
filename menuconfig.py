@@ -2758,14 +2758,14 @@ def _node_str(node):
 
                 s += " (NEW)"
 
-        if isinstance(node.item, Choice) and node.item.tri_value == 2:
-            # Print the prompt of the selected symbol after the choice for
-            # choices in y mode
-            sym = node.item.selection
-            if sym:
-                for node_ in sym.nodes:
-                    if node_.prompt:
-                        s += " ({})".format(node_.prompt[0])
+    if isinstance(node.item, Choice) and node.item.tri_value == 2:
+        # Print the prompt of the selected symbol after the choice for
+        # choices in y mode
+        sym = node.item.selection
+        if sym:
+            for node_ in sym.nodes:
+                if node_.prompt:
+                    s += " ({})".format(node_.prompt[0])
 
     # Print "--->" next to nodes that have menus that can potentially be
     # entered. Add "(empty)" if the menu is empty. We don't allow those to be
