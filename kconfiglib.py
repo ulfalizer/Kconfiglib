@@ -2663,8 +2663,6 @@ class Kconfig(object):
 
         while self._next_line():
             t0 = self._next_token()
-            if t0 is None:
-                continue
 
             if t0 in _TYPE_TOKENS:
                 self._set_type(node, _TOKEN_TO_TYPE[t0])
@@ -2688,12 +2686,9 @@ class Kconfig(object):
                 node.selects.append((self._expect_nonconst_sym(),
                                      self._parse_cond()))
 
-            elif t0 is _T_IMPLY:
-                if not isinstance(node.item, Symbol):
-                    self._parse_error("only symbols can imply")
-
-                node.implies.append((self._expect_nonconst_sym(),
-                                     self._parse_cond()))
+            elif t0 is None:
+                # Blank line
+                continue
 
             elif t0 is _T_DEFAULT:
                 node.defaults.append((self._parse_expr(False),
@@ -2712,6 +2707,21 @@ class Kconfig(object):
                 node.ranges.append((self._expect_sym(),
                                     self._expect_sym(),
                                     self._parse_cond()))
+
+            elif t0 is _T_IMPLY:
+                if not isinstance(node.item, Symbol):
+                    self._parse_error("only symbols can imply")
+
+                node.implies.append((self._expect_nonconst_sym(),
+                                     self._parse_cond()))
+
+            elif t0 is _T_VISIBLE:
+                if not self._check_token(_T_IF):
+                    self._parse_error('expected "if" after "visible"')
+
+                node.visibility = self._make_and(node.visibility,
+                                                 self._expect_expr_and_eol())
+
 
             elif t0 is _T_OPTION:
                 if self._check_token(_T_ENV):
@@ -2777,13 +2787,6 @@ class Kconfig(object):
 
                 else:
                     self._parse_error("unrecognized option")
-
-            elif t0 is _T_VISIBLE:
-                if not self._check_token(_T_IF):
-                    self._parse_error('expected "if" after "visible"')
-
-                node.visibility = self._make_and(node.visibility,
-                                                 self._expect_expr_and_eol())
 
             elif t0 is _T_OPTIONAL:
                 if not isinstance(node.item, Choice):
