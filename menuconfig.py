@@ -226,7 +226,7 @@ _MAIN_HELP_LINES = """
 
 # Lines of help text shown at the bottom of the information dialog
 _INFO_HELP_LINES = """
-[ESC/q] Return to menu
+[ESC/q] Return to menu       [/] Jump to symbol
 """[1:-1].split("\n")
 
 # Lines of help text shown at the bottom of the search dialog
