@@ -974,14 +974,9 @@ class Kconfig(object):
         self._finalize_tree(self.top_node, self.y)
 
 
-        # Do sanity checks. Some of these depend on everything being
-        # finalized.
-
-        for sym in self.unique_defined_syms:
-            _check_sym_sanity(sym)
-
-        for choice in self.unique_choices:
-            _check_choice_sanity(choice)
+        # Do sanity checks. Some of these depend on everything being finalized.
+        self._check_sym_sanity()
+        self._check_choice_sanity()
 
         if os.environ.get("KCONFIG_STRICT") == "y":
             self._check_undef_syms()
@@ -3237,6 +3232,159 @@ class Kconfig(object):
     #
     # Misc.
     #
+
+    def _check_sym_sanity(self):
+        # Checks various symbol properties that are handiest to check after
+        # parsing. Only generates errors and warnings.
+
+        def num_ok(sym, type_):
+            # Returns True if the (possibly constant) symbol 'sym' is valid as a value
+            # for a symbol of type type_ (INT or HEX)
+
+            # 'not sym.nodes' implies a constant or undefined symbol, e.g. a plain
+            # "123"
+            if not sym.nodes:
+                return _is_base_n(sym.name, _TYPE_TO_BASE[type_])
+
+            return sym.orig_type is type_
+
+        for sym in self.unique_defined_syms:
+            if sym.orig_type in (BOOL, TRISTATE):
+                # A helper function could be factored out here, but keep it
+                # speedy/straightforward
+
+                for target_sym, _ in sym.selects:
+                    if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                        self._warn("{} selects the {} symbol {}, which is not "
+                                   "bool or tristate"
+                                   .format(_name_and_loc(sym),
+                                           TYPE_TO_STR[target_sym.orig_type],
+                                           _name_and_loc(target_sym)))
+
+                for target_sym, _ in sym.implies:
+                    if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                        self._warn("{} implies the {} symbol {}, which is not "
+                                   "bool or tristate"
+                                   .format(_name_and_loc(sym),
+                                           TYPE_TO_STR[target_sym.orig_type],
+                                           _name_and_loc(target_sym)))
+
+            elif sym.orig_type in (STRING, INT, HEX):
+                for default, _ in sym.defaults:
+                    if not isinstance(default, Symbol):
+                        raise KconfigError(
+                            "the {} symbol {} has a malformed default {} -- expected "
+                            "a single symbol"
+                            .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym),
+                                    expr_str(default)))
+
+                    if sym.orig_type is STRING:
+                        if not default.is_constant and not default.nodes and \
+                           not default.name.isupper():
+                            # 'default foo' on a string symbol could be either a symbol
+                            # reference or someone leaving out the quotes. Guess that
+                            # the quotes were left out if 'foo' isn't all-uppercase
+                            # (and no symbol named 'foo' exists).
+                            self._warn("style: quotes recommended around "
+                                       "default value for string symbol "
+                                       + _name_and_loc(sym))
+
+                    elif sym.orig_type in (INT, HEX) and \
+                         not num_ok(default, sym.orig_type):
+
+                        self._warn("the {0} symbol {1} has a non-{0} default {2}"
+                                   .format(TYPE_TO_STR[sym.orig_type],
+                                           _name_and_loc(sym),
+                                           _name_and_loc(default)))
+
+                if sym.selects or sym.implies:
+                    self._warn("the {} symbol {} has selects or implies"
+                               .format(TYPE_TO_STR[sym.orig_type],
+                                       _name_and_loc(sym)))
+
+            else:  # UNKNOWN
+                self._warn("{} defined without a type"
+                           .format(_name_and_loc(sym)))
+
+
+            if sym.ranges:
+                if sym.orig_type not in (INT, HEX):
+                    self._warn(
+                        "the {} symbol {} has ranges, but is not int or hex"
+                        .format(TYPE_TO_STR[sym.orig_type],
+                                _name_and_loc(sym)))
+                else:
+                    for low, high, _ in sym.ranges:
+                        if not num_ok(low, sym.orig_type) or \
+                           not num_ok(high, sym.orig_type):
+
+                            self._warn("the {0} symbol {1} has a non-{0} "
+                                       "range [{2}, {3}]"
+                                       .format(TYPE_TO_STR[sym.orig_type],
+                                               _name_and_loc(sym),
+                                               _name_and_loc(low),
+                                               _name_and_loc(high)))
+
+    def _check_choice_sanity(self):
+        # Checks various choice properties that are handiest to check after
+        # parsing. Only generates errors and warnings.
+
+        def warn_select_imply(sym, expr, expr_type):
+            msg = "the choice symbol {} is {} by the following symbols, which " \
+                  "has no effect: ".format(_name_and_loc(sym), expr_type)
+
+            # si = select/imply
+            for si in split_expr(expr, OR):
+                msg += "\n - " + _name_and_loc(split_expr(si, AND)[0])
+
+            self._warn(msg)
+
+        for choice in self.unique_choices:
+            if choice.orig_type not in (BOOL, TRISTATE):
+                self._warn("{} defined with type {}"
+                           .format(_name_and_loc(choice),
+                                   TYPE_TO_STR[choice.orig_type]))
+
+            for node in choice.nodes:
+                if node.prompt:
+                    break
+            else:
+                self._warn(_name_and_loc(choice) + " defined without a prompt")
+
+            for default, _ in choice.defaults:
+                if not isinstance(default, Symbol):
+                    raise KconfigError(
+                        "{} has a malformed default {}"
+                        .format(_name_and_loc(choice), expr_str(default)))
+
+                if default.choice is not choice:
+                    self._warn("the default selection {} of {} is not "
+                               "contained in the choice"
+                               .format(_name_and_loc(default),
+                                       _name_and_loc(choice)))
+
+            for sym in choice.syms:
+                if sym.defaults:
+                    self._warn("default on the choice symbol {} will have "
+                               "no effect, as defaults do not affect choice "
+                               "symbols".format(_name_and_loc(sym)))
+
+                if sym.rev_dep is not sym.kconfig.n:
+                    warn_select_imply(sym, sym.rev_dep, "selected")
+
+                if sym.weak_rev_dep is not sym.kconfig.n:
+                    warn_select_imply(sym, sym.weak_rev_dep, "implied")
+
+                for node in sym.nodes:
+                    if node.parent.item is choice:
+                        if not node.prompt:
+                            self._warn("the choice symbol {} has no prompt"
+                                       .format(_name_and_loc(sym)))
+
+                    elif node.prompt:
+                        self._warn("the choice symbol {} is defined with a "
+                                   "prompt outside the choice"
+                                   .format(_name_and_loc(sym)))
 
     def _parse_error(self, msg):
         if self._filename is None:
@@ -5823,158 +5971,6 @@ def _found_dep_loop(loop, cur):
     msg += "...depends again on {}".format(_name_and_loc(loop[0]))
 
     raise KconfigError(msg)
-
-def _check_sym_sanity(sym):
-    # Checks various symbol properties that are handiest to check after
-    # parsing. Only generates errors and warnings.
-
-    if sym.orig_type in (BOOL, TRISTATE):
-        # A helper function could be factored out here, but keep it
-        # speedy/straightforward for now. bool/tristate symbols are by far the
-        # most common, and most lack selects and implies.
-
-        for target_sym, _ in sym.selects:
-            if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
-                sym.kconfig._warn("{} selects the {} symbol {}, which is not "
-                                  "bool or tristate"
-                                  .format(_name_and_loc(sym),
-                                          TYPE_TO_STR[target_sym.orig_type],
-                                          _name_and_loc(target_sym)))
-
-        for target_sym, _ in sym.implies:
-            if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
-                sym.kconfig._warn("{} implies the {} symbol {}, which is not "
-                                  "bool or tristate"
-                                  .format(_name_and_loc(sym),
-                                          TYPE_TO_STR[target_sym.orig_type],
-                                          _name_and_loc(target_sym)))
-
-    elif sym.orig_type in (STRING, INT, HEX):
-        for default, _ in sym.defaults:
-            if not isinstance(default, Symbol):
-                raise KconfigError(
-                    "the {} symbol {} has a malformed default {} -- expected "
-                    "a single symbol"
-                    .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym),
-                            expr_str(default)))
-
-            if sym.orig_type is STRING:
-                if not default.is_constant and not default.nodes and \
-                   not default.name.isupper():
-                    # 'default foo' on a string symbol could be either a symbol
-                    # reference or someone leaving out the quotes. Guess that
-                    # the quotes were left out if 'foo' isn't all-uppercase
-                    # (and no symbol named 'foo' exists).
-                    sym.kconfig._warn("style: quotes recommended around "
-                                      "default value for string symbol "
-                                      + _name_and_loc(sym))
-
-            elif sym.orig_type in (INT, HEX) and \
-               not _int_hex_ok(default, sym.orig_type):
-
-                sym.kconfig._warn("the {0} symbol {1} has a non-{0} default {2}"
-                                  .format(TYPE_TO_STR[sym.orig_type],
-                                          _name_and_loc(sym),
-                                          _name_and_loc(default)))
-
-        if sym.selects or sym.implies:
-            sym.kconfig._warn("the {} symbol {} has selects or implies"
-                              .format(TYPE_TO_STR[sym.orig_type],
-                                      _name_and_loc(sym)))
-
-    else:  # UNKNOWN
-        sym.kconfig._warn("{} defined without a type"
-                          .format(_name_and_loc(sym)))
-
-
-    if sym.ranges:
-        if sym.orig_type not in (INT, HEX):
-            sym.kconfig._warn(
-                "the {} symbol {} has ranges, but is not int or hex"
-                .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym)))
-        else:
-            for low, high, _ in sym.ranges:
-                if not _int_hex_ok(low, sym.orig_type) or \
-                   not _int_hex_ok(high, sym.orig_type):
-
-                    sym.kconfig._warn("the {0} symbol {1} has a non-{0} range "
-                                      "[{2}, {3}]"
-                                      .format(TYPE_TO_STR[sym.orig_type],
-                                              _name_and_loc(sym),
-                                              _name_and_loc(low),
-                                              _name_and_loc(high)))
-
-
-def _int_hex_ok(sym, type_):
-    # Returns True if the (possibly constant) symbol 'sym' is valid as a value
-    # for a symbol of type type_ (INT or HEX)
-
-    # 'not sym.nodes' implies a constant or undefined symbol, e.g. a plain
-    # "123"
-    if not sym.nodes:
-        return _is_base_n(sym.name, _TYPE_TO_BASE[type_])
-
-    return sym.orig_type is type_
-
-def _check_choice_sanity(choice):
-    # Checks various choice properties that are handiest to check after
-    # parsing. Only generates errors and warnings.
-
-    if choice.orig_type not in (BOOL, TRISTATE):
-        choice.kconfig._warn("{} defined with type {}"
-                             .format(_name_and_loc(choice),
-                                     TYPE_TO_STR[choice.orig_type]))
-
-    for node in choice.nodes:
-        if node.prompt:
-            break
-    else:
-        choice.kconfig._warn(_name_and_loc(choice) +
-                             " defined without a prompt")
-
-    for default, _ in choice.defaults:
-        if not isinstance(default, Symbol):
-            raise KconfigError(
-                "{} has a malformed default {}"
-                .format(_name_and_loc(choice), expr_str(default)))
-
-        if default.choice is not choice:
-            choice.kconfig._warn("the default selection {} of {} is not "
-                                 "contained in the choice"
-                                 .format(_name_and_loc(default),
-                                         _name_and_loc(choice)))
-
-    for sym in choice.syms:
-        if sym.defaults:
-            sym.kconfig._warn("default on the choice symbol {} will have "
-                              "no effect".format(_name_and_loc(sym)))
-
-        if sym.rev_dep is not sym.kconfig.n:
-            _warn_choice_select_imply(sym, sym.rev_dep, "selected")
-
-        if sym.weak_rev_dep is not sym.kconfig.n:
-            _warn_choice_select_imply(sym, sym.weak_rev_dep, "implied")
-
-        for node in sym.nodes:
-            if node.parent.item is choice:
-                if not node.prompt:
-                    sym.kconfig._warn("the choice symbol {} has no prompt"
-                                      .format(_name_and_loc(sym)))
-
-            elif node.prompt:
-                sym.kconfig._warn("the choice symbol {} is defined with a "
-                                  "prompt outside the choice"
-                                  .format(_name_and_loc(sym)))
-
-def _warn_choice_select_imply(sym, expr, expr_type):
-    msg = "the choice symbol {} is {} by the following symbols, which has " \
-          "no effect: ".format(_name_and_loc(sym), expr_type)
-
-    # si = select/imply
-    for si in split_expr(expr, OR):
-        msg += "\n - " + _name_and_loc(split_expr(si, AND)[0])
-
-    sym.kconfig._warn(msg)
 
 
 # Predefined preprocessor functions
