@@ -5695,7 +5695,9 @@ def _decoding_error(e, filename, macro_linenr=None):
 def _name_and_loc(sc):
     # Helper for giving the symbol/choice name and location(s) in e.g. warnings
 
-    name = sc.name or "<choice>"
+    # Reuse the expression format. That way choices show up as
+    # '<choice (name, if any)>'
+    name = standard_sc_expr_str(sc)
 
     if not sc.nodes:
         return name + " (undefined)"
