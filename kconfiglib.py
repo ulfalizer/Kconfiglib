@@ -3436,6 +3436,29 @@ class Kconfig(object):
         # Prints warnings for all references to undefined symbols within the
         # Kconfig files
 
+        def is_num(s):
+            # Returns True if the string 's' looks like a number.
+            #
+            # Internally, all operands in Kconfig are symbols, only undefined symbols
+            # (which numbers usually are) get their name as their value.
+            #
+            # Only hex numbers that start with 0x/0X are classified as numbers.
+            # Otherwise, symbols whose names happen to contain only the letters A-F
+            # would trigger false positives.
+
+            try:
+                int(s)
+            except ValueError:
+                if not s.startswith(("0x", "0X")):
+                    return False
+
+                try:
+                    int(s, 16)
+                except ValueError:
+                    return False
+
+            return True
+
         for sym in (self.syms.viewvalues if _IS_PY2 else self.syms.values)():
             # - sym.nodes empty means the symbol is undefined (has no
             #   definition locations)
@@ -3444,7 +3467,7 @@ class Kconfig(object):
             #   symbols, but shouldn't be flagged
             #
             # - The MODULES symbol always exists
-            if not sym.nodes and not _is_num(sym.name) and \
+            if not sym.nodes and not is_num(sym.name) and \
                sym.name != "MODULES":
 
                 msg = "undefined symbol {}:".format(sym.name)
@@ -5627,29 +5650,6 @@ def _strcmp(s1, s2):
     # strcmp()-alike that returns -1, 0, or 1
 
     return (s1 > s2) - (s1 < s2)
-
-def _is_num(s):
-    # Returns True if the string 's' looks like a number.
-    #
-    # Internally, all operands in Kconfig are symbols, only undefined symbols
-    # (which numbers usually are) get their name as their value.
-    #
-    # Only hex numbers that start with 0x/0X are classified as numbers.
-    # Otherwise, symbols whose names happen to contain only the letters A-F
-    # would trigger false positives.
-
-    try:
-        int(s)
-    except ValueError:
-        if not s.startswith(("0x", "0X")):
-            return False
-
-        try:
-            int(s, 16)
-        except ValueError:
-            return False
-
-    return True
 
 def _sym_to_num(sym):
     # expr_value() helper for converting a symbol to a number. Raises
