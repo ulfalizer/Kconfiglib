@@ -415,18 +415,30 @@ def_tristate, allowing int, hex, and string symbols to be given a type and a
 default at the same time.
 
 
-Warnings for undefined symbols
-------------------------------
+Extra optional warnings
+-----------------------
 
-Setting the environment variable KCONFIG_STRICT to "y" will cause warnings to
-be printed for all references to undefined Kconfig symbols within Kconfig
-files. The only gotcha is that all hex literals must be prefixed by "0x" or
-"0X", to make it possible to distuinguish them from symbol references.
+Some optional warnings can be controlled via environment variables:
 
-Some projects (e.g. the Linux kernel) use multiple Kconfig trees with many
-shared Kconfig files, leading to some safe undefined symbol references.
-KCONFIG_STRICT is useful in projects that only have a single Kconfig tree
-though.
+  - KCONFIG_WARN_UNDEF: If set to 'y', warnings will be generated for all
+    references to undefined symbols within Kconfig files. The only gotcha is
+    that all hex literals must be prefixed with "0x" or "0X", to make it
+    possible to distinguish them from symbol references.
+
+    Some projects (e.g. the Linux kernel) use multiple Kconfig trees with many
+    shared Kconfig files, leading to some safe undefined symbol references.
+    KCONFIG_WARN_UNDEF is useful in projects that only have a single Kconfig
+    tree though.
+
+    KCONFIG_STRICT is an older alias for this environment variable, supported
+    for backwards compatibility.
+
+  - KCONFIG_WARN_UNDEF_ASSIGN: If set to 'y', warnings will be generated for
+    all assignments to undefined symbols within .config files. By default, no
+    such warnings are generated.
+
+    This warning can also be enabled/disabled via
+    Kconfig.enable/disable_undef_warnings().
 
 
 Preprocessor user functions defined in Python
@@ -770,19 +782,9 @@ class Kconfig(object):
         KconfigError on syntax errors. Note that Kconfig files are not the same
         as .config files (which store configuration symbol values).
 
-        If the environment variable KCONFIG_STRICT is set to "y", warnings will
-        be generated for all references to undefined symbols within Kconfig
-        files. The reason this isn't the default is that some projects (e.g.
-        the Linux kernel) use multiple Kconfig trees (one per architecture)
-        with many shared Kconfig files, leading to some safe references to
-        undefined symbols.
-
-        KCONFIG_STRICT relies on literal hex values being prefixed with 0x/0X.
-        They are indistinguishable from references to undefined symbols
-        otherwise.
-
-        KCONFIG_STRICT might enable other warnings that depend on there being
-        just a single Kconfig tree in the future.
+        See the module docstring for some environment variables that influence
+        default warning settings (KCONFIG_WARN_UNDEF and
+        KCONFIG_WARN_UNDEF_ASSIGN).
 
         filename (default: "Kconfig"):
           The Kconfig file to load. For the Linux kernel, you'll want "Kconfig"
@@ -844,7 +846,8 @@ class Kconfig(object):
 
         self._warnings_enabled = warn
         self._warn_to_stderr = warn_to_stderr
-        self._warn_for_undef_assign = False
+        self._warn_for_undef_assign = \
+            os.environ.get("KCONFIG_WARN_UNDEF_ASSIGN") == "y"
         self._warn_for_redun_assign = True
 
 
@@ -978,7 +981,11 @@ class Kconfig(object):
         self._check_sym_sanity()
         self._check_choice_sanity()
 
-        if os.environ.get("KCONFIG_STRICT") == "y":
+        # KCONFIG_STRICT is an older alias for KCONFIG_WARN_UNDEF, supported
+        # for backwards compatibility
+        if os.environ.get("KCONFIG_WARN_UNDEF") == "y" or \
+           os.environ.get("KCONFIG_STRICT") == "y":
+
             self._check_undef_syms()
 
 
@@ -1621,8 +1628,8 @@ class Kconfig(object):
     def enable_undef_warnings(self):
         """
         Enables warnings for assignments to undefined symbols. Disabled by
-        default since they tend to be spammy for Kernel configurations (and
-        mostly suggests cleanups).
+        default unless the KCONFIG_WARN_UNDEF_ASSIGN environment variable was
+        set to 'y' when the Kconfig instance was created.
         """
         self._warn_for_undef_assign = True
 

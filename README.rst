@@ -325,14 +325,28 @@ The following Kconfig extensions are available:
   caveat that they must have the same name as the environment variables they
   reference. A warning is printed if the names differ.
 
-- Setting the environment variable ``KCONFIG_STRICT`` to "y" will cause warnings to be printed
-  for all references to undefined Kconfig symbols within Kconfig files. The only gotcha is
-  that all ``hex`` literals must be prefixed by "0x" or "0X", to make it possible to distuinguish
-  them from symbol references.
+- Two extra optional warnings can be enabled by setting environment variables,
+  covering cases that are easily missed when making changes to Kconfig files:
 
-  Some projects (e.g. the Linux kernel) use multiple Kconfig trees with many shared ``Kconfig``
-  files, leading to some safe undefined symbol references. ``KCONFIG_STRICT`` is useful in
-  projects that only have a single ``Kconfig`` tree though.
+  * ``KCONFIG_WARN_UNDEF``: If set to ``y``, warnings will be generated for all
+    references to undefined symbols within Kconfig files. The only gotcha is
+    that all hex literals must be prefixed with ``0x`` or ``0X``, to make it
+    possible to distinguish them from symbol references.
+
+    Some projects (e.g. the Linux kernel) use multiple Kconfig trees with many
+    shared Kconfig files, leading to some safe undefined symbol references.
+    ``KCONFIG_WARN_UNDEF`` is useful in projects that only have a single
+    Kconfig tree though.
+
+    ``KCONFIG_STRICT`` is an older alias for this environment variable,
+    supported for backwards compatibility.
+
+  * ``KCONFIG_WARN_UNDEF_ASSIGN``: If set to ``y``, warnings will be generated
+    for all assignments to undefined symbols within ``.config`` files. By
+    default, no such warnings are generated.
+
+    This warning can also be enabled/disabled via
+    ``Kconfig.enable/disable_undef_warnings()``.
 
 Other features
 --------------

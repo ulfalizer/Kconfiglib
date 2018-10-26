@@ -2518,16 +2518,16 @@ config PRINT_ME_TOO
     sys.path.pop(0)
 
 
-    print("Testing KCONFIG_STRICT")
+    print("Testing KCONFIG_WARN_UNDEF")
 
-    os.environ["KCONFIG_STRICT"] = "y"
-    c = Kconfig("Kconfiglib/tests/Kstrict", warn_to_stderr=False)
+    os.environ["KCONFIG_WARN_UNDEF"] = "y"
+    c = Kconfig("Kconfiglib/tests/Kundef", warn_to_stderr=False)
 
     verify_equal("\n".join(c.warnings), """
-warning: the int symbol INT (defined at Kconfiglib/tests/Kstrict:8) has a non-int range [UNDEF_2 (undefined), 8 (undefined)]
+warning: the int symbol INT (defined at Kconfiglib/tests/Kundef:8) has a non-int range [UNDEF_2 (undefined), 8 (undefined)]
 warning: undefined symbol UNDEF_1:
 
-- Referenced at Kconfiglib/tests/Kstrict:4:
+- Referenced at Kconfiglib/tests/Kundef:4:
 
 config BOOL
 	bool
@@ -2535,7 +2535,7 @@ config BOOL
 	default UNDEF_2
 
 
-- Referenced at Kconfiglib/tests/Kstrict:19:
+- Referenced at Kconfiglib/tests/Kundef:19:
 
 menu "menu"
 	depends on UNDEF_1
@@ -2543,7 +2543,7 @@ menu "menu"
 
 warning: undefined symbol UNDEF_2:
 
-- Referenced at Kconfiglib/tests/Kstrict:4:
+- Referenced at Kconfiglib/tests/Kundef:4:
 
 config BOOL
 	bool
@@ -2551,7 +2551,7 @@ config BOOL
 	default UNDEF_2
 
 
-- Referenced at Kconfiglib/tests/Kstrict:8:
+- Referenced at Kconfiglib/tests/Kundef:8:
 
 config INT
 	int
@@ -2561,14 +2561,14 @@ config INT
 
 warning: undefined symbol UNDEF_3:
 
-- Referenced at Kconfiglib/tests/Kstrict:19:
+- Referenced at Kconfiglib/tests/Kundef:19:
 
 menu "menu"
 	depends on UNDEF_1
 	visible if UNDEF_3
 """[1:])
 
-    os.environ.pop("KCONFIG_STRICT")
+    os.environ.pop("KCONFIG_WARN_UNDEF")
 
 
     print("\nAll selftests passed\n" if all_passed else
