@@ -993,8 +993,9 @@ class Kconfig(object):
         self._build_dep()
 
         # Check for dependency loops
+        check_dep_loop_sym = _check_dep_loop_sym  # Micro-optimization
         for sym in self.unique_defined_syms:
-            _check_dep_loop_sym(sym, False)
+            check_dep_loop_sym(sym, False)
 
         # Add extra dependencies from choices to choice symbols that get
         # awkward during dependency loop detection
@@ -2989,8 +2990,7 @@ class Kconfig(object):
         # The calculated sets might be larger than necessary as we don't do any
         # complex analysis of the expressions.
 
-        # Optimization
-        make_depend_on = _make_depend_on
+        make_depend_on = _make_depend_on  # Micro-optimization
 
         # Only calculate _dependents for defined symbols. Constant and
         # undefined symbols could theoretically be selected/implied, but it
