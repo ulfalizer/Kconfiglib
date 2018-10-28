@@ -3053,8 +3053,6 @@ class Kconfig(object):
         # detection awkward.
 
         for choice in self.unique_choices:
-            # The choice symbols themselves, because the y mode selection might
-            # change if a choice symbol's visibility changes
             for sym in choice.syms:
                 sym._dependents.add(choice)
 
