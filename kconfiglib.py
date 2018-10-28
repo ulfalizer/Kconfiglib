@@ -2856,7 +2856,7 @@ class Kconfig(object):
             return
 
         indent = _indentation(line)
-        if indent == 0:
+        if not indent:
             # If the first non-empty lines has zero indent, there is no help
             # text
             self._warn(_name_and_loc(node.item) +
