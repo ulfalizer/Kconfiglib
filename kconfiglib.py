@@ -2545,7 +2545,7 @@ class Kconfig(object):
             elif t0 is _T_MENU:
                 node = MenuNode()
                 node.kconfig = self
-                node.item = MENU
+                node.item = t0  # _T_MENU == MENU
                 node.is_menuconfig = True
                 node.prompt = (self._expect_str_and_eol(), self.y)
                 node.visibility = self.y
@@ -2565,7 +2565,7 @@ class Kconfig(object):
             elif t0 is _T_COMMENT:
                 node = MenuNode()
                 node.kconfig = self
-                node.item = COMMENT
+                node.item = t0  # _T_COMMENT == COMMENT
                 node.is_menuconfig = False
                 node.prompt = (self._expect_str_and_eol(), self.y)
                 node.list = None
@@ -6041,12 +6041,6 @@ def _shell_fn(kconf, _, command):
     UNKNOWN
 ) = range(6)
 
-# Integers representing menu and comment menu nodes
-(
-    MENU,
-    COMMENT,
-) = range(2)
-
 # Converts a symbol/choice type to a string
 TYPE_TO_STR = {
     UNKNOWN:  "unknown",
@@ -6147,10 +6141,12 @@ _IS_PY2 = sys.version_info[0] < 3
     _T_VISIBLE,
 ) = range(1, 51)
 
-# Public integers representing expression types
+# Public integers representing expression types and menu and comment menu
+# nodes
 #
 # Having these match the value of the corresponding tokens removes the need
 # for conversion
+
 AND           = _T_AND
 OR            = _T_OR
 NOT           = _T_NOT
@@ -6160,6 +6156,9 @@ LESS          = _T_LESS
 LESS_EQUAL    = _T_LESS_EQUAL
 GREATER       = _T_GREATER
 GREATER_EQUAL = _T_GREATER_EQUAL
+
+MENU          = _T_MENU
+COMMENT       = _T_COMMENT
 
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
