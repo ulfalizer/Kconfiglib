@@ -5331,17 +5331,12 @@ class Variable(object):
                        self.value)
 
 class KconfigError(Exception):
-    """
-    Exception raised for Kconfig-related errors.
-    """
-
-# Backwards compatibility
-KconfigSyntaxError = KconfigError
+    "Exception raised for Kconfig-related errors"
 
 class InternalError(Exception):
-    """
-    Exception raised for internal errors.
-    """
+    "Exception raised for internal errors"
+
+KconfigSyntaxError = KconfigError  # Backwards compatibility
 
 #
 # Public functions
@@ -6031,7 +6026,6 @@ def _shell_fn(kconf, _, command):
     # encoding when passing universal_newlines=True to Popen() (the 'encoding'
     # parameter was added in 3.6), so we do this manual version instead.
     return "\n".join(stdout.splitlines()).rstrip("\n").replace("\n", " ")
-
 
 #
 # Public global constants
