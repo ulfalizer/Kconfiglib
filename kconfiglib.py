@@ -778,13 +778,17 @@ class Kconfig(object):
     def __init__(self, filename="Kconfig", warn=True, warn_to_stderr=True,
                  encoding="utf-8"):
         """
-        Creates a new Kconfig object by parsing Kconfig files. Raises
-        KconfigError on syntax errors. Note that Kconfig files are not the same
-        as .config files (which store configuration symbol values).
+        Creates a new Kconfig object by parsing Kconfig files.
+        Note that Kconfig files are not the same as .config files (which store
+        configuration symbol values).
 
         See the module docstring for some environment variables that influence
         default warning settings (KCONFIG_WARN_UNDEF and
         KCONFIG_WARN_UNDEF_ASSIGN).
+
+        Raises KconfigError on syntax errors, and (possibly a subclass of)
+        IOError on IO errors ('errno', 'strerror', and 'filename' are
+        available). Note that IOError can be caught as OSError on Python 3.
 
         filename (default: "Kconfig"):
           The Kconfig file to load. For the Linux kernel, you'll want "Kconfig"
@@ -1034,6 +1038,10 @@ class Kconfig(object):
         value the symbol was assigned in the .config file (if any). The user
         value might differ from Symbol.str/tri_value if there are unsatisfied
         dependencies.
+
+        Raises (possibly a subclass of) IOError on IO errors ('errno',
+        'strerror', and 'filename' are available). Note that IOError can be
+        caught as OSError on Python 3.
 
         filename:
           The file to load. Respects $srctree if set (see the class
@@ -1705,7 +1713,7 @@ class Kconfig(object):
                 # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
                 e = e2
 
-            raise IOError("\n" + textwrap.fill(
+            raise _KconfigIOError(e, "\n" + textwrap.fill(
                 "Could not open '{}' ({}: {}){}".format(
                     filename, errno.errorcode[e.errno], e.strerror,
                     self._srctree_hint()),
@@ -1760,9 +1768,10 @@ class Kconfig(object):
         try:
             self._file = self._open(full_filename, "r")
         except IOError as e:
-            raise IOError("{}:{}: Could not open '{}' ({}: {})".format(
-                self._filename, self._linenr, full_filename,
-                errno.errorcode[e.errno], e.strerror))
+            raise _KconfigIOError(
+                e, "{}:{}: Could not open '{}' ({}: {})"
+                   .format(self._filename, self._linenr, full_filename,
+                           errno.errorcode[e.errno], e.strerror))
 
         self._filename = rel_filename
         self._linenr = 0
@@ -5333,10 +5342,25 @@ class Variable(object):
 class KconfigError(Exception):
     "Exception raised for Kconfig-related errors"
 
+KconfigSyntaxError = KconfigError  # Backwards compatibility
+
 class InternalError(Exception):
     "Exception raised for internal errors"
 
-KconfigSyntaxError = KconfigError  # Backwards compatibility
+# Workaround:
+#
+# If 'errno' and 'strerror' are set on IOError, then __str__() always returns
+# "[Errno <errno>] <strerror>", ignoring any custom message passed to the
+# constructor. By defining our own subclass, we can use a custom message while
+# also providing 'errno', 'strerror', and 'filename' to scripts.
+class _KconfigIOError(IOError):
+    def __init__(self, ioerror, msg):
+        self.msg = msg
+        super(_KconfigIOError, self).__init__(
+            ioerror.errno, ioerror.strerror, ioerror.filename)
+
+    def __str__(self):
+        return self.msg
 
 #
 # Public functions

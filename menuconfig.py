@@ -1646,22 +1646,12 @@ def _try_load(filename):
     # filename:
     #   Configuration file to load
 
-    # Hack: strerror and errno are lost after we raise the custom IOError with
-    # troubleshooting help in Kconfig.load_config(). Adding them back to the
-    # exception loses the custom message. As a workaround, try opening the file
-    # separately first and report any errors.
-    try:
-        open(filename).close()
-    except OSError as e:
-        _error("Error loading {}\n\n{} (errno: {})"
-               .format(filename, e.strerror, errno.errorcode[e.errno]))
-        return False
-
     try:
         _kconf.load_config(filename)
         return True
     except OSError as e:
-        _error("Error loading {}\n\nUnknown error".format(filename))
+        _error("Error loading {}\n\n{} (errno: {})"
+               .format(filename, e.strerror, errno.errorcode[e.errno]))
         return False
 
 def _save_dialog(save_fn, default_filename, description):
