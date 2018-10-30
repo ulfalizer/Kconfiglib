@@ -5133,7 +5133,7 @@ class MenuNode(object):
         elif self.item is COMMENT:
             fields.append("menu node for comment")
 
-        elif self.item is None:
+        elif not self.item:
             fields.append("menu node for if (should not appear in the final "
                           " tree)")
 
@@ -5781,12 +5781,12 @@ def _remove_ifs(node):
     # makes it nicer to work with.
 
     first = node.list
-    while first and first.item is None:
+    while first and not first.item:
         first = first.next
 
     cur = first
     while cur:
-        if cur.next and cur.next.item is None:
+        if cur.next and not cur.next.item:
             cur.next = cur.next.next
         cur = cur.next
 
