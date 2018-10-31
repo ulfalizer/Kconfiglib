@@ -1650,7 +1650,7 @@ def _try_load(filename):
         _kconf.load_config(filename)
         return True
     except OSError as e:
-        _error("Error loading {}\n\n{} (errno: {})"
+        _error("Error loading '{}'\n\n{} (errno: {})"
                .format(filename, e.strerror, errno.errorcode[e.errno]))
         return False
 
