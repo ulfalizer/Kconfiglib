@@ -2486,7 +2486,12 @@ class Kconfig(object):
                     self._warn("the menuconfig symbol {} has no prompt"
                                .format(_name_and_loc(sym)))
 
-                # Tricky Python semantics: This assigns prev.next before prev
+                # Equivalent to
+                #
+                #   prev.next = node
+                #   prev = node
+                #
+                # due to tricky Python semantics. The order matters.
                 prev.next = prev = node
 
             elif t0 is None:
@@ -5804,17 +5809,24 @@ def _remove_ifs(node):
     # doesn't bother to do this, but we expose the menu tree directly, and it
     # makes it nicer to work with.
 
-    first = node.list
-    while first and not first.item:
-        first = first.next
-
-    cur = first
-    while cur:
-        if cur.next and not cur.next.item:
-            cur.next = cur.next.next
+    cur = node.list
+    while cur and not cur.item:
         cur = cur.next
 
-    node.list = first
+    node.list = cur
+
+    while cur:
+        if cur.next and not cur.next.item:
+            # Equivalent to
+            #
+            #   tmp = cur.next.next
+            #   cur.next = tmp
+            #   cur = tmp
+            #
+            # due to tricky Python semantics. The order matters.
+            cur.next = cur = cur.next.next
+        else:
+            cur = cur.next
 
 def _finalize_choice(node):
     # Finalizes a choice, marking each symbol whose menu node has the choice as
