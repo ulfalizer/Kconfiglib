@@ -5585,7 +5585,13 @@ def standard_kconfig():
     if len(sys.argv) > 2:
         sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
 
-    return Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+    # Only show backtraces for unexpected exceptions
+    try:
+        return Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+    except (IOError, KconfigError) as e:
+        # Some long exception messages have extra newlines for better
+        # formatting when reported as an unhandled exception. Strip them here.
+        sys.exit(str(e).strip())
 
 def standard_config_filename():
     """
