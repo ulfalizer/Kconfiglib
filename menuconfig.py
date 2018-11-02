@@ -1446,7 +1446,7 @@ def _change_node(node):
         # case: .assignable can be (2,) while .tri_value is 0.
         _set_val(sc, sc.assignable[0])
 
-    else:
+    elif sc.assignable:
         # Set the symbol to the value after the current value in
         # sc.assignable, with wrapping
         val_index = sc.assignable.index(sc.tri_value)
@@ -2742,8 +2742,10 @@ def _node_str(node):
             sym = node.item
 
             # Print "(NEW)" next to symbols without a user value (from e.g. a
-            # .config), but skip it for choice symbols in choices in y mode
+            # .config), but skip it for choice symbols in choices in y mode,
+            # and for symbols of UNKNOWN type (which generate a warning though)
             if sym.user_value is None and \
+               sym.type != UNKNOWN and \
                not (sym.choice and sym.choice.tri_value == 2):
 
                 s += " (NEW)"
