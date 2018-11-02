@@ -2212,6 +2212,25 @@ CONFIG_G=-1
     verify_is_normal_choice_symbol("WS9")
 
 
+    print("Testing 'if' node removal")
+
+    c = Kconfig("Kconfiglib/tests/Kifremoval", warn=False)
+
+    nodes = [node for node in c.node_iter()]
+    verify_equal(nodes[0].item.name, "A")
+    verify_equal(nodes[1].item.name, "B")
+    verify_equal(nodes[2].item.name, "C")
+    verify_equal(nodes[3].item.name, "D")
+    verify_equal(nodes[4].prompt[0], "E")
+    verify_equal(nodes[5].prompt[0], "F")
+    verify_equal(nodes[6].prompt[0], "G")
+    verify_equal(nodes[7].item.name, "H")
+    verify_equal(nodes[8].item.name, "I")
+    verify_equal(nodes[9].item.name, "J")
+    verify(len(nodes) == 10,
+           "Wrong number of nodes after 'if' removal")
+
+
     print("Testing multi.def. property copying")
 
     c = Kconfig("Kconfiglib/tests/Kdepcopy", warn=False)

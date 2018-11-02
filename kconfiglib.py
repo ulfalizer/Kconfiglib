@@ -5822,17 +5822,17 @@ def _remove_ifs(node):
     node.list = cur
 
     while cur:
-        if cur.next and not cur.next.item:
-            # Equivalent to
-            #
-            #   tmp = cur.next.next
-            #   cur.next = tmp
-            #   cur = tmp
-            #
-            # due to tricky Python semantics. The order matters.
-            cur.next = cur = cur.next.next
-        else:
-            cur = cur.next
+        next = cur.next
+        while next and not next.item:
+            next = next.next
+
+        # Equivalent to
+        #
+        #   cur.next = next
+        #   cur = next
+        #
+        # due to tricky Python semantics. The order matters.
+        cur.next = cur = next
 
 def _finalize_choice(node):
     # Finalizes a choice, marking each symbol whose menu node has the choice as
