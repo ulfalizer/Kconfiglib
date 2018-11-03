@@ -3819,7 +3819,7 @@ class Symbol(object):
         # As a quirk of Kconfig, undefined symbols get their name as their
         # string value. This is why things like "FOO = bar" work for seeing if
         # FOO has the value "bar".
-        if self.orig_type is UNKNOWN:
+        if not self.orig_type:  # UNKNOWN
             self._cached_str_val = self.name
             return self.name
 
@@ -3953,7 +3953,7 @@ class Symbol(object):
             return self._cached_tri_val
 
         if self.orig_type not in (BOOL, TRISTATE):
-            if self.orig_type is not UNKNOWN:
+            if self.orig_type:  # != UNKNOWN
                 # Would take some work to give the location here
                 self.kconfig._warn(
                     "The {} symbol {} is being evaluated in a logical context "
@@ -5239,7 +5239,7 @@ class MenuNode(object):
         else:
             lines.append("choice " + sc.name if sc.name else "choice")
 
-        if sc.orig_type is not UNKNOWN:
+        if sc.orig_type:  # != UNKNOWN
             indent_add(TYPE_TO_STR[sc.orig_type])
 
         if self.prompt:
@@ -5850,15 +5850,15 @@ def _finalize_choice(node):
 
     # If no type is specified for the choice, its type is that of
     # the first choice item with a specified type
-    if choice.orig_type is UNKNOWN:
+    if not choice.orig_type:
         for item in choice.syms:
-            if item.orig_type is not UNKNOWN:
+            if item.orig_type:
                 choice.orig_type = item.orig_type
                 break
 
     # Each choice item of UNKNOWN type gets the type of the choice
     for sym in choice.syms:
-        if sym.orig_type is UNKNOWN:
+        if not sym.orig_type:
             sym.orig_type = choice.orig_type
 
 def _check_dep_loop_sym(sym, ignore_choice):
@@ -6073,14 +6073,16 @@ def _shell_fn(kconf, _, command):
 # Public global constants
 #
 
-# Integers representing symbol types
+# Integers representing symbol types. UNKNOWN is 0 (falsy) to simplify some
+# checks, though client code shouldn't rely on it (it was non-zero in older
+# versions).
 (
+    UNKNOWN,
     BOOL,
-    HEX,
-    INT,
-    STRING,
     TRISTATE,
-    UNKNOWN
+    STRING,
+    INT,
+    HEX,
 ) = range(6)
 
 # Converts a symbol/choice type to a string
@@ -6089,8 +6091,8 @@ TYPE_TO_STR = {
     BOOL:     "bool",
     TRISTATE: "tristate",
     STRING:   "string",
-    HEX:      "hex",
     INT:      "int",
+    HEX:      "hex",
 }
 
 TRI_TO_STR = {
