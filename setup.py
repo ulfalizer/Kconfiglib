@@ -26,6 +26,7 @@ setuptools.setup(
     py_modules=(
         "kconfiglib",
         "menuconfig",
+        "menuxconfig",
         "genconfig",
         "oldconfig",
         "olddefconfig",
@@ -40,6 +41,7 @@ setuptools.setup(
     entry_points={
         "console_scripts": (
             "menuconfig = menuconfig:_main",
+            "menuxconfig = menuxconfig:main",
             "genconfig = genconfig:main",
             "oldconfig = oldconfig:_main",
             "olddefconfig = olddefconfig:main",
