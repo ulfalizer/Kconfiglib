@@ -1024,7 +1024,7 @@ def _enter_menu(menu):
 
 def _select_selected_choice_sym():
     # Puts the cursor on the currently selected (y-valued) choice symbol, if
-    # any. Do nothing if if the choice has no selection (is not visible/in y
+    # any. Does nothing if if the choice has no selection (is not visible/in y
     # mode).
 
     global _sel_node_i
