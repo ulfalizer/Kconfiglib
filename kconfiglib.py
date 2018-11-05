@@ -2830,6 +2830,7 @@ class Kconfig(object):
         # 'prompt' properties override each other within a single definition of
         # a symbol, but additional prompts can be added by defining the symbol
         # multiple times
+
         if node.prompt:
             self._warn(_name_and_loc(node.item) +
                        " defined with multiple prompts in single location")
