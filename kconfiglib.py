@@ -3856,7 +3856,7 @@ class Symbol(object):
                 has_active_range = False
 
             # Defaults are used if the symbol is invisible, lacks a user value,
-            # or has an out-of-range user value.
+            # or has an out-of-range user value
             use_defaults = True
 
             if vis and self.user_value:
