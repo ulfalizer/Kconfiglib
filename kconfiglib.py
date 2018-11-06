@@ -2904,7 +2904,7 @@ class Kconfig(object):
 
         self._linenr += len(help_lines)
 
-        node.help = "\n".join(help_lines).rstrip() + "\n"
+        node.help = "\n".join(help_lines).rstrip()
         self._line_after_help(line)
 
     def _parse_expr(self, transform_m):
@@ -4251,7 +4251,8 @@ class Symbol(object):
         defined in multiple locations will return a string with all
         definitions.
 
-        An empty string is returned for undefined and constant symbols.
+        The returned string does not end in a newline. An empty string is
+        returned for undefined and constant symbols.
         """
         return self.custom_str(standard_sc_expr_str)
 
@@ -4260,8 +4261,8 @@ class Symbol(object):
         Works like Symbol.__str__(), but allows a custom format to be used for
         all symbol/choice references. See expr_str().
         """
-        return "\n".join(node.custom_str(sc_expr_str_fn)
-                         for node in self.nodes)
+        return "\n\n".join(node.custom_str(sc_expr_str_fn)
+                           for node in self.nodes)
 
     #
     # Private methods
@@ -4826,6 +4827,8 @@ class Choice(object):
         matching the Kconfig format (though without the contained choice
         symbols).
 
+        The returned string does not end in a newline.
+
         See Symbol.__str__() as well.
         """
         return self.custom_str(standard_sc_expr_str)
@@ -4835,8 +4838,8 @@ class Choice(object):
         Works like Choice.__str__(), but allows a custom format to be used for
         all symbol/choice references. See expr_str().
         """
-        return "\n".join(node.custom_str(sc_expr_str_fn)
-                         for node in self.nodes)
+        return "\n\n".join(node.custom_str(sc_expr_str_fn)
+                           for node in self.nodes)
 
     #
     # Private methods
@@ -5005,6 +5008,10 @@ class MenuNode(object):
       no help text. Always stored in the node rather than the Symbol or Choice.
       It is possible to have a separate help text at each location if a symbol
       is defined in multiple locations.
+
+      Trailing whitespace (including a final newline) is stripped from the help
+      text. This was not the case before Kconfiglib 10.21.0, where the format
+      was undocumented.
 
     dep:
       The 'depends on' dependencies for the menu node, or self.kconfig.y if
@@ -5195,6 +5202,8 @@ class MenuNode(object):
         locations), properties that aren't associated with a particular menu
         node are shown on all menu nodes ('option env=...', 'optional' for
         choices, etc.).
+
+        The returned string does not end in a newline.
         """
         return self.custom_str(standard_sc_expr_str)
 
@@ -5208,14 +5217,14 @@ class MenuNode(object):
                self._sym_choice_node_str(sc_expr_str_fn)
 
     def _menu_comment_node_str(self, sc_expr_str_fn):
-        s = '{} "{}"\n'.format("menu" if self.item is MENU else "comment",
-                               self.prompt[0])
+        s = '{} "{}"'.format("menu" if self.item is MENU else "comment",
+                             self.prompt[0])
 
         if self.dep is not self.kconfig.y:
-            s += "\tdepends on {}\n".format(expr_str(self.dep, sc_expr_str_fn))
+            s += "\n\tdepends on {}".format(expr_str(self.dep, sc_expr_str_fn))
 
         if self.item is MENU and self.visibility is not self.kconfig.y:
-            s += "\tvisible if {}\n".format(expr_str(self.visibility,
+            s += "\n\tvisible if {}".format(expr_str(self.visibility,
                                                      sc_expr_str_fn))
 
         return s
@@ -5289,7 +5298,7 @@ class MenuNode(object):
             for line in self.help.splitlines():
                 indent_add("  " + line)
 
-        return "\n".join(lines) + "\n"
+        return "\n".join(lines)
 
 class Variable(object):
     """
@@ -5988,7 +5997,7 @@ def _found_dep_loop(loop, cur):
             if isinstance(item, Symbol) and item.choice:
                 msg += "the choice symbol "
 
-        msg += "{}, with definition...\n\n{}\n" \
+        msg += "{}, with definition...\n\n{}\n\n" \
                .format(_name_and_loc(item), item)
 
         # Small wart: Since we reuse the already calculated

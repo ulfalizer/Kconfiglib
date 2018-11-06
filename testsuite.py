@@ -489,10 +489,11 @@ def run_selftests():
     print("Testing Symbol.__str__()/custom_str() and def_{int,hex,string}")
 
     def verify_str(item, s):
-        verify_equal(str(item), s[1:])
+        verify_equal(str(item), s[1:-1])
 
     def verify_custom_str(item, s):
-        verify_equal(item.custom_str(lambda sc: "[{}]".format(sc.name)), s[1:])
+        verify_equal(item.custom_str(lambda sc: "[{}]".format(sc.name)),
+                     s[1:-1])
 
     c = Kconfig("Kconfiglib/tests/Kstr", warn=False)
 
@@ -936,7 +937,7 @@ comment "advanced comment"
     c = Kconfig("Kconfiglib/tests/Khelp")
 
     def verify_help(node, s):
-        verify_equal(node.help, s[1:])
+        verify_equal(node.help, s[1:-1])
 
     verify_help(c.syms["TWO_HELP_STRINGS"].nodes[0], """
 first help string
@@ -2553,13 +2554,11 @@ config BOOL
 	prompt "foo" if DEF || !UNDEF_1
 	default UNDEF_2
 
-
 - Referenced at Kconfiglib/tests/Kundef:19:
 
 menu "menu"
 	depends on UNDEF_1
 	visible if UNDEF_3
-
 warning: undefined symbol UNDEF_2:
 
 - Referenced at Kconfiglib/tests/Kundef:4:
@@ -2569,7 +2568,6 @@ config BOOL
 	prompt "foo" if DEF || !UNDEF_1
 	default UNDEF_2
 
-
 - Referenced at Kconfiglib/tests/Kundef:8:
 
 config INT
@@ -2577,7 +2575,6 @@ config INT
 	range UNDEF_2 8
 	range 5 15
 	default 10
-
 warning: undefined symbol UNDEF_3:
 
 - Referenced at Kconfiglib/tests/Kundef:19:
@@ -2585,7 +2582,7 @@ warning: undefined symbol UNDEF_3:
 menu "menu"
 	depends on UNDEF_1
 	visible if UNDEF_3
-"""[1:])
+"""[1:-1])
 
     os.environ.pop("KCONFIG_WARN_UNDEF")
 
