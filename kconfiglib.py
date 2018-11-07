@@ -1974,28 +1974,37 @@ class Kconfig(object):
                 c = s[i]
 
                 if c in "\"'":
-                    s, end_i = self._expand_str(s, i)
+                    if "$" not in s and "\\" not in s:
+                        # Fast path for lines without $ and \. Find the
+                        # matching quote.
+                        end_i = s.find(c, i + 1) + 1
+                        if not end_i:
+                            self._parse_error("unterminated string")
+                        val = s[i + 1:end_i - 1]
+                        i = end_i
+                    else:
+                        # Slow path
+                        s, end_i = self._expand_str(s, i)
 
-                    # os.path.expandvars() and the $UNAME_RELEASE replace() is
-                    # a backwards compatibility hack, which should be
-                    # reasonably safe as expandvars() leaves references to
-                    # undefined env. vars. as is.
-                    #
-                    # The preprocessor functionality changed how environment
-                    # variables are referenced, to $(FOO).
-                    val = os.path.expandvars(
-                        s[i + 1:end_i - 1].replace("$UNAME_RELEASE",
-                                                   platform.uname()[2]))
+                        # os.path.expandvars() and the $UNAME_RELEASE replace()
+                        # is a backwards compatibility hack, which should be
+                        # reasonably safe as expandvars() leaves references to
+                        # undefined env. vars. as is.
+                        #
+                        # The preprocessor functionality changed how
+                        # environment variables are referenced, to $(FOO).
+                        val = os.path.expandvars(
+                            s[i + 1:end_i - 1].replace("$UNAME_RELEASE",
+                                                       platform.uname()[2]))
 
-                    i = end_i
+                        i = end_i
 
                     # This is the only place where we don't survive with a
                     # single token of lookback: 'option env="FOO"' does not
                     # refer to a constant symbol named "FOO".
-                    token = val \
-                            if token in _STRING_LEX or \
-                                tokens[0] is _T_OPTION else \
-                            self._lookup_const_sym(val)
+                    token = \
+                        val if token in _STRING_LEX or tokens[0] is _T_OPTION \
+                        else self._lookup_const_sym(val)
 
                 elif s.startswith("&&", i):
                     token = _T_AND
