@@ -1991,15 +1991,23 @@ def _jump_to_dialog():
         elif c == curses.KEY_UP:
             select_prev_match()
 
-        elif c == curses.KEY_NPAGE:  # Page Down
+        elif c in (curses.KEY_NPAGE, "\x04"):  # Page Down/Ctrl-D
             # Keep it simple. This way we get sane behavior for small windows,
             # etc., for free.
             for _ in range(_PG_JUMP):
                 select_next_match()
 
-        elif c == curses.KEY_PPAGE:  # Page Up
+        # Page Up (no Ctrl-U, as it's already used by the edit box)
+        elif c == curses.KEY_PPAGE:
             for _ in range(_PG_JUMP):
                 select_prev_match()
+
+        elif c == curses.KEY_END:
+            sel_node_i = len(matches) - 1
+            scroll = _max_scroll(matches, matches_win)
+
+        elif c == curses.KEY_HOME:
+            sel_node_i = scroll = 0
 
         else:
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
@@ -2155,7 +2163,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     edit_box.erase()
 
-    _draw_frame(edit_box, "Jump to symbol")
+    _draw_frame(edit_box, "Jump to symbol/choice/menu/comment")
 
     # Draw arrows pointing up if the symbol list is scrolled down
     if scroll > 0:
