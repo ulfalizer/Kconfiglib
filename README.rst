@@ -34,6 +34,10 @@ with an undefined environment variable keeps the string as is.
 Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`_ if you run into
 a "macro expanded to blank string" error with kernel 4.18+.
 
+See `this page
+<https://docs.zephyrproject.org/latest/application/kconfig-tips.html>`_ for
+some Kconfig tips and best practices.
+
 Installation
 ------------
 
