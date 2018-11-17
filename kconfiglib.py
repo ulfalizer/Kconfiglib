@@ -152,7 +152,7 @@ including prompts, so these two configurations are logically equivalent:
 (1)
 
   menu "menu"
-  depends on A
+      depends on A
 
   if B
 
@@ -168,7 +168,7 @@ including prompts, so these two configurations are logically equivalent:
 (2)
 
   menu "menu"
-  depends on A
+      depends on A
 
   config FOO
       tristate "foo" if A && B && C && D
