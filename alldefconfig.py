@@ -16,8 +16,9 @@
 import kconfiglib
 
 def main():
-    kconfiglib.standard_kconfig().write_config(
-        kconfiglib.standard_config_filename())
+    kconf = kconfiglib.standard_kconfig()
+    kconfiglib.load_allconfig(kconf, "alldef.config")
+    kconf.write_config(kconfiglib.standard_config_filename())
 
 if __name__ == "__main__":
     main()

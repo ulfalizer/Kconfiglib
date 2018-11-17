@@ -77,6 +77,12 @@ kconf.enable_undef_warnings()
 # set up here as well. The approach in examples/allnoconfig_simpler.py could
 # provide an allnoconfig starting state for example.)
 
+# Disable warnings generated for multiple assignments to the same symbol within
+# a (set of) configuration files. Assigning a symbol multiple times might be
+# done intentionally when merging configuration files.
+kconf.disable_override_warnings()
+kconf.disable_redun_warnings()
+
 # Create a merged configuration by loading the fragments with replace=False
 for config in sys.argv[3:]:
     kconf.load_config(config, replace=False)
@@ -109,6 +115,6 @@ for sym in kconf.defined_syms:
             user_value = sym.user_value
 
         if user_value != sym.str_value:
-            print('warning: {} was assigned the value "{}" but got the '
-                  'value "{}" -- check dependencies'
+            print("warning: {} was assigned the value '{}' but got the "
+                  "value '{}' -- check dependencies"
                   .format(name_and_loc(sym), user_value, sym.str_value))

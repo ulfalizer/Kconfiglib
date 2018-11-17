@@ -30,9 +30,11 @@ def main():
     #    accept 0/1/2, for n/m/y). The assignments will be ignored for other
     #    symbol types, which is what we want.
     kconf.disable_warnings()
-
     for sym in kconf.unique_defined_syms:
         sym.set_value(2 if sym.is_allnoconfig_y else 0)
+    kconf.enable_warnings()
+
+    kconfiglib.load_allconfig(kconf, "allno.config")
 
     kconf.write_config(kconfiglib.standard_config_filename())
 

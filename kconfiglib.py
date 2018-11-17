@@ -731,6 +731,7 @@ class Kconfig(object):
         "_set_match",
         "_unset_match",
         "_warn_for_no_prompt",
+        "_warn_for_override",
         "_warn_for_redun_assign",
         "_warn_for_undef_assign",
         "_warn_to_stderr",
@@ -852,7 +853,7 @@ class Kconfig(object):
         self._warn_to_stderr = warn_to_stderr
         self._warn_for_undef_assign = \
             os.environ.get("KCONFIG_WARN_UNDEF_ASSIGN") == "y"
-        self._warn_for_redun_assign = True
+        self._warn_for_redun_assign = self._warn_for_override = True
 
 
         self._encoding = encoding
@@ -1179,14 +1180,14 @@ class Kconfig(object):
                     else:
                         display_user_val = sym.user_value
 
-                    warn_msg = '{} set more than once. Old value: "{}", new value: "{}".'.format(
+                    msg = '{} set more than once. Old value: "{}", new value: "{}".'.format(
                         _name_and_loc(sym), display_user_val, val
                     )
 
                     if display_user_val == val:
-                        self._warn_redun_assign(warn_msg, filename, linenr)
+                        self._warn_redun_assign(msg, filename, linenr)
                     else:
-                        self._warn(             warn_msg, filename, linenr)
+                        self._warn_override(msg, filename, linenr)
 
                 sym.set_value(val)
 
@@ -1647,6 +1648,23 @@ class Kconfig(object):
         See enable_undef_assign().
         """
         self._warn_for_undef_assign = False
+
+    def enable_override_warnings(self):
+        """
+        Enables warnings for duplicated assignments in .config files that set
+        different values (e.g. CONFIG_FOO=m followed by CONFIG_FOO=y, where
+        the last value set is used).
+
+        These warnings are enabled by default. Disabling them might be helpful
+        in certain cases when merging configurations.
+        """
+        self._warn_for_override = True
+
+    def disable_override_warnings(self):
+        """
+        See enable_override_warnings().
+        """
+        self._warn_for_override = False
 
     def enable_redun_warnings(self):
         """
@@ -3520,7 +3538,7 @@ class Kconfig(object):
             if self._warn_to_stderr:
                 sys.stderr.write(msg + "\n")
 
-    def _warn_undef_assign(self, msg, filename=None, linenr=None):
+    def _warn_undef_assign(self, msg, filename, linenr):
         # See the class documentation
 
         if self._warn_for_undef_assign:
@@ -3533,7 +3551,13 @@ class Kconfig(object):
             'attempt to assign the value "{}" to the undefined symbol {}'
             .format(val, name), filename, linenr)
 
-    def _warn_redun_assign(self, msg, filename=None, linenr=None):
+    def _warn_override(self, msg, filename, linenr):
+        # See the class documentation
+
+        if self._warn_for_override:
+            self._warn(msg, filename, linenr)
+
+    def _warn_redun_assign(self, msg, filename, linenr):
         # See the class documentation
 
         if self._warn_for_redun_assign:
@@ -5618,6 +5642,61 @@ def standard_config_filename():
     .config file to load/save) if it is set, and ".config" otherwise.
     """
     return os.environ.get("KCONFIG_CONFIG", ".config")
+
+def load_allconfig(kconf, filename):
+    """
+    Helper for all*config. Loads (merges) the configuration file specified by
+    KCONFIG_ALLCONFIG, if any. See Documentation/kbuild/kconfig.txt in the
+    Linux kernel.
+
+    Disables warnings for duplicated assignments within configuration files for
+    the duration of the call (disable_override_warnings() +
+    disable_redun_warnings()), and enables them at the end. The
+    KCONFIG_ALLCONFIG configuration file is expected to override symbols.
+
+    Exits with sys.exit() (which raises a SystemExit exception) and prints an
+    error to stderr if KCONFIG_ALLCONFIG is set but the configuration file
+    can't be opened.
+
+    kconf:
+      Kconfig instance to load the configuration in.
+
+    filename:
+      Command-specific configuration filename - "allyes.config",
+      "allno.config", etc.
+    """
+    def std_msg(e):
+        # "Upcasts" a _KconfigIOError to an IOError, removing the custom
+        # __str__() message. The standard message is better here.
+        return IOError(e.errno, e.strerror, e.filename)
+
+    kconf.disable_override_warnings()
+    kconf.disable_redun_warnings()
+
+    allconfig = os.environ.get("KCONFIG_ALLCONFIG")
+    if allconfig is not None:
+        if allconfig in ("", "1"):
+            try:
+                kconf.load_config(filename, False)
+            except IOError as e1:
+                try:
+                    kconf.load_config("all.config", False)
+                except IOError as e2:
+                    sys.exit("error: KCONFIG_ALLCONFIG is set, but neither {} "
+                             "nor all.config could be opened: {}, {}"
+                             .format(filename, std_msg(e1), std_msg(e2)))
+        else:
+            try:
+                kconf.load_config(allconfig, False)
+            except IOError as e:
+                sys.exit("error: KCONFIG_ALLCONFIG is set to '{}', which "
+                         "could not be opened: {}"
+                         .format(allconfig, std_msg(e)))
+
+    # API wart: It would be nice if there was a way to query and/or push/pop
+    # warning settings
+    kconf.enable_override_warnings()
+    kconf.enable_redun_warnings()
 
 #
 # Internal functions

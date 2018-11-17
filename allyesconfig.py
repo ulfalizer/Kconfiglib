@@ -55,6 +55,10 @@ def main():
     for choice in kconf.unique_choices:
         choice.set_value(2)
 
+    kconf.enable_warnings()
+
+    kconfiglib.load_allconfig(kconf, "allyes.config")
+
     kconf.write_config(kconfiglib.standard_config_filename())
 
 if __name__ == "__main__":
