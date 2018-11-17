@@ -1590,7 +1590,7 @@ class Kconfig(object):
         self._tokens = self._tokenize("if " + s)[1:]
         self._tokens_i = -1
 
-        return expr_value(self._expect_expr_and_eol())  # transform_m
+        return expr_value(self._expect_expr_and_eol())
 
     def unset_values(self):
         """
