@@ -5,7 +5,7 @@ import setuptools
 setuptools.setup(
     name="kconfiglib",
     # MAJOR.MINOR.PATCH, per http://semver.org
-    version="10.22.0",
+    version="10.22.1",
     description="A flexible Python Kconfig parser",
 
     # Make sure that README.rst decodes on Python 3 in environments that use
@@ -20,7 +20,7 @@ setuptools.setup(
     url="https://github.com/ulfalizer/Kconfiglib",
     author='Ulf "Ulfalizer" Magnusson',
     author_email="ulfalizer@gmail.com",
-    keywords="kconfig, kbuild, menuconfig",
+    keywords="kconfig, kbuild, menuconfig, configuration-management",
     license="ISC",
 
     py_modules=(
