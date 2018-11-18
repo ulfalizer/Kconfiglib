@@ -1131,9 +1131,10 @@ def _select_next_menu_entry():
         # (as determined by _SCROLL_OFFSET), increase the scroll by one. This
         # gives nice and non-jumpy behavior even when
         # _SCROLL_OFFSET >= _menu_win_height().
-        if _sel_node_i >= _menu_scroll + _menu_win_height() - _SCROLL_OFFSET:
-            _menu_scroll = min(_menu_scroll + 1,
-                               _max_scroll(_shown, _menu_win))
+        if _sel_node_i >= _menu_scroll + _menu_win_height() - _SCROLL_OFFSET \
+           and _menu_scroll < _max_scroll(_shown, _menu_win):
+
+            _menu_scroll += 1
 
 def _select_prev_menu_entry():
     # Selects the menu entry before the current one, adjusting the scroll if
@@ -1868,8 +1869,10 @@ def _jump_to_dialog():
         if sel_node_i < len(matches) - 1:
             sel_node_i += 1
 
-            if sel_node_i >= scroll + matches_win.getmaxyx()[0] - _SCROLL_OFFSET:
-                scroll = min(scroll + 1, _max_scroll(matches, matches_win))
+            if sel_node_i >= scroll + matches_win.getmaxyx()[0] - _SCROLL_OFFSET \
+               and scroll < _max_scroll(matches, matches_win):
+
+                scroll += 1
 
     def select_prev_match():
         nonlocal sel_node_i
