@@ -1385,13 +1385,12 @@ def _shown_nodes(menu):
                 rec(node.list) if node.list and not node.is_menuconfig else []
 
             # Always show the node if it is the root of an implicit submenu
-            # with visible items, even when the node itself is invisible. This
+            # with visible items, even if the node itself is invisible. This
             # can happen e.g. if the symbol has an optional prompt
             # ('prompt "foo" if COND') that is currently invisible.
             if shown(node) or shown_children:
                 res.append(node)
-
-            res.extend(shown_children)
+                res += shown_children
 
             node = node.next
 
