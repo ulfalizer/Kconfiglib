@@ -1392,7 +1392,8 @@ class Kconfig(object):
         function when adding symbol prerequisites to source files.
 
         In case you need a different scheme for your project, the sync_deps()
-        implementation can be used as a template."""
+        implementation can be used as a template.
+        """
         if not os.path.exists(path):
             os.mkdir(path, 0o755)
 
