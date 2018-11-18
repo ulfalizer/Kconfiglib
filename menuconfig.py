@@ -2048,8 +2048,8 @@ def _sorted_menu_comment_nodes(cached_nodes=[]):
         def prompt_text(mc):
             return mc.prompt[0]
 
-        cached_nodes += sorted(_kconf.menus, key=prompt_text) + \
-                        sorted(_kconf.comments, key=prompt_text)
+        cached_nodes += sorted(_kconf.menus, key=prompt_text)
+        cached_nodes += sorted(_kconf.comments, key=prompt_text)
 
     return cached_nodes
 
