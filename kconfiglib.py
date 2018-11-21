@@ -2712,7 +2712,7 @@ class Kconfig(object):
 
             elif t0 is _T_DEPENDS:
                 if not self._check_token(_T_ON):
-                    self._parse_error('expected "on" after "depends"')
+                    self._parse_error("expected 'on' after 'depends'")
 
                 node.dep = self._make_and(node.dep,
                                           self._expect_expr_and_eol())
@@ -2758,7 +2758,7 @@ class Kconfig(object):
 
             elif t0 is _T_VISIBLE:
                 if not self._check_token(_T_IF):
-                    self._parse_error('expected "if" after "visible"')
+                    self._parse_error("expected 'if' after 'visible'")
 
                 node.visibility = self._make_and(node.visibility,
                                                  self._expect_expr_and_eol())
@@ -2767,7 +2767,7 @@ class Kconfig(object):
             elif t0 is _T_OPTION:
                 if self._check_token(_T_ENV):
                     if not self._check_token(_T_EQUAL):
-                        self._parse_error('expected "=" after "env"')
+                        self._parse_error("expected '=' after 'env'")
 
                     env_var = self._expect_str_and_eol()
                     node.item.env_var = env_var
