@@ -953,13 +953,7 @@ class Kconfig(object):
         self._linenr = 0
 
         # Open the top-level Kconfig file
-        try:
-            self._file = self._open(os.path.join(self.srctree, filename), "r")
-        except IOError as e:
-            if self.srctree:
-                print(textwrap.fill(
-                    _INIT_SRCTREE_NOTE.format(self.srctree), 80))
-            raise
+        self._file = self._open(os.path.join(self.srctree, filename), "r")
 
         try:
             # Parse everything
@@ -6485,12 +6479,3 @@ _REL_TO_STR = {
     GREATER:       ">",
     GREATER_EQUAL: ">=",
 }
-
-_INIT_SRCTREE_NOTE = """\
-NOTE: Starting with Kconfiglib 10.0.0, the Kconfig filename passed to
-Kconfig.__init__() is looked up relative to $srctree (which is set to '{}')
-instead of relative to the working directory. Previously, $srctree only applied
-to files being source'd within Kconfig files. This change makes running scripts
-out-of-tree work seamlessly, with no special coding required. Sorry for the
-backwards compatibility break!
-"""
