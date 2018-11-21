@@ -2795,10 +2795,10 @@ def _node_str(node):
                     s += " ({})".format(node_.prompt[0])
 
     # Print "--->" next to nodes that have menus that can potentially be
-    # entered. Add "(empty)" if the menu is empty. We don't allow those to be
+    # entered. Print "----" if the menu is empty. We don't allow those to be
     # entered.
     if node.is_menuconfig:
-        s += "  --->" if _shown_nodes(node) else "  ---> (empty)"
+        s += "  --->" if _shown_nodes(node) else "  ----"
 
     return s
 
