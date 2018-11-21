@@ -5,6 +5,9 @@
 # The generated .config respects symbol dependencies, and a warning is printed
 # if any symbol gets a different value from the assigned value.
 #
+# For a real-world merging example based on this script, see
+# https://github.com/zephyrproject-rtos/zephyr/blob/master/scripts/kconfig/kconfig.py.
+#
 # Here's a demo:
 #
 # Kconfig contents:
