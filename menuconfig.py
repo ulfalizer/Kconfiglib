@@ -1000,7 +1000,8 @@ def _prefer_toggle(item):
            (isinstance(item, Choice) and len(item.assignable) > 1)
 
 def _enter_menu(menu):
-    # Makes 'menu' the currently displayed menu. "Menu" here includes choices.
+    # Makes 'menu' the currently displayed menu. "Menu" here includes choices
+    # and symbols defined with the 'menuconfig' keyword.
 
     global _cur_menu
     global _shown
