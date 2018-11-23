@@ -3375,8 +3375,9 @@ class Kconfig(object):
         # parsing. Only generates errors and warnings.
 
         def warn_select_imply(sym, expr, expr_type):
-            msg = "the choice symbol {} is {} by the following symbols, which " \
-                  "has no effect: ".format(_name_and_loc(sym), expr_type)
+            msg = "the choice symbol {} is {} by the following symbols, but " \
+                  "select/imply has no effect on choice symbols" \
+                  .format(_name_and_loc(sym), expr_type)
 
             # si = select/imply
             for si in split_expr(expr, OR):
