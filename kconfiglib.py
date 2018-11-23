@@ -2117,7 +2117,7 @@ class Kconfig(object):
             self._parse_error("expected nonconstant symbol")
 
         if self._tokens[self._tokens_i] is not None:
-            self._parse_error("extra tokens at end of line")
+            self._trailing_tokens_error()
 
         return token
 
@@ -2138,7 +2138,7 @@ class Kconfig(object):
             self._parse_error("expected string")
 
         if self._tokens[self._tokens_i] is not None:
-            self._parse_error("extra tokens at end of line")
+            self._trailing_tokens_error()
 
         return token
 
@@ -2146,7 +2146,7 @@ class Kconfig(object):
         expr = self._parse_expr(True)
 
         if self._tokens[self._tokens_i] is not None:
-            self._parse_error("extra tokens at end of line")
+            self._trailing_tokens_error()
 
         return expr
 
@@ -2555,6 +2555,10 @@ class Kconfig(object):
             elif t0 is end_token:
                 # We have reached the end of the block. Terminate the final
                 # node and return it.
+
+                if self._tokens[self._tokens_i] is not None:
+                    self._trailing_tokens_error()
+
                 prev.next = None
                 return prev
 
@@ -2669,8 +2673,12 @@ class Kconfig(object):
         # Parses an optional 'if <expr>' construct and returns the parsed
         # <expr>, or self.y if the next token is not _T_IF
 
-        return self._expect_expr_and_eol() if self._check_token(_T_IF) \
-            else self.y
+        expr = self._parse_expr(True) if self._check_token(_T_IF) else self.y
+
+        if self._tokens[self._tokens_i] is not None:
+            self._trailing_tokens_error()
+
+        return expr
 
     def _parse_properties(self, node):
         # Parses and adds properties to the MenuNode 'node' (type, 'prompt',
@@ -3424,13 +3432,13 @@ class Kconfig(object):
                                    .format(_name_and_loc(sym)))
 
     def _parse_error(self, msg):
-        if self._filename is None:
-            loc = ""
-        else:
-            loc = "{}:{}: ".format(self._filename, self._linenr)
+        raise KconfigError("{}couldn't parse '{}': {}".format(
+            "" if self._filename is None else
+                "{}:{}: ".format(self._filename, self._linenr),
+            self._line.strip(), msg))
 
-        raise KconfigError(
-            "{}couldn't parse '{}': {}".format(loc, self._line.rstrip(), msg))
+    def _trailing_tokens_error(self):
+        self._parse_error("extra tokens at end of line")
 
     def _open(self, filename, mode):
         # open() wrapper:
