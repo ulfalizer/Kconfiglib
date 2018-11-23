@@ -1584,7 +1584,7 @@ class Kconfig(object):
         self._line = s
         # [1:] removes the _T_IF token
         self._tokens = self._tokenize("if " + s)[1:]
-        self._tokens_i = -1
+        self._tokens_i = 0
 
         return expr_value(self._expect_expr_and_eol())
 
@@ -1807,7 +1807,7 @@ class Kconfig(object):
         # it's part of a different construct
         if self._reuse_tokens:
             self._reuse_tokens = False
-            self._tokens_i = -1
+            self._tokens_i = 0
             return True
 
         # Note: readline() returns '' over and over at EOF, which we rely on
@@ -1823,7 +1823,7 @@ class Kconfig(object):
             self._linenr += 1
 
         self._tokens = self._tokenize(self._line)
-        self._tokens_i = -1  # Token index (minus one)
+        self._tokens_i = 0  # Token index
 
         return True
 
@@ -2088,22 +2088,12 @@ class Kconfig(object):
 
         return tokens
 
-    def _next_token(self):
-        self._tokens_i += 1
-        return self._tokens[self._tokens_i]
-
-    def _peek_token(self):
-        return self._tokens[self._tokens_i + 1]
-
-    # The functions below are just _next_token() and _parse_expr() with extra
-    # syntax checking. Inlining _next_token() and _peek_token() into them saves
-    # a few % of parsing time.
-    #
-    # See the 'Intro to expressions' section for what a constant symbol is.
+    # Helpers for syntax checking. See the 'Intro to expressions' section for
+    # what a constant symbol is.
 
     def _expect_sym(self):
-        self._tokens_i += 1
         token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
 
         if token.__class__ is not Symbol:
             self._parse_error("expected symbol")
@@ -2111,8 +2101,8 @@ class Kconfig(object):
         return token
 
     def _expect_nonconst_sym(self):
-        self._tokens_i += 1
         token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
 
         if token.__class__ is not Symbol or token.is_constant:
             self._parse_error("expected nonconstant symbol")
@@ -2120,20 +2110,20 @@ class Kconfig(object):
         return token
 
     def _expect_nonconst_sym_and_eol(self):
-        self._tokens_i += 1
         token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
 
         if token.__class__ is not Symbol or token.is_constant:
             self._parse_error("expected nonconstant symbol")
 
-        if self._tokens[self._tokens_i + 1] is not None:
+        if self._tokens[self._tokens_i] is not None:
             self._parse_error("extra tokens at end of line")
 
         return token
 
     def _expect_str(self):
-        self._tokens_i += 1
         token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
 
         if token.__class__ is not str:
             self._parse_error("expected string")
@@ -2141,13 +2131,13 @@ class Kconfig(object):
         return token
 
     def _expect_str_and_eol(self):
-        self._tokens_i += 1
         token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
 
         if token.__class__ is not str:
             self._parse_error("expected string")
 
-        if self._tokens[self._tokens_i + 1] is not None:
+        if self._tokens[self._tokens_i] is not None:
             self._parse_error("extra tokens at end of line")
 
         return token
@@ -2155,7 +2145,7 @@ class Kconfig(object):
     def _expect_expr_and_eol(self):
         expr = self._parse_expr(True)
 
-        if self._peek_token() is not None:
+        if self._tokens[self._tokens_i] is not None:
             self._parse_error("extra tokens at end of line")
 
         return expr
@@ -2163,7 +2153,7 @@ class Kconfig(object):
     def _check_token(self, token):
         # If the next token is 'token', removes it and returns True
 
-        if self._tokens[self._tokens_i + 1] is token:
+        if self._tokens[self._tokens_i] is token:
             self._tokens_i += 1
             return True
         return False
@@ -2483,9 +2473,10 @@ class Kconfig(object):
         # empty). This allows chaining.
 
         while self._next_line():
-            t0 = self._next_token()
+            t0 = self._tokens[self._tokens_i]
+            self._tokens_i += 1
 
-            if t0 in (_T_CONFIG, _T_MENUCONFIG):
+            if t0 is _T_CONFIG or t0 is _T_MENUCONFIG:
                 # The tokenizer allocates Symbol objects for us
                 sym = self._expect_nonconst_sym_and_eol()
                 self.defined_syms.append(sym)
@@ -2617,7 +2608,7 @@ class Kconfig(object):
                 prev.next = prev = node
 
             elif t0 is _T_CHOICE:
-                if self._peek_token() is None:
+                if self._tokens[self._tokens_i] is None:
                     choice = Choice()
                     choice.direct_dep = self.n
                 else:
@@ -2703,11 +2694,12 @@ class Kconfig(object):
         node.dep = self.y
 
         while self._next_line():
-            t0 = self._next_token()
+            t0 = self._tokens[self._tokens_i]
+            self._tokens_i += 1
 
             if t0 in _TYPE_TOKENS:
                 self._set_type(node, _TOKEN_TO_TYPE[t0])
-                if self._peek_token() is not None:
+                if self._tokens[self._tokens_i] is not None:
                     self._parse_prompt(node)
 
             elif t0 is _T_DEPENDS:
@@ -2982,12 +2974,13 @@ class Kconfig(object):
                (AND, factor, self._parse_and_expr(transform_m))
 
     def _parse_factor(self, transform_m):
-        token = self._next_token()
+        token = self._tokens[self._tokens_i]
+        self._tokens_i += 1
 
         if token.__class__ is Symbol:
             # Plain symbol or relation
 
-            if self._peek_token() not in _RELATIONS:
+            if self._tokens[self._tokens_i] not in _RELATIONS:
                 # Plain symbol
 
                 # For conditional expressions ('depends on <expr>',
@@ -3001,7 +2994,9 @@ class Kconfig(object):
             #
             # _T_EQUAL, _T_UNEQUAL, etc., deliberately have the same values as
             # EQUAL, UNEQUAL, etc., so we can just use the token directly
-            return (self._next_token(), token, self._expect_sym())
+            self._tokens_i += 1
+            return (self._tokens[self._tokens_i - 1], token,
+                    self._expect_sym())
 
         if token is _T_NOT:
             # token == _T_NOT == NOT

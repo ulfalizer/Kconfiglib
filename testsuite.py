@@ -1260,7 +1260,7 @@ tests/Krecursive2:1
     def verify_split(to_split, op, operand_strs):
         # The same hackage as in Kconfig.eval_string()
         c._tokens = c._tokenize("if " + to_split)[1:]
-        c._tokens_i = -1
+        c._tokens_i = 0
 
         operands = split_expr(c._parse_expr(False), op)
 
