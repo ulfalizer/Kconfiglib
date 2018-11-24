@@ -1582,9 +1582,8 @@ class Kconfig(object):
         # Don't include the "if " from below to avoid giving confusing error
         # messages
         self._line = s
-        # [1:] removes the _T_IF token
-        self._tokens = self._tokenize("if " + s)[1:]
-        self._tokens_i = 0
+        self._tokens = self._tokenize("if " + s)
+        self._tokens_i = 1  # Skip the 'if' token
 
         return expr_value(self._expect_expr_and_eol())
 
