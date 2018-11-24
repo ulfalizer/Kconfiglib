@@ -2697,7 +2697,7 @@ class Kconfig(object):
             t0 = self._tokens[0]
 
             if t0 in _TYPE_TOKENS:
-                self._set_type(node, _TOKEN_TO_TYPE[t0])
+                self._set_type(node, t0)
                 if self._tokens[1] is not None:
                     self._parse_prompt(node)
 
@@ -2728,7 +2728,7 @@ class Kconfig(object):
 
             elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE, _T_DEF_INT, _T_DEF_HEX,
                         _T_DEF_STRING):
-                self._set_type(node, _TOKEN_TO_TYPE[t0])
+                self._set_type(node, t0)
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
@@ -2831,8 +2831,14 @@ class Kconfig(object):
                 self._reuse_tokens = True
                 return
 
-    def _set_type(self, node, new_type):
-        if node.item.orig_type not in (UNKNOWN, new_type):
+    def _set_type(self, node, type_token):
+        new_type = _TOKEN_TO_TYPE[type_token]
+
+        # The 'is not UNKNOWN' comparison will usually fail, since single-def
+        # symbols/choices are more common
+        if node.item.orig_type is not UNKNOWN and \
+           node.item.orig_type is not new_type:
+
             self._warn("{} defined with multiple types, {} will be used"
                        .format(_name_and_loc(node.item),
                                TYPE_TO_STR[new_type]))
