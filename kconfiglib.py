@@ -1807,7 +1807,9 @@ class Kconfig(object):
         # it's part of a different construct
         if self._reuse_tokens:
             self._reuse_tokens = False
-            self._tokens_i = 0
+            # self._tokens_i is known to be 1 here, because _parse_properties()
+            # leaves it like that when it can't recognize a line (or parses
+            # a help text)
             return True
 
         # Note: readline() returns '' over and over at EOF, which we rely on
@@ -1823,7 +1825,9 @@ class Kconfig(object):
             self._linenr += 1
 
         self._tokens = self._tokenize(self._line)
-        self._tokens_i = 0  # Token index
+        # Initialize to 1 instead of 0 to factor out code from _parse_block()
+        # and _parse_properties(). They immediately fetch self._tokens[0].
+        self._tokens_i = 1
 
         return True
 
@@ -2473,8 +2477,7 @@ class Kconfig(object):
         # empty). This allows chaining.
 
         while self._next_line():
-            t0 = self._tokens[self._tokens_i]
-            self._tokens_i += 1
+            t0 = self._tokens[0]
 
             if t0 is _T_CONFIG or t0 is _T_MENUCONFIG:
                 # The tokenizer allocates Symbol objects for us
@@ -2702,8 +2705,7 @@ class Kconfig(object):
         node.dep = self.y
 
         while self._next_line():
-            t0 = self._tokens[self._tokens_i]
-            self._tokens_i += 1
+            t0 = self._tokens[0]
 
             if t0 in _TYPE_TOKENS:
                 self._set_type(node, _TOKEN_TO_TYPE[t0])
