@@ -2085,14 +2085,16 @@ class Kconfig(object):
             # Add the token
             tokens.append(token)
 
-        # None-terminating the token list makes the token fetching functions
-        # simpler/faster
+        # None-terminating the token list makes token fetching simpler/faster
         tokens.append(None)
 
         return tokens
 
-    # Helpers for syntax checking. See the 'Intro to expressions' section for
-    # what a constant symbol is.
+    # Helpers for syntax checking and token fetching. See the
+    # 'Intro to expressions' section for what a constant symbol is.
+    #
+    # More of these could be added, but the single-use cases are inlined as an
+    # optimization.
 
     def _expect_sym(self):
         token = self._tokens[self._tokens_i]
@@ -2104,32 +2106,13 @@ class Kconfig(object):
         return token
 
     def _expect_nonconst_sym(self):
-        token = self._tokens[self._tokens_i]
-        self._tokens_i += 1
+        # Used for 'select' and 'imply' only. We know the token indices.
+
+        token = self._tokens[1]
+        self._tokens_i = 2
 
         if token.__class__ is not Symbol or token.is_constant:
             self._parse_error("expected nonconstant symbol")
-
-        return token
-
-    def _expect_nonconst_sym_and_eol(self):
-        token = self._tokens[self._tokens_i]
-        self._tokens_i += 1
-
-        if token.__class__ is not Symbol or token.is_constant:
-            self._parse_error("expected nonconstant symbol")
-
-        if self._tokens[self._tokens_i] is not None:
-            self._trailing_tokens_error()
-
-        return token
-
-    def _expect_str(self):
-        token = self._tokens[self._tokens_i]
-        self._tokens_i += 1
-
-        if token.__class__ is not str:
-            self._parse_error("expected string")
 
         return token
 
@@ -2480,7 +2463,14 @@ class Kconfig(object):
 
             if t0 is _T_CONFIG or t0 is _T_MENUCONFIG:
                 # The tokenizer allocates Symbol objects for us
-                sym = self._expect_nonconst_sym_and_eol()
+                sym = self._tokens[1]
+
+                if sym.__class__ is not Symbol or sym.is_constant:
+                    self._parse_error("missing or bad symbol name")
+
+                if self._tokens[2] is not None:
+                    self._trailing_tokens_error()
+
                 self.defined_syms.append(sym)
 
                 node = MenuNode()
@@ -2558,7 +2548,7 @@ class Kconfig(object):
                 # We have reached the end of the block. Terminate the final
                 # node and return it.
 
-                if self._tokens[self._tokens_i] is not None:
+                if self._tokens[1] is not None:
                     self._trailing_tokens_error()
 
                 prev.next = None
@@ -2614,7 +2604,7 @@ class Kconfig(object):
                 prev.next = prev = node
 
             elif t0 is _T_CHOICE:
-                if self._tokens[self._tokens_i] is None:
+                if self._tokens[1] is None:
                     choice = Choice()
                     choice.direct_dep = self.n
                 else:
@@ -2708,7 +2698,7 @@ class Kconfig(object):
 
             if t0 in _TYPE_TOKENS:
                 self._set_type(node, _TOKEN_TO_TYPE[t0])
-                if self._tokens[self._tokens_i] is not None:
+                if self._tokens[1] is not None:
                     self._parse_prompt(node)
 
             elif t0 is _T_DEPENDS:
@@ -2858,7 +2848,12 @@ class Kconfig(object):
             self._warn(_name_and_loc(node.item) +
                        " defined with multiple prompts in single location")
 
-        prompt = self._expect_str()
+        prompt = self._tokens[1]
+        self._tokens_i = 2
+
+        if prompt.__class__ is not str:
+            self._parse_error("expected prompt string")
+
         if prompt != prompt.strip():
             self._warn(_name_and_loc(node.item) +
                        " has leading or trailing whitespace in its prompt")
