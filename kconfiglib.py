@@ -2503,7 +2503,7 @@ class Kconfig(object):
                 # Blank line
                 continue
 
-            elif t0 in (_T_SOURCE, _T_RSOURCE, _T_OSOURCE, _T_ORSOURCE):
+            elif t0 in _SOURCE_TOKENS:
                 pattern = self._expect_str_and_eol()
 
                 # Check if the pattern is absolute and avoid stripping srctree
@@ -2511,7 +2511,7 @@ class Kconfig(object):
                 # join()'ing, as srctree might be an absolute path.
                 isabs = os.path.isabs(pattern)
 
-                if t0 in (_T_RSOURCE, _T_ORSOURCE):
+                if t0 in _REL_SOURCE_TOKENS:
                     # Relative source
                     pattern = os.path.join(os.path.dirname(self._filename),
                                            pattern)
@@ -2522,7 +2522,7 @@ class Kconfig(object):
                 filenames = \
                     sorted(glob.iglob(os.path.join(self.srctree, pattern)))
 
-                if not filenames and t0 in (_T_SOURCE, _T_RSOURCE):
+                if not filenames and t0 in _OBL_SOURCE_TOKENS:
                     raise KconfigError("\n" + textwrap.fill(
                         "{}:{}: '{}' does not exist{}".format(
                             self._filename, self._linenr, pattern,
@@ -2726,8 +2726,7 @@ class Kconfig(object):
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
-            elif t0 in (_T_DEF_BOOL, _T_DEF_TRISTATE, _T_DEF_INT, _T_DEF_HEX,
-                        _T_DEF_STRING):
+            elif t0 in _DEF_TYPE_TOKENS:
                 self._set_type(node, t0)
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
@@ -2736,8 +2735,7 @@ class Kconfig(object):
                 self._parse_prompt(node)
 
             elif t0 is _T_RANGE:
-                node.ranges.append((self._expect_sym(),
-                                    self._expect_sym(),
+                node.ranges.append((self._expect_sym(), self._expect_sym(),
                                     self._parse_cond()))
 
             elif t0 is _T_IMPLY:
@@ -6375,8 +6373,8 @@ _STRING_LEX = frozenset((
     _T_TRISTATE,
 ))
 
-# Tokens for types, excluding def_bool, def_tristate, etc., for quick
-# checks during parsing
+# Various sets, for quick membership tests
+
 _TYPE_TOKENS = frozenset((
     _T_BOOL,
     _T_TRISTATE,
@@ -6385,6 +6383,31 @@ _TYPE_TOKENS = frozenset((
     _T_STRING,
 ))
 
+_SOURCE_TOKENS = frozenset((
+    _T_SOURCE,
+    _T_RSOURCE,
+    _T_OSOURCE,
+    _T_ORSOURCE,
+))
+
+_REL_SOURCE_TOKENS = frozenset((
+    _T_RSOURCE,
+    _T_ORSOURCE,
+))
+
+# Obligatory (non-optional) sources
+_OBL_SOURCE_TOKENS = frozenset((
+    _T_SOURCE,
+    _T_RSOURCE,
+))
+
+_DEF_TYPE_TOKENS = frozenset((
+    _T_DEF_BOOL,
+    _T_DEF_TRISTATE,
+    _T_DEF_INT,
+    _T_DEF_HEX,
+    _T_DEF_STRING,
+))
 
 # Helper functions for getting compiled regular expressions, with the needed
 # matching function returned directly as a small optimization.
