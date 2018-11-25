@@ -2752,7 +2752,6 @@ class Kconfig(object):
                 node.visibility = self._make_and(node.visibility,
                                                  self._expect_expr_and_eol())
 
-
             elif t0 is _T_OPTION:
                 if self._check_token(_T_ENV):
                     if not self._check_token(_T_EQUAL):
