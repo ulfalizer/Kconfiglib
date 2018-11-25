@@ -1096,7 +1096,7 @@ class Kconfig(object):
                                                      linenr)
                         continue
 
-                    if sym.orig_type in (BOOL, TRISTATE):
+                    if sym.orig_type in _BOOL_TRISTATE:
                         # The C implementation only checks the first character
                         # to the right of '=', for whatever reason
                         if not ((sym.orig_type is BOOL and
@@ -1160,7 +1160,7 @@ class Kconfig(object):
                         continue
 
                     sym = syms[name]
-                    if sym.orig_type not in (BOOL, TRISTATE):
+                    if sym.orig_type not in _BOOL_TRISTATE:
                         continue
 
                     val = "n"
@@ -1169,7 +1169,7 @@ class Kconfig(object):
 
                 if sym._was_set:
                     # Use strings for bool/tristate user values in the warning
-                    if sym.orig_type in (BOOL, TRISTATE):
+                    if sym.orig_type in _BOOL_TRISTATE:
                         display_user_val = TRI_TO_STR[sym.user_value]
                     else:
                         display_user_val = sym.user_value
@@ -1224,7 +1224,7 @@ class Kconfig(object):
                 # property magic.
                 val = sym.str_value
                 if sym._write_to_conf:
-                    if sym.orig_type in (BOOL, TRISTATE):
+                    if sym.orig_type in _BOOL_TRISTATE:
                         if val != "n":
                             f.write("#define {}{}{} 1\n"
                                     .format(self.config_prefix, sym.name,
@@ -1235,7 +1235,7 @@ class Kconfig(object):
                                 .format(self.config_prefix, sym.name,
                                         escape(val)))
 
-                    elif sym.orig_type in (INT, HEX):
+                    elif sym.orig_type in _INT_HEX:
                         if sym.orig_type is HEX and \
                            not val.startswith(("0x", "0X")):
                             val = "0x" + val
@@ -1417,7 +1417,7 @@ class Kconfig(object):
 
             if sym._write_to_conf:
                 if sym._old_val is None and \
-                   sym.orig_type in (BOOL, TRISTATE) and \
+                   sym.orig_type in _BOOL_TRISTATE and \
                    val == "n":
                     # No old value (the symbol was missing or n), new value n.
                     # No change.
@@ -1464,8 +1464,7 @@ class Kconfig(object):
 
         with self._open("auto.conf", "w") as f:
             for sym in self.unique_defined_syms:
-                if not (sym.orig_type in (BOOL, TRISTATE) and
-                        not sym.tri_value):
+                if not (sym.orig_type in _BOOL_TRISTATE and not sym.tri_value):
                     f.write(sym.config_string)
 
     def _load_old_vals(self):
@@ -3210,7 +3209,7 @@ class Kconfig(object):
                 cur.prompt = (cur.prompt[0],
                               self._make_and(cur.prompt[1], dep))
 
-            if cur.item.__class__ in (Symbol, Choice):
+            if cur.item.__class__ in _SYMBOL_CHOICE:
                 # Propagate 'visible if' dependencies to the prompt
                 if cur.prompt:
                     cur.prompt = (cur.prompt[0],
@@ -3293,12 +3292,12 @@ class Kconfig(object):
             return sym.orig_type is type_
 
         for sym in self.unique_defined_syms:
-            if sym.orig_type in (BOOL, TRISTATE):
+            if sym.orig_type in _BOOL_TRISTATE:
                 # A helper function could be factored out here, but keep it
                 # speedy/straightforward
 
                 for target_sym, _ in sym.selects:
-                    if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                    if target_sym.orig_type not in _BOOL_TRISTATE_UNKNOWN:
                         self._warn("{} selects the {} symbol {}, which is not "
                                    "bool or tristate"
                                    .format(_name_and_loc(sym),
@@ -3306,14 +3305,14 @@ class Kconfig(object):
                                            _name_and_loc(target_sym)))
 
                 for target_sym, _ in sym.implies:
-                    if target_sym.orig_type not in (BOOL, TRISTATE, UNKNOWN):
+                    if target_sym.orig_type not in _BOOL_TRISTATE_UNKNOWN:
                         self._warn("{} implies the {} symbol {}, which is not "
                                    "bool or tristate"
                                    .format(_name_and_loc(sym),
                                            TYPE_TO_STR[target_sym.orig_type],
                                            _name_and_loc(target_sym)))
 
-            elif sym.orig_type in (STRING, INT, HEX):
+            elif sym.orig_type in _STRING_INT_HEX:
                 for default, _ in sym.defaults:
                     if default.__class__ is not Symbol:
                         raise KconfigError(
@@ -3333,7 +3332,7 @@ class Kconfig(object):
                                        "default value for string symbol "
                                        + _name_and_loc(sym))
 
-                    elif sym.orig_type in (INT, HEX) and \
+                    elif sym.orig_type in _INT_HEX and \
                          not num_ok(default, sym.orig_type):
 
                         self._warn("the {0} symbol {1} has a non-{0} default {2}"
@@ -3352,7 +3351,7 @@ class Kconfig(object):
 
 
             if sym.ranges:
-                if sym.orig_type not in (INT, HEX):
+                if sym.orig_type not in _INT_HEX:
                     self._warn(
                         "the {} symbol {} has ranges, but is not int or hex"
                         .format(TYPE_TO_STR[sym.orig_type],
@@ -3385,7 +3384,7 @@ class Kconfig(object):
             self._warn(msg)
 
         for choice in self.unique_choices:
-            if choice.orig_type not in (BOOL, TRISTATE):
+            if choice.orig_type not in _BOOL_TRISTATE:
                 self._warn("{} defined with type {}"
                            .format(_name_and_loc(choice),
                                    TYPE_TO_STR[choice.orig_type]))
@@ -3843,7 +3842,7 @@ class Symbol(object):
         if self._cached_str_val is not None:
             return self._cached_str_val
 
-        if self.orig_type in (BOOL, TRISTATE):
+        if self.orig_type in _BOOL_TRISTATE:
             # Also calculates the visibility, so invalidation safe
             self._cached_str_val = TRI_TO_STR[self.tri_value]
             return self._cached_str_val
@@ -3862,7 +3861,7 @@ class Symbol(object):
 
         self._write_to_conf = (vis != 0)
 
-        if self.orig_type in (INT, HEX):
+        if self.orig_type in _INT_HEX:
             # The C implementation checks the user value against the range in a
             # separate code path (post-processing after loading a .config).
             # Checking all values here instead makes more sense for us. It
@@ -3984,7 +3983,7 @@ class Symbol(object):
         if self._cached_tri_val is not None:
             return self._cached_tri_val
 
-        if self.orig_type not in (BOOL, TRISTATE):
+        if self.orig_type not in _BOOL_TRISTATE:
             if self.orig_type:  # != UNKNOWN
                 # Would take some work to give the location here
                 self.kconfig._warn(
@@ -4087,14 +4086,14 @@ class Symbol(object):
         if not self._write_to_conf:
             return ""
 
-        if self.orig_type in (BOOL, TRISTATE):
+        if self.orig_type in _BOOL_TRISTATE:
             return "{}{}={}\n" \
                    .format(self.kconfig.config_prefix, self.name, val) \
                    if val != "n" else \
                    "# {}{} is not set\n" \
                    .format(self.kconfig.config_prefix, self.name)
 
-        if self.orig_type in (INT, HEX):
+        if self.orig_type in _INT_HEX:
             return "{}{}={}\n" \
                    .format(self.kconfig.config_prefix, self.name, val)
 
@@ -4171,7 +4170,7 @@ class Symbol(object):
 
             return False
 
-        if self.orig_type in (BOOL, TRISTATE) and value in ("n", "m", "y"):
+        if self.orig_type in _BOOL_TRISTATE and value in ("n", "m", "y"):
             value = STR_TO_TRI[value]
 
         self.user_value = value
@@ -4228,7 +4227,7 @@ class Symbol(object):
         # Only add quotes for non-bool/tristate symbols
         fields.append("value " +
                       (self.str_value
-                       if self.orig_type in (BOOL, TRISTATE) else
+                       if self.orig_type in _BOOL_TRISTATE else
                        '"{}"'.format(self.str_value)))
 
         if not self.is_constant:
@@ -4238,7 +4237,7 @@ class Symbol(object):
                 # Only add quotes for non-bool/tristate symbols
                 fields.append("user value " +
                               (TRI_TO_STR[self.user_value]
-                               if self.orig_type in (BOOL, TRISTATE) else
+                               if self.orig_type in _BOOL_TRISTATE else
                                '"{}"'.format(self.user_value)))
 
             fields.append("visibility " + TRI_TO_STR[self.visibility])
@@ -4344,7 +4343,7 @@ class Symbol(object):
     def _assignable(self):
         # Worker function for the 'assignable' attribute
 
-        if self.orig_type not in (BOOL, TRISTATE):
+        if self.orig_type not in _BOOL_TRISTATE:
             return ()
 
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
@@ -4453,7 +4452,7 @@ class Symbol(object):
         # the same algorithm as the C implementation (though a bit cleaned up),
         # for compatibility.
 
-        if self.orig_type in (BOOL, TRISTATE):
+        if self.orig_type in _BOOL_TRISTATE:
             val = 0
 
             # Defaults, selects, and implies do not affect choice symbols
@@ -4475,7 +4474,7 @@ class Symbol(object):
 
             return TRI_TO_STR[val]
 
-        if self.orig_type in (STRING, INT, HEX):
+        if self.orig_type in _STRING_INT_HEX:
             for default, cond in self.defaults:
                 if expr_value(cond):
                     return default.str_value
@@ -5207,7 +5206,7 @@ class MenuNode(object):
             fields.append("'visible if' deps " +
                           TRI_TO_STR[expr_value(self.visibility)])
 
-        if self.item.__class__ in (Symbol, Choice) and self.help is not None:
+        if self.item.__class__ in _SYMBOL_CHOICE and self.help is not None:
             fields.append("has help")
 
         if self.list:
@@ -5244,7 +5243,7 @@ class MenuNode(object):
         for all symbol/choice references. See expr_str().
         """
         return self._menu_comment_node_str(sc_expr_str_fn) \
-               if self.item in (MENU, COMMENT) else \
+               if self.item in _MENU_COMMENT else \
                self._sym_choice_node_str(sc_expr_str_fn)
 
     def _menu_comment_node_str(self, sc_expr_str_fn):
@@ -5789,7 +5788,7 @@ def _sym_to_num(sym):
     # For BOOL and TRISTATE, n/m/y count as 0/1/2. This mirrors 9059a3493ef
     # ("kconfig: fix relational operators for bool and tristate symbols") in
     # the C implementation.
-    return sym.tri_value if sym.orig_type in (BOOL, TRISTATE) else \
+    return sym.tri_value if sym.orig_type in _BOOL_TRISTATE else \
            int(sym.str_value, _TYPE_TO_BASE[sym.orig_type])
 
 def _internal_error(msg):
@@ -5849,7 +5848,7 @@ def _expr_depends_on(expr, sym):
     if expr.__class__ is not tuple:
         return expr is sym
 
-    if expr[0] in (EQUAL, UNEQUAL):
+    if expr[0] in _EQUAL_UNEQUAL:
         # Check for one of the following:
         # sym = m/y, m/y = sym, sym != n, n != sym
 
@@ -6372,7 +6371,8 @@ _STRING_LEX = frozenset((
     _T_TRISTATE,
 ))
 
-# Various sets, for quick membership tests
+# Various sets, for quick membership tests. This gives us a single global
+# lookup and avoids creating temporary dicts/tuples.
 
 _TYPE_TOKENS = frozenset((
     _T_BOOL,
@@ -6406,6 +6406,43 @@ _DEF_TYPE_TOKENS = frozenset((
     _T_DEF_INT,
     _T_DEF_HEX,
     _T_DEF_STRING,
+))
+
+_BOOL_TRISTATE = frozenset((
+    BOOL,
+    TRISTATE,
+))
+
+_BOOL_TRISTATE_UNKNOWN = frozenset((
+    BOOL,
+    TRISTATE,
+    UNKNOWN,
+))
+
+_INT_HEX = frozenset((
+    INT,
+    HEX,
+))
+
+_STRING_INT_HEX = frozenset((
+    STRING,
+    INT,
+    HEX,
+))
+
+_SYMBOL_CHOICE = frozenset((
+    Symbol,
+    Choice,
+))
+
+_MENU_COMMENT = frozenset((
+    MENU,
+    COMMENT,
+))
+
+_EQUAL_UNEQUAL = frozenset((
+    EQUAL,
+    UNEQUAL,
 ))
 
 # Helper functions for getting compiled regular expressions, with the needed
