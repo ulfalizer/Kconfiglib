@@ -368,6 +368,10 @@ Other features
   dependencies. The most advanced things used are probably ``@property`` and
   ``__slots__``.
 
+  A recent Python 3 version is recommended if you have a choice. Python 3.7
+  finally has parsing performance on par with Python 2.7 (and Python 3.6 is
+  just a bit slower).
+
 - **Robust and highly compatible with the standard Kconfig C tools**
   
   The `test suite <https://github.com/ulfalizer/Kconfiglib/blob/master/testsuite.py>`_
@@ -388,7 +392,8 @@ Other features
   script currently runs in about 1.3 seconds on the Linux kernel on a Core i7
   2600K (with a warm file cache), including the ``make`` overhead from ``make
   scriptconfig``. Note that the Linux kernel Kconfigs are absolutely massive
-  (over 14k symbols for x86) compared to most projects.
+  (over 14k symbols for x86) compared to most projects, and also have overhead
+  from running shell commands via the Kconfig preprocessor.
   
   Kconfiglib is especially speedy in cases where multiple ``.config`` files
   need to be processed, because the ``Kconfig`` files will only need to be parsed
