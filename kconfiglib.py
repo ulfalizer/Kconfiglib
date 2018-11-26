@@ -1100,9 +1100,9 @@ class Kconfig(object):
                         # The C implementation only checks the first character
                         # to the right of '=', for whatever reason
                         if not ((sym.orig_type is BOOL and
-                                 val.startswith(("n", "y"))) or
+                                 val.startswith(("y", "n"))) or
                                 (sym.orig_type is TRISTATE and
-                                 val.startswith(("n", "m", "y")))):
+                                 val.startswith(("y", "m", "n")))):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
                                        .format(val, TYPE_TO_STR[sym.orig_type],
@@ -1965,7 +1965,7 @@ class Kconfig(object):
                         i = match.end()
 
                     token = self.const_syms[name] \
-                            if name in ("n", "m", "y") else \
+                            if name in ("y", "m", "n") else \
                             self._lookup_sym(name)
 
                 else:
@@ -4152,8 +4152,8 @@ class Symbol(object):
             return True
 
         # Check if the value is valid for our type
-        if not (self.orig_type is BOOL     and value in (0, 2, "n", "y")         or
-                self.orig_type is TRISTATE and value in (0, 1, 2, "n", "m", "y") or
+        if not (self.orig_type is BOOL     and value in (2, 0, "y", "n")         or
+                self.orig_type is TRISTATE and value in (2, 1, 0, "y", "m", "n") or
                 (value.__class__ is str    and
                  (self.orig_type is STRING                        or
                   self.orig_type is INT and _is_base_n(value, 10) or
@@ -4170,7 +4170,7 @@ class Symbol(object):
 
             return False
 
-        if self.orig_type in _BOOL_TRISTATE and value in ("n", "m", "y"):
+        if self.orig_type in _BOOL_TRISTATE and value in ("y", "m", "n"):
             value = STR_TO_TRI[value]
 
         self.user_value = value
@@ -4767,8 +4767,8 @@ class Choice(object):
             self._was_set = True
             return True
 
-        if not ((self.orig_type is BOOL     and value in (0, 2, "n", "y")        ) or
-                (self.orig_type is TRISTATE and value in (0, 1, 2, "n", "m", "y"))):
+        if not ((self.orig_type is BOOL     and value in (2, 0, "y", "n")        ) or
+                (self.orig_type is TRISTATE and value in (2, 1, 0, "y", "m", "n"))):
 
             # Display tristate values as n, m, y in the warning
             self.kconfig._warn(
@@ -4781,7 +4781,7 @@ class Choice(object):
 
             return False
 
-        if value in ("n", "m", "y"):
+        if value in ("y", "m", "n"):
             value = STR_TO_TRI[value]
 
         self.user_value = value
