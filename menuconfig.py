@@ -1422,10 +1422,10 @@ def _shown_nodes(menu):
         # Note: Named choices are pretty broken in the C tools, and this is
         # super obscure, so you probably won't find much that relies on this.
 
-        # Do some additional work to avoid listing choice symbols twice if the
-        # entire choice is copy-pasted in multiple locations. We give the
-        # prompts at the current location precedence, in case it's not a 100%
-        # copy-paste.
+        # Do some additional work to avoid listing choice symbols twice if all
+        # or part of the choice is copied in multiple locations (e.g. by
+        # including some Kconfig file multiple times). We give the prompts at
+        # the current location precedence.
         seen_syms = {node.item for node in rec(menu.list)
                      if isinstance(node.item, Symbol)}
         res = []
