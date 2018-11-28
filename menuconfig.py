@@ -1421,6 +1421,9 @@ def _shown_nodes(menu):
         #
         # Note: Named choices are pretty broken in the C tools, and this is
         # super obscure, so you probably won't find much that relies on this.
+        # This whole 'if' could be deleted if you don't care about defining
+        # choices in multiple locations to add symbols (which will still work,
+        # just with things being displayed in a way that might be unexpected).
 
         # Do some additional work to avoid listing choice symbols twice if all
         # or part of the choice is copied in multiple locations (e.g. by
