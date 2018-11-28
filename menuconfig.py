@@ -1431,8 +1431,8 @@ def _shown_nodes(menu):
         res = []
         for choice_node in menu.item.nodes:
             for node in rec(choice_node.list):
-                # 'node is menu' checks if we're dealing with the current
-                # location
+                # 'choice_node is menu' checks if we're dealing with the
+                # current location
                 if node.item not in seen_syms or choice_node is menu:
                     res.append(node)
                     if isinstance(node.item, Symbol):
