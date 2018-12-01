@@ -1830,24 +1830,23 @@ class Kconfig(object):
         return True
 
     def _line_after_help(self, line):
-        # Tokenizes the line after a help text. This case is special in that
-        # the line has already been fetched (to discover that it isn't part of
-        # the help text).
+        # Tokenizes a line after a help text. This case is special in that the
+        # line has already been fetched (to discover that it isn't part of the
+        # help text).
         #
         # An earlier version used a _saved_line variable instead that was
         # checked in _next_line(). This special-casing gets rid of it and makes
         # _reuse_tokens alone sufficient to handle unget.
 
-        if line:
-            # Handle line joining
-            while line.endswith("\\\n"):
-                line = line[:-2] + self._file.readline()
-                self._linenr += 1
+        # Handle line joining
+        while line.endswith("\\\n"):
+            line = line[:-2] + self._file.readline()
+            self._linenr += 1
 
-            self._line = line
+        self._line = line
 
-            self._tokens = self._tokenize(line)
-            self._reuse_tokens = True
+        self._tokens = self._tokenize(line)
+        self._reuse_tokens = True
 
 
     #
@@ -2867,65 +2866,68 @@ class Kconfig(object):
         node.prompt = (prompt, self._parse_cond())
 
     def _parse_help(self, node):
-        # Find first non-blank (not all-space) line and get its indentation
-
         if node.help is not None:
-            self._warn(_name_and_loc(node.item) +
-                       " defined with more than one help text -- only the "
-                       "last one will be used")
+            self._warn(_name_and_loc(node.item) + " defined with more than "
+                       "one help text -- only the last one will be used")
 
-        # Small optimization. This code is pretty hot.
+        # Micro-optimization. This code is pretty hot.
         readline = self._file.readline
+
+        # Find first non-blank (not all-space) line and get its
+        # indentation
 
         while 1:
             line = readline()
             self._linenr += 1
-            if not line or not line.isspace():
+            if not line:
+                self._empty_help(node, line)
+                return
+            if not line.isspace():
                 break
 
-        if not line:
-            self._warn(_name_and_loc(node.item) +
-                       " has 'help' but empty help text")
+        len_ = len  # Micro-optimization
 
-            node.help = ""
-            return
-
-        indent = _indentation(line)
+        # Use a separate 'expline' variable here and below to avoid stomping on
+        # any tabs people might've put deliberately into the first line after
+        # the help text
+        expline = line.expandtabs()
+        indent = len_(expline) - len_(expline.lstrip())
         if not indent:
-            # If the first non-empty lines has zero indent, there is no help
-            # text
-            self._warn(_name_and_loc(node.item) +
-                       " has 'help' but empty help text")
-
-            node.help = ""
-            self._line_after_help(line)
+            self._empty_help(node, line)
             return
 
-        # The help text goes on till the first non-empty line with less indent
+        # The help text goes on till the first non-blank line with less indent
         # than the first line
 
-        help_lines = []
-        # Small optimizations
-        add_help_line = help_lines.append
-        indentation = _indentation
+        # Add the first line
+        lines = [expline[indent:]]
+        add_line = lines.append  # Micro-optimization
 
-        while line and (line.isspace() or indentation(line) >= indent):
-            # De-indent 'line' by 'indent' spaces and rstrip() it to remove any
-            # newlines (which gets rid of other trailing whitespace too, but
-            # that's fine).
-            #
-            # This prepares help text lines in a speedy way: The [indent:]
-            # might already remove trailing newlines for lines shorter than
-            # indent (e.g. empty lines). The rstrip() makes it consistent,
-            # meaning we can join the lines with "\n" later.
-            add_help_line(line.expandtabs()[indent:].rstrip())
-
+        while 1:
             line = readline()
+            if not line:
+                break
 
-        self._linenr += len(help_lines)
+            if line.isspace():
+                # No need to preserve the exact whitespace in these
+                add_line("\n")
+            else:
+                expline = line.expandtabs()
+                if len_(expline) - len_(expline.lstrip()) < indent:
+                    break
+                add_line(expline[indent:])
 
-        node.help = "\n".join(help_lines).rstrip()
-        self._line_after_help(line)
+        self._linenr += len_(lines)
+        node.help = "".join(lines).rstrip()
+        if line:
+            self._line_after_help(line)
+
+    def _empty_help(self, node, line):
+        self._warn(_name_and_loc(node.item) +
+                   " has 'help' but empty help text")
+        node.help = ""
+        if line:
+            self._line_after_help(line)
 
     def _parse_expr(self, transform_m):
         # Parses an expression from the tokens in Kconfig._tokens using a
@@ -5752,13 +5754,6 @@ def _parenthesize(expr, type_, sc_expr_str_fn):
     if expr.__class__ is tuple and expr[0] is type_:
         return "({})".format(expr_str(expr, sc_expr_str_fn))
     return expr_str(expr, sc_expr_str_fn)
-
-def _indentation(line):
-    # Returns the length of the line's leading whitespace, treating tab stops
-    # as being spaced 8 characters apart.
-
-    line = line.expandtabs()
-    return len(line) - len(line.lstrip())
 
 def _ordered_unique(lst):
     # Returns 'lst' with any duplicates removed, preserving order. This hacky
