@@ -1435,15 +1435,7 @@ class Kconfig(object):
                 continue
 
             # 'sym' has a new value. Flag it.
-
-            sym_path = sym.name.lower().replace("_", os.sep) + ".h"
-            sym_path_dir = os.path.dirname(sym_path)
-            if sym_path_dir and not os.path.exists(sym_path_dir):
-                os.makedirs(sym_path_dir, 0o755)
-
-            # A kind of truncating touch, mirroring the C tools
-            os.close(os.open(
-                sym_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644))
+            _touch_dep_file(sym.name)
 
         # Remember the current values as the "new old" values.
         #
@@ -1501,6 +1493,10 @@ class Kconfig(object):
                         val = unescape(match.group(1))
 
                     self.syms[name]._old_val = val
+                else:
+                    # Flag that the symbol no longer exists, in
+                    # case something still depends on it
+                    _touch_dep_file(name)
 
     def node_iter(self, unique_syms=False):
         """
@@ -5785,6 +5781,19 @@ def _sym_to_num(sym):
     # the C implementation.
     return sym.tri_value if sym.orig_type in _BOOL_TRISTATE else \
            int(sym.str_value, _TYPE_TO_BASE[sym.orig_type])
+
+def _touch_dep_file(sym_name):
+    # If sym_name is MY_SYM_NAME, touches my/sym/name.h. See the sync_deps()
+    # docstring.
+
+    sym_path = sym_name.lower().replace("_", os.sep) + ".h"
+    sym_path_dir = os.path.dirname(sym_path)
+    if sym_path_dir and not os.path.exists(sym_path_dir):
+        os.makedirs(sym_path_dir, 0o755)
+
+    # A kind of truncating touch, mirroring the C tools
+    os.close(os.open(
+        sym_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644))
 
 def _internal_error(msg):
     raise InternalError(
