@@ -3904,11 +3904,11 @@ class Symbol(object):
                 # Used to implement the warning below
                 has_default = False
 
-                for val_sym, cond in self.defaults:
+                for sym, cond in self.defaults:
                     if expr_value(cond):
                         has_default = self._write_to_conf = True
 
-                        val = val_sym.str_value
+                        val = sym.str_value
 
                         if _is_base_n(val, base):
                             val_num = int(val, base)
@@ -3949,9 +3949,9 @@ class Symbol(object):
                 val = self.user_value
             else:
                 # Otherwise, look at defaults
-                for val_sym, cond in self.defaults:
+                for sym, cond in self.defaults:
                     if expr_value(cond):
-                        val = val_sym.str_value
+                        val = sym.str_value
                         self._write_to_conf = True
                         break
 
