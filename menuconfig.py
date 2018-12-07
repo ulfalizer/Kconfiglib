@@ -608,39 +608,20 @@ def menuconfig(kconf):
       Kconfig instance to be configured
     """
     global _kconf
-    global _config_filename
     global _show_all
     global _conf_changed
 
     _kconf = kconf
 
-    _config_filename = standard_config_filename()
-
-    if os.path.exists(_config_filename):
-        _conf_changed = False
-        print("Using existing configuration '{}' as base"
-              .format(_config_filename))
-        _kconf.load_config(_config_filename)
-
-    else:
-        # Always prompt for save if the .config doesn't exist
-        _conf_changed = True
-
-        if kconf.defconfig_filename is not None:
-            print("Using default configuration found in '{}' as base"
-                  .format(kconf.defconfig_filename))
-            _kconf.load_config(kconf.defconfig_filename)
-
-        else:
-            print("Using default symbol values as base")
-
+    # Always prompt for save if the configuration file doesn't exist
+    _conf_changed = not kconf.load_config()
 
     # Any visible items in the top menu?
     _show_all = False
-    if not _shown_nodes(_kconf.top_node):
+    if not _shown_nodes(kconf.top_node):
         # Nothing visible. Start in show-all mode and try again.
         _show_all = True
-        if not _shown_nodes(_kconf.top_node):
+        if not _shown_nodes(kconf.top_node):
             # Give up. The implementation relies on always having a selected
             # node.
             print("Empty configuration -- nothing to configure.\n"
@@ -649,7 +630,7 @@ def menuconfig(kconf):
 
     # Disable warnings. They get mangled in curses mode, and we deal with
     # errors ourselves.
-    _kconf.disable_warnings()
+    kconf.disable_warnings()
 
     # Make curses use the locale settings specified in the environment
     locale.setlocale(locale.LC_ALL, "")
@@ -821,7 +802,7 @@ def _menuconfig(stdscr):
                 _conf_changed = False
 
         elif c in ("s", "S"):
-            if _save_dialog(_kconf.write_config, _config_filename,
+            if _save_dialog(_kconf.write_config, standard_config_filename(),
                             "configuration"):
 
                 _conf_changed = False
@@ -869,11 +850,11 @@ def _quit_dialog():
             return None
 
         if c == "y":
-            if _try_save(_kconf.write_config, _config_filename,
+            if _try_save(_kconf.write_config, standard_config_filename(),
                          "configuration"):
 
                 return "Configuration saved to '{}'" \
-                       .format(_config_filename)
+                       .format(standard_config_filename())
 
         elif c == "n":
             return "Configuration was not saved"

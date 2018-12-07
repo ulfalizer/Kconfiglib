@@ -492,8 +492,6 @@ Example scripts
 
 The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ directory contains some simple example scripts. Among these are the following ones. Make sure you run them with the latest version of Kconfiglib, as they might make use of newly added features.
 
-- `defconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/defconfig.py>`_ has the same effect as going into ``make menuconfig`` and immediately saving and exiting.
-
 - `eval_expr.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/eval_expr.py>`_ evaluates an expression in the context of a configuration.
 
 - `find_symbol.py <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/find_symbol.py>`_ searches through expressions to find references to a symbol, also printing a "backtrace" with parents for each reference found.

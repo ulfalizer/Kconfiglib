@@ -27,7 +27,7 @@ import os
 import sys
 
 from kconfiglib import Kconfig, Symbol, Choice, BOOL, TRISTATE, HEX, \
-                       standard_kconfig, standard_config_filename
+                       standard_kconfig
 
 # Python 2/3 compatibility hack
 if sys.version_info[0] < 3:
@@ -42,12 +42,8 @@ def _main():
     # visible symbols.
     global conf_changed
 
-    config_filename = standard_config_filename()
-    if not os.path.exists(config_filename):
-        sys.exit("{}: '{}' not found".format(sys.argv[0], config_filename))
-
     kconf = standard_kconfig()
-    kconf.load_config(config_filename)
+    kconf.load_config()
 
     while True:
         conf_changed = False
@@ -58,9 +54,7 @@ def _main():
         if not conf_changed:
             break
 
-    kconf.write_config(config_filename)
-
-    print("Updated configuration written to '{}'".format(config_filename))
+    kconf.write_config()
 
 
 def oldconfig(node):

@@ -32,7 +32,6 @@ for py in python2 python3; do
     # at least
 
     test_script Kconfiglib/examples/defconfig_oldconfig.py
-    test_script Kconfiglib/examples/defconfig.py
     test_script Kconfiglib/examples/eval_expr.py MODULES
     test_script Kconfiglib/examples/find_symbol.py X86
     test_script Kconfiglib/examples/help_grep.py general

@@ -36,7 +36,7 @@ def main():
 
     kconfiglib.load_allconfig(kconf, "allno.config")
 
-    kconf.write_config(kconfiglib.standard_config_filename())
+    kconf.write_config()
 
 if __name__ == "__main__":
     main()
