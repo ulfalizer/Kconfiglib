@@ -795,8 +795,7 @@ def _menuconfig(stdscr):
             _set_sel_node_tri_val(2)
 
         elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
-                   "\x1B",  # \x1B = ESC
-                   "h", "H"):
+                   "\x1B", "h", "H"):  # \x1B = ESC
 
             if c == "\x1B" and _cur_menu is _kconf.top_node:
                 res = _quit_dialog()
