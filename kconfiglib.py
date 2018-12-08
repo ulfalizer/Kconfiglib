@@ -5863,11 +5863,9 @@ def _save_old(path):
     # See write_config()
 
     dirname, basename = os.path.split(path)
-    if basename.startswith("."):
-        basename += ".old"
-    else:
-        basename = "." + basename + ".old"
-    backup = os.path.join(dirname, basename)
+    backup = os.path.join(dirname,
+                          basename + ".old" if basename.startswith(".") else
+                              "." + basename + ".old")
 
     # os.replace() would be nice here, but it's Python 3 (3.3+) only
     try:
