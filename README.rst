@@ -70,6 +70,8 @@ executables. All but one mirror functionality available in the C tools.
 
 - `allyesconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
 
+- `listnewconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/listnewconfig.py>`_
+
 - `genconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/genconfig.py>`_
 
 ``genconfig`` is intended to be run at build time. It generates a C header from
