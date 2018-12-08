@@ -83,7 +83,7 @@ def main():
         kconf.sync_deps(args.sync_deps_path)
 
     if args.config_path is not None:
-        kconf.write_config(args.config_path)
+        kconf.write_config(args.config_path, save_old=False)
 
 if __name__ == "__main__":
     main()
