@@ -1336,9 +1336,8 @@ class Kconfig(object):
         """
         if filename is None:
             filename = standard_config_filename()
-            be_verbose = verbose
         else:
-            be_verbose = False
+            verbose = False
 
         if save_old:
             _save_old(filename)
@@ -1358,7 +1357,7 @@ class Kconfig(object):
 
                     f.write("\n#\n# {}\n#\n".format(node.prompt[0]))
 
-        if be_verbose:
+        if verbose:
             print("Configuration written to '{}'".format(filename))
 
     def write_min_config(self, filename,
