@@ -5870,9 +5870,11 @@ def _save_old(path):
         basename = "." + basename + ".old"
     backup = os.path.join(dirname, basename)
 
+    # os.replace() would be nice here, but it's Python 3 (3.3+) only
     try:
-        # os.replace() would be nice here, but it's Python 3 (3.3+) only
-        if os.name == "posix":
+        # Use copyfile() if 'path' is a symlink. The intention is probably to
+        # overwrite the target in that case.
+        if os.name == "posix" and not os.path.islink(path):
             # Will remove .<filename>.old if it already exists on POSIX
             # systems
             os.rename(path, backup)
