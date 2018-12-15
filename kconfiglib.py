@@ -5903,18 +5903,15 @@ def _decoding_error(e, filename, macro_linenr=None):
     # macro_linenr holds the line number where it was run (the exact line
     # number isn't available for decoding errors in files).
 
-    if macro_linenr is None:
-        loc = filename
-    else:
-        loc = "output from macro at {}:{}".format(filename, macro_linenr)
-
     raise KconfigError(
         "\n"
         "Malformed {} in {}\n"
         "Context: {}\n"
         "Problematic data: {}\n"
         "Reason: {}".format(
-            e.encoding, loc,
+            e.encoding,
+            "'{}'".format(filename) if macro_linenr is None else
+                "output from macro at {}:{}".format(filename, macro_linenr),
             e.object[max(e.start - 40, 0):e.end + 40],
             e.object[e.start:e.end],
             e.reason))
