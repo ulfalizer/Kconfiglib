@@ -2977,12 +2977,12 @@ class Kconfig(object):
 
         while 1:
             line = readline()
-            if not line:
-                break
-
             if line.isspace():
                 # No need to preserve the exact whitespace in these
                 add_line("\n")
+            elif not line:
+                # End of file
+                break
             else:
                 expline = line.expandtabs()
                 if len_(expline) - len_(expline.lstrip()) < indent:
