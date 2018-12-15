@@ -761,7 +761,7 @@ class Kconfig(object):
 
         # Parsing-related
         "_parsing_kconfigs",
-        "_file",
+        "_readline",
         "_filename",
         "_linenr",
         "_include_path",
@@ -952,8 +952,10 @@ class Kconfig(object):
         self._filename = filename
         self._linenr = 0
 
-        # Open the top-level Kconfig file
-        self._file = self._open(os.path.join(self.srctree, filename), "r")
+        # Open the top-level Kconfig file. Store the readline() method directly
+        # as a small optimization.
+        self._readline = \
+            self._open(os.path.join(self.srctree, filename), "r").readline
 
         try:
             # Parse everything
@@ -961,8 +963,9 @@ class Kconfig(object):
         except UnicodeDecodeError as e:
             _decoding_error(e, self._filename)
 
-        # Close the top-level Kconfig file
-        self._file.close()
+        # Close the top-level Kconfig file. __self__ fetches the 'file' object
+        # for the method.
+        self._readline.__self__.close()
 
         self.top_node.list = self.top_node.next
         self.top_node.next = None
@@ -1828,8 +1831,9 @@ class Kconfig(object):
         # to be assigned directly to MenuNode.include_path without having to
         # copy it, sharing it wherever possible.
 
-        # Save include path and 'file' object before entering the file
-        self._filestack.append((self._include_path, self._file))
+        # Save include path and 'file' object (via its 'readline' function)
+        # before entering the file
+        self._filestack.append((self._include_path, self._readline))
 
         # _include_path is a tuple, so this rebinds the variable instead of
         # doing in-place modification
@@ -1849,7 +1853,7 @@ class Kconfig(object):
         # Note: We already know that the file exists
 
         try:
-            self._file = self._open(full_filename, "r")
+            self._readline = self._open(full_filename, "r").readline
         except IOError as e:
             raise _KconfigIOError(
                 e, "{}:{}: Could not open '{}' ({}: {})"
@@ -1863,11 +1867,12 @@ class Kconfig(object):
         # Returns from a Kconfig file to the file that sourced it. See
         # _enter_file().
 
-        self._file.close()
+        # __self__ fetches the 'file' object for the method
+        self._readline.__self__.close()
         # Restore location from parent Kconfig file
         self._filename, self._linenr = self._include_path[-1]
         # Restore include path and 'file' object
-        self._include_path, self._file = self._filestack.pop()
+        self._include_path, self._readline = self._filestack.pop()
 
     def _next_line(self):
         # Fetches and tokenizes the next line from the current Kconfig file.
@@ -1884,14 +1889,14 @@ class Kconfig(object):
 
         # Note: readline() returns '' over and over at EOF, which we rely on
         # for help texts at the end of files (see _line_after_help())
-        line = self._file.readline()
+        line = self._readline()
         if not line:
             return False
         self._linenr += 1
 
         # Handle line joining
         while line.endswith("\\\n"):
-            line = line[:-2] + self._file.readline()
+            line = line[:-2] + self._readline()
             self._linenr += 1
 
         self._line = line  # Used for error reporting
@@ -1913,11 +1918,10 @@ class Kconfig(object):
 
         # Handle line joining
         while line.endswith("\\\n"):
-            line = line[:-2] + self._file.readline()
+            line = line[:-2] + self._readline()
             self._linenr += 1
 
         self._line = line
-
         self._tokens = self._tokenize(line)
         self._reuse_tokens = True
 
@@ -2944,7 +2948,7 @@ class Kconfig(object):
                        "one help text -- only the last one will be used")
 
         # Micro-optimization. This code is pretty hot.
-        readline = self._file.readline
+        readline = self._readline
 
         # Find first non-blank (not all-space) line and get its
         # indentation
