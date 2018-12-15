@@ -456,14 +456,8 @@ module being run by default, as well as installation directories.
 If the KCONFIG_FUNCTIONS environment variable is set, it gives a different
 module name to use instead of 'kconfigfunctions'.
 
-The imported module is expected to define a dictionary named 'functions', with
-the following format:
-
-  functions = {
-      "my-fn":       (my_fn,       <min.args>, <max.args>/None),
-      "my-other-fn": (my_other_fn, <min.args>, <max.args>/None),
-      ...
-  }
+The imported module is expected to define a global dictionary named 'functions'
+that maps function names to Python functions, as follows:
 
   def my_fn(kconf, name, arg_1, arg_2, ...):
       # kconf:
@@ -481,6 +475,12 @@ the following format:
 
   def my_other_fn(kconf, name, arg_1, arg_2, ...):
       ...
+
+  functions = {
+      "my-fn":       (my_fn,       <min.args>, <max.args>/None),
+      "my-other-fn": (my_other_fn, <min.args>, <max.args>/None),
+      ...
+  }
 
   ...
 
