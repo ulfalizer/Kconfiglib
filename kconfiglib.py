@@ -1884,17 +1884,18 @@ class Kconfig(object):
 
         # Note: readline() returns '' over and over at EOF, which we rely on
         # for help texts at the end of files (see _line_after_help())
-        self._line = self._file.readline()
-        if not self._line:
+        line = self._file.readline()
+        if not line:
             return False
         self._linenr += 1
 
         # Handle line joining
-        while self._line.endswith("\\\n"):
-            self._line = self._line[:-2] + self._file.readline()
+        while line.endswith("\\\n"):
+            line = line[:-2] + self._file.readline()
             self._linenr += 1
 
-        self._tokens = self._tokenize(self._line)
+        self._line = line  # Used for error reporting
+        self._tokens = self._tokenize(line)
         # Initialize to 1 instead of 0 to factor out code from _parse_block()
         # and _parse_properties(). They immediately fetch self._tokens[0].
         self._tokens_i = 1
