@@ -2731,7 +2731,12 @@ class Kconfig(object):
         # End of file reached. Terminate the final node and return it.
 
         if end_token:
-            raise KconfigError("Unexpected end of file " + self._filename)
+            raise KconfigError(
+                "expected '{}' at end of '{}'"
+                .format("endchoice" if end_token is _T_ENDCHOICE else
+                        "endif"     if end_token is _T_ENDIF else
+                        "endmenu",
+                        self._filename))
 
         prev.next = None
         return prev
