@@ -447,6 +447,9 @@ Two configuration interfaces are currently available:
   
   .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/menuconfig.gif
 
+  *There is now also a show-help mode that shows the help text of the currently
+  selected symbol in the help window at the bottom.*
+
   ``menuconfig.py`` currently only supports Python 3, mostly due to
   ``curses.get_wch()`` not being available on Python 2. It is needed
   for Unicode support.
