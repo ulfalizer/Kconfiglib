@@ -1229,6 +1229,10 @@ class Kconfig(object):
                         continue
 
                     sym = syms[name]
+                    if not sym.nodes:
+                        self._undef_assign(name, "n", filename, linenr)
+                        continue
+
                     if sym.orig_type not in _BOOL_TRISTATE:
                         continue
 
