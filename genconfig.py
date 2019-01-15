@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, Ulf Magnusson
+# Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
 # Generates a C header from the configuration, matching the format of

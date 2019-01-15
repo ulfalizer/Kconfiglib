@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, Ulf Magnusson
+# Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
 # Works like 'make listnewconfig', listing all modifiable symbols that are not

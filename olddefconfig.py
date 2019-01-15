@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2018, Ulf Magnusson
+# Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
 # Works like 'make olddefconfig', updating an old .config file or creating a
