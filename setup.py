@@ -34,6 +34,7 @@ setuptools.setup(
         "allmodconfig",
         "allyesconfig",
         "listnewconfig",
+        "setconfig",
     ),
 
     # TODO: Don't install the menuconfig on Python 2. It won't run there.
@@ -49,6 +50,7 @@ setuptools.setup(
             "allmodconfig = allmodconfig:main",
             "allyesconfig = allyesconfig:main",
             "listnewconfig = listnewconfig:main",
+            "setconfig = setconfig:main",
         )
     },
 
