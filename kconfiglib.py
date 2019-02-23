@@ -4311,10 +4311,7 @@ class Symbol(object):
         value, visibility, and location(s)) when it is evaluated on e.g. the
         interactive Python prompt.
         """
-        fields = []
-
-        fields.append("symbol " + self.name)
-        fields.append(TYPE_TO_STR[self.type])
+        fields = ["symbol " + self.name, TYPE_TO_STR[self.type]]
 
         for node in self.nodes:
             if node.prompt:
@@ -4360,10 +4357,7 @@ class Symbol(object):
             for node in self.nodes:
                 fields.append("{}:{}".format(node.filename, node.linenr))
         else:
-            if self.is_constant:
-                fields.append("constant")
-            else:
-                fields.append("undefined")
+            fields.append("constant" if self.is_constant else "undefined")
 
         return "<{}>".format(", ".join(fields))
 
@@ -4911,10 +4905,8 @@ class Choice(object):
         Returns a string with information about the choice when it is evaluated
         on e.g. the interactive Python prompt.
         """
-        fields = []
-
-        fields.append("choice " + self.name if self.name else "choice")
-        fields.append(TYPE_TO_STR[self.type])
+        fields = ["choice " + self.name if self.name else "choice",
+                  TYPE_TO_STR[self.type]]
 
         for node in self.nodes:
             if node.prompt:
@@ -5349,8 +5341,6 @@ class MenuNode(object):
         return s
 
     def _sym_choice_node_str(self, sc_expr_str_fn):
-        lines = []
-
         def indent_add(s):
             lines.append("\t" + s)
 
@@ -5362,11 +5352,10 @@ class MenuNode(object):
         sc = self.item
 
         if sc.__class__ is Symbol:
-            lines.append(
-                ("menuconfig " if self.is_menuconfig else "config ")
-                + sc.name)
+            lines = [("menuconfig " if self.is_menuconfig else "config ")
+                     + sc.name]
         else:
-            lines.append("choice " + sc.name if sc.name else "choice")
+            lines = ["choice " + sc.name if sc.name else "choice"]
 
         if sc.orig_type:  # != UNKNOWN
             indent_add(TYPE_TO_STR[sc.orig_type])
