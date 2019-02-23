@@ -4299,11 +4299,7 @@ class Symbol(object):
         """
         See the class documentation.
         """
-        res = set()
-        for node in self.nodes:
-            res |= node.referenced
-
-        return res
+        return {item for node in self.nodes for item in node.referenced}
 
     def __repr__(self):
         """
@@ -4894,11 +4890,7 @@ class Choice(object):
         """
         See the class documentation.
         """
-        res = set()
-        for node in self.nodes:
-            res |= node.referenced
-
-        return res
+        return {item for node in self.nodes for item in node.referenced}
 
     def __repr__(self):
         """
