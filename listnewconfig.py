@@ -24,7 +24,7 @@ def main():
         # symbols in choices in y mode, but they can still be toggled by
         # selecting some other symbol.
         if sym.user_value is None and \
-           (len(sym.assignable) > 1 or \
+           (len(sym.assignable) > 1 or
             (sym.visibility and (sym.orig_type in (INT, HEX, STRING) or
                                  sym.choice))):
 
