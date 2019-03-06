@@ -12,7 +12,7 @@ setuptools.setup(
     # the C locale (which implies ASCII), by explicitly giving the encoding.
     #
     # io.open() has the 'encoding' parameter on both Python 2 and 3. open()
-    # doesn't have it on Python 2. This lets us to use the same code for both.
+    # doesn't have it on Python 2. This lets us use the same code for both.
     long_description=
         io.open(os.path.join(os.path.dirname(__file__), "README.rst"),
                 encoding="utf-8").read(),
