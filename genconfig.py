@@ -20,8 +20,10 @@ import argparse
 
 import kconfiglib
 
+
 DEFAULT_HEADER_PATH = "config.h"
 DEFAULT_SYNC_DEPS_PATH = "deps/"
+
 
 def main():
     parser = argparse.ArgumentParser(description="""
@@ -81,6 +83,7 @@ KCONFIG_CONFIG environment variable.""")
 
     if args.config_path is not None:
         kconf.write_config(args.config_path, save_old=False)
+
 
 if __name__ == "__main__":
     main()

@@ -13,7 +13,7 @@ import sys
 
 from kconfiglib import standard_kconfig, BOOL, TRISTATE, INT, HEX, STRING, \
                        TRI_TO_STR
-import kconfiglib
+
 
 def main():
     kconf = standard_kconfig()
@@ -38,6 +38,7 @@ def main():
                 s = sym.config_string
 
             sys.stdout.write(s)
+
 
 if __name__ == "__main__":
     main()
