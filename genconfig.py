@@ -20,19 +20,16 @@ import argparse
 
 import kconfiglib
 
-DESCRIPTION = """
-Generates a header file with defines from the configuration. Optionally
-creates/updates a directory with incremental build information as well (see the
-docstring for the Kconfig.sync_deps() function in Kconfiglib). The .config file
-to generate the configuration from can be specified by setting the
-KCONFIG_CONFIG environment variable.
-"""
-
 DEFAULT_HEADER_PATH = "config.h"
 DEFAULT_SYNC_DEPS_PATH = "deps/"
 
 def main():
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser = argparse.ArgumentParser(description="""
+Generates a header file with defines from the configuration. Optionally
+creates/updates a directory with incremental build information as well (see the
+docstring for the Kconfig.sync_deps() function in Kconfiglib). The .config file
+to generate the configuration from can be specified by setting the
+KCONFIG_CONFIG environment variable.""")
 
     parser.add_argument(
         "--header-path",
