@@ -10,7 +10,9 @@ import kconfiglib
 
 
 def main():
-    parser = argparse.ArgumentParser(description="""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""
 Simple utility for setting configuration values from the command line.
 
 Sample usage:
@@ -49,7 +51,7 @@ can be passed in the KCONFIG_CONFIG environment variable.
         "assignments",
         metavar="ASSIGNMENT",
         nargs="*",
-        help="A 'NAME=value' assignments")
+        help="A 'NAME=value' assignment")
 
     args = parser.parse_args()
 
