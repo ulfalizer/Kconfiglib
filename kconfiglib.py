@@ -1828,12 +1828,12 @@ class Kconfig(object):
                 # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
                 e = e2
 
-            raise _KconfigIOError(e,
-                "Could not open '{}' ({}: {}). Check that the $srctree "
-                "environment variable ({}) is set correctly."
-                .format(filename, errno.errorcode[e.errno], e.strerror,
-                        "set to '{}'".format(self.srctree) if self.srctree
-                            else "unset or blank"))
+            raise _KconfigIOError(
+                e, "Could not open '{}' ({}: {}). Check that the $srctree "
+                   "environment variable ({}) is set correctly."
+                   .format(filename, errno.errorcode[e.errno], e.strerror,
+                           "set to '{}'".format(self.srctree) if self.srctree
+                               else "unset or blank"))
 
     def _enter_file(self, full_filename, rel_filename):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
