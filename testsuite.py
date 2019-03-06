@@ -1059,7 +1059,7 @@ g
             Kconfig("tests/Krecursive1")
         except KconfigError as e:
             verify_equal(str(e), """
-tests/Krecursive2:1: Recursive 'source' of 'tests/Krecursive1' detected. Check that environment variables are set correctly.
+tests/Krecursive2:1: recursive 'source' of 'tests/Krecursive1' detected. Check that environment variables are set correctly.
 Include path:
 tests/Krecursive1:1
 tests/Krecursive2:1
@@ -1076,7 +1076,7 @@ tests/Krecursive2:1
         try:
             Kconfig("tests/Kmissingsource")
         except KconfigError as e:
-            if "does not exist" not in str(e):
+            if "not found" not in str(e):
                 fail("'source' with missing file raised wrong KconfigError")
         except:
             fail("'source' with missing file raised wrong exception")
@@ -1086,7 +1086,7 @@ tests/Krecursive2:1
         try:
             Kconfig("tests/Kmissingrsource")
         except KconfigError as e:
-            if "does not exist" not in str(e):
+            if "not found" not in str(e):
                 fail("'rsource' with missing file raised wrong KconfigError")
         except:
             fail("'rsource' with missing file raised wrong exception")

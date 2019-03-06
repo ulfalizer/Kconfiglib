@@ -529,7 +529,6 @@ import platform
 import re
 import subprocess
 import sys
-import textwrap
 
 # File layout:
 #
@@ -1829,11 +1828,12 @@ class Kconfig(object):
                 # https://docs.python.org/3/reference/compound_stmts.html#the-try-statement
                 e = e2
 
-            raise _KconfigIOError(e, "\n" + textwrap.fill(
-                "Could not open '{}' ({}: {}){}".format(
-                    filename, errno.errorcode[e.errno], e.strerror,
-                    self._srctree_hint()),
-                80))
+            raise _KconfigIOError(e,
+                "Could not open '{}' ({}: {}). Check that the $srctree "
+                "environment variable ({}) is set correctly."
+                .format(filename, errno.errorcode[e.errno], e.strerror,
+                        "set to '{}'".format(self.srctree) if self.srctree
+                            else "unset or blank"))
 
     def _enter_file(self, full_filename, rel_filename):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
@@ -1873,7 +1873,7 @@ class Kconfig(object):
         for name, _ in self._include_path:
             if name == rel_filename:
                 raise KconfigError(
-                    "\n{}:{}: Recursive 'source' of '{}' detected. Check that "
+                    "\n{}:{}: recursive 'source' of '{}' detected. Check that "
                     "environment variables are set correctly.\n"
                     "Include path:\n{}"
                     .format(self._filename, self._linenr, rel_filename,
@@ -2628,11 +2628,15 @@ class Kconfig(object):
                     sorted(glob.iglob(os.path.join(self.srctree, pattern)))
 
                 if not filenames and t0 in _OBL_SOURCE_TOKENS:
-                    raise KconfigError("\n" + textwrap.fill(
-                        "{}:{}: '{}' does not exist{}".format(
-                            self._filename, self._linenr, pattern,
-                            self._srctree_hint()),
-                        80))
+                    raise KconfigError(
+                        "{}:{}: '{}' not found (in '{}'). Check that "
+                        "environment variables are set correctly (e.g. "
+                        "$srctree, which is {}). Also note that unset "
+                        "environment variables expand to the empty string."
+                        .format(self._filename, self._linenr, pattern,
+                                self._line.strip(),
+                                "set to '{}'".format(self.srctree)
+                                    if self.srctree else "unset or blank"))
 
                 for filename in filenames:
                     self._enter_file(
@@ -3658,17 +3662,6 @@ class Kconfig(object):
 
         if self._warn_for_redun_assign:
             self._warn(msg, filename, linenr)
-
-    def _srctree_hint(self):
-        # Hint printed when Kconfig files can't be found or .config files can't
-        # be opened
-
-        return ". Perhaps the $srctree environment variable ({}) " \
-               "is set incorrectly. Note that the current value of $srctree " \
-               "is saved when the Kconfig instance is created (for " \
-               "consistency and to cleanly separate instances)." \
-               .format("set to '{}'".format(self.srctree) if self.srctree
-                           else "unset or blank")
 
 class Symbol(object):
     """
