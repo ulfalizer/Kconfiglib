@@ -20,14 +20,14 @@
 # 	  useful for infrequently used options which are not required
 # 	  for booting.  For more information, see the man pages for
 # 	  modprobe, lsmod, modinfo, insmod and rmmod.
-# 	  
+#
 # 	  If you say Y here, you will need to run "make
 # 	  modules_install" to put the modules under /lib/modules/
 # 	  where modprobe can find them (you may need to be root to do
 # 	  this).
-# 	  
+#
 # 	  If unsure, say Y.
-# 
+#
 # value = n
 # visibility = y
 # currently assignable values: n, y

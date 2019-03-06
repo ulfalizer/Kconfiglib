@@ -10,7 +10,7 @@
 #
 #   menu "General setup"
 #   location: init/Kconfig:39
-#   
+#
 #   config SYSVIPC
 #   	bool
 #   	prompt "System V IPC"
@@ -18,9 +18,9 @@
 #   	  ...
 #   	  exchange information. It is generally considered to be a good thing,
 #   	  ...
-#   
+#
 #   location: init/Kconfig:233
-#   
+#
 #   config BSD_PROCESS_ACCT
 #   	bool
 #   	prompt "BSD Process Accounting" if MULTIUSER

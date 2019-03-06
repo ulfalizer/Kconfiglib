@@ -91,9 +91,9 @@
 #
 #   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): MODULES
 #   Value for MODULES (available: n, y): n
-#  
+#
 #   ======== Example Kconfig configuration ========
-#  
+#
 #   [ ] Enable loadable module support (MODULES)
 #       Bool and tristate symbols
 #           [ ] Bool symbol (BOOL)
@@ -114,14 +114,14 @@
 #                   --> Tristate choice sym 1 (TRI_CHOICE_SYM_1)
 #                       Tristate choice sym 2 (TRI_CHOICE_SYM_2)
 #           [ ] Optional bool choice (OPT_BOOL_CHOICE)
-#  
+#
 #   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): ^D
 
 import readline
 import sys
 
 from kconfiglib import Kconfig, \
-                       Symbol, Choice, MENU, COMMENT, \
+                       Symbol, MENU, COMMENT, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
                        expr_value, \
                        TRI_TO_STR
@@ -131,8 +131,10 @@ from kconfiglib import Kconfig, \
 if sys.version_info[0] < 3:
     input = raw_input
 
+
 def indent_print(s, indent):
     print(" "*indent + s)
+
 
 def value_str(sc):
     """
@@ -166,6 +168,7 @@ def value_str(sc):
             # m and y available
             return "{" + tri_val_str + "}"  # Gets a bit confusing with .format()
         return "<{}>".format(tri_val_str)
+
 
 def node_str(node):
     """
@@ -217,6 +220,7 @@ def node_str(node):
 
     return res
 
+
 def print_menuconfig_nodes(node, indent):
     """
     Prints a tree with all the menu entries rooted at 'node'. Child menu
@@ -232,6 +236,7 @@ def print_menuconfig_nodes(node, indent):
 
         node = node.next
 
+
 def print_menuconfig(kconf):
     """
     Prints all menu entries for the configuration.
@@ -242,6 +247,7 @@ def print_menuconfig(kconf):
 
     print_menuconfig_nodes(kconf.top_node.list, 0)
     print("")
+
 
 def get_value_from_user(sc):
     """
@@ -273,6 +279,7 @@ def get_value_from_user(sc):
     # warning.
     return sc.set_value(val)
 
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         sys.exit("usage: menuconfig.py <Kconfig file>")
@@ -285,8 +292,8 @@ if __name__ == "__main__":
 
     while True:
         try:
-            cmd = input('Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): ') \
-                  .strip()
+            cmd = input('Enter a symbol/choice name, "load_config", or '
+                        '"write_config" (or press CTRL+D to exit): ').strip()
         except EOFError:
             print("")
             break

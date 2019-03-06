@@ -49,6 +49,7 @@ from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
 def indent_print(s, indent):
     print(" "*indent + s)
 
+
 def print_items(node, indent):
     while node:
         if isinstance(node.item, Symbol):
@@ -68,6 +69,7 @@ def print_items(node, indent):
             print_items(node.list, indent + 2)
 
         node = node.next
+
 
 kconf = Kconfig(sys.argv[1])
 print_items(kconf.top_node, 0)

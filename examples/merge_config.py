@@ -65,7 +65,7 @@
 
 import sys
 
-from kconfiglib import Kconfig, Symbol, BOOL, TRISTATE, TRI_TO_STR
+from kconfiglib import Kconfig, BOOL, TRISTATE, TRI_TO_STR
 
 
 if len(sys.argv) < 4:

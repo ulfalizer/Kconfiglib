@@ -54,17 +54,18 @@
 import sys
 
 from kconfiglib import Kconfig, \
-                       Symbol, Choice, MENU, COMMENT, \
+                       Symbol, MENU, COMMENT, \
                        BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
-                       expr_value, \
-                       TRI_TO_STR
+                       expr_value
 
 
 # Add help description to output
 WITH_HELP_DESC = False
 
+
 def indent_print(s, indent):
     print(" "*indent + s)
+
 
 def value_str(sc):
     """
@@ -98,6 +99,7 @@ def value_str(sc):
             # m and y available
             return "{" + tri_val_str + "}"  # Gets a bit confusing with .format()
         return "<{}>".format(tri_val_str)
+
 
 def node_str(node):
     """
@@ -151,6 +153,7 @@ def node_str(node):
 
     return res
 
+
 def print_menuconfig_nodes(node, indent):
     """
     Prints a tree with all the menu entries rooted at 'node'. Child menu
@@ -166,6 +169,7 @@ def print_menuconfig_nodes(node, indent):
 
         node = node.next
 
+
 def print_menuconfig(kconf):
     """
     Prints all menu entries for the configuration.
@@ -176,6 +180,7 @@ def print_menuconfig(kconf):
 
     print_menuconfig_nodes(kconf.top_node.list, 0)
     print("")
+
 
 if __name__ == "__main__":
 

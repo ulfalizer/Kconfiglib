@@ -13,6 +13,7 @@ import sys
 
 from kconfiglib import Kconfig, Symbol
 
+
 def do_allnoconfig(node):
     global changed
 
@@ -39,6 +40,7 @@ def do_allnoconfig(node):
             do_allnoconfig(node.list)
 
         node = node.next
+
 
 # Parse the Kconfig files
 kconf = Kconfig(sys.argv[1])
