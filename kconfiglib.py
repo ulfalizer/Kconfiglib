@@ -525,9 +525,7 @@ import errno
 import glob
 import importlib
 import os
-import platform
 import re
-import subprocess
 import sys
 
 # File layout:
@@ -2114,9 +2112,9 @@ class Kconfig(object):
                         #
                         # The preprocessor functionality changed how
                         # environment variables are referenced, to $(FOO).
-                        val = os.path.expandvars(
-                            s[i + 1:end_i - 1].replace("$UNAME_RELEASE",
-                                                       platform.uname()[2]))
+                        val = os.path.expandvars(s[i + 1:end_i - 1]
+                                                 .replace("$UNAME_RELEASE",
+                                                          _UNAME_RELEASE))
 
                         i = end_i
 
@@ -6224,6 +6222,9 @@ def _error_if_fn(kconf, _, cond, msg):
     return ""
 
 def _shell_fn(kconf, _, command):
+    # Only import as needed, to save some startup time
+    import subprocess
+
     stdout, stderr = subprocess.Popen(
         command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     ).communicate()
@@ -6309,6 +6310,13 @@ STR_TO_TRI = {
 
 # Are we running on Python 2?
 _IS_PY2 = sys.version_info[0] < 3
+
+try:
+    _UNAME_RELEASE = os.uname()[2]
+except AttributeError:
+    # Only import as needed, to save some startup time
+    import platform
+    _UNAME_RELEASE = platform.uname()[2]
 
 # Tokens, with values 1, 2, ... . Avoiding 0 simplifies some checks by making
 # all tokens except empty strings truthy.
