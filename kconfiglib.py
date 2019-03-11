@@ -5876,6 +5876,7 @@ def _save_old(path):
             # systems
             os.rename(path, backup)
         else:
+            # Only import as needed, to save some startup time
             import shutil
             shutil.copyfile(path, backup)
     except:
