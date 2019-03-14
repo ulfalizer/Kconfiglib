@@ -533,8 +533,7 @@ import sys
 # Public classes
 # Public functions
 # Internal functions
-# Public global constants
-# Internal global constants
+# Global constants
 
 # Line length: 79 columns
 
@@ -2809,6 +2808,7 @@ class Kconfig(object):
             t0 = self._tokens[0]
 
             if t0 in _TYPE_TOKENS:
+                # Relies on '_T_BOOL is BOOL', etc., to save a conversion
                 self._set_type(node, t0)
                 if self._tokens[1] is not None:
                     self._parse_prompt(node)
@@ -2838,8 +2838,8 @@ class Kconfig(object):
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
-            elif t0 in _DEF_TYPE_TOKENS:
-                self._set_type(node, t0)
+            elif t0 in _DEF_TOKEN_TO_TYPE:
+                self._set_type(node, _DEF_TOKEN_TO_TYPE[t0])
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
@@ -2940,14 +2940,9 @@ class Kconfig(object):
                 self._reuse_tokens = True
                 return
 
-    def _set_type(self, node, type_token):
-        new_type = _TOKEN_TO_TYPE[type_token]
-
-        # The 'is not UNKNOWN' comparison will usually fail, since single-def
-        # symbols/choices are more common
-        if node.item.orig_type is not UNKNOWN and \
-           node.item.orig_type is not new_type:
-
+    def _set_type(self, node, new_type):
+        # Note: UNKNOWN == 0, which is falsy
+        if node.item.orig_type and node.item.orig_type is not new_type:
             self._warn("{} defined with multiple types, {} will be used"
                        .format(_name_and_loc(node.item),
                                TYPE_TO_STR[new_type]))
@@ -6252,30 +6247,8 @@ def _shell_fn(kconf, _, command):
     return "\n".join(stdout.splitlines()).rstrip("\n").replace("\n", " ")
 
 #
-# Public global constants
+# Global constants
 #
-
-# Integers representing symbol types. UNKNOWN is 0 (falsy) to simplify some
-# checks, though client code shouldn't rely on it (it was non-zero in older
-# versions).
-(
-    UNKNOWN,
-    BOOL,
-    TRISTATE,
-    STRING,
-    INT,
-    HEX,
-) = range(6)
-
-# Converts a symbol/choice type to a string
-TYPE_TO_STR = {
-    UNKNOWN:  "unknown",
-    BOOL:     "bool",
-    TRISTATE: "tristate",
-    STRING:   "string",
-    INT:      "int",
-    HEX:      "hex",
-}
 
 TRI_TO_STR = {
     0: "n",
@@ -6289,25 +6262,10 @@ STR_TO_TRI = {
     "y": 2,
 }
 
-#
-# Internal global constants (plus public expression type
-# constants)
-#
-
-# Note:
-#
-# The token and type constants below are safe to test with 'is', which is a bit
-# faster (~30% faster in a microbenchmark with Python 3 on my machine, and a
-# few % faster for total parsing time), even without assuming Python's small
-# integer optimization (which caches small integer objects). The constants end
-# up pointing to unique integer objects, and since we consistently refer to
-# them via the names below, we always get the same object.
-#
-# Client code would also need to use the names below, because the integer
-# values can change e.g. when tokens get added. Client code would usually test
-# with == too, which would be safe even in super obscure cases involving e.g.
-# pickling (where 'is' would be a bad idea anyway) and no small-integer
-# optimization.
+# Constant representing that there's no cached choice selection. This is
+# distinct from a cached None (no selection). Any object that's not None or a
+# Symbol will do. We test this with 'is'.
+_NO_CACHED_SELECTION = 0
 
 # Are we running on Python 2?
 _IS_PY2 = sys.version_info[0] < 3
@@ -6318,6 +6276,15 @@ except AttributeError:
     # Only import as needed, to save some startup time
     import platform
     _UNAME_RELEASE = platform.uname()[2]
+
+# Note: The token and type constants below are safe to test with 'is', which is
+# a bit faster (~30% faster on my machine, and a few % faster for total parsing
+# time), even without assuming Python's small integer optimization (which
+# caches small integer objects). The constants end up pointing to unique
+# integer objects, and since we consistently refer to them via the names below,
+# we always get the same object.
+#
+# Client code should use == though.
 
 # Tokens, with values 1, 2, ... . Avoiding 0 simplifies some checks by making
 # all tokens except empty strings truthy.
@@ -6374,25 +6341,6 @@ except AttributeError:
     _T_VISIBLE,
 ) = range(1, 51)
 
-# Public integers representing expression types and menu and comment menu
-# nodes
-#
-# Having these match the value of the corresponding tokens removes the need
-# for conversion
-
-AND           = _T_AND
-OR            = _T_OR
-NOT           = _T_NOT
-EQUAL         = _T_EQUAL
-UNEQUAL       = _T_UNEQUAL
-LESS          = _T_LESS
-LESS_EQUAL    = _T_LESS_EQUAL
-GREATER       = _T_GREATER
-GREATER_EQUAL = _T_GREATER_EQUAL
-
-MENU          = _T_MENU
-COMMENT       = _T_COMMENT
-
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
 _get_keyword = {
@@ -6441,6 +6389,70 @@ _get_keyword = {
     "visible":        _T_VISIBLE,
 }.get
 
+# The constants below match the value of the corresponding tokens to remove the
+# need for conversion
+
+# Node types
+MENU    = _T_MENU
+COMMENT = _T_COMMENT
+
+# Expression types
+AND           = _T_AND
+OR            = _T_OR
+NOT           = _T_NOT
+EQUAL         = _T_EQUAL
+UNEQUAL       = _T_UNEQUAL
+LESS          = _T_LESS
+LESS_EQUAL    = _T_LESS_EQUAL
+GREATER       = _T_GREATER
+GREATER_EQUAL = _T_GREATER_EQUAL
+
+_REL_TO_STR = {
+    EQUAL:         "=",
+    UNEQUAL:       "!=",
+    LESS:          "<",
+    LESS_EQUAL:    "<=",
+    GREATER:       ">",
+    GREATER_EQUAL: ">=",
+}
+
+# Symbol/choice types. UNKNOWN is 0 (falsy) to simplify some checks.
+# Client code shouldn't rely on it though, as it was non-zero in
+# older versions.
+UNKNOWN  = 0
+BOOL     = _T_BOOL
+TRISTATE = _T_TRISTATE
+STRING   = _T_STRING
+INT      = _T_INT
+HEX      = _T_HEX
+
+TYPE_TO_STR = {
+    UNKNOWN:  "unknown",
+    BOOL:     "bool",
+    TRISTATE: "tristate",
+    STRING:   "string",
+    INT:      "int",
+    HEX:      "hex",
+}
+
+# Used in comparisons. 0 means the base is inferred from the format of the
+# string.
+_TYPE_TO_BASE = {
+    HEX:      16,
+    INT:      10,
+    STRING:   0,
+    UNKNOWN:  0,
+}
+
+# def_bool -> BOOL, etc.
+_DEF_TOKEN_TO_TYPE = {
+    _T_DEF_BOOL:     BOOL,
+    _T_DEF_HEX:      HEX,
+    _T_DEF_INT:      INT,
+    _T_DEF_STRING:   STRING,
+    _T_DEF_TRISTATE: TRISTATE,
+}
+
 # Tokens after which strings are expected. This is used to tell strings from
 # constant symbol references during tokenization, both of which are enclosed in
 # quotes.
@@ -6465,8 +6477,8 @@ _STRING_LEX = frozenset((
     _T_TRISTATE,
 ))
 
-# Various sets, for quick membership tests. This gives us a single global
-# lookup and avoids creating temporary dicts/tuples.
+# Various sets for quick membership tests. Gives a single global lookup and
+# avoids creating temporary dicts/tuples.
 
 _TYPE_TOKENS = frozenset((
     _T_BOOL,
@@ -6492,14 +6504,6 @@ _REL_SOURCE_TOKENS = frozenset((
 _OBL_SOURCE_TOKENS = frozenset((
     _T_SOURCE,
     _T_RSOURCE,
-))
-
-_DEF_TYPE_TOKENS = frozenset((
-    _T_DEF_BOOL,
-    _T_DEF_TRISTATE,
-    _T_DEF_INT,
-    _T_DEF_HEX,
-    _T_DEF_STRING,
 ))
 
 _BOOL_TRISTATE = frozenset((
@@ -6539,6 +6543,15 @@ _EQUAL_UNEQUAL = frozenset((
     UNEQUAL,
 ))
 
+_RELATIONS = frozenset((
+    EQUAL,
+    UNEQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+))
+
 # Helper functions for getting compiled regular expressions, with the needed
 # matching function returned directly as a small optimization.
 #
@@ -6549,7 +6562,6 @@ def _re_match(regex):
 
 def _re_search(regex):
     return re.compile(regex, 0 if _IS_PY2 else re.ASCII).search
-
 
 # Various regular expressions used during parsing
 
@@ -6589,52 +6601,3 @@ _name_special_search = _re_search(r'[^$A-Za-z0-9_/.-]|\$\(|$')
 # A valid right-hand side for an assignment to a string symbol in a .config
 # file, including escaped characters. Extracts the contents.
 _conf_string_match = _re_match(r'"((?:[^\\"]|\\.)*)"')
-
-
-# Token to type mapping
-_TOKEN_TO_TYPE = {
-    _T_BOOL:         BOOL,
-    _T_DEF_BOOL:     BOOL,
-    _T_DEF_HEX:      HEX,
-    _T_DEF_INT:      INT,
-    _T_DEF_STRING:   STRING,
-    _T_DEF_TRISTATE: TRISTATE,
-    _T_HEX:          HEX,
-    _T_INT:          INT,
-    _T_STRING:       STRING,
-    _T_TRISTATE:     TRISTATE,
-}
-
-# Constant representing that there's no cached choice selection. This is
-# distinct from a cached None (no selection). We create a unique object (any
-# will do) for it so we can test with 'is'.
-_NO_CACHED_SELECTION = object()
-
-# Used in comparisons. 0 means the base is inferred from the format of the
-# string.
-_TYPE_TO_BASE = {
-    HEX:      16,
-    INT:      10,
-    STRING:   0,
-    UNKNOWN:  0,
-}
-
-# Note: These constants deliberately equal the corresponding tokens (_T_EQUAL,
-# _T_UNEQUAL, etc.), which removes the need for conversion
-_RELATIONS = frozenset((
-    EQUAL,
-    UNEQUAL,
-    LESS,
-    LESS_EQUAL,
-    GREATER,
-    GREATER_EQUAL,
-))
-
-_REL_TO_STR = {
-    EQUAL:         "=",
-    UNEQUAL:       "!=",
-    LESS:          "<",
-    LESS_EQUAL:    "<=",
-    GREATER:       ">",
-    GREATER_EQUAL: ">=",
-}
