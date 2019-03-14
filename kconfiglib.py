@@ -528,6 +528,7 @@ import os
 import re
 import sys
 
+
 # File layout:
 #
 # Public classes
@@ -537,9 +538,11 @@ import sys
 
 # Line length: 79 columns
 
+
 #
 # Public classes
 #
+
 
 class Kconfig(object):
     """
@@ -3656,6 +3659,7 @@ class Kconfig(object):
         if self._warn_for_redun_assign:
             self._warn(msg, filename, linenr)
 
+
 class Symbol(object):
     """
     Represents a configuration symbol:
@@ -4591,6 +4595,7 @@ class Symbol(object):
 
         self.kconfig._warn(msg)
 
+
 class Choice(object):
     """
     Represents a choice statement:
@@ -5036,6 +5041,7 @@ class Choice(object):
             if item._cached_vis is not None:
                 item._rec_invalidate()
 
+
 class MenuNode(object):
     """
     Represents a menu node in the configuration. This corresponds to an entry
@@ -5386,6 +5392,7 @@ class MenuNode(object):
 
         return "\n".join(lines)
 
+
 class Variable(object):
     """
     Represents a preprocessor variable/function.
@@ -5440,13 +5447,16 @@ class Variable(object):
                        "recursive" if self.is_recursive else "immediate",
                        self.value)
 
+
 class KconfigError(Exception):
     "Exception raised for Kconfig-related errors"
 
 KconfigSyntaxError = KconfigError  # Backwards compatibility
 
+
 class InternalError(Exception):
     "Never raised. Kept around for backwards compatibility."
+
 
 # Workaround:
 #
@@ -5463,9 +5473,11 @@ class _KconfigIOError(IOError):
     def __str__(self):
         return self.msg
 
+
 #
 # Public functions
 #
+
 
 def expr_value(expr):
     """
@@ -5523,6 +5535,7 @@ def expr_value(expr):
     if rel is GREATER:    return 2*(comp > 0)
     return 2*(comp >= 0)  # rel is GREATER_EQUAL
 
+
 def standard_sc_expr_str(sc):
     """
     Standard symbol/choice printing function. Uses plain Kconfig syntax, and
@@ -5535,6 +5548,7 @@ def standard_sc_expr_str(sc):
 
     # Choice
     return "<choice {}>".format(sc.name) if sc.name else "<choice>"
+
 
 def expr_str(expr, sc_expr_str_fn=standard_sc_expr_str):
     """
@@ -5579,6 +5593,7 @@ def expr_str(expr, sc_expr_str_fn=standard_sc_expr_str):
     return "{} {} {}".format(sc_expr_str_fn(expr[1]), _REL_TO_STR[expr[0]],
                              sc_expr_str_fn(expr[2]))
 
+
 def expr_items(expr):
     """
     Returns a set() of all items (symbols and choices) that appear in the
@@ -5603,6 +5618,7 @@ def expr_items(expr):
 
     rec(expr)
     return res
+
 
 def split_expr(expr, op):
     """
@@ -5648,6 +5664,7 @@ def split_expr(expr, op):
     rec(expr)
     return res
 
+
 def escape(s):
     r"""
     Escapes the string 's' in the same fashion as is done for display in
@@ -5657,8 +5674,6 @@ def escape(s):
     # \ must be escaped before " to avoid double escaping
     return s.replace("\\", r"\\").replace('"', r'\"')
 
-# unescape() helper
-_unescape_sub = re.compile(r"\\(.)").sub
 
 def unescape(s):
     r"""
@@ -5666,6 +5681,10 @@ def unescape(s):
     that character. Used internally when reading .config files.
     """
     return _unescape_sub(r"\1", s)
+
+# unescape() helper
+_unescape_sub = re.compile(r"\\(.)").sub
+
 
 def standard_kconfig():
     """
@@ -5687,6 +5706,7 @@ def standard_kconfig():
         # formatting when reported as an unhandled exception. Strip them here.
         sys.exit(str(e).strip())
 
+
 def standard_config_filename():
     """
     Helper for tools. Returns the value of KCONFIG_CONFIG (which specifies the
@@ -5696,6 +5716,7 @@ def standard_config_filename():
     want, without having to use this function.
     """
     return os.environ.get("KCONFIG_CONFIG", ".config")
+
 
 def load_allconfig(kconf, filename):
     """
@@ -5752,9 +5773,11 @@ def load_allconfig(kconf, filename):
     kconf.enable_override_warnings()
     kconf.enable_redun_warnings()
 
+
 #
 # Internal functions
 #
+
 
 def _visibility(sc):
     # Symbols and Choices have a "visibility" that acts as an upper bound on
@@ -5785,6 +5808,7 @@ def _visibility(sc):
 
     return vis
 
+
 def _make_depend_on(sc, expr):
     # Adds 'sc' (symbol or choice) as a "dependee" to all symbols in 'expr'.
     # Constant symbols in 'expr' are skipped as they can never change value
@@ -5803,12 +5827,14 @@ def _make_depend_on(sc, expr):
         # Non-constant symbol, or choice
         expr._dependents.add(sc)
 
+
 def _parenthesize(expr, type_, sc_expr_str_fn):
     # expr_str() helper. Adds parentheses around expressions of type 'type_'.
 
     if expr.__class__ is tuple and expr[0] is type_:
         return "({})".format(expr_str(expr, sc_expr_str_fn))
     return expr_str(expr, sc_expr_str_fn)
+
 
 def _ordered_unique(lst):
     # Returns 'lst' with any duplicates removed, preserving order. This hacky
@@ -5819,6 +5845,7 @@ def _ordered_unique(lst):
     seen_add = seen.add
     return [x for x in lst if x not in seen and not seen_add(x)]
 
+
 def _is_base_n(s, n):
     try:
         int(s, n)
@@ -5826,10 +5853,12 @@ def _is_base_n(s, n):
     except ValueError:
         return False
 
+
 def _strcmp(s1, s2):
     # strcmp()-alike that returns -1, 0, or 1
 
     return (s1 > s2) - (s1 < s2)
+
 
 def _sym_to_num(sym):
     # expr_value() helper for converting a symbol to a number. Raises
@@ -5840,6 +5869,7 @@ def _sym_to_num(sym):
     # the C implementation.
     return sym.tri_value if sym.orig_type in _BOOL_TRISTATE else \
            int(sym.str_value, _TYPE_TO_BASE[sym.orig_type])
+
 
 def _touch_dep_file(sym_name):
     # If sym_name is MY_SYM_NAME, touches my/sym/name.h. See the sync_deps()
@@ -5853,6 +5883,7 @@ def _touch_dep_file(sym_name):
     # A kind of truncating touch, mirroring the C tools
     os.close(os.open(
         sym_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644))
+
 
 def _save_old(path):
     # See write_config()
@@ -5880,6 +5911,7 @@ def _save_old(path):
         # over e.g. if .<filename>.old happens to be a directory.
         pass
 
+
 def _decoding_error(e, filename, macro_linenr=None):
     # Gives the filename and context for UnicodeDecodeError's, which are a pain
     # to debug otherwise. 'e' is the UnicodeDecodeError object.
@@ -5901,6 +5933,7 @@ def _decoding_error(e, filename, macro_linenr=None):
             e.object[e.start:e.end],
             e.reason))
 
+
 def _name_and_loc(sc):
     # Helper for giving the symbol/choice name and location(s) in e.g. warnings
 
@@ -5918,6 +5951,7 @@ def _name_and_loc(sc):
 
 
 # Menu manipulation
+
 
 def _expr_depends_on(expr, sym):
     # Reimplementation of expr_depends_symbol() from mconf.c. Used to determine
@@ -5946,6 +5980,7 @@ def _expr_depends_on(expr, sym):
            (_expr_depends_on(expr[1], sym) or
             _expr_depends_on(expr[2], sym))
 
+
 def _auto_menu_dep(node1, node2):
     # Returns True if node2 has an "automatic menu dependency" on node1. If
     # node2 has a prompt, we check its condition. Otherwise, we look directly
@@ -5954,6 +5989,7 @@ def _auto_menu_dep(node1, node2):
     # If node2 has no prompt, use its menu node dependencies instead
     return _expr_depends_on(node2.prompt[1] if node2.prompt else node2.dep,
                             node1.item)
+
 
 def _flatten(node):
     # "Flattens" menu nodes without prompts (e.g. 'if' nodes and non-visible
@@ -5983,6 +6019,7 @@ def _flatten(node):
 
         node = node.next
 
+
 def _remove_ifs(node):
     # Removes 'if' nodes (which can be recognized by MenuNode.item being None),
     # which are assumed to already have been flattened. The C implementation
@@ -6007,6 +6044,7 @@ def _remove_ifs(node):
         #
         # due to tricky Python semantics. The order matters.
         cur.next = cur = next
+
 
 def _finalize_choice(node):
     # Finalizes a choice, marking each symbol whose menu node has the choice as
@@ -6034,6 +6072,7 @@ def _finalize_choice(node):
     for sym in choice.syms:
         if not sym.orig_type:
             sym.orig_type = choice.orig_type
+
 
 def _check_dep_loop_sym(sym, ignore_choice):
     # Detects dependency loops using depth-first search on the dependency graph
@@ -6109,6 +6148,7 @@ def _check_dep_loop_sym(sym, ignore_choice):
     # first element in it.
     return (sym,)
 
+
 def _check_dep_loop_choice(choice, skip):
     if not choice._visited:
         # choice._visited == 0, unvisited
@@ -6141,6 +6181,7 @@ def _check_dep_loop_choice(choice, skip):
     # choice._visited == 1, found a dependency loop. Return the choice as the
     # first element in it.
     return (choice,)
+
 
 def _found_dep_loop(loop, cur):
     # Called "on the way back" when we know we have a loop
@@ -6193,16 +6234,20 @@ def _found_dep_loop(loop, cur):
 
 # Predefined preprocessor functions
 
+
 def _filename_fn(kconf, _):
     return kconf._filename
 
+
 def _lineno_fn(kconf, _):
     return str(kconf._linenr)
+
 
 def _info_fn(kconf, _, msg):
     print("{}:{}: {}".format(kconf._filename, kconf._linenr, msg))
 
     return ""
+
 
 def _warning_if_fn(kconf, _, cond, msg):
     if cond == "y":
@@ -6210,12 +6255,14 @@ def _warning_if_fn(kconf, _, cond, msg):
 
     return ""
 
+
 def _error_if_fn(kconf, _, cond, msg):
     if cond == "y":
         raise KconfigError("{}:{}: {}".format(
             kconf._filename, kconf._linenr, msg))
 
     return ""
+
 
 def _shell_fn(kconf, _, command):
     # Only import as needed, to save some startup time
@@ -6557,11 +6604,14 @@ _RELATIONS = frozenset((
 #
 # Use ASCII regex matching on Python 3. It's already the default on Python 2.
 
+
 def _re_match(regex):
     return re.compile(regex, 0 if _IS_PY2 else re.ASCII).match
 
+
 def _re_search(regex):
     return re.compile(regex, 0 if _IS_PY2 else re.ASCII).search
+
 
 # Various regular expressions used during parsing
 
