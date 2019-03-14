@@ -96,8 +96,8 @@ def oldconfig(node):
         # (for the default value)
         while True:
             val = input("{} ({}) [{}] ".format(
-                            node.prompt[0], _name_and_loc_str(sym),
-                            _default_value_str(sym)))
+                node.prompt[0], _name_and_loc_str(sym),
+                _default_value_str(sym)))
 
             if val == "?":
                 _print_help(node)
