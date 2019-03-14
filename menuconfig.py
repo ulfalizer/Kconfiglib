@@ -334,7 +334,7 @@ _STYLE_STD_COLORS = {
 
 def _rgb_to_6cube(rgb):
     # Converts an 888 RGB color to a 3-tuple (nice in that it's hashable)
-    # representing the closests xterm 256-color 6x6x6 color cube color.
+    # representing the closest xterm 256-color 6x6x6 color cube color.
     #
     # The xterm 256-color extension uses a RGB color palette with components in
     # the range 0-5 (a 6x6x6 cube). The catch is that the mapping is nonlinear.
@@ -364,7 +364,7 @@ def _rgb_to_gray(rgb):
     #   https://www.w3.org/TR/AERT/#color-contrast
     luma = 0.299*rgb[0] + 0.587*rgb[1] + 0.114*rgb[2]
 
-    # Closests index in the grayscale palette, which starts at RGB 0x080808,
+    # Closest index in the grayscale palette, which starts at RGB 0x080808,
     # with stepping 0x0A0A0A
     index = int(round((luma - 8)/10))
 
@@ -3075,12 +3075,12 @@ def _is_num(name):
 
 def _get_wch_compat(win):
     # Decent resizing behavior on PDCurses requires calling resize_term(0, 0)
-    # after receiving KEY_RESIZE, while NCURSES (usually) handles terminal
+    # after receiving KEY_RESIZE, while ncurses (usually) handles terminal
     # resizing automatically in get(_w)ch() (see the end of the
     # resizeterm(3NCURSES) man page).
     #
-    # resize_term(0, 0) reliably fails and does nothing on NCURSES, so this
-    # hack gives NCURSES/PDCurses compatibility for resizing. I don't know
+    # resize_term(0, 0) reliably fails and does nothing on ncurses, so this
+    # hack gives ncurses/PDCurses compatibility for resizing. I don't know
     # whether it would cause trouble for other implementations.
 
     c = win.get_wch()
