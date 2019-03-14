@@ -986,7 +986,7 @@ class Kconfig(object):
         self.unique_defined_syms = _ordered_unique(self.defined_syms)
         self.unique_choices = _ordered_unique(self.choices)
 
-        # Do various post-processing of the menu tree
+        # Do various post-processing on the menu tree
         self._finalize_tree(self.top_node, self.y)
 
 
