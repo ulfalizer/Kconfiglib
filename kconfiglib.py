@@ -2084,6 +2084,14 @@ class Kconfig(object):
                     #       tristate unquoted_prompt
                     #
                     #   endmenu
+                    #
+                    # Named choices ('choice FOO') also end up here.
+
+                    if token is not _T_CHOICE:
+                        self._warn("style: quotes recommended around '{}' in '{}'"
+                                   .format(name, self._line.strip()),
+                                   self._filename, self._linenr)
+
                     token = name
                     i = match.end()
 
