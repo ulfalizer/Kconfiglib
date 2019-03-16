@@ -35,8 +35,8 @@ Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`_ if y
 a "macro expanded to blank string" error with kernel 4.18+.
 
 See `this page
-<https://docs.zephyrproject.org/latest/application/kconfig-tips.html>`_ for
-some Kconfig tips and best practices.
+<https://docs.zephyrproject.org/latest/guides/kconfig/index.html>`__ for some
+Kconfig tips and best practices.
 
 Installation
 ------------
@@ -148,6 +148,9 @@ Getting started
    Due to Kconfig semantics, simply loading an old ``.config`` file performs an
    implicit ``olddefconfig``, so building will normally not be affected by
    having an outdated configuration.
+
+For some general Kconfig advice, see `this page
+<https://docs.zephyrproject.org/latest/guides/kconfig/index.html>`__.
 
 Using ``.config`` files as Make input
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
