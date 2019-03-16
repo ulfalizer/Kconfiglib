@@ -1033,10 +1033,16 @@ def _resize_main():
         _menu_scroll = _sel_node_i - menu_win_height + 1
 
 
-def _menu_win_height():
-    # Returns the height of the menu display
+def _height(win):
+    # Returns the height of 'win'
 
-    return _menu_win.getmaxyx()[0]
+    return win.getmaxyx()[0]
+
+
+def _width(win):
+    # Returns the width of 'win'
+
+    return win.getmaxyx()[1]
 
 
 def _prefer_toggle(item):
@@ -1163,7 +1169,7 @@ def _leave_menu():
 
     if _parent_screen_rows:
         # The terminal might have shrunk since we were last in the parent menu
-        screen_row = min(_parent_screen_rows.pop(), _menu_win_height() - 1)
+        screen_row = min(_parent_screen_rows.pop(), _height(_menu_win) - 1)
         _menu_scroll = max(_sel_node_i - screen_row, 0)
     else:
         # No saved parent menu locations, meaning we jumped directly to some
@@ -1185,8 +1191,8 @@ def _select_next_menu_entry():
         # If the new node is sufficiently close to the edge of the menu window
         # (as determined by _SCROLL_OFFSET), increase the scroll by one. This
         # gives nice and non-jumpy behavior even when
-        # _SCROLL_OFFSET >= _menu_win_height().
-        if _sel_node_i >= _menu_scroll + _menu_win_height() - _SCROLL_OFFSET \
+        # _SCROLL_OFFSET >= _height(_menu_win).
+        if _sel_node_i >= _menu_scroll + _height(_menu_win) - _SCROLL_OFFSET \
            and _menu_scroll < _max_scroll(_shown, _menu_win):
 
             _menu_scroll += 1
@@ -1281,7 +1287,7 @@ def _center_vertically():
 
     global _menu_scroll
 
-    _menu_scroll = min(max(_sel_node_i - _menu_win_height()//2, 0),
+    _menu_scroll = min(max(_sel_node_i - _height(_menu_win)//2, 0),
                        _max_scroll(_shown, _menu_win))
 
 
@@ -1292,7 +1298,7 @@ def _draw_main():
     # This could be optimized to only update the windows that have actually
     # changed, but keep it simple for now and let curses sort it out.
 
-    term_width = _stdscr.getmaxyx()[1]
+    term_width = _width(_stdscr)
 
 
     #
@@ -1324,7 +1330,7 @@ def _draw_main():
     # Draw the _shown nodes starting from index _menu_scroll up to either as
     # many as fit in the window, or to the end of _shown
     for i in range(_menu_scroll,
-                   min(_menu_scroll + _menu_win_height(), len(_shown))):
+                   min(_menu_scroll + _height(_menu_win), len(_shown))):
 
         node = _shown[i]
 
@@ -1376,9 +1382,8 @@ def _draw_main():
     if _show_help:
         node = _shown[_sel_node_i]
         if isinstance(node.item, (Symbol, Choice)) and node.help:
-            help_win_height, help_win_width = _help_win.getmaxyx()
-            help_lines = textwrap.wrap(node.help, help_win_width)
-            for i in range(min(help_win_height, len(help_lines))):
+            help_lines = textwrap.wrap(node.help, _width(_help_win))
+            for i in range(min(_height(_help_win), len(help_lines))):
                 _safe_addstr(_help_win, i, 0, help_lines[i])
         else:
             _safe_addstr(_help_win, 0, 0, "(no help)")
@@ -1658,7 +1663,7 @@ def _input_dialog(title, initial_text, info_text=None):
     i = len(initial_text)
 
     def edit_width():
-        return win.getmaxyx()[1] - 4
+        return _width(win) - 4
 
     # Horizontal scroll offset
     hscroll = max(i - edit_width() + 1, 0)
@@ -1712,7 +1717,7 @@ def _resize_input_dialog(win, title, info_lines):
 
 
 def _draw_input_dialog(win, title, info_lines, s, i, hscroll):
-    edit_width = win.getmaxyx()[1] - 4
+    edit_width = _width(win) - 4
 
     win.erase()
 
@@ -1977,7 +1982,7 @@ def _jump_to_dialog():
         if sel_node_i < len(matches) - 1:
             sel_node_i += 1
 
-            if sel_node_i >= scroll + matches_win.getmaxyx()[0] - _SCROLL_OFFSET \
+            if sel_node_i >= scroll + _height(matches_win) - _SCROLL_OFFSET \
                and scroll < _max_scroll(matches, matches_win):
 
                 scroll += 1
@@ -2121,7 +2126,7 @@ def _jump_to_dialog():
 
         else:
             s, s_i, hscroll = _edit_text(c, s, s_i, hscroll,
-                                         edit_box.getmaxyx()[1] - 2)
+                                         _width(edit_box) - 2)
 
 
 # Obscure Python: We never pass a value for cached_nodes, and it keeps pointing
@@ -2211,7 +2216,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
                          s, s_i, hscroll,
                          bad_re, matches, sel_node_i, scroll):
 
-    edit_width = edit_box.getmaxyx()[1] - 2
+    edit_width = _width(edit_box) - 2
 
 
     #
@@ -2222,7 +2227,7 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     if matches:
         for i in range(scroll,
-                       min(scroll + matches_win.getmaxyx()[0], len(matches))):
+                       min(scroll + _height(matches_win), len(matches))):
 
             node = matches[i]
 
@@ -2785,7 +2790,7 @@ def _max_scroll(lst, win):
     # returns the maximum number of steps 'win' can be scrolled down.
     # We stop scrolling when the bottom item is visible.
 
-    return max(0, len(lst) - win.getmaxyx()[0])
+    return max(0, len(lst) - _height(win))
 
 
 def _edit_text(c, s, i, hscroll, width):
@@ -3129,7 +3134,7 @@ def _safe_addstr(win, *args):
         if len(args) == 4:
             attr = args[3]
 
-    maxlen = win.getmaxyx()[1] - x
+    maxlen = _width(win) - x
     s = s.expandtabs()
 
     try:
