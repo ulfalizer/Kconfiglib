@@ -178,8 +178,11 @@ Limitations
 
   - Doesn't work out of the box on Windows
 
-    Has been tested to work with the wheels provided at
-    https://www.lfd.uci.edu/~gohlke/pythonlibs/#curses though.
+    Can be made to work with 'pip install windows-curses' though. See the
+    https://github.com/zephyrproject-rtos/windows-curses repository.
+
+    'pip install kconfiglib' on Windows automatically installs windows-curses
+    to make the menuconfig usable.
 """
 
 import curses
