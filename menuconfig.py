@@ -186,7 +186,6 @@ import curses
 import errno
 import locale
 import os
-import platform
 import re
 import sys
 import textwrap
@@ -3206,7 +3205,7 @@ def _convert_c_lc_ctype_to_utf8():
 
 
 # Are we running on Windows?
-_IS_WINDOWS = (platform.system() == "Windows")
+_IS_WINDOWS = os.name == "nt"
 
 if __name__ == "__main__":
     _main()
