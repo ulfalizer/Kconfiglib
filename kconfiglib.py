@@ -4433,7 +4433,6 @@ class Symbol(object):
         # Warning: See Symbol._rec_invalidate(), and note that this is a hidden
         # function call (property magic)
         vis = self.visibility
-
         if not vis:
             return ()
 
