@@ -54,13 +54,16 @@ installed with e.g.
 Microsoft Windows is supported.
 
 The ``pip`` installation will give you both the base library and the following
-executables. All but two mirror functionality available in the C tools.
+executables. All but two (``genconfig`` and ``setconfig``) mirror functionality
+available in the C tools.
 
 - `menuconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
 
 - `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
 
 - `olddefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/olddefconfig.py>`_
+
+- `savedefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/savedefconfig.py>`_
 
 - `alldefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/alldefconfig.py>`_
 
