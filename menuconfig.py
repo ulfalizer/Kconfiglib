@@ -184,7 +184,6 @@ Limitations
     'pip install kconfiglib' on Windows automatically installs windows-curses
     to make the menuconfig usable.
 """
-
 import curses
 import errno
 import locale
@@ -1006,7 +1005,7 @@ def _resize_main():
     _bot_sep_win.resize(1, screen_width)
 
     help_win_height = _SHOW_HELP_HEIGHT if _show_help else \
-                          len(_MAIN_HELP_LINES)
+        len(_MAIN_HELP_LINES)
 
     menu_win_height = screen_height - help_win_height - 3
 
@@ -1274,7 +1273,6 @@ def _toggle_show_all():
             # an invisible menu. Don't allow that, as the implementation relies
             # on always having a selected node.
             _show_all = True
-
             return
 
     _shown = new_shown
