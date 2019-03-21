@@ -2,6 +2,7 @@ import io
 import os
 import setuptools
 
+
 setuptools.setup(
     name="kconfiglib",
     # MAJOR.MINOR.PATCH, per http://semver.org
@@ -13,9 +14,10 @@ setuptools.setup(
     #
     # io.open() has the 'encoding' parameter on both Python 2 and 3. open()
     # doesn't have it on Python 2. This lets us use the same code for both.
-    long_description=
-        io.open(os.path.join(os.path.dirname(__file__), "README.rst"),
-                encoding="utf-8").read(),
+    long_description=io.open(
+        os.path.join(os.path.dirname(__file__), "README.rst"),
+        encoding="utf-8"
+    ).read(),
 
     url="https://github.com/ulfalizer/Kconfiglib",
     author='Ulf "Ulfalizer" Magnusson',
