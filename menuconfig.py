@@ -2854,7 +2854,6 @@ def _edit_text(c, s, i, hscroll, width):
 
     elif isinstance(c, str):
         # Insert character
-
         s = s[:i] + c + s[i:]
         i += 1
 
