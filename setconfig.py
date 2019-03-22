@@ -3,16 +3,7 @@
 # Copyright (c) 2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
-import argparse
-import sys
-
-import kconfiglib
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="""
+"""
 Simple utility for setting configuration values from the command line.
 
 Sample usage:
@@ -25,7 +16,18 @@ The exit status on errors is 1.
 
 The default input/output configuration file is '.config'. A different filename
 can be passed in the KCONFIG_CONFIG environment variable.
-""")
+"""
+
+import argparse
+import sys
+
+import kconfiglib
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=__doc__)
 
     parser.add_argument(
         "--kconfig",

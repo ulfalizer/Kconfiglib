@@ -3,11 +3,13 @@
 # Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
-# Works like 'make listnewconfig', listing all modifiable symbols that are not
-# assigned in the configuration file.
-#
-# The default output filename is '.config'. A different filename can be passed
-# in the KCONFIG_CONFIG environment variable.
+"""
+List all user-modifiable symbols that are not given a value in the configuration
+file. Usually, these are new symbols that have been added to the Kconfig files.
+
+The default configuration filename is '.config'. A different filename can be
+passed in the KCONFIG_CONFIG environment variable.
+"""
 
 import sys
 

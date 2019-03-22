@@ -3,23 +3,25 @@
 # Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
-# Implements oldconfig functionality:
-#
-#   1. Load existing .config
-#   2. Prompt the user for the value of all modifiable symbols/choices that
-#      aren't already set in the .config
-#   3. Write new .config
-#
-# The default input/output filename is '.config'. A different filename can be
-# passed in the KCONFIG_CONFIG environment variable.
-#
-# Unlike 'make oldconfig', this script doesn't print menu titles and comments,
-# but gives Kconfig definition locations. Printing menus and comments would be
-# pretty easy to add: Look at the parents of each item and print all menu
-# prompts and comments unless they have already been printed (assuming you want
-# to skip "irrelevant" menus).
-#
-# Entering '?' displays the help text of the symbol/choice, if any.
+"""
+Implements oldconfig functionality.
+
+  1. Loads existing .config
+  2. Prompts for the value of all modifiable symbols/choices that
+     aren't already set in the .config
+  3. Writes an updated .config
+
+The default input/output filename is '.config'. A different filename can be
+passed in the KCONFIG_CONFIG environment variable.
+
+Entering '?' displays the help text of the symbol/choice, if any.
+
+Unlike 'make oldconfig', this script doesn't print menu titles and comments,
+but gives Kconfig definition locations. Printing menus and comments would be
+pretty easy to add: Look at the parents of each item, and print all menu
+prompts and comments unless they have already been printed (assuming you want
+to skip "irrelevant" menus).
+"""
 
 from __future__ import print_function
 

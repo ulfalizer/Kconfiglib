@@ -3,15 +3,7 @@
 # Copyright (c) 2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
-import argparse
-
-import kconfiglib
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="""
+"""
 Saves a minimal configuration file that only lists symbols that differ in value
 their defaults. Loading such a configuration file is equivalent to loading the
 "full" configuration file.
@@ -24,7 +16,17 @@ can be passed in the KCONFIG_CONFIG environment variable.
 
 Note: Minimal configurations can also be generated from within the menuconfig
 interface.
-""")
+"""
+
+import argparse
+
+import kconfiglib
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=__doc__)
 
     parser.add_argument(
         "--kconfig",

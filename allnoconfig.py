@@ -3,17 +3,19 @@
 # Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
-# Works like 'make allnoconfig'. Verified by the test suite to generate
-# identical output to 'make allnoconfig' for all ARCHes.
-#
-# See the examples/allnoconfig_walk.py example script for another variant.
-#
-# The default output filename is '.config'. A different filename can be passed
-# in the KCONFIG_CONFIG environment variable.
-#
-# Usage for the Linux kernel:
-#
-#   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/allnoconfig.py
+"""
+Writes a configuration file where as many symbols as possible are set to 'n'.
+
+The default output filename is '.config'. A different filename can be passed
+in the KCONFIG_CONFIG environment variable.
+
+Usage for the Linux kernel:
+
+  $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allmodconfig.py
+
+See the examples/allnoconfig_walk.py example script for another way to
+implement this script.
+"""
 
 import kconfiglib
 

@@ -3,18 +3,17 @@
 # Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
 
-# Generates a C header from the configuration, matching the format of
-# include/generated/autoconf.h in the kernel.
-#
-# Optionally generates a directory structure with one file per symbol that can
-# be used to implement incremental builds. See the docstring for
-# Kconfig.sync_deps() in Kconfiglib.
-#
-# Usage (see argument help texts for more information):
-#
-#   genconfig.py [-h] [--header-path HEADER_FILE]
-#                [--sync-deps [OUTPUT_DIR]] [--config-out CONFIG_FILE]
-#                [KCONFIG_FILENAME]
+"""
+Generates a header file with #defines from the configuration, matching the
+format of include/generated/autoconf.h in the Linux kernel.
+
+Optionally creates/updates a directory structure with one file per symbol that
+can be used to implement incremental builds. See the docstring for
+Kconfig.sync_deps() in kconfiglib.py.
+
+By default, the configuration is generated from '.config'. A different
+configuration file can be passed in the KCONFIG_CONFIG environment variable.
+"""
 
 import argparse
 
@@ -26,12 +25,9 @@ DEFAULT_SYNC_DEPS_PATH = "deps/"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="""
-Generates a header file with defines from the configuration. Optionally
-creates/updates a directory with incremental build information as well (see the
-docstring for the Kconfig.sync_deps() function in Kconfiglib). The .config file
-to generate the configuration from can be specified by setting the
-KCONFIG_CONFIG environment variable.""")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=__doc__)
 
     parser.add_argument(
         "--header-path",
