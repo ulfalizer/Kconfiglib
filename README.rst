@@ -382,7 +382,7 @@ Other features
   finally has parsing performance on par with Python 2.7 (and Python 3.6 is
   just a bit slower).
 
-- **Robust and highly compatible with the standard Kconfig C tools**
+- **Robust and highly compatible with the C Kconfig tools**
   
   The `test suite <https://github.com/ulfalizer/Kconfiglib/blob/master/testsuite.py>`_
   automatically compares output from Kconfiglib and the C tools
