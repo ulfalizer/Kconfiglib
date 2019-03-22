@@ -12,7 +12,6 @@ saving.
 The default input/output filename is '.config'. A different filename can be
 passed in the KCONFIG_CONFIG environment variable.
 """
-
 import kconfiglib
 
 

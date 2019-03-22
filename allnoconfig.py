@@ -16,7 +16,6 @@ Usage for the Linux kernel:
 See the examples/allnoconfig_walk.py example script for another way to
 implement this script.
 """
-
 import kconfiglib
 
 

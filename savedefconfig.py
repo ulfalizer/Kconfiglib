@@ -17,7 +17,6 @@ can be passed in the KCONFIG_CONFIG environment variable.
 Note: Minimal configurations can also be generated from within the menuconfig
 interface.
 """
-
 import argparse
 
 import kconfiglib

@@ -10,7 +10,6 @@ file. Usually, these are new symbols that have been added to the Kconfig files.
 The default configuration filename is '.config'. A different filename can be
 passed in the KCONFIG_CONFIG environment variable.
 """
-
 import sys
 
 from kconfiglib import standard_kconfig, BOOL, TRISTATE, INT, HEX, STRING, \

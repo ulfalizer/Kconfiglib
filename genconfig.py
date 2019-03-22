@@ -14,7 +14,6 @@ Kconfig.sync_deps() in kconfiglib.py.
 By default, the configuration is generated from '.config'. A different
 configuration file can be passed in the KCONFIG_CONFIG environment variable.
 """
-
 import argparse
 
 import kconfiglib

@@ -22,7 +22,6 @@ pretty easy to add: Look at the parents of each item, and print all menu
 prompts and comments unless they have already been printed (assuming you want
 to skip "irrelevant" menus).
 """
-
 from __future__ import print_function
 
 import sys
