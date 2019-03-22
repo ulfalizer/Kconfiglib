@@ -34,6 +34,7 @@ def main():
 
     parser.add_argument(
         "--out",
+        metavar="MINIMAL_CONFIGURATION",
         default="defconfig",
         help="Output filename for minimal configuration (default: defconfig)")
 
