@@ -522,11 +522,15 @@ Send bug reports, suggestions, and questions to ulfalizer a.t Google's email
 service, or open a ticket on the GitHub page.
 """
 import errno
-import glob
 import importlib
 import os
 import re
 import sys
+
+# Get rid of some attribute lookups. These are obvious in context.
+from glob import iglob
+from os.path import dirname, exists, expandvars, isabs, islink, join, \
+                    relpath, split
 
 
 # File layout:
@@ -965,8 +969,7 @@ class Kconfig(object):
 
         # Open the top-level Kconfig file. Store the readline() method directly
         # as a small optimization.
-        self._readline = \
-            self._open(os.path.join(self.srctree, filename), "r").readline
+        self._readline = self._open(join(self.srctree, filename), "r").readline
 
         try:
             # Parse everything
@@ -1097,7 +1100,7 @@ class Kconfig(object):
         loaded_existing = True
         if filename is None:
             filename = standard_config_filename()
-            if os.path.exists(filename):
+            if exists(filename):
                 if verbose:
                     print("Using existing configuration '{}' as base"
                           .format(filename))
@@ -1496,7 +1499,7 @@ class Kconfig(object):
         In case you need a different scheme for your project, the sync_deps()
         implementation can be used as a template.
         """
-        if not os.path.exists(path):
+        if not exists(path):
             os.mkdir(path, 0o755)
 
         # This setup makes sure that at least the current working directory
@@ -1578,7 +1581,7 @@ class Kconfig(object):
         for sym in self.unique_defined_syms:
             sym._old_val = None
 
-        if not os.path.exists("auto.conf"):
+        if not exists("auto.conf"):
             # No old values
             return
 
@@ -1820,7 +1823,7 @@ class Kconfig(object):
             # This will try opening the same file twice if $srctree is unset,
             # but it's not a big deal
             try:
-                return self._open(os.path.join(self.srctree, filename), "r")
+                return self._open(join(self.srctree, filename), "r")
             except IOError as e2:
                 # This is needed for Python 3, because e2 is deleted after
                 # the try block:
@@ -2122,9 +2125,9 @@ class Kconfig(object):
                         #
                         # The preprocessor functionality changed how
                         # environment variables are referenced, to $(FOO).
-                        val = os.path.expandvars(s[i + 1:end_i - 1]
-                                                 .replace("$UNAME_RELEASE",
-                                                          _UNAME_RELEASE))
+                        val = expandvars(s[i + 1:end_i - 1]
+                                         .replace("$UNAME_RELEASE",
+                                                  _UNAME_RELEASE))
 
                         i = end_i
 
@@ -2622,18 +2625,16 @@ class Kconfig(object):
                 # Check if the pattern is absolute and avoid stripping srctree
                 # from it below in that case. We must do the check before
                 # join()'ing, as srctree might be an absolute path.
-                isabs = os.path.isabs(pattern)
+                pattern_is_abs = isabs(pattern)
 
                 if t0 in _REL_SOURCE_TOKENS:
                     # Relative source
-                    pattern = os.path.join(os.path.dirname(self._filename),
-                                           pattern)
+                    pattern = join(dirname(self._filename), pattern)
 
                 # Sort the glob results to ensure a consistent ordering of
                 # Kconfig symbols, which indirectly ensures a consistent
                 # ordering in e.g. .config files
-                filenames = \
-                    sorted(glob.iglob(os.path.join(self.srctree, pattern)))
+                filenames = sorted(iglob(join(self.srctree, pattern)))
 
                 if not filenames and t0 in _OBL_SOURCE_TOKENS:
                     raise KconfigError(
@@ -2654,8 +2655,8 @@ class Kconfig(object):
                         # appears without a $srctree prefix in
                         # MenuNode.filename, which is nice e.g. when generating
                         # documentation.
-                        filename if isabs else
-                            os.path.relpath(filename, self.srctree))
+                        filename if pattern_is_abs else
+                            relpath(filename, self.srctree))
 
                     prev = self._parse_block(None, parent, prev)
 
@@ -5883,8 +5884,8 @@ def _touch_dep_file(sym_name):
     # docstring.
 
     sym_path = sym_name.lower().replace("_", os.sep) + ".h"
-    sym_path_dir = os.path.dirname(sym_path)
-    if sym_path_dir and not os.path.exists(sym_path_dir):
+    sym_path_dir = dirname(sym_path)
+    if sym_path_dir and not exists(sym_path_dir):
         os.makedirs(sym_path_dir, 0o755)
 
     # A kind of truncating touch, mirroring the C tools
@@ -5895,16 +5896,16 @@ def _touch_dep_file(sym_name):
 def _save_old(path):
     # See write_config()
 
-    dirname, basename = os.path.split(path)
-    backup = os.path.join(dirname,
-                          basename + ".old" if basename.startswith(".") else
-                              "." + basename + ".old")
+    dirname, basename = split(path)
+    backup = join(dirname,
+                  basename + ".old" if basename.startswith(".")
+                      else "." + basename + ".old")
 
     # os.replace() would be nice here, but it's Python 3 (3.3+) only
     try:
         # Use copyfile() if 'path' is a symlink. The intention is probably to
         # overwrite the target in that case.
-        if os.name == "posix" and not os.path.islink(path):
+        if os.name == "posix" and not islink(path):
             # Will remove .<filename>.old if it already exists on POSIX
             # systems
             os.rename(path, backup)
