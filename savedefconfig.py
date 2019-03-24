@@ -5,8 +5,8 @@
 
 """
 Saves a minimal configuration file that only lists symbols that differ in value
-their defaults. Loading such a configuration file is equivalent to loading the
-"full" configuration file.
+from their defaults. Loading such a configuration file is equivalent to loading
+the "full" configuration file.
 
 Minimal configuration files are handy to start from when editing configuration
 files by hand.
