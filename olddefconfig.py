@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: ISC
 
 """
-Updates an old .config file or creates a new one, by filing in default values
+Updates an old .config file or creates a new one, by filling in default values
 for all new symbols. This is the same as picking the default selection for all
 symbols in oldconfig, or entering the menuconfig interface and immediately
 saving.
