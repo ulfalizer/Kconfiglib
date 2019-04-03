@@ -1254,10 +1254,9 @@ def _toggle_show_all():
     # Find a good node to select. The selected node might disappear if show-all
     # mode is turned off.
 
-    # If there are visible nodes before the previously selected node, select
-    # the closest one. This will select the previously selected node itself if
-    # it is still visible.
-    for node in reversed(_shown[:_sel_node_i + 1]):
+    # Select the previously selected node itself if it is still visible. If
+    # there are visible nodes before it, select the closest one.
+    for node in _shown[_sel_node_i::-1]:
         if node in new_shown:
             _sel_node_i = new_shown.index(node)
             break
