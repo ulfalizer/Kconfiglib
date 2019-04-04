@@ -1337,7 +1337,7 @@ def _draw_main():
         # outside show-all mode, which could look confusing/broken. Invisible
         # symbols show up outside show-all mode if an invisible symbol has
         # visible children in an implicit (indented) menu.
-        if not _show_all or (node.prompt and expr_value(node.prompt[1])):
+        if _visible(node) or not _show_all:
             style = _style["selection" if i == _sel_node_i else "list"]
         else:
             style = _style["inv-selection" if i == _sel_node_i else "inv-list"]
@@ -1468,20 +1468,13 @@ def _shown_nodes(menu):
             # with visible items, even if the node itself is invisible. This
             # can happen e.g. if the symbol has an optional prompt
             # ('prompt "foo" if COND') that is currently invisible.
-            if shown(node) or shown_children:
+            if _visible(node) or shown_children or _show_all:
                 res.append(node)
                 res += shown_children
 
             node = node.next
 
         return res
-
-    def shown(node):
-        # Show the node if its prompt is visible. For menus, also check
-        # 'visible if'. In show-all mode, show everything.
-        return _show_all or \
-            (node.prompt and expr_value(node.prompt[1]) and not
-             (node.item == MENU and not expr_value(node.visibility)))
 
     if isinstance(menu.item, Choice):
         # For named choices defined in multiple locations, entering the choice
@@ -1521,6 +1514,14 @@ def _shown_nodes(menu):
         return res
 
     return rec(menu.list)
+
+
+def _visible(node):
+    # Returns True if the node should appear in the menu (outside show-all
+    # mode)
+
+    return node.prompt and expr_value(node.prompt[1]) and not \
+        (node.item == MENU and not expr_value(node.visibility))
 
 
 def _change_node(node):
