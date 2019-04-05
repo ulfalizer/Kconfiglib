@@ -1756,9 +1756,8 @@ def _load_dialog():
 
         if _try_load(filename):
             # Turn on show-all mode if the selected node is not visible after
-            # loading the new configuration
-            sel_node = _shown[_sel_node_i]
-            if not (sel_node.prompt and expr_value(sel_node.prompt[1])):
+            # loading the new configuration. _shown still holds the old state.
+            if _shown[_sel_node_i] not in _shown_nodes(_cur_menu):
                 _show_all = True
 
             _update_menu()
