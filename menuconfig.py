@@ -1749,16 +1749,15 @@ def _load_dialog():
     filename = ""
     while True:
         filename = _input_dialog("File to load", filename, _load_save_info())
-
         if filename is None:
             return False
 
         filename = os.path.expanduser(filename)
 
         if _try_load(filename):
+            # Turn on show-all mode if the selected node is not visible after
+            # loading the new configuration
             sel_node = _shown[_sel_node_i]
-
-            # Turn on show-all mode if the current node is (no longer) visible
             if not (sel_node.prompt and expr_value(sel_node.prompt[1])):
                 _show_all = True
 
@@ -1766,7 +1765,7 @@ def _load_dialog():
 
             # The message dialog indirectly updates the menu display, so _msg()
             # must be called after the new state has been initialized
-            _msg("Success", "Loaded {}".format(filename))
+            _msg("Success", "Loaded " + filename)
             return True
 
 
@@ -1806,7 +1805,6 @@ def _save_dialog(save_fn, default_filename, description):
     while True:
         filename = _input_dialog("Filename to save {} to".format(description),
                                  filename, _load_save_info())
-
         if filename is None:
             return False
 
