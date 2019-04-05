@@ -1610,8 +1610,8 @@ def _update_menu():
     # changed. Changing a value might change which items in the menu are
     # visible.
     #
-    # Tries to preserve the location of the cursor when items disappear above
-    # it.
+    # If possible, preserves the location of the cursor on the screen when
+    # items are added/removed above the selected item.
 
     global _shown
     global _sel_node_i
