@@ -1545,9 +1545,9 @@ def _change_node(node):
         s = sc.str_value
 
         while True:
-            s = _input_dialog("{} ({})".format(
-                                  node.prompt[0], TYPE_TO_STR[sc.type]),
-                              s, _range_info(sc))
+            s = _input_dialog(
+                "{} ({})".format(node.prompt[0], TYPE_TO_STR[sc.type]),
+                s, _range_info(sc))
 
             if s is None:
                 break
@@ -3018,7 +3018,6 @@ def _check_validity(sym, s):
         return True
 
     base = 10 if sym.type == INT else 16
-
     try:
         int(s, base)
     except ValueError:
