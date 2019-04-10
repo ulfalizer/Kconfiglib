@@ -3181,7 +3181,7 @@ def _convert_c_lc_ctype_to_utf8():
         # supported from some quick testing either. Play it safe.
         return
 
-    def _try_set_locale(loc):
+    def try_set_locale(loc):
         try:
             locale.setlocale(locale.LC_CTYPE, loc)
             return True
@@ -3193,7 +3193,7 @@ def _convert_c_lc_ctype_to_utf8():
         # This list was taken from the PEP 538 implementation in the CPython
         # code, in Python/pylifecycle.c
         for loc in "C.UTF-8", "C.utf8", "UTF-8":
-            if _try_set_locale(loc):
+            if try_set_locale(loc):
                 print("Note: Your environment is configured to use ASCII. To "
                       "avoid Unicode issues, LC_CTYPE was changed from the "
                       "C locale to the {} locale.".format(loc))
