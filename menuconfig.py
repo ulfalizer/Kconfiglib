@@ -1560,7 +1560,7 @@ def _change_node(node):
                 if sc.type == HEX and not s.startswith(("0x", "0X")):
                     s = "0x" + s
 
-            if _check_validity(sc, s):
+            if _check_valid(sc, s):
                 _set_val(sc, s)
                 break
 
@@ -3009,7 +3009,7 @@ def _is_y_mode_choice_sym(item):
     return isinstance(item, Symbol) and item.choice and item.visibility == 2
 
 
-def _check_validity(sym, s):
+def _check_valid(sym, s):
     # Returns True if the string 's' is a well-formed value for 'sym'.
     # Otherwise, displays an error and returns False.
 
