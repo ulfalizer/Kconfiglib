@@ -2731,14 +2731,14 @@ def _menu_path_info(node):
 
     path = ""
 
-    node = node.parent
-    while node is not _kconf.top_node:
+    while node.parent is not _kconf.top_node:
+        node = node.parent
+
         # Promptless choices might appear among the parents. Use
         # standard_sc_expr_str() for them, so that they show up as
         # '<choice (name if any)>'.
         path = " -> " + (node.prompt[0] if node.prompt else
                          standard_sc_expr_str(node.item)) + path
-        node = node.parent
 
     return "(top menu)" + path
 
