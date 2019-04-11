@@ -1415,12 +1415,12 @@ def _draw_main():
         # '<choice (name if any)>'.
         menu_prompts.append(menu.prompt[0] if menu.prompt else
                             standard_sc_expr_str(menu.item))
-        menu = _parent_menu(menu)
+        menu = menu.parent
     menu_prompts.append("(top menu)")
     menu_prompts.reverse()
 
     # Hack: We can't put ACS_RARROW directly in the string. Temporarily
-    # represent it with NULL. Maybe using a Unicode character would be better.
+    # represent it with NULL.
     menu_path_str = " \0 ".join(menu_prompts)
 
     # Scroll the menu path to the right if needed to make the current menu's
@@ -2731,14 +2731,14 @@ def _menu_path_info(node):
 
     path = ""
 
-    node = _parent_menu(node)
+    node = node.parent
     while node is not _kconf.top_node:
         # Promptless choices might appear among the parents. Use
         # standard_sc_expr_str() for them, so that they show up as
         # '<choice (name if any)>'.
         path = " -> " + (node.prompt[0] if node.prompt else
                          standard_sc_expr_str(node.item)) + path
-        node = _parent_menu(node)
+        node = node.parent
 
     return "(top menu)" + path
 
