@@ -1945,19 +1945,13 @@ def _jump_to_dialog():
     # Returns True if the user jumped to a symbol, and False if the dialog was
     # canceled.
 
-    # Search text
-    s = ""
-    # Previous search text
-    prev_s = None
-    # Search text cursor position
-    s_i = 0
-    # Horizontal scroll offset
-    hscroll = 0
+    s = ""  # Search text
+    prev_s = None  # Previous search text
+    s_i = 0  # Search text cursor position
+    hscroll = 0  # Horizontal scroll offset
 
-    # Index of selected row
-    sel_node_i = 0
-    # Index in 'matches' of the top row of the list
-    scroll = 0
+    sel_node_i = 0  # Index of selected row
+    scroll = 0  # Index in 'matches' of the top row of the list
 
     # Edit box at the top
     edit_box = _styled_win("jump-edit")
