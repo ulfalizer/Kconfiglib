@@ -1457,20 +1457,28 @@ def _shown_nodes(menu):
         res = []
 
         while node:
-            # If a node has children but doesn't have the is_menuconfig flag
-            # set, the children come from a submenu created implicitly from
-            # dependencies, and are shown (indented) in the same menu as the
-            # parent node
-            shown_children = \
-                rec(node.list) if node.list and not node.is_menuconfig else []
+            # This code is minorly performance-sensitive. Make it too slow
+            # (e.g., by always recursing the entire tree), and going in and out
+            # of menus no longer feels instant.
 
-            # Always show the node if it is the root of an implicit submenu
-            # with visible items, even if the node itself is invisible. This
-            # can happen e.g. if the symbol has an optional prompt
-            # ('prompt "foo" if COND') that is currently invisible.
-            if _visible(node) or shown_children or _show_all:
+            if _visible(node) or _show_all:
                 res.append(node)
-                res += shown_children
+                if node.list and not node.is_menuconfig:
+                    # Nodes from implicit menu created from dependencies. Will
+                    # be shown indented. Note that is_menuconfig is True for
+                    # menus and choices as well as 'menuconfig' symbols.
+                    res += rec(node.list)
+
+            elif node.list and isinstance(node.item, Symbol):
+                # Show invisible symbols (defined with either 'config' and
+                # 'menuconfig') if they have visible children. This can happen
+                # for an m/y-valued symbol with an optional prompt ('prompt
+                # "foo" is COND') that is currently disabled.
+                shown_children = rec(node.list)
+                if shown_children:
+                    res.append(node)
+                    if not node.is_menuconfig:
+                        res += shown_children
 
             node = node.next
 
