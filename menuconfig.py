@@ -2670,7 +2670,6 @@ def _select_imply_info(sym):
 
         # sis = selects/implies
         sis = [si for si in split_expr(expr, OR) if expr_value(si) == val]
-
         if sis:
             s += title
             for si in sis:
