@@ -2019,6 +2019,7 @@ def _jump_to_dialog():
 
                 # List of matching nodes
                 matches = []
+                add_match = matches.append
 
                 # Search symbols and choices
 
@@ -2041,7 +2042,7 @@ def _jump_to_dialog():
                             break
 
                     else:
-                        matches.append(node)
+                        add_match(node)
 
                 # Search menus and comments
 
@@ -2050,7 +2051,7 @@ def _jump_to_dialog():
                         if not search(node.prompt[0].lower()):
                             break
                     else:
-                        matches.append(node)
+                        add_match(node)
 
             except re.error as e:
                 # Bad regex. Remember the error message so we can show it.
