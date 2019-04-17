@@ -2584,12 +2584,10 @@ def _direct_dep_info(sc):
     # definition location. The dependencies at each definition location come
     # from 'depends on' and dependencies inherited from parent items.
 
-    if sc.direct_dep is _kconf.y:
-        return ""
-
-    return 'Direct dependencies (={}):\n{}\n' \
-           .format(TRI_TO_STR[expr_value(sc.direct_dep)],
-                   _split_expr_info(sc.direct_dep, 2))
+    return "" if sc.direct_dep is _kconf.y else \
+        'Direct dependencies (={}):\n{}\n' \
+        .format(TRI_TO_STR[expr_value(sc.direct_dep)],
+                _split_expr_info(sc.direct_dep, 2))
 
 
 def _defaults_info(sc):
