@@ -1096,6 +1096,7 @@ def _select_selected_choice_sym():
             if node in _shown:
                 _sel_node_i = _shown.index(node)
                 _center_vertically()
+                return
 
 
 def _jump_to(node):
