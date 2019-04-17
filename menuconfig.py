@@ -1470,11 +1470,14 @@ def _shown_nodes(menu):
                     # menus and choices as well as 'menuconfig' symbols.
                     res += rec(node.list)
 
-            elif node.list and isinstance(node.item, Symbol):
-                # Show invisible symbols (defined with either 'config' and
-                # 'menuconfig') if they have visible children. This can happen
-                # for an m/y-valued symbol with an optional prompt ('prompt
-                # "foo" is COND') that is currently disabled.
+            elif node.list and isinstance(node.item, Symbol) and \
+                 expr_value(node.dep):
+                # Show invisible symbols if they have visible children. This
+                # can happen for an m/y-valued symbol with an optional prompt
+                # ('prompt "foo" is COND') that is currently disabled. The
+                # expr_value(node.dep) check safely prunes the search: A node
+                # with unsatisfied direct dependencies can never have visible
+                # children.
                 shown_children = rec(node.list)
                 if shown_children:
                     res.append(node)
