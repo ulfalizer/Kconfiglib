@@ -641,13 +641,21 @@ def menuconfig(kconf):
       Kconfig instance to be configured
     """
     global _kconf
-    global _show_all
+    global _conf_filename
     global _conf_changed
+    global _minconf_filename
+    global _show_all
 
     _kconf = kconf
 
     # Load existing configuration and set _conf_changed True if it is outdated
     _conf_changed = _load_config()
+
+    # Filename to save configuration to
+    _conf_filename = standard_config_filename()
+
+    # Filename to save minimal configuration to
+    _minconf_filename = "defconfig"
 
     # Any visible items in the top menu?
     _show_all = False
@@ -700,9 +708,19 @@ def _load_config():
     # Returns True if .config is missing or outdated. We always prompt for
     # saving the configuration in that case.
 
-    if not _kconf.load_config() or _kconf.missing_syms:
-        # Either no .config, or assignments to undefined symbols in the
-        # existing .config (which would get removed when saving)
+    if not _kconf.load_config():
+        # No .config
+        return True
+
+    return _needs_save()
+
+
+def _needs_save():
+    # Returns True if a just-loaded .config file is outdated (would get
+    # modified when saving)
+
+    if _kconf.missing_syms:
+        # Assignments to undefined symbols in the .config
         return True
 
     for sym in _kconf.unique_defined_syms:
@@ -750,6 +768,12 @@ def _load_config():
 #   _show_help/_show_name/_show_all:
 #     If True, the corresponding mode is on. See the module docstring.
 #
+#   _conf_filename:
+#     .config file to save the configuration to
+#
+#   _minconf_filename:
+#     File to save minimal configurations to
+#
 #   _conf_changed:
 #     True if the configuration has been changed. If False, we don't bother
 #     showing the save-and-quit dialog.
@@ -762,7 +786,9 @@ def _menuconfig(stdscr):
     # Logic for the main display, with the list of symbols, etc.
 
     global _stdscr
+    global _conf_filename
     global _conf_changed
+    global _minconf_filename
     global _show_help
     global _show_name
 
@@ -843,30 +869,20 @@ def _menuconfig(stdscr):
                 _leave_menu()
 
         elif c in ("o", "O"):
-            if _conf_changed:
-                c = _key_dialog(
-                    "Load",
-                    "You have unsaved changes. Load new\n"
-                    "configuration anyway?\n"
-                    "\n"
-                    "        (Y)es  (C)ancel",
-                    "yc")
-
-                if c is None or c == "c":
-                    continue
-
-            if _load_dialog():
-                _conf_changed = True
+            _load_dialog()
 
         elif c in ("s", "S"):
-            if _save_dialog(_kconf.write_config, standard_config_filename(),
-                            "configuration"):
-
+            filename = _save_dialog(_kconf.write_config, _conf_filename,
+                                    "configuration")
+            if filename:
+                _conf_filename = filename
                 _conf_changed = False
 
         elif c in ("d", "D"):
-            _save_dialog(_kconf.write_min_config, "defconfig",
-                         "minimal configuration")
+            filename = _save_dialog(_kconf.write_min_config, _minconf_filename,
+                                    "minimal configuration")
+            if filename:
+                _minconf_filename = filename
 
         elif c == "/":
             _jump_to_dialog()
@@ -899,7 +915,7 @@ def _menuconfig(stdscr):
 
 def _quit_dialog():
     if not _conf_changed:
-        return "No changes to save"
+        return "No changes to save (for '{}')".format(_conf_filename)
 
     while True:
         c = _key_dialog(
@@ -913,14 +929,11 @@ def _quit_dialog():
             return None
 
         if c == "y":
-            if _try_save(_kconf.write_config, standard_config_filename(),
-                         "configuration"):
-
-                return "Configuration saved to '{}'" \
-                       .format(standard_config_filename())
+            if _try_save(_kconf.write_config, _conf_filename, "configuration"):
+                return "Configuration saved to '{}'".format(_conf_filename)
 
         elif c == "n":
-            return "Configuration was not saved"
+            return "Configuration ({}) was not saved".format(_conf_filename)
 
 
 def _init():
@@ -1751,22 +1764,35 @@ def _draw_input_dialog(win, title, info_lines, s, i, hscroll):
 
 def _load_dialog():
     # Dialog for loading a new configuration
-    #
-    # Return value:
-    #   True if a new configuration was loaded, and False if the user canceled
-    #   the dialog
 
+    global _conf_changed
+    global _conf_filename
     global _show_all
 
-    filename = ""
+    if _conf_changed:
+        c = _key_dialog(
+            "Load",
+            "You have unsaved changes. Load new\n"
+            "configuration anyway?\n"
+            "\n"
+            "         (O)K  (C)ancel",
+            "oc")
+
+        if c is None or c == "c":
+            return
+
+    filename = _conf_filename
     while True:
         filename = _input_dialog("File to load", filename, _load_save_info())
         if filename is None:
-            return False
+            return
 
         filename = os.path.expanduser(filename)
 
         if _try_load(filename):
+            _conf_filename = filename
+            _conf_changed = _needs_save()
+
             # Turn on show-all mode if the selected node is not visible after
             # loading the new configuration. _shown still holds the old state.
             if _shown[_sel_node_i] not in _shown_nodes(_cur_menu):
@@ -1777,7 +1803,7 @@ def _load_dialog():
             # The message dialog indirectly updates the menu display, so _msg()
             # must be called after the new state has been initialized
             _msg("Success", "Loaded " + filename)
-            return True
+            return
 
 
 def _try_load(filename):
@@ -1809,21 +1835,20 @@ def _save_dialog(save_fn, default_filename, description):
     #   String describing the thing being saved
     #
     # Return value:
-    #   True if the configuration was saved, and False if the user canceled the
-    #   dialog
+    #   The path to the saved file, or None if no file was saved
 
     filename = default_filename
     while True:
         filename = _input_dialog("Filename to save {} to".format(description),
                                  filename, _load_save_info())
         if filename is None:
-            return False
+            return None
 
         filename = os.path.expanduser(filename)
 
         if _try_save(save_fn, filename, description):
             _msg("Success", "{} saved to {}".format(description, filename))
-            return True
+            return filename
 
 
 def _try_save(save_fn, filename, description):
