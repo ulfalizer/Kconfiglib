@@ -728,7 +728,7 @@ def _needs_save():
             if sym.config_string:
                 # Unwritten symbol
                 return True
-        elif sym.type in (BOOL, TRISTATE):
+        elif sym.orig_type in (BOOL, TRISTATE):
             if sym.tri_value != sym.user_value:
                 # Written bool/tristate symbol, new value
                 return True
@@ -1566,23 +1566,23 @@ def _change_node(node):
     # sc = symbol/choice
     sc = node.item
 
-    if sc.type in (INT, HEX, STRING):
+    if sc.orig_type in (INT, HEX, STRING):
         s = sc.str_value
 
         while True:
             s = _input_dialog(
-                "{} ({})".format(node.prompt[0], TYPE_TO_STR[sc.type]),
+                "{} ({})".format(node.prompt[0], TYPE_TO_STR[sc.orig_type]),
                 s, _range_info(sc))
 
             if s is None:
                 break
 
-            if sc.type in (INT, HEX):
+            if sc.orig_type in (INT, HEX):
                 s = s.strip()
 
                 # 'make menuconfig' does this too. Hex values not starting with
                 # '0x' are accepted when loading .config files though.
-                if sc.type == HEX and not s.startswith(("0x", "0X")):
+                if sc.orig_type == HEX and not s.startswith(("0x", "0X")):
                     s = "0x" + s
 
             if _check_valid(sc, s):
@@ -2952,8 +2952,7 @@ def _node_str(node):
             # Print "(NEW)" next to symbols without a user value (from e.g. a
             # .config), but skip it for choice symbols in choices in y mode,
             # and for symbols of UNKNOWN type (which generate a warning though)
-            if sym.user_value is None and \
-               sym.type != UNKNOWN and \
+            if sym.user_value is None and sym.orig_type and \
                not (sym.choice and sym.choice.tri_value == 2):
 
                 s += " (NEW)"
@@ -3005,10 +3004,10 @@ def _value_str(node):
         return ""
 
     # Wouldn't normally happen, and generates a warning
-    if item.type == UNKNOWN:
+    if not item.orig_type:
         return ""
 
-    if item.type in (STRING, INT, HEX):
+    if item.orig_type in (STRING, INT, HEX):
         return "({})".format(item.str_value)
 
     # BOOL or TRISTATE
@@ -3042,16 +3041,16 @@ def _check_valid(sym, s):
     # Returns True if the string 's' is a well-formed value for 'sym'.
     # Otherwise, displays an error and returns False.
 
-    if sym.type not in (INT, HEX):
+    if sym.orig_type not in (INT, HEX):
         # Anything goes for non-int/hex symbols
         return True
 
-    base = 10 if sym.type == INT else 16
+    base = 10 if sym.orig_type == INT else 16
     try:
         int(s, base)
     except ValueError:
         _error("'{}' is a malformed {} value"
-               .format(s, TYPE_TO_STR[sym.type]))
+               .format(s, TYPE_TO_STR[sym.orig_type]))
         return False
 
     for low_sym, high_sym, cond in sym.ranges:
@@ -3075,7 +3074,7 @@ def _range_info(sym):
     # Returns a string with information about the valid range for the symbol
     # 'sym', or None if 'sym' doesn't have a range
 
-    if sym.type in (INT, HEX):
+    if sym.orig_type in (INT, HEX):
         for low, high, cond in sym.ranges:
             if expr_value(cond):
                 return "Range: {}-{}".format(low.str_value, high.str_value)
