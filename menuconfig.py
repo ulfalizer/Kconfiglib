@@ -20,13 +20,13 @@ inspired by Vi:
   G/End   : Jump to end of list
   g/Home  : Jump to beginning of list
 
+[Space] toggles values if possible, and enters menus otherwise. [Enter] works
+the other way around.
+
 The mconf feature where pressing a key jumps to a menu entry with that
 character in it in the current menu isn't supported. A jump-to feature for
 jumping directly to any symbol (including invisible symbols), choice, menu or
 comment (as in a Kconfig 'comment "Foo"') is available instead.
-
-Space and Enter are "smart" and try to do what you'd expect for the given menu
-entry.
 
 A few different modes are available:
 
@@ -828,26 +828,17 @@ def _menuconfig(stdscr):
         elif c in (curses.KEY_HOME, "g"):
             _select_first_menu_entry()
 
-        elif c in (curses.KEY_RIGHT, " ", "\n", "l", "L"):
-            # Do appropriate node action. Only Space is treated specially,
-            # preferring to toggle nodes rather than enter menus.
-
+        elif c == " ":
+            # Toggle the node if possible
             sel_node = _shown[_sel_node_i]
-
-            if sel_node.is_menuconfig and not \
-               (c == " " and _prefer_toggle(sel_node.item)):
-
+            if not _change_node(sel_node):
                 _enter_menu(sel_node)
 
-            else:
+        elif c in (curses.KEY_RIGHT, "\n", "l", "L"):
+            # Enter the node if possible
+            sel_node = _shown[_sel_node_i]
+            if not _enter_menu(sel_node):
                 _change_node(sel_node)
-                if _is_y_mode_choice_sym(sel_node.item) and not sel_node.list:
-                    # Immediately jump to the parent menu after making a choice
-                    # selection, like 'make menuconfig' does, except if the
-                    # menu node has children (which can happen if a symbol
-                    # 'depends on' a choice symbol that immediately precedes
-                    # it).
-                    _leave_menu()
 
         elif c in ("n", "N"):
             _set_sel_node_tri_val(0)
@@ -1059,39 +1050,40 @@ def _width(win):
     return win.getmaxyx()[1]
 
 
-def _prefer_toggle(item):
-    # For nodes with menus, determines whether Space should change the value of
-    # the node's item or enter its menu. We toggle symbols (which have menus
-    # when they're defined with 'menuconfig') and choices that can be in more
-    # than one mode (e.g. optional choices). In other cases, we enter the menu.
-
-    return isinstance(item, Symbol) or \
-           (isinstance(item, Choice) and len(item.assignable) > 1)
-
-
 def _enter_menu(menu):
-    # Makes 'menu' the currently displayed menu. "Menu" here includes choices
-    # and symbols defined with the 'menuconfig' keyword.
+    # Makes 'menu' the currently displayed menu. In addition to actual 'menu's,
+    # "Menu" here includes choices and symbols defined with the 'menuconfig'
+    # keyword.
+    #
+    # Returns False if 'menu' can't be entered.
 
     global _cur_menu
     global _shown
     global _sel_node_i
     global _menu_scroll
 
+    if not menu.is_menuconfig:
+        # Not a menu
+        return False
+
     shown_sub = _shown_nodes(menu)
     # Never enter empty menus. We depend on having a current node.
-    if shown_sub:
-        # Remember where the current node appears on the screen, so we can try
-        # to get it to appear in the same place when we leave the menu
-        _parent_screen_rows.append(_sel_node_i - _menu_scroll)
+    if not shown_sub:
+        return False
 
-        # Jump into menu
-        _cur_menu = menu
-        _shown = shown_sub
-        _sel_node_i = _menu_scroll = 0
+    # Remember where the current node appears on the screen, so we can try
+    # to get it to appear in the same place when we leave the menu
+    _parent_screen_rows.append(_sel_node_i - _menu_scroll)
 
-        if isinstance(menu.item, Choice):
-            _select_selected_choice_sym()
+    # Jump into menu
+    _cur_menu = menu
+    _shown = shown_sub
+    _sel_node_i = _menu_scroll = 0
+
+    if isinstance(menu.item, Choice):
+        _select_selected_choice_sym()
+
+    return True
 
 
 def _select_selected_choice_sym():
@@ -1553,15 +1545,11 @@ def _change_node(node):
     # Changes the value of the menu node 'node' if it is a symbol. Bools and
     # tristates are toggled, while other symbol types pop up a text entry
     # dialog.
+    #
+    # Returns False if the value of 'node' can't be changed.
 
-    if not isinstance(node.item, (Symbol, Choice)):
-        return
-
-    # This will hit for invisible symbols, which appear in show-all mode and
-    # when an invisible symbol has visible children (which can happen e.g. for
-    # symbols with optional prompts)
-    if not (node.prompt and expr_value(node.prompt[1])):
-        return
+    if not _changeable(node):
+        return False
 
     # sc = symbol/choice
     sc = node.item
@@ -1594,11 +1582,40 @@ def _change_node(node):
         # case: .assignable can be (2,) while .tri_value is 0.
         _set_val(sc, sc.assignable[0])
 
-    elif sc.assignable:
+    else:
         # Set the symbol to the value after the current value in
         # sc.assignable, with wrapping
         val_index = sc.assignable.index(sc.tri_value)
         _set_val(sc, sc.assignable[(val_index + 1) % len(sc.assignable)])
+
+
+    if _is_y_mode_choice_sym(sc) and not node.list:
+        # Immediately jump to the parent menu after making a choice selection,
+        # like 'make menuconfig' does, except if the menu node has children
+        # (which can happen if a symbol 'depends on' a choice symbol that
+        # immediately precedes it).
+        _leave_menu()
+
+
+    return True
+
+
+def _changeable(node):
+    # Returns True if the value if 'node' can be changed
+
+    sc = node.item
+
+    if not isinstance(sc, (Symbol, Choice)):
+        return False
+
+    # This will hit for invisible symbols, which appear in show-all mode and
+    # when an invisible symbol has visible children (which can happen e.g. for
+    # symbols with optional prompts)
+    if not (node.prompt and expr_value(node.prompt[1])):
+        return False
+
+    return sc.orig_type in (STRING, INT, HEX) or len(sc.assignable) > 1 \
+           or _is_y_mode_choice_sym(sc)
 
 
 def _set_sel_node_tri_val(tri_val):
