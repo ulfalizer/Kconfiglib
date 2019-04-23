@@ -1418,7 +1418,7 @@ def _draw_main():
 
     _path_win.erase()
 
-    # Draw the menu path ("(top menu) -> menu -> submenu -> ...")
+    # Draw the menu path ("(Top) -> Menu -> Submenu -> ...")
 
     menu_prompts = []
 
@@ -1430,7 +1430,7 @@ def _draw_main():
         menu_prompts.append(menu.prompt[0] if menu.prompt else
                             standard_sc_expr_str(menu.item))
         menu = menu.parent
-    menu_prompts.append("(top menu)")
+    menu_prompts.append("(Top)")
     menu_prompts.reverse()
 
     # Hack: We can't put ACS_RARROW directly in the string. Temporarily
@@ -2769,7 +2769,7 @@ def _menu_path_info(node):
         path = " -> " + (node.prompt[0] if node.prompt else
                          standard_sc_expr_str(node.item)) + path
 
-    return "(top menu)" + path
+    return "(Top)" + path
 
 
 def _name_and_val_str(sc):
