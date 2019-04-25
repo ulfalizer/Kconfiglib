@@ -769,7 +769,7 @@ def _needs_save():
 #     If True, the corresponding mode is on. See the module docstring.
 #
 #   _conf_filename:
-#     .config file to save the configuration to
+#     File to save the configuration to
 #
 #   _minconf_filename:
 #     File to save minimal configurations to
