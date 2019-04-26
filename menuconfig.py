@@ -244,7 +244,7 @@ _MAIN_HELP_LINES = """
 
 # Lines of help text shown at the bottom of the information dialog
 _INFO_HELP_LINES = """
-[ESC/q] Return to menu       [/] Jump to symbol
+[ESC/q] Return to menu      [/] Jump to symbol
 """[1:-1].split("\n")
 
 # Lines of help text shown at the bottom of the search dialog
@@ -1052,7 +1052,7 @@ def _width(win):
 
 def _enter_menu(menu):
     # Makes 'menu' the currently displayed menu. In addition to actual 'menu's,
-    # "Menu" here includes choices and symbols defined with the 'menuconfig'
+    # "menu" here includes choices and symbols defined with the 'menuconfig'
     # keyword.
     #
     # Returns False if 'menu' can't be entered.
@@ -1615,7 +1615,7 @@ def _changeable(node):
         return False
 
     return sc.orig_type in (STRING, INT, HEX) or len(sc.assignable) > 1 \
-           or _is_y_mode_choice_sym(sc)
+        or _is_y_mode_choice_sym(sc)
 
 
 def _set_sel_node_tri_val(tri_val):
