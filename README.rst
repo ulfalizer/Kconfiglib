@@ -524,13 +524,29 @@ The `examples/ <https://github.com/ulfalizer/Kconfiglib/blob/master/examples>`_ 
 Real-world examples
 ~~~~~~~~~~~~~~~~~~~
 
-- `kconfig.py <https://github.com/zephyrproject-rtos/zephyr/blob/master/scripts/kconfig/kconfig.py>`_ from the `Zephyr <https://www.zephyrproject.org/>`_ project handles ``.config`` and header file generation, also doing configuration fragment merging.
+- `kconfig.py
+  <https://github.com/zephyrproject-rtos/zephyr/blob/master/scripts/kconfig/kconfig.py>`_
+  from the `Zephyr <https://www.zephyrproject.org/>`_ project handles
+  ``.config`` and header file generation, also doing configuration fragment
+  merging
 
-- `genrest.py <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_ generates a Kconfig symbol cross-reference, which can be viewed `here <http://docs.zephyrproject.org/reference/kconfig/index.html>`__.
+- `genrest.py
+  <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_
+  generates a Kconfig symbol cross-reference, which can be viewed `here
+  <http://docs.zephyrproject.org/reference/kconfig/index.html>`__
 
-- `Various utilities <https://github.com/projectacrn/acrn-hypervisor/tree/master/scripts/kconfig>`_ from the `ACRN <https://projectacrn.org/>`_ project.
+- `Various automated checks
+  <https://github.com/zephyrproject-rtos/ci-tools/blob/master/scripts/check_compliance.py>`_,
+  including a check for references to undefined Kconfig symbols in source code.
+  See the ``KconfigCheck`` class.
 
-These use the older Kconfiglib 1 API, which was clunkier and not as general (functions instead of properties, no direct access to the menu structure or properties, uglier ``__str__()`` output):
+- `Various utilities
+  <https://github.com/projectacrn/acrn-hypervisor/tree/master/scripts/kconfig>`_
+  from the `ACRN <https://projectacrn.org/>`_ project
+
+These use the older Kconfiglib 1 API, which was clunkier and not as general
+(functions instead of properties, no direct access to the menu structure or
+properties, uglier ``__str__()`` output):
 
 - `genboardscfg.py <http://git.denx.de/?p=u-boot.git;a=blob;f=tools/genboardscfg.py;hb=HEAD>`_ from `Das U-Boot <http://www.denx.de/wiki/U-Boot>`_ generates some sort of legacy board database by pulling information from a newly added Kconfig-based configuration system (as far as I understand it :).
 
