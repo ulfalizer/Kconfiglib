@@ -96,7 +96,7 @@ The color definition is a comma separated list of attributes:
 
     - fg:COLOR      Set the foreground/background colors. COLOR can be one of
       * or *        the basic 16 colors (black, red, green, yellow, blue,
-    - bg:COLOR      magenta,cyan, white and brighter versions, for example,
+    - bg:COLOR      magenta, cyan, white and brighter versions, for example,
                     brightred). On terminals that support more than 8 colors,
                     you can also directly put in a color number, e.g. fg:123
                     (hexadecimal and octal constants are accepted as well).
