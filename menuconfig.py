@@ -1463,10 +1463,6 @@ def _shown_nodes(menu):
         res = []
 
         while node:
-            # This code is minorly performance-sensitive. Make it too slow
-            # (e.g., by always recursing the entire tree), and going in and out
-            # of menus no longer feels instant.
-
             if _visible(node) or _show_all:
                 res.append(node)
                 if node.list and not node.is_menuconfig:
@@ -1475,14 +1471,11 @@ def _shown_nodes(menu):
                     # menus and choices as well as 'menuconfig' symbols.
                     res += rec(node.list)
 
-            elif node.list and isinstance(node.item, Symbol) and \
-                 expr_value(node.dep):
+            elif node.list and isinstance(node.item, Symbol):
                 # Show invisible symbols if they have visible children. This
                 # can happen for an m/y-valued symbol with an optional prompt
-                # ('prompt "foo" is COND') that is currently disabled. The
-                # expr_value(node.dep) check safely prunes the search: A node
-                # with unsatisfied direct dependencies can never have visible
-                # children.
+                # ('prompt "foo" is COND') that is currently disabled. Note
+                # that it applies to both 'config' and 'menuconfig' symbols.
                 shown_children = rec(node.list)
                 if shown_children:
                     res.append(node)
