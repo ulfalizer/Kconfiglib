@@ -1502,20 +1502,8 @@ class Kconfig(object):
         if not exists(path):
             os.mkdir(path, 0o755)
 
-        # This setup makes sure that at least the current working directory
-        # gets reset if things fail
-        prev_dir = os.getcwd()
-        try:
-            # cd'ing into the symbol file directory simplifies
-            # _sync_deps() and saves some work
-            os.chdir(path)
-            self._sync_deps()
-        finally:
-            os.chdir(prev_dir)
-
-    def _sync_deps(self):
         # Load old values from auto.conf, if any
-        self._load_old_vals()
+        self._load_old_vals(path)
 
         for sym in self.unique_defined_syms:
             # Note: _write_to_conf is determined when the value is
@@ -1546,31 +1534,16 @@ class Kconfig(object):
                 continue
 
             # 'sym' has a new value. Flag it.
-            _touch_dep_file(sym.name)
+            _touch_dep_file(path, sym.name)
 
         # Remember the current values as the "new old" values.
         #
         # This call could go anywhere after the call to _load_old_vals(), but
         # putting it last means _sync_deps() can be safely rerun if it fails
         # before this point.
-        self._write_old_vals()
+        self._write_old_vals(path)
 
-    def _write_old_vals(self):
-        # Helper for writing auto.conf. Basically just a simplified
-        # write_config() that doesn't write any comments (including
-        # '# CONFIG_FOO is not set' comments). The format matches the C
-        # implementation, though the ordering is arbitrary there (depends on
-        # the hash table implementation).
-        #
-        # A separate helper function is neater than complicating write_config()
-        # by passing a flag to it, plus we only need to look at symbols here.
-
-        with self._open("auto.conf", "w") as f:
-            for sym in self.unique_defined_syms:
-                if not (sym.orig_type in _BOOL_TRISTATE and not sym.tri_value):
-                    f.write(sym.config_string)
-
-    def _load_old_vals(self):
+    def _load_old_vals(self, path):
         # Loads old symbol values from auto.conf into a dedicated
         # Symbol._old_val field. Mirrors load_config().
         #
@@ -1581,11 +1554,15 @@ class Kconfig(object):
         for sym in self.unique_defined_syms:
             sym._old_val = None
 
-        if not exists("auto.conf"):
-            # No old values
-            return
+        try:
+            auto_conf = self._open(join(path, "auto.conf"), "r")
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                # No old values
+                return
+            raise
 
-        with self._open("auto.conf", "r") as f:
+        with auto_conf as f:
             for line in f:
                 match = self._set_match(line)
                 if not match:
@@ -1607,7 +1584,22 @@ class Kconfig(object):
                 else:
                     # Flag that the symbol no longer exists, in
                     # case something still depends on it
-                    _touch_dep_file(name)
+                    _touch_dep_file(path, name)
+
+    def _write_old_vals(self, path):
+        # Helper for writing auto.conf. Basically just a simplified
+        # write_config() that doesn't write any comments (including
+        # '# CONFIG_FOO is not set' comments). The format matches the C
+        # implementation, though the ordering is arbitrary there (depends on
+        # the hash table implementation).
+        #
+        # A separate helper function is neater than complicating write_config()
+        # by passing a flag to it, plus we only need to look at symbols here.
+
+        with self._open(join(path, "auto.conf"), "w") as f:
+            for sym in self.unique_defined_syms:
+                if not (sym.orig_type in _BOOL_TRISTATE and not sym.tri_value):
+                    f.write(sym.config_string)
 
     def node_iter(self, unique_syms=False):
         """
@@ -5879,13 +5871,13 @@ def _sym_to_num(sym):
            int(sym.str_value, _TYPE_TO_BASE[sym.orig_type])
 
 
-def _touch_dep_file(sym_name):
+def _touch_dep_file(path, sym_name):
     # If sym_name is MY_SYM_NAME, touches my/sym/name.h. See the sync_deps()
     # docstring.
 
-    sym_path = sym_name.lower().replace("_", os.sep) + ".h"
+    sym_path = path + os.sep + sym_name.lower().replace("_", os.sep) + ".h"
     sym_path_dir = dirname(sym_path)
-    if sym_path_dir and not exists(sym_path_dir):
+    if not exists(sym_path_dir):
         os.makedirs(sym_path_dir, 0o755)
 
     # A kind of truncating touch, mirroring the C tools
