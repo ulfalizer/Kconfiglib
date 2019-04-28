@@ -5994,7 +5994,6 @@ def _auto_menu_dep(node1, node2):
     # node2 has a prompt, we check its condition. Otherwise, we look directly
     # at node2.dep.
 
-    # If node2 has no prompt, use its menu node dependencies instead
     return _expr_depends_on(node2.prompt[1] if node2.prompt else node2.dep,
                             node1.item)
 
