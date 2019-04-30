@@ -529,8 +529,7 @@ import sys
 
 # Get rid of some attribute lookups. These are obvious in context.
 from glob import iglob
-from os.path import dirname, exists, expandvars, isabs, islink, join, \
-                    relpath, split
+from os.path import dirname, exists, expandvars, isabs, islink, join, relpath
 
 
 # File layout:
@@ -1358,12 +1357,11 @@ class Kconfig(object):
 
         save_old (default: True):
           If True and <filename> already exists, a copy of it will be saved to
-          .<filename>.old in the same directory before the new configuration is
-          written. The leading dot is added only if the filename doesn't
-          already start with a dot.
+          <filename>.old in the same directory before the new configuration is
+          written.
 
-          Errors are silently ignored if .<filename>.old cannot be written
-          (e.g. due to being a directory).
+          Errors are silently ignored if <filename>.old cannot be written (e.g.
+          due to being a directory).
 
         verbose (default: True):
           If True and filename is None (automatically infer configuration
@@ -5886,29 +5884,24 @@ def _touch_dep_file(path, sym_name):
 
 
 def _save_old(path):
-    # See write_config()
+    # See write_config(). os.replace() would be nice here, but it's Python 3
+    # (3.3+) only.
 
-    dirname, basename = split(path)
-    backup = join(dirname,
-                  basename + ".old" if basename.startswith(".")
-                      else "." + basename + ".old")
-
-    # os.replace() would be nice here, but it's Python 3 (3.3+) only
     try:
-        # Use copyfile() if 'path' is a symlink. The intention is probably to
-        # overwrite the target in that case.
         if os.name == "posix" and not islink(path):
-            # Will remove .<filename>.old if it already exists on POSIX
+            # Will remove <filename>.old if it already exists on POSIX
             # systems
-            os.rename(path, backup)
+            os.rename(path, path + ".old")
         else:
-            # Only import as needed, to save some startup time
+            # Use copyfile() if 'path' is a symlink. The intention is probably
+            # to overwrite the target in that case. Only import shutil as
+            # needed, to save some startup time.
             import shutil
-            shutil.copyfile(path, backup)
+            shutil.copyfile(path, path + ".old")
     except:
         # Ignore errors from 'filename' missing as well as other errors. The
-        # backup file is more of a nice-to-have, and not worth erroring out
-        # over e.g. if .<filename>.old happens to be a directory.
+        # <filename>.old file is usually more of a nice-to-have, and not worth
+        # erroring out over e.g. if <filename>.old happens to be a directory.
         pass
 
 
