@@ -512,7 +512,7 @@ Three configuration interfaces are currently available:
 
   Screenshot below, with show-all mode enabled and the jump-to dialog open:
 
-  image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/guiconfig.png
+  .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/guiconfig.png
 
   To avoid having to carry around a bunch of GIFs, the image data is embedded
   in ``guiconfig.py``. To use separate GIF files instead, change
