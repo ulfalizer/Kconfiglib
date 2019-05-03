@@ -496,7 +496,7 @@ Three configuration interfaces are currently available:
   more information about the terminal menuconfig implementation.
 
 - `guiconfig.py
-  <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ is a
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/guiconfig.py>`_ is a
   graphical configuration interface written in `Tkinter
   <https://docs.python.org/3/library/tkinter.html>`_. Like ``menuconfig.py``,
   it supports showing all symbols (with invisible symbols in red) and jumping
