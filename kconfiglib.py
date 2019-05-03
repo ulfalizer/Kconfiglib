@@ -51,12 +51,20 @@ This target runs the curses menuconfig interface with Python 3 (Python 2 is
 currently not supported for the menuconfig).
 
 
+make guiconfig
+--------------
+
+This target runs the Tkinter menuconfig interface. Both Python 2 and Python 3
+are supported. To change the Python interpreter used, pass
+PYTHONCMD=<executable> to 'make'. The default is 'python'.
+
+
 make [ARCH=<arch>] iscriptconfig
 --------------------------------
 
 This target gives an interactive Python prompt where a Kconfig instance has
 been preloaded and is available in 'kconf'. To change the Python interpreter
-used, pass PYTHONCMD=<executable> to make. The default is "python".
+used, pass PYTHONCMD=<executable> to 'make'. The default is 'python'.
 
 To get a feel for the API, try evaluating and printing the symbols in
 kconf.defined_syms, and explore the MenuNode menu tree starting at

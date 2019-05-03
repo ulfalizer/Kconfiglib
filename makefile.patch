@@ -1,17 +1,17 @@
-From 7cac9bab3de49c03e1edce71d5d4b631d7464b74 Mon Sep 17 00:00:00 2001
+From 7bd20c66475a2fd0c702efc1dd1fc3eb6bbaa116 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
 Date: Tue, 9 Jun 2015 13:01:34 +0200
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch
 
 ---
- scripts/kconfig/Makefile | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ scripts/kconfig/Makefile | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 4a7bd2192073..448cd1cb9314 100644
+index 7c5dc31c1d95..8e49257b0309 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -27,2 +27,32 @@ gconfig: $(obj)/gconf
+@@ -27,2 +27,36 @@ gconfig: $(obj)/gconf
  
 +PHONY += scriptconfig iscriptconfig kmenuconfig dumpvarsconfig
 +
@@ -37,13 +37,17 @@ index 4a7bd2192073..448cd1cb9314 100644
 +	   print('A Kconfig instance \'kconf\' for the architecture $(ARCH) has been created.')" \
 +	  $(Kconfig)
 +
++# The terminal menuconfig only runs under Python 3
 +kmenuconfig:
 +	$(Q)$(kpython3) $(srctree)/Kconfiglib/menuconfig.py $(Kconfig)
++
++guiconfig:
++	$(Q)$(kpython) $(srctree)/Kconfiglib/guiconfig.py $(Kconfig)
 +
 +dumpvarsconfig:
 +	$(Q)$(kpython) $(srctree)/Kconfiglib/examples/dumpvars.py $(Kconfig)
 +
  menuconfig: $(obj)/mconf
 -- 
-2.17.1
+2.20.1
 

@@ -8,7 +8,8 @@ Kconfiglib is a `Kconfig
 <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
 implementation in Python 2/3. It started out as a helper library, but now has a
 enough functionality to also work well as a standalone Kconfig implementation
-(including `menuconfig interfaces <Menuconfig interfaces_>`_ and `Kconfig extensions`_).
+(including `terminal and GUI menuconfig interfaces <Menuconfig interfaces_>`_
+and `Kconfig extensions`_).
 
 The entire library is contained in `kconfiglib.py
 <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_. The
@@ -59,6 +60,8 @@ available in the C tools.
 
 - `menuconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
 
+- `guiconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/guiconfig.py>`_
+
 - `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
 
 - `olddefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/olddefconfig.py>`_
@@ -85,9 +88,10 @@ available in the C tools.
 the configuration and (optionally) information that can be used to rebuild only
 files that reference Kconfig symbols that have changed value.
 
-The ``menuconfig`` implementation requires Python 3. It uses ``get_wch()``,
-which is needed for Unicode input support. Unfortunately, ``get_wch()`` isn't
-available in the Python 2 version of the standard ``curses`` module.
+The terminal ``menuconfig`` implementation requires Python 3. It uses
+``get_wch()``, which is needed for Unicode input support. Unfortunately,
+``get_wch()`` isn't available in the Python 2 version of the standard
+``curses`` module.
 
 **Note:** If you install Kconfiglib with ``pip``'s ``--user`` flag, make sure
 that your ``PATH`` includes the directory where the executables end up. You can
@@ -133,7 +137,7 @@ Getting started
    <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
    files that describe the available configuration options.
 
-3. Generate an initial configuration with e.g. ``menuconfig`` or
+3. Generate an initial configuration with e.g. ``menuconfig``/``guiconfig`` or
    ``alldefconfig``. The configuration is saved as ``.config`` by default.
 
    For more advanced projects, the ``defconfig`` utility can be used to
@@ -177,8 +181,8 @@ If you make use of this, you might want to pass ``--config-out <filename>`` to
 including ``.config`` directly. This has the advantage that the generated
 configuration file will always be a "full" configuration file, even if
 ``.config`` is outdated. Otherwise, it might be necessary to run
-``old(def)config`` or ``menuconfig`` before rebuilding with an outdated
-``.config``.
+``old(def)config`` or ``menuconfig``/``guiconfig`` before rebuilding with an
+outdated ``.config``.
 
 If you use ``--sync-deps`` to generate incremental build information, you can
 include ``deps/auto.conf`` instead, which is also a full configuration file.
@@ -223,11 +227,12 @@ For HTML output, add ``-w``:
 
 This will also work after installing Kconfiglib with ``pip(3)``.
 
-Documentation for the ``menuconfig`` interface can be viewed in the same way:
+Documentation for the ``menuconfig`` and ``guiconfig`` interfaces can be viewed
+in the same way:
 
 .. code:: sh
 
-    $ pydoc3 menuconfig
+    $ pydoc3 menuconfig/guiconfig
 
 A good starting point for learning the library is to read the module docstring
 (which you could also just read directly at the beginning of `kconfiglib.py
@@ -300,7 +305,8 @@ Kconfiglib can do the following, among other things:
   implement menuconfig-like functionality.
   
   See `menuconfig.py
-  <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ and the
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_/`guiconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/guiconfig.py>`_ and the
   minimalistic `menuconfig_example.py
   <https://github.com/ulfalizer/Kconfiglib/blob/master/examples/menuconfig_example.py>`_
   example.
@@ -453,7 +459,7 @@ Other features
 Menuconfig interfaces
 ---------------------
 
-Two configuration interfaces are currently available:
+Three configuration interfaces are currently available:
 
 - `menuconfig.py <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_
   is a terminal-based configuration interface implemented using the standard
@@ -489,21 +495,47 @@ Two configuration interfaces are currently available:
   <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ for
   more information about the terminal menuconfig implementation.
 
-- `RomaVis <https://github.com/RomaVis>`_ has built a fully portable Python
-  2/3 `TkInter <https://wiki.python.org/moin/TkInter>`_ menuconfig
-  implementation. It is still a work-in-progress, but is already functional.
+- `guiconfig.py
+  <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_ is a
+  graphical configuration interface written in `Tkinter
+  <https://docs.python.org/3/library/tkinter.html>`_. Like ``menuconfig.py``,
+  it supports showing all symbols (with invisible symbols in red) and jumping
+  directly to symbols. Symbol values can also be changed directly from the
+  jump-to dialog.
 
-  See the `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_ project
-  for more information.
+  When single-menu mode is enabled, a single menu is shown at a time, like in
+  the terminal menuconfig. Only this mode distinguishes between symbols defined
+  with ``config`` and symbols defined with ``menuconfig``.
+
+  ``guiconfig.py`` has been tested on X11, Windows, and macOS, and is
+  compatible with both Python 2 and Python 3.
+
+  Screenshot below, with show-all mode enabled and the jump-to dialog open:
+
+  image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/guiconfig.png
+
+  To avoid having to carry around a bunch of GIFs, the image data is embedded
+  in ``guiconfig.py``. To use separate GIF files instead, change
+  ``_USE_EMBEDDED_IMAGES`` to ``False``. The image files can be found in the
+  `screenshots
+  <https://github.com/ulfalizer/Kconfiglib/tree/screenshots/guiconfig>`_
+  branch.
+
+  I did my best with the images, but some are definitely only art adjacent.
+  Touch-ups are welcome. :)
+
+- `pymenuconfig <https://github.com/RomaVis/pymenuconfig>`_, built by `RomaVis
+  <https://github.com/RomaVis>`_, is an older portable Python 2/3 TkInter
+  menuconfig implementation.
 
   Screenshot below:
 
   .. image:: https://raw.githubusercontent.com/RomaVis/pymenuconfig/master/screenshot.PNG
 
   While working on the terminal menuconfig implementation, I added a few APIs
-  to Kconfiglib that turned out to be handy. ``pymenuconfig`` predates the
-  terminal menuconfig, and so didn't have them available. Blame me for any
-  workarounds.
+  to Kconfiglib that turned out to be handy. ``pymenuconfig`` predates
+  ``menuconfig.py`` and ``guiconfig.py``, and so didn't have them available.
+  Blame me for any workarounds.
 
 Examples
 --------
