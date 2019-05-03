@@ -516,8 +516,8 @@ Three configuration interfaces are currently available:
 
   To avoid having to carry around a bunch of GIFs, the image data is embedded
   in ``guiconfig.py``. To use separate GIF files instead, change
-  ``_USE_EMBEDDED_IMAGES`` to ``False``. The image files can be found in the
-  `screenshots
+  ``_USE_EMBEDDED_IMAGES`` to ``False`` in ``guiconfig.py``. The image files
+  can be found in the `screenshots
   <https://github.com/ulfalizer/Kconfiglib/tree/screenshots/guiconfig>`_
   branch.
 
