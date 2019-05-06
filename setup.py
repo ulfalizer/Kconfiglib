@@ -43,8 +43,8 @@ setuptools.setup(
         "setconfig",
     ),
 
-    # TODO: Don't install the menuconfig on Python 2. It won't run there.
-    # setuptools needs better documentation...
+    # TODO: Don't install the terminal menuconfig on Python 2. It won't run
+    # there. setuptools needs better documentation...
     entry_points={
         "console_scripts": (
             "menuconfig = menuconfig:_main",

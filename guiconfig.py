@@ -78,9 +78,8 @@ from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
                        standard_kconfig, standard_config_filename
 
 
-# If True, use .gif image data embedded in this file instead of separate image
-# files. This avoids having to carry around a bunch of .gifs. See
-# _load_images().
+# If True, use GIF image data embedded in this file instead of separate GIF
+# files. See _load_images().
 _USE_EMBEDDED_IMAGES = True
 
 
@@ -94,6 +93,62 @@ an item will jump to it. Item values can be toggled directly within the dialog.\
 
 def _main():
     menuconfig(standard_kconfig())
+
+
+# Global variables used below:
+#
+#   _root:
+#     The Toplevel instance for the main window
+#
+#   _tree:
+#     The Treeview in the main window
+#
+#   _jump_to_tree:
+#     The Treeview in the jump-to dialog. None if the jump-to dialog isn't
+#     open. Doubles as a flag.
+#
+#   _jump_to_matches:
+#     List of Nodes shown in the jump-to dialog
+#
+#   _menupath:
+#     The Label that shows the menu path of the selected item
+#
+#   _backbutton:
+#     The button shown in single-menu mode for jumping to the parent menu
+#
+#   _status_label:
+#     Label with status text shown at the bottom of the main window
+#     ("Modified", "Saved to ...", etc.)
+#
+#   _id_to_node:
+#     We can't use Node objects directly as Treeview item IDs, so we use their
+#     id()s instead. This dictionary maps Node id()s back to Nodes. (The keys
+#     are actually str(id(node)), just to simplify lookups.)
+#
+#   _cur_menu:
+#     The current menu. Ignored outside single-menu mode.
+#
+#   _show_all_var/_show_name_var/_single_menu_var:
+#     Tkinter Variable instances bound to the corresponding checkboxes
+#
+#   _show_all/_single_menu:
+#     Plain Python bools that track _show_all_var and _single_menu_var, to
+#     speed up and simplify things a bit
+#
+#   _conf_filename:
+#     File to save the configuration to
+#
+#   _minconf_filename:
+#     File to save minimal configurations to
+#
+#   _conf_changed:
+#     True if the configuration has been changed. If False, we don't bother
+#     showing the save-and-quit dialog.
+#
+#     We reset this to False whenever the configuration is saved.
+#
+#   _*_img:
+#     PhotoImage instances for images
 
 
 def menuconfig(kconf):
@@ -210,62 +265,6 @@ def _needs_save():
 
     # No need to prompt for save
     return False
-
-
-# Global variables used below:
-#
-#   _root:
-#     The Toplevel instance for the main window
-#
-#   _tree:
-#     The Treeview in the main window
-#
-#   _jump_to_tree:
-#     The Treeview in the jump-to dialog. None if the jump-to dialog isn't
-#     open. Doubles as a flag.
-#
-#   _jump_to_matches:
-#     List of Nodes shown in the jump-to dialog
-#
-#   _menupath:
-#     The Label that shows the menu path of the selected item
-#
-#   _backbutton:
-#     The button shown in single-menu mode for jumping to the parent menu
-#
-#   _status_label:
-#     Label with status text shown at the bottom of the main window
-#     ("Modified", "Saved to ...", etc.)
-#
-#   _id_to_node:
-#     We can't use Node objects directly as Treeview item IDs, so we use their
-#     id()s instead. This dictionary maps Node id()s back to Nodes. (The keys
-#     are actually str(id(node)), just to simplify lookups.)
-#
-#   _cur_menu:
-#     The current menu. Ignored outside single-menu mode.
-#
-#   _show_all_var/_show_name_var/_single_menu_var:
-#     Tkinter Variable instances bound to the corresponding checkboxes
-#
-#   _show_all/_single_menu:
-#     Plain Python bools that track _show_all_var and _single_menu_var, to
-#     speed up and simplify things a bit
-#
-#   _conf_filename:
-#     File to save the configuration to
-#
-#   _minconf_filename:
-#     File to save minimal configurations to
-#
-#   _conf_changed:
-#     True if the configuration has been changed. If False, we don't bother
-#     showing the save-and-quit dialog.
-#
-#     We reset this to False whenever the configuration is saved.
-#
-#   _*_img:
-#     PhotoImage instances for images
 
 
 def _create_id_to_node():
@@ -597,7 +596,7 @@ def _create_kconfig_desc(parent):
 
 
 def _add_vscrollbar(parent, widget):
-    # Adds a vertical scrollbar to widget that's only shown as needed
+    # Adds a vertical scrollbar to 'widget' that's only shown as needed
 
     vscrollbar = ttk.Scrollbar(parent, orient="vertical",
                                command=widget.yview)
