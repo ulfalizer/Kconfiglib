@@ -566,9 +566,11 @@ def _create_kconfig_tree(parent):
     # Micro-optimize this a bit.
     insert = tree.insert
     id_ = id
+    Symbol_ = Symbol
     for node in _kconf.node_iter():
+        item = node.item
         insert("", "end", iid=id_(node),
-               values=node.item.name if node.item.__class__ is Symbol else ())
+               values=item.name if item.__class__ is Symbol_ else "")
 
     return frame, tree
 
