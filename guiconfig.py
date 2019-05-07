@@ -70,7 +70,7 @@ else:
     from tkinter import filedialog, messagebox
 
 from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
-                       BOOL, TRISTATE, STRING, INT, HEX, UNKNOWN, \
+                       BOOL, TRISTATE, STRING, INT, HEX, \
                        AND, OR, \
                        expr_str, expr_value, split_expr, \
                        standard_sc_expr_str, \
