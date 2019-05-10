@@ -3857,8 +3857,30 @@ class Symbol(object):
       A set() with all symbols and choices referenced in the properties and
       property conditions of the symbol.
 
-      Also includes dependencies inherited from surrounding menus and if's.
+      Also includes dependencies from surrounding menus and if's, because those
+      get propagated to the symbol (see the 'Intro to symbol values' section in
+      the module docstring).
+
       Choices appear in the dependencies of choice symbols.
+
+      For the following definitions, only B and not C appears in A's
+      'referenced'. To get transitive references, you'll have to recursively
+      expand 'references' until no new items appear.
+
+        config A
+                bool
+                depends on B
+
+        config B
+                bool
+                depends on C
+
+        config C
+                bool
+
+      See the Symbol.direct_dep attribute if you're only interested in the
+      direct dependencies of the symbol (its 'depends on'). You can extract the
+      symbols in it with the global expr_items() function.
 
     env_var:
       If the Symbol has an 'option env="FOO"' option, this contains the name
@@ -4729,7 +4751,9 @@ class Choice(object):
       A set() with all symbols referenced in the properties and property
       conditions of the choice.
 
-      Also includes dependencies inherited from surrounding menus and if's.
+      Also includes dependencies from surrounding menus and if's, because those
+      get propagated to the choice (see the 'Intro to symbol values' section in
+      the module docstring).
 
     is_optional:
       True if the choice has the 'optional' flag set on it and can be in
