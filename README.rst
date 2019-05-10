@@ -575,6 +575,10 @@ Real-world examples
   generates a Kconfig symbol cross-reference, which can be viewed `here
   <http://docs.zephyrproject.org/reference/kconfig/index.html>`__
 
+- `CMake and IDE integration
+  <https://github.com/espressif/esp-idf/tree/master/tools/kconfig_new>`_ from
+  the ESP-IDF project, via a configuration server program.
+
 - `Various automated checks
   <https://github.com/zephyrproject-rtos/ci-tools/blob/master/scripts/check_compliance.py>`_,
   including a check for references to undefined Kconfig symbols in source code.
