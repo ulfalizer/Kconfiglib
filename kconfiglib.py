@@ -2757,8 +2757,6 @@ class Kconfig(object):
 
             elif t0 is _T_MAINMENU:
                 self.top_node.prompt = (self._expect_str_and_eol(), self.y)
-                self.top_node.filename = self._filename
-                self.top_node.linenr = self._linenr
 
             else:
                 # A valid endchoice/endif/endmenu is caught by the 'end_token'
