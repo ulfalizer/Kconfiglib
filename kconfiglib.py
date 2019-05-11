@@ -3824,7 +3824,7 @@ class Symbol(object):
     ranges:
       List of (low, high, cond) tuples for the symbol's 'range' properties. For
       example, 'range 1 2 if A' is represented as (1, 2, A). If there is no
-      condition, 'cond' is self.config.y.
+      condition, 'cond' is self.kconfig.y.
 
       Note that 'depends on' and parent dependencies are propagated to 'range'
       conditions.
@@ -3845,13 +3845,15 @@ class Symbol(object):
       Like rev_dep, for imply.
 
     direct_dep:
-      The 'depends on' dependencies. If a symbol is defined in multiple
-      locations, the dependencies at each location are ORed together.
+      The direct ('depends on') dependencies for the symbol, or self.kconfig.y
+      if there are no direct dependencies.
 
-      Internally, this is used to implement 'imply', which only applies if the
-      implied symbol has expr_value(self.direct_dep) != 0. 'depends on' and
-      parent dependencies are automatically propagated to the conditions of
-      properties, so normally it's redundant to check the direct dependencies.
+      This attribute includes any dependencies from surrounding menus and if's.
+      Those get propagated to the direct dependencies, and the resulting direct
+      dependencies in turn get propagated to the conditions of all properties.
+
+      If the symbol is defined in multiple locations, the dependencies from the
+      different locations get ORed together.
 
     referenced:
       A set() with all symbols and choices referenced in the properties and
@@ -4739,7 +4741,7 @@ class Choice(object):
     defaults:
       List of (symbol, cond) tuples for the choice's 'defaults' properties. For
       example, 'default A if B && C' is represented as (A, (AND, B, C)). If
-      there is no condition, 'cond' is self.config.y.
+      there is no condition, 'cond' is self.kconfig.y.
 
       Note that 'depends on' and parent dependencies are propagated to
       'default' conditions.
@@ -5144,10 +5146,12 @@ class MenuNode(object):
       was undocumented.
 
     dep:
-      The 'depends on' dependencies for the menu node, or self.kconfig.y if
-      there are no dependencies. Parent dependencies are propagated to this
-      attribute, and this attribute is then in turn propagated to the
-      properties of symbols and choices.
+      The direct ('depends on') dependencies for the menu node, or
+      self.kconfig.y if there are no direct dependencies.
+
+      This attribute includes any dependencies from surrounding menus and if's.
+      Those get propagated to the direct dependencies, and the resulting direct
+      dependencies in turn get propagated to the conditions of all properties.
 
       If a symbol or choice is defined in multiple locations, only the
       properties defined at a particular location get the corresponding
