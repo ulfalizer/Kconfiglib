@@ -510,6 +510,18 @@ Three configuration interfaces are currently available:
   ``guiconfig.py`` has been tested on X11, Windows, and macOS, and is
   compatible with both Python 2 and Python 3.
 
+  Despite being part of the Python standard library, ``tkinter`` often isn't
+  included by default in Python installations on Linux. These commands will
+  install it on a few different distributions:
+
+  - Ubuntu: ``sudo apt install python-tk``/``sudo apt install python3-tk``
+
+  - Fedora: ``dnf install python2-tkinter``/``dnf install python3-tkinter``
+
+  - Arch: ``sudo pacman -S tk``
+
+  - Clear Linux: ``sudo swupd bundle-add python3-tcl``
+
   Screenshot below, with show-all mode enabled and the jump-to dialog open:
 
   .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/guiconfig.png
