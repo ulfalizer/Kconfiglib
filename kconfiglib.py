@@ -2661,8 +2661,8 @@ class Kconfig(object):
                     self._leave_file()
 
             elif t0 is end_token:
-                # We have reached the end of the block. Terminate the final
-                # node and return it.
+                # Reached the end of the block. Terminate the final node and
+                # return it.
 
                 if self._tokens[1] is not None:
                     self._trailing_tokens_error()
@@ -3632,12 +3632,10 @@ class Kconfig(object):
                sym.name != "MODULES":
 
                 msg = "undefined symbol {}:".format(sym.name)
-
                 for node in self.node_iter():
                     if sym in node.referenced:
                         msg += "\n\n- Referenced at {}:{}:\n\n{}" \
                                .format(node.filename, node.linenr, node)
-
                 self._warn(msg)
 
     def _warn(self, msg, filename=None, linenr=None):
