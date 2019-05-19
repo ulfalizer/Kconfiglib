@@ -64,7 +64,7 @@ WITH_HELP_DESC = False
 
 
 def indent_print(s, indent):
-    print(" "*indent + s)
+    print(indent*" " + s)
 
 
 def value_str(sc):

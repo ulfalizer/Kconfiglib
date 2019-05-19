@@ -47,7 +47,7 @@ from kconfiglib import Kconfig, Symbol, Choice, MENU, COMMENT
 
 
 def indent_print(s, indent):
-    print(" "*indent + s)
+    print(indent*" " + s)
 
 
 def print_items(node, indent):

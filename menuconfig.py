@@ -2680,7 +2680,7 @@ def _split_expr_info(expr, indent):
 
     s = ""
     for i, term in enumerate(split_expr(expr, split_op)):
-        s += "{}{} {}".format(" "*indent,
+        s += "{}{} {}".format(indent*" ",
                               "  " if i == 0 else op_str,
                               _expr_str(term))
 
