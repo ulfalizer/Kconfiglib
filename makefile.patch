@@ -1,4 +1,4 @@
-From 7bd20c66475a2fd0c702efc1dd1fc3eb6bbaa116 Mon Sep 17 00:00:00 2001
+From fa2361b2d1aaa6030288aad94f9a49bc63620c29 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
 Date: Tue, 9 Jun 2015 13:01:34 +0200
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch
@@ -8,12 +8,12 @@ Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch
  1 file changed, 34 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 7c5dc31c1d95..8e49257b0309 100644
+index 7c5dc31c1d95..5364001fb5f7 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
 @@ -27,2 +27,36 @@ gconfig: $(obj)/gconf
  
-+PHONY += scriptconfig iscriptconfig kmenuconfig dumpvarsconfig
++PHONY += scriptconfig iscriptconfig kmenuconfig guiconfig dumpvarsconfig
 +
 +PYTHONCMD   ?= python
 +kpythonpath := PYTHONPATH=$(srctree)/Kconfiglib:$$PYTHONPATH
