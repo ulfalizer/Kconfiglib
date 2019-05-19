@@ -16,6 +16,9 @@ The exit status on errors is 1.
 
 The default input/output configuration file is '.config'. A different filename
 can be passed in the KCONFIG_CONFIG environment variable.
+
+When overwriting a configuration file, the old version is saved to
+<filename>.old (e.g. .config.old).
 """
 import argparse
 import sys

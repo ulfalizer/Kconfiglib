@@ -41,6 +41,9 @@ as a command-line argument. With no argument, it defaults to "Kconfig".
 The KCONFIG_CONFIG environment variable specifies the .config file to load (if
 it exists) and save. If KCONFIG_CONFIG is unset, ".config" is used.
 
+When overwriting a configuration file, the old version is saved to
+<filename>.old (e.g. .config.old).
+
 $srctree is supported through Kconfiglib.
 """
 

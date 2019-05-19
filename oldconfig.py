@@ -14,6 +14,9 @@ Implements oldconfig functionality.
 The default input/output filename is '.config'. A different filename can be
 passed in the KCONFIG_CONFIG environment variable.
 
+When overwriting a configuration file, the old version is saved to
+<filename>.old (e.g. .config.old).
+
 Entering '?' displays the help text of the symbol/choice, if any.
 
 Unlike 'make oldconfig', this script doesn't print menu titles and comments,

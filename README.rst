@@ -164,6 +164,9 @@ Getting started
    implicit ``olddefconfig``, so building will normally not be affected by
    having an outdated configuration.
 
+Whenever ``.config`` is overwritten, the previous version of the file is saved
+to ``.config.old`` (or, more generally, to ``$KCONFIG_CONFIG.old``).
+
 For some general Kconfig advice, see `this page
 <https://docs.zephyrproject.org/latest/guides/kconfig/index.html>`__.
 
