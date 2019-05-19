@@ -37,7 +37,6 @@ if sys.version_info[0] < 3:
     input = raw_input
 
 
-# Note: Used as the entry point in setup.py
 def _main():
     # Earlier symbols in Kconfig files might depend on later symbols and become
     # visible if their values change. This flag is set to True if the value of

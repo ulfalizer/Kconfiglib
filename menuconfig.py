@@ -631,7 +631,6 @@ def _style_attr(fg_color, bg_color, attribs, color_attribs={}):
 #
 
 
-# Used as the entry point in setup.py
 def _main():
     menuconfig(standard_kconfig())
 
