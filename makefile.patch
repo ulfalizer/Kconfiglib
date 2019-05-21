@@ -1,17 +1,17 @@
-From fa2361b2d1aaa6030288aad94f9a49bc63620c29 Mon Sep 17 00:00:00 2001
+From 4605632b820e60d6b468bf061447113602087759 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
 Date: Tue, 9 Jun 2015 13:01:34 +0200
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch
 
 ---
- scripts/kconfig/Makefile | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ scripts/kconfig/Makefile | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 7c5dc31c1d95..5364001fb5f7 100644
+index 7c5dc31c1d95..c0e3b3f8c981 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -27,2 +27,36 @@ gconfig: $(obj)/gconf
+@@ -27,2 +27,34 @@ gconfig: $(obj)/gconf
  
 +PHONY += scriptconfig iscriptconfig kmenuconfig guiconfig dumpvarsconfig
 +
@@ -32,10 +32,8 @@ index 7c5dc31c1d95..5364001fb5f7 100644
 +iscriptconfig:
 +	$(Q)$(kpython) -i -c \
 +	  "import kconfiglib; \
-+	   import sys; \
-+	   kconf = kconfiglib.Kconfig(sys.argv[4 if '$(PYTHONCMD)'.startswith('ipython') else 1]); \
-+	   print('A Kconfig instance \'kconf\' for the architecture $(ARCH) has been created.')" \
-+	  $(Kconfig)
++	   kconf = kconfiglib.Kconfig('$(Kconfig)'); \
++	   print('A Kconfig instance \'kconf\' for the architecture $(ARCH) has been created.')"
 +
 +# The terminal menuconfig only runs under Python 3
 +kmenuconfig:
