@@ -1693,8 +1693,8 @@ class Kconfig(object):
 
     def unset_values(self):
         """
-        Resets the user values of all symbols, as if Kconfig.load_config() or
-        Symbol.set_value() had never been called.
+        Removes any user values from all symbols, as if Kconfig.load_config()
+        or Symbol.set_value() had never been called.
         """
         self._warn_for_no_prompt = False
         try:
@@ -4304,8 +4304,8 @@ class Symbol(object):
 
     def unset_value(self):
         """
-        Resets the user value of the symbol, as if the symbol had never gotten
-        a user value via Kconfig.load_config() or Symbol.set_value().
+        Removes any user value from the symbol, as if the symbol had never
+        gotten a user value via Kconfig.load_config() or Symbol.set_value().
         """
         if self.user_value is not None:
             self.user_value = None
