@@ -1219,7 +1219,7 @@ def _select_prev_menu_entry():
         _sel_node_i -= 1
 
         # See _select_next_menu_entry()
-        if _sel_node_i <= _menu_scroll + _SCROLL_OFFSET:
+        if _sel_node_i < _menu_scroll + _SCROLL_OFFSET:
             _menu_scroll = max(_menu_scroll - 1, 0)
 
 
@@ -2034,7 +2034,7 @@ def _jump_to_dialog():
         if sel_node_i > 0:
             sel_node_i -= 1
 
-            if sel_node_i <= scroll + _SCROLL_OFFSET:
+            if sel_node_i < scroll + _SCROLL_OFFSET:
                 scroll = max(scroll - 1, 0)
 
     while True:
