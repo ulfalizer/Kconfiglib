@@ -158,7 +158,10 @@ Getting started
    
 5. To update an old ``.config`` file after the Kconfig files have changed (e.g.
    to add new options), run ``oldconfig`` (prompts for values for new options)
-   or ``olddefconfig`` (gives new options their default value).
+   or ``olddefconfig`` (gives new options their default value). Entering the
+   ``menuconfig`` or ``guiconfig`` interface and saving the configuration will
+   also update it (the configuration interfaces always prompt for saving
+   on exit if it would modify the contents of the ``.config`` file).
 
    Due to Kconfig semantics, simply loading an old ``.config`` file performs an
    implicit ``olddefconfig``, so building will normally not be affected by
