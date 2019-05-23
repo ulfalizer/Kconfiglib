@@ -5479,7 +5479,12 @@ class Variable(object):
 
 
 class KconfigError(Exception):
-    "Exception raised for Kconfig-related errors"
+    """
+    Exception raised for Kconfig-related errors.
+
+    KconfigError and KconfigSyntaxError are the same class. The
+    KconfigSyntaxError alias is only maintained for backwards compatibility.
+    """
 
 KconfigSyntaxError = KconfigError  # Backwards compatibility
 
