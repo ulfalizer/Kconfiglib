@@ -3321,18 +3321,15 @@ class Kconfig(object):
 
         cur = node.list
         while cur:
-            cur.dep = dep = self._make_and(cur.dep, basedep)
-
-            # Propagate dependencies to prompt
-            if cur.prompt:
-                cur.prompt = (cur.prompt[0],
-                              self._make_and(cur.prompt[1], dep))
+            dep = cur.dep = self._make_and(cur.dep, basedep)
 
             if cur.item.__class__ in _SYMBOL_CHOICE:
-                # Propagate 'visible if' dependencies to the prompt
                 if cur.prompt:
+                    # Propagate 'visible if' and dependencies to the prompt
                     cur.prompt = (cur.prompt[0],
-                                  self._make_and(cur.prompt[1], visible_if))
+                                  self._make_and(
+                                      cur.prompt[1],
+                                      self._make_and(visible_if, dep)))
 
                 # Propagate dependencies to defaults
                 if cur.defaults:
@@ -3354,6 +3351,11 @@ class Kconfig(object):
                     cur.implies = [(target, self._make_and(cond, dep))
                                    for target, cond in cur.implies]
 
+            elif cur.prompt:  # Not a symbol/choice
+                # Propagate dependencies to the prompt. 'visible if' is only
+                # propagated to symbols/choices.
+                cur.prompt = (cur.prompt[0],
+                              self._make_and(cur.prompt[1], dep))
 
             cur = cur.next
 

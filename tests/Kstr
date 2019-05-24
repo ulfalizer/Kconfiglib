@@ -36,12 +36,17 @@ if DEP3
 
 menu "foo"
     depends on DEP4
+    visible if VIS
 
 config ADVANCED
     help
       second help text
     depends on A || !B || (C && D) || !(E && F) || G = H || \
               (I && !J && (K || L) && !(M || N) && O = P)
+
+config ADVANCED
+    # Used to verify that the direct dependencies appear to the right of VIS
+    prompt "prompt 4"
 
 endmenu
 

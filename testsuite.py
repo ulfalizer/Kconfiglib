@@ -554,6 +554,11 @@ config ADVANCED
 	depends on (A || !B || (C && D) || !(E && F) || G = H || (I && !J && (K || L) && !(M || N) && O = P)) && DEP4 && DEP3
 	help
 	  second help text
+
+config ADVANCED
+	tristate
+	prompt "prompt 4" if VIS && DEP4 && DEP3
+	depends on DEP4 && DEP3
 """)
 
     verify_custom_str(c.syms["ADVANCED"], """
@@ -582,6 +587,11 @@ config ADVANCED
 	depends on ([A] || ![B] || ([C] && [D]) || !([E] && [F]) || [G] = [H] || ([I] && ![J] && ([K] || [L]) && !([M] || [N]) && [O] = [P])) && [DEP4] && [DEP3]
 	help
 	  second help text
+
+config ADVANCED
+	tristate
+	prompt "prompt 4" if [VIS] && [DEP4] && [DEP3]
+	depends on [DEP4] && [DEP3]
 """)
 
 
