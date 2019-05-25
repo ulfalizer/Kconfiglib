@@ -5652,7 +5652,9 @@ def standard_sc_expr_str(sc):
     See expr_str().
     """
     if sc.__class__ is Symbol:
-        return '"{}"'.format(escape(sc.name)) if sc.is_constant else sc.name
+        if sc.is_constant and sc.name not in ("n", "m", "y"):
+            return '"{}"'.format(escape(sc.name))
+        return sc.name
 
     # Choice
     return "<choice {}>".format(sc.name) if sc.name else "<choice>"

@@ -807,16 +807,16 @@ comment "advanced comment"
 config DEP_REM_CORNER_CASES
 	bool
 	default A
-	depends on "n"
+	depends on n
 
 config DEP_REM_CORNER_CASES
 	bool
-	default B if "n"
+	default B if n
 
 config DEP_REM_CORNER_CASES
 	bool
 	default C
-	depends on "m" && MODULES
+	depends on m && MODULES
 
 config DEP_REM_CORNER_CASES
 	bool
@@ -1257,10 +1257,10 @@ tests/Krecursive2:1
 
     c = Kconfig("Kconfiglib/tests/Kdirdep")
 
-    verify_equal(expr_str(c.syms["NO_DEP_SYM"].direct_dep), '"y"')
+    verify_equal(expr_str(c.syms["NO_DEP_SYM"].direct_dep), 'y')
     verify_equal(expr_str(c.syms["DEP_SYM"].direct_dep), "A || (B && C) || !D")
 
-    verify_equal(expr_str(c.named_choices["NO_DEP_CHOICE"].direct_dep), '"y"')
+    verify_equal(expr_str(c.named_choices["NO_DEP_CHOICE"].direct_dep), 'y')
     verify_equal(expr_str(c.named_choices["DEP_CHOICE"].direct_dep),
                  "A || B || C")
 
