@@ -5429,13 +5429,21 @@ class MenuNode(object):
         else:
             lines = ["choice " + sc.name if sc.name else "choice"]
 
-        if sc.orig_type:  # != UNKNOWN
+        if sc.orig_type and not self.prompt:  # sc.orig_type != UNKNOWN
+            # If there's a prompt, we'll use the '<type> "prompt"' shorthand
+            # instead
             indent_add(TYPE_TO_STR[sc.orig_type])
 
         if self.prompt:
-            indent_add_cond(
-                'prompt "{}"'.format(escape(self.prompt[0])),
-                self.orig_prompt[1])
+            if sc.orig_type:
+                prompt = TYPE_TO_STR[sc.orig_type]
+            else:
+                # Symbol defined without a type (which generates a warning)
+                prompt = "prompt"
+
+            prompt += ' "{}"'.format(escape(self.prompt[0]))
+
+            indent_add_cond(prompt, self.orig_prompt[1])
 
         if sc.__class__ is Symbol:
             if sc.is_allnoconfig_y:

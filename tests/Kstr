@@ -238,3 +238,7 @@ config DEP_REM_CORNER_CASES
     depends on BAZ && QAZ
 
 endmenu
+
+# Only prompt, no type
+config PROMPT_ONLY
+    prompt "prompt only"

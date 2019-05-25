@@ -524,14 +524,12 @@ config BASIC_NO_PROMPT
 
     verify_str(c.syms["BASIC_PROMPT"], """
 config BASIC_PROMPT
-	bool
-	prompt "basic"
+	bool "basic"
 """)
 
     verify_str(c.syms["ADVANCED"], """
 config ADVANCED
-	tristate
-	prompt "prompt" if DEP
+	tristate "prompt" if DEP
 	default DEFAULT_1
 	default DEFAULT_2 if DEP
 	select SELECTED_1
@@ -542,12 +540,10 @@ config ADVANCED
 	  first help text
 
 config ADVANCED
-	tristate
-	prompt "prompt 2"
+	tristate "prompt 2"
 
 menuconfig ADVANCED
-	tristate
-	prompt "prompt 3"
+	tristate "prompt 3"
 
 config ADVANCED
 	tristate
@@ -556,15 +552,13 @@ config ADVANCED
 	  second help text
 
 config ADVANCED
-	tristate
-	prompt "prompt 4" if VIS
+	tristate "prompt 4" if VIS
 	depends on DEP4 && DEP3
 """)
 
     verify_custom_str(c.syms["ADVANCED"], """
 config ADVANCED
-	tristate
-	prompt "prompt" if [DEP]
+	tristate "prompt" if [DEP]
 	default [DEFAULT_1]
 	default [DEFAULT_2] if [DEP]
 	select [SELECTED_1]
@@ -575,12 +569,10 @@ config ADVANCED
 	  first help text
 
 config ADVANCED
-	tristate
-	prompt "prompt 2"
+	tristate "prompt 2"
 
 menuconfig ADVANCED
-	tristate
-	prompt "prompt 3"
+	tristate "prompt 3"
 
 config ADVANCED
 	tristate
@@ -589,8 +581,7 @@ config ADVANCED
 	  second help text
 
 config ADVANCED
-	tristate
-	prompt "prompt 4" if [VIS]
+	tristate "prompt 4" if [VIS]
 	depends on [DEP4] && [DEP3]
 """)
 
@@ -630,8 +621,7 @@ config HEX
 
     verify_str(c.modules, """
 config MODULES
-	bool
-	prompt "MODULES"
+	bool "MODULES"
 	option modules
 """)
 
@@ -644,8 +634,7 @@ config OPTIONS
 
     verify_str(c.syms["CORRECT_PROP_LOCS_BOOL"], """
 config CORRECT_PROP_LOCS_BOOL
-	bool
-	prompt "prompt 1"
+	bool "prompt 1"
 	default DEFAULT_1
 	default DEFAULT_2
 	select SELECT_1
@@ -657,8 +646,7 @@ config CORRECT_PROP_LOCS_BOOL
 	  help 1
 
 menuconfig CORRECT_PROP_LOCS_BOOL
-	bool
-	prompt "prompt 2"
+	bool "prompt 2"
 	default DEFAULT_3
 	default DEFAULT_4
 	select SELECT_3
@@ -670,8 +658,7 @@ menuconfig CORRECT_PROP_LOCS_BOOL
 	  help 2
 
 config CORRECT_PROP_LOCS_BOOL
-	bool
-	prompt "prompt 3"
+	bool "prompt 3"
 	default DEFAULT_5
 	default DEFAULT_6
 	select SELECT_5
@@ -697,6 +684,11 @@ config CORRECT_PROP_LOCS_INT
 	depends on LOC_2
 """)
 
+    verify_str(c.syms["PROMPT_ONLY"], """
+config PROMPT_ONLY
+	prompt "prompt only"
+""")
+
     verify_custom_str(c.syms["CORRECT_PROP_LOCS_INT"], """
 config CORRECT_PROP_LOCS_INT
 	int
@@ -717,16 +709,14 @@ config CORRECT_PROP_LOCS_INT
 
     verify_str(c.named_choices["CHOICE"], """
 choice CHOICE
-	tristate
-	prompt "foo"
+	tristate "foo"
 	default CHOICE_1
 	default CHOICE_2 if dep
 """)
 
     verify_str(c.named_choices["CHOICE"].nodes[0].next.item, """
 choice
-	tristate
-	prompt "no name"
+	tristate "no name"
 	optional
 """)
 
@@ -835,8 +825,7 @@ config DEP_REM_CORNER_CASES
 	depends on "foo" = "bar"
 
 config DEP_REM_CORNER_CASES
-	bool
-	prompt "prompt" if FOO || BAR
+	bool "prompt" if FOO || BAR
 	depends on BAZ && QAZ
 """)
 
@@ -2391,22 +2380,19 @@ config G
 ...depends on the choice symbol H (defined at Kconfiglib/tests/Kdeploop10:32), with definition...
 
 config H
-	bool
-	prompt "H"
+	bool "H"
 	depends on I && <choice>
 
 ...depends on the choice symbol I (defined at Kconfiglib/tests/Kdeploop10:41), with definition...
 
 config I
-	bool
-	prompt "I"
+	bool "I"
 	depends on <choice>
 
 ...depends on <choice> (defined at Kconfiglib/tests/Kdeploop10:38), with definition...
 
 choice
-	bool
-	prompt "choice" if J
+	bool "choice" if J
 
 ...depends on J (defined at Kconfiglib/tests/Kdeploop10:46), with definition...
 
@@ -2490,15 +2476,13 @@ config J
 
     verify_str(c.syms["PRINT_ME"], r"""
 config PRINT_ME
-	string
-	prompt "env_1" if (FOO && BAR) || !BAZ || !QAZ
+	string "env_1" if (FOO && BAR) || !BAZ || !QAZ
 	default "\"foo\"" if "foo \"bar\" baz" = ""
 """)
 
     verify_str(c.syms["PRINT_ME_TOO"], r"""
 config PRINT_ME_TOO
-	bool
-	prompt "foo"
+	bool "foo"
 	default FOOBARBAZQAZ if QAZ && QAZFOO && xxx
 """)
 
@@ -2615,8 +2599,7 @@ warning: undefined symbol UNDEF_1:
 - Referenced at Kconfiglib/tests/Kundef:4:
 
 config BOOL
-	bool
-	prompt "foo" if DEF || !UNDEF_1
+	bool "foo" if DEF || !UNDEF_1
 	default UNDEF_2
 
 - Referenced at Kconfiglib/tests/Kundef:19:
@@ -2629,8 +2612,7 @@ warning: undefined symbol UNDEF_2:
 - Referenced at Kconfiglib/tests/Kundef:4:
 
 config BOOL
-	bool
-	prompt "foo" if DEF || !UNDEF_1
+	bool "foo" if DEF || !UNDEF_1
 	default UNDEF_2
 
 - Referenced at Kconfiglib/tests/Kundef:8:
