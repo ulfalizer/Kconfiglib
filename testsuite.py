@@ -557,7 +557,7 @@ config ADVANCED
 
 config ADVANCED
 	tristate
-	prompt "prompt 4" if VIS && DEP4 && DEP3
+	prompt "prompt 4" if VIS
 	depends on DEP4 && DEP3
 """)
 
@@ -590,7 +590,7 @@ config ADVANCED
 
 config ADVANCED
 	tristate
-	prompt "prompt 4" if [VIS] && [DEP4] && [DEP3]
+	prompt "prompt 4" if [VIS]
 	depends on [DEP4] && [DEP3]
 """)
 
@@ -645,39 +645,39 @@ config OPTIONS
     verify_str(c.syms["CORRECT_PROP_LOCS_BOOL"], """
 config CORRECT_PROP_LOCS_BOOL
 	bool
-	prompt "prompt 1" if LOC_1
-	default DEFAULT_1 if LOC_1
-	default DEFAULT_2 if LOC_1
-	select SELECT_1 if LOC_1
-	select SELECT_2 if LOC_1
-	imply IMPLY_1 if LOC_1
-	imply IMPLY_2 if LOC_1
+	prompt "prompt 1"
+	default DEFAULT_1
+	default DEFAULT_2
+	select SELECT_1
+	select SELECT_2
+	imply IMPLY_1
+	imply IMPLY_2
 	depends on LOC_1
 	help
 	  help 1
 
 menuconfig CORRECT_PROP_LOCS_BOOL
 	bool
-	prompt "prompt 2" if LOC_2
-	default DEFAULT_3 if LOC_2
-	default DEFAULT_4 if LOC_2
-	select SELECT_3 if LOC_2
-	select SELECT_4 if LOC_2
-	imply IMPLY_3 if LOC_2
-	imply IMPLY_4 if LOC_2
+	prompt "prompt 2"
+	default DEFAULT_3
+	default DEFAULT_4
+	select SELECT_3
+	select SELECT_4
+	imply IMPLY_3
+	imply IMPLY_4
 	depends on LOC_2
 	help
 	  help 2
 
 config CORRECT_PROP_LOCS_BOOL
 	bool
-	prompt "prompt 3" if LOC_3
-	default DEFAULT_5 if LOC_3
-	default DEFAULT_6 if LOC_3
-	select SELECT_5 if LOC_3
-	select SELECT_6 if LOC_3
-	imply IMPLY_5 if LOC_3
-	imply IMPLY_6 if LOC_3
+	prompt "prompt 3"
+	default DEFAULT_5
+	default DEFAULT_6
+	select SELECT_5
+	select SELECT_6
+	imply IMPLY_5
+	imply IMPLY_6
 	depends on LOC_3
 	help
 	  help 2
@@ -686,28 +686,28 @@ config CORRECT_PROP_LOCS_BOOL
     verify_str(c.syms["CORRECT_PROP_LOCS_INT"], """
 config CORRECT_PROP_LOCS_INT
 	int
-	range 1 2 if LOC_1
-	range 3 4 if LOC_1
+	range 1 2
+	range 3 4
 	depends on LOC_1
 
 config CORRECT_PROP_LOCS_INT
 	int
-	range 5 6 if LOC_2
-	range 7 8 if LOC_2
+	range 5 6
+	range 7 8
 	depends on LOC_2
 """)
 
     verify_custom_str(c.syms["CORRECT_PROP_LOCS_INT"], """
 config CORRECT_PROP_LOCS_INT
 	int
-	range [1] [2] if [LOC_1]
-	range [3] [4] if [LOC_1]
+	range [1] [2]
+	range [3] [4]
 	depends on [LOC_1]
 
 config CORRECT_PROP_LOCS_INT
 	int
-	range [5] [6] if [LOC_2]
-	range [7] [8] if [LOC_2]
+	range [5] [6]
+	range [7] [8]
 	depends on [LOC_2]
 """)
 
@@ -733,34 +733,34 @@ choice
     verify_str(c.named_choices["CORRECT_PROP_LOCS_CHOICE"], """
 choice CORRECT_PROP_LOCS_CHOICE
 	bool
-	default CHOICE_3 if LOC_1
+	default CHOICE_3
 	depends on LOC_1
 
 choice CORRECT_PROP_LOCS_CHOICE
 	bool
-	default CHOICE_4 if LOC_2
+	default CHOICE_4
 	depends on LOC_2
 
 choice CORRECT_PROP_LOCS_CHOICE
 	bool
-	default CHOICE_5 if LOC_3
+	default CHOICE_5
 	depends on LOC_3
 """)
 
     verify_custom_str(c.named_choices["CORRECT_PROP_LOCS_CHOICE"], """
 choice CORRECT_PROP_LOCS_CHOICE
 	bool
-	default [CHOICE_3] if [LOC_1]
+	default [CHOICE_3]
 	depends on [LOC_1]
 
 choice CORRECT_PROP_LOCS_CHOICE
 	bool
-	default [CHOICE_4] if [LOC_2]
+	default [CHOICE_4]
 	depends on [LOC_2]
 
 choice CORRECT_PROP_LOCS_CHOICE
 	bool
-	default [CHOICE_5] if [LOC_3]
+	default [CHOICE_5]
 	depends on [LOC_3]
 """)
 
@@ -795,6 +795,49 @@ comment "advanced comment"
     verify_custom_str(c.syms["ADVANCED_COMMENT_HOOK"].nodes[0].next, """
 comment "advanced comment"
 	depends on [A] && [B]
+""")
+
+
+    print("Testing MenuNode.orig_*")
+
+    # Just test some corner cases here. These are already tested above. Use
+    # MenuNode.__str__() as a proxy.
+
+    verify_str(c.syms["DEP_REM_CORNER_CASES"], """
+config DEP_REM_CORNER_CASES
+	bool
+	default A
+	depends on "n"
+
+config DEP_REM_CORNER_CASES
+	bool
+	default B if "n"
+
+config DEP_REM_CORNER_CASES
+	bool
+	default C
+	depends on "m" && MODULES
+
+config DEP_REM_CORNER_CASES
+	bool
+	default D if A
+
+config DEP_REM_CORNER_CASES
+	bool
+	default E if !E1
+	default F if F1 = F2
+	default G if G1 || H1
+	depends on !H
+
+config DEP_REM_CORNER_CASES
+	bool
+	default H
+	depends on "foo" = "bar"
+
+config DEP_REM_CORNER_CASES
+	bool
+	prompt "prompt" if FOO || BAR
+	depends on BAZ && QAZ
 """)
 
 
@@ -2349,14 +2392,14 @@ config G
 
 config H
 	bool
-	prompt "H" if I && <choice>
+	prompt "H"
 	depends on I && <choice>
 
 ...depends on the choice symbol I (defined at Kconfiglib/tests/Kdeploop10:41), with definition...
 
 config I
 	bool
-	prompt "I" if <choice>
+	prompt "I"
 	depends on <choice>
 
 ...depends on <choice> (defined at Kconfiglib/tests/Kdeploop10:38), with definition...

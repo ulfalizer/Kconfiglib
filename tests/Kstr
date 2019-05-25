@@ -201,3 +201,40 @@ config ADVANCED_COMMENT_HOOK
 comment "advanced comment"
     depends on A
     depends on B
+
+# Corner cases when removing direct dependencies
+
+config DEP_REM_CORNER_CASES
+    bool
+    default A
+    depends on n
+
+config DEP_REM_CORNER_CASES
+    default B if n
+
+config DEP_REM_CORNER_CASES
+    default C
+    depends on m
+
+config DEP_REM_CORNER_CASES
+    default D if A && y
+    depends on y
+
+config DEP_REM_CORNER_CASES
+    default E if !E1
+    default F if F1 = F2
+    default G if G1 || H1
+    depends on !H
+
+config DEP_REM_CORNER_CASES
+    default H
+    depends on "foo" = "bar"
+
+menu "menu"
+    visible if FOO || BAR
+
+config DEP_REM_CORNER_CASES
+    prompt "prompt"
+    depends on BAZ && QAZ
+
+endmenu

@@ -2222,7 +2222,7 @@ def _kconfig_def_info(item):
 
     nodes = [item] if isinstance(item, MenuNode) else item.nodes
 
-    s = "Kconfig definition{}, with propagated dependencies\n" \
+    s = "Kconfig definition{}, with parent deps. propagated to 'depends on'\n" \
         .format("s" if len(nodes) > 1 else "")
     s += (len(s) - 1)*"="
 

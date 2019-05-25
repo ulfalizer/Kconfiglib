@@ -4378,8 +4378,9 @@ class Symbol(object):
 
     def __str__(self):
         """
-        Returns a string representation of the symbol when it is printed,
-        matching the Kconfig format, with parent dependencies propagated.
+        Returns a string representation of the symbol when it is printed.
+        Matches the Kconfig format, with any parent dependencies propagated to
+        the 'depends on' condition.
 
         The string is constructed by joining the strings returned by
         MenuNode.__str__() for each of the symbol's menu nodes, so symbols
@@ -4954,9 +4955,10 @@ class Choice(object):
 
     def __str__(self):
         """
-        Returns a string representation of the choice when it is printed,
-        matching the Kconfig format (though without the contained choice
-        symbols).
+        Returns a string representation of the choice when it is printed.
+        Matches the Kconfig format (though without the contained choice
+        symbols), with any parent dependencies propagated to the 'depends on'
+        condition.
 
         The returned string does not end in a newline.
 
@@ -5135,6 +5137,18 @@ class MenuNode(object):
     ranges:
       Like MenuNode.defaults, for ranges.
 
+    orig_prompt:
+    orig_defaults:
+    orig_selects:
+    orig_implies:
+    orig_ranges:
+      These work the like the corresponding attributes without orig_*, but omit
+      any dependencies propagated from 'depends on' and surrounding 'if's (the
+      direct dependencies, stored in MenuNode.dep).
+
+      One use for this is generating less cluttered documentation, by only
+      showing the direct dependencies in one place.
+
     help:
       The help text for the menu node for Symbols and Choices. None if there is
       no help text. Always stored in the node rather than the Symbol or Choice.
@@ -5234,6 +5248,47 @@ class MenuNode(object):
         self.ranges = []
 
     @property
+    def orig_prompt(self):
+        """
+        See the class documentation.
+        """
+        if not self.prompt:
+            return None
+        return (self.prompt[0], self._strip_dep(self.prompt[1]))
+
+    @property
+    def orig_defaults(self):
+        """
+        See the class documentation.
+        """
+        return [(default, self._strip_dep(cond))
+                for default, cond in self.defaults]
+
+    @property
+    def orig_selects(self):
+        """
+        See the class documentation.
+        """
+        return [(select, self._strip_dep(cond))
+                for select, cond in self.selects]
+
+    @property
+    def orig_implies(self):
+        """
+        See the class documentation.
+        """
+        return [(imply, self._strip_dep(cond))
+                for imply, cond in self.implies]
+
+    @property
+    def orig_ranges(self):
+        """
+        See the class documentation.
+        """
+        return [(low, high, self._strip_dep(cond))
+                for low, high, cond in self.ranges]
+
+    @property
     def referenced(self):
         """
         See the class documentation.
@@ -5318,8 +5373,9 @@ class MenuNode(object):
 
     def __str__(self):
         """
-        Returns a string representation of the menu node, matching the Kconfig
-        format.
+        Returns a string representation of the menu node. Matches the Kconfig
+        format, with any parent dependencies propagated to the 'depends on'
+        condition.
 
         The output could (almost) be fed back into a Kconfig parser to redefine
         the object associated with the menu node. See the module documentation
@@ -5379,7 +5435,7 @@ class MenuNode(object):
         if self.prompt:
             indent_add_cond(
                 'prompt "{}"'.format(escape(self.prompt[0])),
-                self.prompt[1])
+                self.orig_prompt[1])
 
         if sc.__class__ is Symbol:
             if sc.is_allnoconfig_y:
@@ -5394,13 +5450,13 @@ class MenuNode(object):
             if sc is sc.kconfig.modules:
                 indent_add("option modules")
 
-            for low, high, cond in self.ranges:
+            for low, high, cond in self.orig_ranges:
                 indent_add_cond(
                     "range {} {}".format(sc_expr_str_fn(low),
                                          sc_expr_str_fn(high)),
                     cond)
 
-        for default, cond in self.defaults:
+        for default, cond in self.orig_defaults:
             indent_add_cond("default " + expr_str(default, sc_expr_str_fn),
                             cond)
 
@@ -5408,10 +5464,10 @@ class MenuNode(object):
             indent_add("optional")
 
         if sc.__class__ is Symbol:
-            for select, cond in self.selects:
+            for select, cond in self.orig_selects:
                 indent_add_cond("select " + sc_expr_str_fn(select), cond)
 
-            for imply, cond in self.implies:
+            for imply, cond in self.orig_implies:
                 indent_add_cond("imply " + sc_expr_str_fn(imply), cond)
 
         if self.dep is not sc.kconfig.y:
@@ -5423,6 +5479,21 @@ class MenuNode(object):
                 indent_add("  " + line)
 
         return "\n".join(lines)
+
+    def _strip_dep(self, expr):
+        # Helper function for removing MenuNode.dep from 'expr'. Uses two
+        # pieces of internal knowledge: (1) Expressions are reused rather than
+        # copied, and (2) the direct dependencies always appear at the end.
+
+        # ... if dep -> ... if y
+        if self.dep is expr:
+            return self.kconfig.y
+
+        # (AND, X, dep) -> X
+        if expr.__class__ is tuple and expr[0] is AND and expr[2] is self.dep:
+            return expr[1]
+
+        return expr
 
 
 class Variable(object):

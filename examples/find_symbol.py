@@ -42,8 +42,8 @@
 #
 #   config OPROFILE_EVENT_MULTIPLEX
 #   	bool
-#   	prompt "OProfile multiplexing support (EXPERIMENTAL)" if OPROFILE && X86
-#   	default "n" if OPROFILE && X86
+#   	prompt "OProfile multiplexing support (EXPERIMENTAL)"
+#   	default "n"
 #   	depends on OPROFILE && X86
 #   	help
 #   	  The number of hardware counters is limited. The multiplexing
@@ -57,9 +57,9 @@
 #
 #   config OPROFILE
 #   	tristate
-#   	prompt "OProfile system profiling" if PROFILING && HAVE_OPROFILE
-#   	select RING_BUFFER if PROFILING && HAVE_OPROFILE
-#   	select RING_BUFFER_ALLOW_SWAP if PROFILING && HAVE_OPROFILE
+#   	prompt "OProfile system profiling"
+#   	select RING_BUFFER
+#   	select RING_BUFFER_ALLOW_SWAP
 #   	depends on PROFILING && HAVE_OPROFILE
 #   	help
 #   	  OProfile is a profiling system capable of profiling the
