@@ -5436,14 +5436,13 @@ class MenuNode(object):
 
         if self.prompt:
             if sc.orig_type:
-                prompt = TYPE_TO_STR[sc.orig_type]
+                prefix = TYPE_TO_STR[sc.orig_type]
             else:
                 # Symbol defined without a type (which generates a warning)
-                prompt = "prompt"
+                prefix = "prompt"
 
-            prompt += ' "{}"'.format(escape(self.prompt[0]))
-
-            indent_add_cond(prompt, self.orig_prompt[1])
+            indent_add_cond(prefix + ' "{}"'.format(escape(self.prompt[0])),
+                            self.orig_prompt[1])
 
         if sc.__class__ is Symbol:
             if sc.is_allnoconfig_y:
