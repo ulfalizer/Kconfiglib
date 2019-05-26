@@ -1354,7 +1354,7 @@ class Kconfig(object):
         filename (default: None):
           Filename to save configuration to (a string).
 
-          If None (the default), the filename in the the environment variable
+          If None (the default), the filename in the environment variable
           KCONFIG_CONFIG is used if set, and ".config" otherwise. See
           standard_config_filename().
 
