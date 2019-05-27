@@ -390,7 +390,7 @@ Globbing 'source'
 -----------------
 
 'source' and 'rsource' accept glob patterns, sourcing all matching Kconfig
-files. They require at least one matching file, throwing a KconfigError
+files. They require at least one matching file, raising a KconfigError
 otherwise.
 
 For example, the following statement might source sub1/foofoofoo and
@@ -807,8 +807,8 @@ class Kconfig(object):
         default warning settings (KCONFIG_WARN_UNDEF and
         KCONFIG_WARN_UNDEF_ASSIGN).
 
-        Raises KconfigError on syntax errors, and (possibly a subclass of)
-        IOError on IO errors ('errno', 'strerror', and 'filename' are
+        Raises KconfigError on syntax/semantic errors, and (possibly a subclass
+        of) IOError on IO errors ('errno', 'strerror', and 'filename' are
         available). Note that IOError can be caught as OSError on Python 3.
 
         filename (default: "Kconfig"):
