@@ -1391,17 +1391,61 @@ class Kconfig(object):
         with self._open(filename, "w") as f:
             f.write(header)
 
-            for node in self.node_iter(unique_syms=True):
+            for sym in self.unique_defined_syms:
+                sym._visited = False
+
+            # Did we just print an '# end of ...' comment?
+            after_end_comment = False
+
+            node = self.top_node
+            while 1:
+                # Jump to the next node with an iterative tree walk
+                if node.list:
+                    node = node.list
+                elif node.next:
+                    node = node.next
+                else:
+                    while node.parent:
+                        node = node.parent
+
+                        # Print a comment when leaving visible menus
+                        if node.item is MENU and expr_value(node.dep) and \
+                           expr_value(node.visibility) and \
+                           node is not self.top_node:
+                            f.write("# end of {}\n".format(node.prompt[0]))
+                            after_end_comment = True
+
+                        if node.next:
+                            node = node.next
+                            break
+                    else:
+                        # No more nodes
+                        return
+
                 item = node.item
 
                 if item.__class__ is Symbol:
-                    f.write(item.config_string)
+                    if item._visited:
+                        continue
+                    item._visited = True
+
+                    conf_string = item.config_string
+                    if not conf_string:
+                        continue
+
+                    if after_end_comment:
+                        # Add a blank line before the first symbol printed
+                        # after an '# end of ...' comment
+                        after_end_comment = False
+                        f.write("\n")
+                    f.write(conf_string)
 
                 elif expr_value(node.dep) and \
                      ((item is MENU and expr_value(node.visibility)) or
                        item is COMMENT):
 
                     f.write("\n#\n# {}\n#\n".format(node.prompt[0]))
+                    after_end_comment = False
 
         if verbose:
             print("Configuration written to '{}'".format(filename))
