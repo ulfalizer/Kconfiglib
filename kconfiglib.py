@@ -1388,6 +1388,10 @@ class Kconfig(object):
         if save_old:
             _save_old(filename)
 
+        # node_iter() was used here before commit 3aea9f7 ("Add '# end of
+        # <menu>' after menus in .config"). Those comments get tricky to
+        # implement with it.
+
         with self._open(filename, "w") as f:
             f.write(header)
 
@@ -1421,6 +1425,8 @@ class Kconfig(object):
                     else:
                         # No more nodes
                         return
+
+                # Generate configuration output for the node
 
                 item = node.item
 
