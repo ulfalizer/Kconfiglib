@@ -3324,8 +3324,8 @@ class Kconfig(object):
             dep = cur.dep = self._make_and(cur.dep, basedep)
 
             if cur.item.__class__ in _SYMBOL_CHOICE:
+                # Propagate 'visible if' and dependencies to the prompt
                 if cur.prompt:
-                    # Propagate 'visible if' and dependencies to the prompt
                     cur.prompt = (cur.prompt[0],
                                   self._make_and(
                                       cur.prompt[1],
