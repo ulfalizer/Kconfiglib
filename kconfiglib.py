@@ -1373,7 +1373,8 @@ class Kconfig(object):
           written.
 
           Errors are silently ignored if <filename>.old cannot be written (e.g.
-          due to being a directory).
+          due to being a directory, or <filename> being something like
+          /dev/null).
 
         verbose (default: True):
           If True and filename is None (automatically infer configuration
@@ -6057,24 +6058,34 @@ def _touch_dep_file(path, sym_name):
 
 
 def _save_old(path):
-    # See write_config(). os.replace() would be nice here, but it's Python 3
-    # (3.3+) only.
+    # See write_config()
+
+    def copy(src, dst):
+        # Import as needed, to save some startup time
+        import shutil
+        shutil.copyfile(src, dst)
+
+    if islink(path):
+        # Preserve symlinks
+        copy_fn = copy
+    elif hasattr(os, "replace"):
+        # Python 3 (3.3+) only. Best choice when available, because it
+        # removes <filename>.old on both *nix and Windows.
+        copy_fn = os.replace
+    elif os.name == "posix":
+        # Removes <filename>.old on POSIX systems
+        copy_fn = os.rename
+    else:
+        # Fall back on copying
+        copy_fn = copy
 
     try:
-        if os.name == "posix" and not islink(path):
-            # Will remove <filename>.old if it already exists on POSIX
-            # systems
-            os.rename(path, path + ".old")
-        else:
-            # Use copyfile() if 'path' is a symlink. The intention is probably
-            # to overwrite the target in that case. Only import shutil as
-            # needed, to save some startup time.
-            import shutil
-            shutil.copyfile(path, path + ".old")
+        copy_fn(path, path + ".old")
     except:
-        # Ignore errors from 'filename' missing as well as other errors. The
+        # Ignore errors from 'path' missing as well as other errors.
         # <filename>.old file is usually more of a nice-to-have, and not worth
-        # erroring out over e.g. if <filename>.old happens to be a directory.
+        # erroring out over e.g. if <filename>.old happens to be a directory or
+        # <filename> is something like /dev/null.
         pass
 
 
