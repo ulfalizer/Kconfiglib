@@ -7,9 +7,17 @@
 Generates a header file with #defines from the configuration, matching the
 format of include/generated/autoconf.h in the Linux kernel.
 
-Optionally creates/updates a directory structure with one file per symbol that
+Optionally, also writes the configuration output as a .config file. See
+--config-out.
+
+Optionally, creates/updates a directory structure with one file per symbol that
 can be used to implement incremental builds. See the docstring for
 Kconfig.sync_deps() in kconfiglib.py.
+
+Before writing a header file or other configuration output, Kconfiglib compares
+the old contents of the file against the new contents. If there's no change,
+the write is skipped. This avoids updating file metadata like the modification
+time, and might save work depending on your build setup.
 
 By default, the configuration is generated from '.config'. A different
 configuration file can be passed in the KCONFIG_CONFIG environment variable.

@@ -149,6 +149,11 @@ Getting started
    ``config.h``.
 
    Normally, ``genconfig`` would be run automatically as part of the build.
+
+   Before writing a header file or other configuration output, Kconfiglib
+   compares the old contents of the file against the new contents. If there's
+   no change, the write is skipped. This avoids updating file metadata like the
+   modification time, and might save work depending on your build setup.
    
    Adding new configuration output formats should be relatively straightforward.
    See the implementation of ``write_config()`` in `kconfiglib.py
