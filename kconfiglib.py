@@ -626,9 +626,8 @@ class Kconfig(object):
       top-level Kconfig file. If a file is source'd multiple times, it will
       appear multiple times. Use set() to get unique filenames.
 
-      Note: Using this for incremental builds is redundant. Kconfig.sync_deps()
-      already indirectly catches any file modifications that change the
-      configuration output.
+      Note that Kconfig.sync_deps() already indirectly catches any file
+      modifications that change configuration output.
 
     env_vars:
       A set() with the names of all environment variables referenced in the
@@ -1324,9 +1323,8 @@ class Kconfig(object):
         add = chunks.append
 
         for sym in self.unique_defined_syms:
-            # Note: _write_to_conf is determined when the value is
-            # calculated. This is a hidden function call due to
-            # property magic.
+            # _write_to_conf is determined when the value is calculated. This
+            # is a hidden function call due to property magic.
             val = sym.str_value
             if not sym._write_to_conf:
                 continue
@@ -1607,13 +1605,12 @@ class Kconfig(object):
         self._load_old_vals(path)
 
         for sym in self.unique_defined_syms:
-            # Note: _write_to_conf is determined when the value is
-            # calculated. This is a hidden function call due to
-            # property magic.
+            # _write_to_conf is determined when the value is calculated. This
+            # is a hidden function call due to property magic.
             val = sym.str_value
 
-            # Note: n tristate values do not get written to auto.conf and
-            # autoconf.h, making a missing symbol logically equivalent to n
+            # n tristate values do not get written to auto.conf and autoconf.h,
+            # making a missing symbol logically equivalent to n
 
             if sym._write_to_conf:
                 if sym._old_val is None and \
@@ -1984,11 +1981,10 @@ class Kconfig(object):
                             "\n".join("{}:{}".format(name, linenr)
                                       for name, linenr in self._include_path)))
 
-        # Note: We already know that the file exists
-
         try:
             self._readline = self._open(full_filename, "r").readline
         except IOError as e:
+            # We already know that the file exists
             raise _KconfigIOError(
                 e, "{}:{}: Could not open '{}' ({}: {})"
                    .format(self._filename, self._linenr, full_filename,
@@ -2021,8 +2017,8 @@ class Kconfig(object):
             # a help text)
             return True
 
-        # Note: readline() returns '' over and over at EOF, which we rely on
-        # for help texts at the end of files (see _line_after_help())
+        # readline() returns '' over and over at EOF, which we rely on for help
+        # texts at the end of files (see _line_after_help())
         line = self._readline()
         if not line:
             return False
@@ -2137,9 +2133,9 @@ class Kconfig(object):
         # regexes and string operations where possible. This is the biggest
         # hotspot during parsing.
         #
-        # Note: It might be possible to rewrite this to 'yield' tokens instead,
-        # working across multiple lines. The 'option env' lookback thing below
-        # complicates things though.
+        # It might be possible to rewrite this to 'yield' tokens instead,
+        # working across multiple lines. Lookback and compatibility with old
+        # janky versions of the C tools complicate things though.
 
         # Initial token on the line
         match = _command_match(s)
@@ -3077,7 +3073,7 @@ class Kconfig(object):
                 return
 
     def _set_type(self, node, new_type):
-        # Note: UNKNOWN == 0, which is falsy
+        # UNKNOWN is falsy
         if node.item.orig_type and node.item.orig_type is not new_type:
             self._warn("{} defined with multiple types, {} will be used"
                        .format(_name_and_loc(node.item),
@@ -4324,8 +4320,8 @@ class Symbol(object):
         """
         See the class documentation.
         """
-        # Note: _write_to_conf is determined when the value is calculated. This
-        # is a hidden function call due to property magic.
+        # _write_to_conf is determined when the value is calculated. This is a
+        # hidden function call due to property magic.
         val = self.str_value
         if not self._write_to_conf:
             return ""
@@ -5646,9 +5642,9 @@ class Variable(object):
       with :=), this will equal 'value'. Accessing this property will raise a
       KconfigError if the expansion seems to be stuck in a loop.
 
-      Note: Accessing this field is the same as calling expanded_value_w_args()
-      with no arguments. I hadn't considered function arguments when adding it.
-      It is retained for backwards compatibility though.
+      Accessing this field is the same as calling expanded_value_w_args() with
+      no arguments. I hadn't considered function arguments when adding it. It
+      is retained for backwards compatibility though.
 
     is_recursive:
       True if the variable is recursive (defined with =).
@@ -5955,8 +5951,8 @@ def standard_config_filename():
     Helper for tools. Returns the value of KCONFIG_CONFIG (which specifies the
     .config file to load/save) if it is set, and ".config" otherwise.
 
-    Note: Calling load_config() with filename=None might give the behavior you
-    want, without having to use this function.
+    Calling load_config() with filename=None might give the behavior you want,
+    without having to use this function.
     """
     return os.environ.get("KCONFIG_CONFIG", ".config")
 
@@ -6571,8 +6567,8 @@ except AttributeError:
     import platform
     _UNAME_RELEASE = platform.uname()[2]
 
-# Note: The token and type constants below are safe to test with 'is', which is
-# a bit faster (~30% faster on my machine, and a few % faster for total parsing
+# The token and type constants below are safe to test with 'is', which is a bit
+# faster (~30% faster on my machine, and a few % faster for total parsing
 # time), even without assuming Python's small integer optimization (which
 # caches small integer objects). The constants end up pointing to unique
 # integer objects, and since we consistently refer to them via the names below,
