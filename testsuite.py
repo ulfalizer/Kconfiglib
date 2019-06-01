@@ -1138,12 +1138,26 @@ tests/Krecursive2:1
         else:
             fail("'rsource' with missing file did not raise exception")
 
+    # Test a tricky case involving symlinks. $srctree is tests/symlink, which
+    # points to tests/sub/sub, meaning tests/symlink/.. != tests/. Previously,
+    # using 'rsource' from a file sourced with an absolute path triggered an
+    # unsafe relpath() with tests/symlink/.. in it, crashing.
+
+    os.environ["srctree"] = "Kconfiglib/tests/symlink"
+    os.environ["KCONFIG_SYMLINK_2"] = os.path.abspath(
+        "Kconfiglib/tests/sub/Kconfig_symlink_2")
+    if not os.path.isabs(
+        Kconfig("Kconfig_symlink_1").syms["FOUNDME"].nodes[0].filename):
+
+        fail("Symlink + rsource issues")
+
 
     print("Testing Kconfig.node_iter()")
 
     # Reuse tests/Klocation. The node_iter(unique_syms=True) case already gets
     # plenty of testing from write_config() as well.
 
+    os.environ["srctree"] = "Kconfiglib"
     c = Kconfig("tests/Klocation", warn=False)
 
     verify_equal(
@@ -1168,9 +1182,6 @@ tests/Krecursive2:1
         [node.prompt[0] for node in c.node_iter(True)
          if not isinstance(node.item, Symbol)],
         ["choice", "menu", "comment"])
-
-    # Get rid of custom 'srctree' from Klocation test
-    os.environ.pop("srctree", None)
 
 
     print("Testing MenuNode.include_path")

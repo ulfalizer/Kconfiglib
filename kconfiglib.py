@@ -537,7 +537,7 @@ import sys
 
 # Get rid of some attribute lookups. These are obvious in context.
 from glob import iglob
-from os.path import dirname, exists, expandvars, isabs, islink, join, relpath
+from os.path import dirname, exists, expandvars, islink, join, realpath
 
 
 # File layout:
@@ -747,6 +747,7 @@ class Kconfig(object):
         "_encoding",
         "_functions",
         "_set_match",
+        "_srctree_prefix",
         "_unset_match",
         "_warn_for_no_prompt",
         "_warn_for_override",
@@ -858,6 +859,11 @@ class Kconfig(object):
           Related PEP: https://www.python.org/dev/peps/pep-0538/
         """
         self.srctree = os.environ.get("srctree", "")
+        # A prefix we can reliably strip from glob() results to get a filename
+        # relative to $srctree. relpath() can cause issues for symlinks,
+        # because it assumes symlink/../foo is the same as foo/.
+        self._srctree_prefix = realpath(self.srctree) + os.sep
+
         self.config_prefix = os.environ.get("CONFIG_", "CONFIG_")
 
         # Regular expressions for parsing .config files
@@ -1404,9 +1410,9 @@ class Kconfig(object):
 
         contents = self._config_contents(header)
         if self._contents_eq(filename, contents):
-           if verbose:
-                print("No change to '{}'".format(filename))
-           return
+            if verbose:
+                 print("No change to '{}'".format(filename))
+            return
 
         if save_old:
             _save_old(filename)
@@ -1936,17 +1942,23 @@ class Kconfig(object):
                            "set to '{}'".format(self.srctree) if self.srctree
                                else "unset or blank"))
 
-    def _enter_file(self, full_filename, rel_filename):
+    def _enter_file(self, filename):
         # Jumps to the beginning of a sourced Kconfig file, saving the previous
         # position and file object.
         #
-        # full_filename:
-        #   Actual path to the file.
-        #
-        # rel_filename:
-        #   File path with $srctree prefix stripped, stored in e.g.
-        #   self._filename (which makes it indirectly show up in
-        #   MenuNode.filename). Equals full_filename for absolute paths.
+        # filename:
+        #   Absolute path to file
+
+        # Path relative to $srctree, stored in e.g. self._filename
+        # (which makes it indirectly show up in MenuNode.filename). Equals
+        # 'filename' for absolute paths passed to 'source'.
+        if filename.startswith(self._srctree_prefix):
+            # Relative path (or a redundant absolute path to within $srctree,
+            # but it's probably fine to reduce those too)
+            rel_filename = filename[len(self._srctree_prefix):]
+        else:
+            # Absolute path
+            rel_filename = filename
 
         self.kconfig_filenames.append(rel_filename)
 
@@ -1982,12 +1994,12 @@ class Kconfig(object):
                                       for name, linenr in self._include_path)))
 
         try:
-            self._readline = self._open(full_filename, "r").readline
+            self._readline = self._open(filename, "r").readline
         except IOError as e:
             # We already know that the file exists
             raise _KconfigIOError(
                 e, "{}:{}: Could not open '{}' ({}: {})"
-                   .format(self._filename, self._linenr, full_filename,
+                   .format(self._filename, self._linenr, filename,
                            errno.errorcode[e.errno], e.strerror))
 
         self._filename = rel_filename
@@ -2744,19 +2756,19 @@ class Kconfig(object):
             elif t0 in _SOURCE_TOKENS:
                 pattern = self._expect_str_and_eol()
 
-                # Check if the pattern is absolute and avoid stripping srctree
-                # from it below in that case. We must do the check before
-                # join()'ing, as srctree might be an absolute path.
-                pattern_is_abs = isabs(pattern)
-
                 if t0 in _REL_SOURCE_TOKENS:
                     # Relative source
                     pattern = join(dirname(self._filename), pattern)
 
-                # Sort the glob results to ensure a consistent ordering of
-                # Kconfig symbols, which indirectly ensures a consistent
-                # ordering in e.g. .config files
-                filenames = sorted(iglob(join(self.srctree, pattern)))
+                # - glob() doesn't support globbing relative to a directory, so
+                #   we need to prepend $srctree to 'pattern'. Use join()
+                #   instead of '+' so that an absolute path in 'pattern' is
+                #   preserved.
+                #
+                # - Sort the glob results to ensure a consistent ordering of
+                #   Kconfig symbols, which indirectly ensures a consistent
+                #   ordering in e.g. .config files
+                filenames = sorted(iglob(join(self._srctree_prefix, pattern)))
 
                 if not filenames and t0 in _OBL_SOURCE_TOKENS:
                     raise KconfigError(
@@ -2770,18 +2782,8 @@ class Kconfig(object):
                                     if self.srctree else "unset or blank"))
 
                 for filename in filenames:
-                    self._enter_file(
-                        filename,
-                        # Unless an absolute path is passed to *source, strip
-                        # the $srctree prefix from the filename. That way it
-                        # appears without a $srctree prefix in
-                        # MenuNode.filename, which is nice e.g. when generating
-                        # documentation.
-                        filename if pattern_is_abs else
-                            relpath(filename, self.srctree))
-
+                    self._enter_file(filename)
                     prev = self._parse_block(None, parent, prev)
-
                     self._leave_file()
 
             elif t0 is end_token:
