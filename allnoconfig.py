@@ -31,10 +31,10 @@ def main():
     # 2. Assigning values invalid for the type (only bool/tristate symbols
     #    accept 0/1/2, for n/m/y). The assignments will be ignored for other
     #    symbol types, which is what we want.
-    kconf.disable_warnings()
+    kconf.warn = False
     for sym in kconf.unique_defined_syms:
         sym.set_value(2 if sym.is_allnoconfig_y else 0)
-    kconf.enable_warnings()
+    kconf.warn = True
 
     kconfiglib.load_allconfig(kconf, "allno.config")
 

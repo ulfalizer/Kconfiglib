@@ -277,9 +277,8 @@ def get_value_from_user(sc):
         val = "0x" + val
 
     # Let Kconfiglib itself print a warning here if the value is invalid. We
-    # could also disable warnings temporarily with
-    # kconf.disable_warnings() / kconf.enable_warnings() and print our own
-    # warning.
+    # could also disable warnings temporarily with 'kconf.warn = False' and
+    # print our own warning.
     return sc.set_value(val)
 
 

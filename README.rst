@@ -384,8 +384,8 @@ The following Kconfig extensions are available:
     for all assignments to undefined symbols within ``.config`` files. By
     default, no such warnings are generated.
 
-    This warning can also be enabled/disabled via
-    ``Kconfig.enable/disable_undef_warnings()``.
+    This warning can also be enabled/disabled by setting
+    ``Kconfig.warn_assign_undef`` to ``True``/``False``.
 
 Other features
 --------------

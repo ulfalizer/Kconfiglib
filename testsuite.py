@@ -356,7 +356,7 @@ def run_selftests():
     verify_eval('"foo" = "foo"', 2)
 
     # Undefined symbols get their name as their value
-    c.disable_warnings()
+    c.warn = False
     verify_eval("'not_defined' = not_defined", 2)
     verify_eval("not_defined_2 = not_defined_2", 2)
     verify_eval("not_defined_1 != not_defined_2", 2)
@@ -957,20 +957,21 @@ config DEP_REM_CORNER_CASES
     print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Main menu", srctree is current directory, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, redundant symbol assignment warnings enabled>
+<configuration with 14 symbols, main menu prompt "Main menu", srctree is current directory, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, overriding symbol assignment warnings enabled, redundant symbol assignment warnings enabled>
 """)
 
     os.environ["srctree"] = "Kconfiglib"
     os.environ["CONFIG_"] = "CONFIG_ value"
 
     c = Kconfig("tests/Krepr", warn=False)
-    c.enable_warnings()
-    c.disable_stderr_warnings()
-    c.disable_redun_warnings()
-    c.enable_undef_warnings()
+    c.warn = True
+    c.warn_to_stderr = False
+    c.warn_assign_override = False
+    c.warn_assign_redun = False
+    c.warn_assign_undef = True
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Main menu", srctree "Kconfiglib", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, redundant symbol assignment warnings disabled>
+<configuration with 14 symbols, main menu prompt "Main menu", srctree "Kconfiglib", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, overriding symbol assignment warnings disabled, redundant symbol assignment warnings disabled>
 """)
 
     os.environ.pop("srctree", None)
@@ -1311,7 +1312,7 @@ tests/Krecursive2:1
     print("Testing split_expr()")
 
     c = Kconfig("Kconfiglib/tests/empty")
-    c.disable_warnings()
+    c.warn = False
 
     def verify_split(to_split, op, operand_strs):
         # The same hackage as in Kconfig.eval_string()
@@ -1630,7 +1631,7 @@ tests/Krecursive2:1
     # User values and dependent ranges
 
     # Avoid warnings for assigning values outside the active range
-    c.disable_warnings()
+    c.warn = False
 
     def verify_range(sym_name, low, high, default):
         # Verifies that all values in the range 'low'-'high' can be assigned,
@@ -1760,7 +1761,7 @@ tests/Krecursive2:1
 
     # Avoid warnings from assigning invalid user values and assigning user
     # values to symbols without prompts
-    c.disable_warnings()
+    c.warn = False
 
     syms = [c.syms[name] for name in
             ("BOOL", "TRISTATE", "STRING", "INT", "HEX")]
@@ -2803,6 +2804,8 @@ def test_sanity(arch, srcarch):
     kconf.modules
     kconf.defconfig_list
     kconf.defconfig_filename
+
+    # Legacy warning functions
     kconf.enable_redun_warnings()
     kconf.disable_redun_warnings()
     kconf.enable_undef_warnings()
@@ -2811,6 +2814,7 @@ def test_sanity(arch, srcarch):
     kconf.disable_warnings()
     kconf.enable_stderr_warnings()
     kconf.disable_stderr_warnings()
+
     kconf.mainmenu_text
     kconf.unset_values()
 
@@ -2843,7 +2847,7 @@ def test_sanity(arch, srcarch):
         sym.set_value(2)
         sym.set_value("foo")
         sym.unset_value()
-        kconf.enable_warnings()
+        kconf.enable_warnings()  # Legacy warning function
         sym.str_value
         sym.tri_value
         sym.type
@@ -2881,7 +2885,7 @@ def test_sanity(arch, srcarch):
         sym.set_value(2)
         sym.set_value("foo")
         sym.unset_value()
-        kconf.enable_warnings()
+        kconf.enable_warnings()  # Legacy warning function
         sym.str_value
         sym.tri_value
         sym.type

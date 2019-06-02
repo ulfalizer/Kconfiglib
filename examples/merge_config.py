@@ -82,7 +82,7 @@ if len(sys.argv) < 4:
 kconf = Kconfig(sys.argv[1])
 
 # Enable warnings for assignments to undefined symbols
-kconf.enable_undef_warnings()
+kconf.warn_assign_undef = True
 
 # (This script uses alldefconfig as the base. Other starting states could be
 # set up here as well. The approach in examples/allnoconfig_simpler.py could
@@ -91,8 +91,8 @@ kconf.enable_undef_warnings()
 # Disable warnings generated for multiple assignments to the same symbol within
 # a (set of) configuration files. Assigning a symbol multiple times might be
 # done intentionally when merging configuration files.
-kconf.disable_override_warnings()
-kconf.disable_redun_warnings()
+kconf.warn_assign_override = False
+kconf.warn_assign_redun = False
 
 # Create a merged configuration by loading the fragments with replace=False.
 # load_config() and write_config() returns a message to print.

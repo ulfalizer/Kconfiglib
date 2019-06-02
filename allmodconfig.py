@@ -20,7 +20,7 @@ def main():
     kconf = kconfiglib.standard_kconfig()
 
     # See allnoconfig.py
-    kconf.disable_warnings()
+    kconf.warn = False
 
     for sym in kconf.unique_defined_syms:
         if sym.orig_type == kconfiglib.BOOL:
@@ -35,7 +35,7 @@ def main():
     for choice in kconf.unique_choices:
         choice.set_value(2 if choice.orig_type == kconfiglib.BOOL else 1)
 
-    kconf.enable_warnings()
+    kconf.warn = True
 
     kconfiglib.load_allconfig(kconf, "allmod.config")
 

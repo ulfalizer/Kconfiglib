@@ -673,7 +673,7 @@ def menuconfig(kconf):
 
     # Disable warnings. They get mangled in curses mode, and we deal with
     # errors ourselves.
-    kconf.disable_warnings()
+    kconf.warn = False
 
     # Make curses use the locale settings specified in the environment
     locale.setlocale(locale.LC_ALL, "")
@@ -923,6 +923,7 @@ def _quit_dialog():
             return None
 
         if c == "y":
+            # Returns a message to print
             msg = _try_save(_kconf.write_config, _conf_filename, "configuration")
             if msg:
                 return msg

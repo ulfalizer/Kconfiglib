@@ -450,8 +450,8 @@ Some optional warnings can be controlled via environment variables:
     all assignments to undefined symbols within .config files. By default, no
     such warnings are generated.
 
-    This warning can also be enabled/disabled via
-    Kconfig.enable/disable_undef_warnings().
+    This warning can also be enabled/disabled via the Kconfig.warn_assign_undef
+    variable.
 
 
 Preprocessor user functions defined in Python
@@ -705,18 +705,55 @@ class Kconfig(object):
       A dictionary with all preprocessor variables, indexed by name. See the
       Variable class.
 
+    warn:
+      Set this variable to True/False to enable/disable warnings. See
+      Kconfig.__init__().
+
+      When 'warn' is False, the values of the other warning-related variables
+      are ignored.
+
+      This variable as well as the other warn* variables can be read to check
+      the current warning settings.
+
+    warn_to_stderr:
+      Set this variable to True/False to enable/disable warnings on stderr. See
+      Kconfig.__init__().
+
+    warn_assign_undef:
+      Set this variable to True to generate warnings for assignments to
+      undefined symbols in configuration files.
+
+      This variable is False by default unless the KCONFIG_WARN_UNDEF_ASSIGN
+      environment variable was set to 'y' when the Kconfig instance was
+      created.
+
+    warn_assign_override:
+      Set this variable to True to generate warnings for multiple assignments
+      to the same symbol in configuration files, where the assignments set
+      different values (e.g. CONFIG_FOO=m followed by CONFIG_FOO=y, where the
+      last value would get used).
+
+      This variable is True by default. Disabling it might be useful when
+      merging configurations.
+
+    warn_assign_redun:
+      Like warn_assign_override, but for multiple assignments setting a symbol
+      to the same value.
+
+      This variable is True by default. Disabling it might be useful when
+      merging configurations.
+
     warnings:
-      A list of strings containing all warnings that have been generated. This
-      allows flexibility in how warnings are printed and processed.
+      A list of strings containing all warnings that have been generated, for
+      cases where more flexibility is needed.
 
       See the 'warn_to_stderr' parameter to Kconfig.__init__() and the
-      Kconfig.enable/disable_stderr_warnings() functions as well. Note that
-      warnings still get added to Kconfig.warnings when 'warn_to_stderr' is
-      True.
+      Kconfig.warn_to_stderr variable as well. Note that warnings still get
+      added to Kconfig.warnings when 'warn_to_stderr' is True.
 
-      Just as for warnings printed to stderr, only optional warnings that are
-      enabled will get added to Kconfig.warnings. See the various
-      Kconfig.enable/disable_*_warnings() functions.
+      Just as for warnings printed to stderr, only warnings that are enabled
+      will get added to Kconfig.warnings. See the various Kconfig.warn*
+      variables.
 
     missing_syms:
       A list with (name, value) tuples for all assignments to undefined symbols
@@ -757,12 +794,7 @@ class Kconfig(object):
         "_set_match",
         "_srctree_prefix",
         "_unset_match",
-        "_warn_for_no_prompt",
-        "_warn_for_override",
-        "_warn_for_redun_assign",
-        "_warn_for_undef_assign",
-        "_warn_to_stderr",
-        "_warnings_enabled",
+        "_warn_no_prompt",
         "choices",
         "comments",
         "config_prefix",
@@ -784,6 +816,11 @@ class Kconfig(object):
         "unique_choices",
         "unique_defined_syms",
         "variables",
+        "warn",
+        "warn_assign_override",
+        "warn_assign_redun",
+        "warn_assign_undef",
+        "warn_to_stderr",
         "warnings",
         "y",
 
@@ -835,12 +872,12 @@ class Kconfig(object):
 
         warn (default: True):
           True if warnings related to this configuration should be generated.
-          This can be changed later with Kconfig.enable/disable_warnings(). It
+          This can be changed later by setting Kconfig.warn to True/False. It
           is provided as a constructor argument since warnings might be
           generated during parsing.
 
-          See the other Kconfig.enable_*_warnings() functions as well, which
-          enable or suppress certain warnings when warnings are enabled.
+          See the other Kconfig.warn_* variables as well, which enable or
+          suppress certain warnings when warnings are enabled.
 
           All generated warnings are added to the Kconfig.warnings list. See
           the class documentation.
@@ -849,8 +886,8 @@ class Kconfig(object):
           True if warnings should be printed to stderr in addition to being
           added to Kconfig.warnings.
 
-          This can be changed later with
-          Kconfig.enable/disable_stderr_warnings().
+          This can be changed later by setting Kconfig.warn_to_stderr to
+          True/False.
 
         encoding (default: "utf-8"):
           The encoding to use when reading and writing files. If None, the
@@ -882,11 +919,11 @@ class Kconfig(object):
 
         self.warnings = []
 
-        self._warnings_enabled = warn
-        self._warn_to_stderr = warn_to_stderr
-        self._warn_for_undef_assign = \
+        self.warn = warn
+        self.warn_to_stderr = warn_to_stderr
+        self.warn_assign_undef = \
             os.environ.get("KCONFIG_WARN_UNDEF_ASSIGN") == "y"
-        self._warn_for_redun_assign = self._warn_for_override = True
+        self.warn_assign_override = self.warn_assign_redun = True
 
 
         self._encoding = encoding
@@ -1038,7 +1075,7 @@ class Kconfig(object):
         self._add_choice_deps()
 
 
-        self._warn_for_no_prompt = True
+        self._warn_no_prompt = True
 
         self.mainmenu_text = self.top_node.prompt[0]
 
@@ -1143,15 +1180,15 @@ class Kconfig(object):
 
         # Disable the warning about assigning to symbols without prompts. This
         # is normal and expected within a .config file.
-        self._warn_for_no_prompt = False
+        self._warn_no_prompt = False
 
-        # This stub only exists to make sure _warn_for_no_prompt gets reenabled
+        # This stub only exists to make sure _warn_no_prompt gets reenabled
         try:
             self._load_config(filename, replace)
         except UnicodeDecodeError as e:
             _decoding_error(e, filename)
         finally:
-            self._warn_for_no_prompt = True
+            self._warn_no_prompt = True
 
         return ("Loaded" if replace else "Merged") + msg
 
@@ -1274,14 +1311,15 @@ class Kconfig(object):
                     else:
                         display_user_val = sym.user_value
 
-                    msg = '{} set more than once. Old value: "{}", new value: "{}".'.format(
+                    msg = '{} set more than once. Old value "{}", new value "{}".'.format(
                         _name_and_loc(sym), display_user_val, val
                     )
 
                     if display_user_val == val:
-                        self._warn_redun_assign(msg, filename, linenr)
-                    else:
-                        self._warn_override(msg, filename, linenr)
+                        if self.warn_assign_redun:
+                            self._warn(msg, filename, linenr)
+                    elif self.warn_assign_override:
+                        self._warn(msg, filename, linenr)
 
                 sym.set_value(val)
 
@@ -1301,8 +1339,7 @@ class Kconfig(object):
         # Called for assignments to undefined symbols during .config loading
 
         self.missing_syms.append((name, val))
-
-        if self._warn_for_undef_assign:
+        if self.warn_assign_undef:
             self._warn(
                 "attempt to assign the value '{}' to the undefined symbol {}"
                 .format(val, name), filename, linenr)
@@ -1840,7 +1877,7 @@ class Kconfig(object):
         Removes any user values from all symbols, as if Kconfig.load_config()
         or Symbol.set_value() had never been called.
         """
-        self._warn_for_no_prompt = False
+        self._warn_no_prompt = False
         try:
             # set_value() already rejects undefined symbols, and they don't
             # need to be invalidated (because their value never changes), so we
@@ -1851,98 +1888,100 @@ class Kconfig(object):
             for choice in self.unique_choices:
                 choice.unset_value()
         finally:
-            self._warn_for_no_prompt = True
+            self._warn_no_prompt = True
 
     def enable_warnings(self):
         """
-        See Kconfig.__init__().
+        Do 'Kconfig.warn = True' instead. Maintained for backwards
+        compatibility.
         """
-        self._warnings_enabled = True
+        self.warn = True
 
     def disable_warnings(self):
         """
-        See Kconfig.__init__().
+        Do 'Kconfig.warn = False' instead. Maintained for backwards
+        compatibility.
         """
-        self._warnings_enabled = False
+        self.warn = False
 
     def enable_stderr_warnings(self):
         """
-        See Kconfig.__init__().
+        Do 'Kconfig.warn_to_stderr = True' instead. Maintained for backwards
+        compatibility.
         """
-        self._warn_to_stderr = True
+        self.warn_to_stderr = True
 
     def disable_stderr_warnings(self):
         """
-        See Kconfig.__init__().
+        Do 'Kconfig.warn_to_stderr = False' instead. Maintained for backwards
+        compatibility.
         """
-        self._warn_to_stderr = False
+        self.warn_to_stderr = False
 
     def enable_undef_warnings(self):
         """
-        Enables warnings for assignments to undefined symbols. Disabled by
-        default unless the KCONFIG_WARN_UNDEF_ASSIGN environment variable was
-        set to 'y' when the Kconfig instance was created.
+        Do 'Kconfig.warn_assign_undef = True' instead. Maintained for backwards
+        compatibility.
         """
-        self._warn_for_undef_assign = True
+        self.warn_assign_undef = True
 
     def disable_undef_warnings(self):
         """
-        See enable_undef_assign().
+        Do 'Kconfig.warn_assign_undef = False' instead. Maintained for
+        backwards compatibility.
         """
-        self._warn_for_undef_assign = False
+        self.warn_assign_undef = False
 
     def enable_override_warnings(self):
         """
-        Enables warnings for duplicated assignments in .config files that set
-        different values (e.g. CONFIG_FOO=m followed by CONFIG_FOO=y, where
-        the last value set is used).
-
-        These warnings are enabled by default. Disabling them might be helpful
-        in certain cases when merging configurations.
+        Do 'Kconfig.warn_assign_override = True' instead. Maintained for
+        backwards compatibility.
         """
-        self._warn_for_override = True
+        self.warn_assign_override = True
 
     def disable_override_warnings(self):
         """
-        See enable_override_warnings().
+        Do 'Kconfig.warn_assign_override = False' instead. Maintained for
+        backwards compatibility.
         """
-        self._warn_for_override = False
+        self.warn_assign_override = False
 
     def enable_redun_warnings(self):
         """
-        Enables warnings for duplicated assignments in .config files that all
-        set the same value.
-
-        These warnings are enabled by default. Disabling them might be helpful
-        in certain cases when merging configurations.
+        Do 'Kconfig.warn_assign_redun = True' instead. Maintained for backwards
+        compatibility.
         """
-        self._warn_for_redun_assign = True
+        self.warn_assign_redun = True
 
     def disable_redun_warnings(self):
         """
-        See enable_redun_warnings().
+        Do 'Kconfig.warn_assign_redun = False' instead. Maintained for
+        backwards compatibility.
         """
-        self._warn_for_redun_assign = False
+        self.warn_assign_redun = False
 
     def __repr__(self):
         """
         Returns a string with information about the Kconfig object when it is
         evaluated on e.g. the interactive Python prompt.
         """
+        def status(flag):
+            return "enabled" if flag else "disabled"
+
         return "<{}>".format(", ".join((
             "configuration with {} symbols".format(len(self.syms)),
             'main menu prompt "{}"'.format(self.mainmenu_text),
             "srctree is current directory" if not self.srctree else
                 'srctree "{}"'.format(self.srctree),
             'config symbol prefix "{}"'.format(self.config_prefix),
-            "warnings " +
-                ("enabled" if self._warnings_enabled else "disabled"),
-            "printing of warnings to stderr " +
-                ("enabled" if self._warn_to_stderr else "disabled"),
+            "warnings " + status(self.warn),
+            "printing of warnings to stderr " + status(self.warn_to_stderr),
             "undef. symbol assignment warnings " +
-                ("enabled" if self._warn_for_undef_assign else "disabled"),
+                status(self.warn_assign_undef),
+            "overriding symbol assignment warnings " +
+                status(self.warn_assign_override),
             "redundant symbol assignment warnings " +
-                ("enabled" if self._warn_for_redun_assign else "disabled")
+                status(self.warn_assign_redun)
         )))
 
     #
@@ -3805,26 +3844,16 @@ class Kconfig(object):
     def _warn(self, msg, filename=None, linenr=None):
         # For printing general warnings
 
-        if self._warnings_enabled:
-            msg = "warning: " + msg
-            if filename is not None:
-                msg = "{}:{}: {}".format(filename, linenr, msg)
+        if not self.warn:
+            return
 
-            self.warnings.append(msg)
-            if self._warn_to_stderr:
-                sys.stderr.write(msg + "\n")
+        msg = "warning: " + msg
+        if filename is not None:
+            msg = "{}:{}: {}".format(filename, linenr, msg)
 
-    def _warn_override(self, msg, filename, linenr):
-        # See the class documentation
-
-        if self._warn_for_override:
-            self._warn(msg, filename, linenr)
-
-    def _warn_redun_assign(self, msg, filename, linenr):
-        # See the class documentation
-
-        if self._warn_for_redun_assign:
-            self._warn(msg, filename, linenr)
+        self.warnings.append(msg)
+        if self.warn_to_stderr:
+            sys.stderr.write(msg + "\n")
 
 
 class Symbol(object):
@@ -4709,7 +4738,7 @@ class Symbol(object):
                 self._rec_invalidate()
                 return
 
-        if self.kconfig._warn_for_no_prompt:
+        if self.kconfig._warn_no_prompt:
             self.kconfig._warn(_name_and_loc(self) + " has no prompt, meaning "
                                "user values have no effect on it")
 
@@ -6004,8 +6033,8 @@ def load_allconfig(kconf, filename):
     Linux kernel.
 
     Disables warnings for duplicated assignments within configuration files for
-    the duration of the call (disable_override_warnings() +
-    disable_redun_warnings()), and enables them at the end. The
+    the duration of the call (kconf.warn_assign_override/warn_assign_redun = False),
+    and restores the previous warning settings at the end. The
     KCONFIG_ALLCONFIG configuration file is expected to override symbols.
 
     Exits with sys.exit() (which raises a SystemExit exception) and prints an
@@ -6028,8 +6057,9 @@ def load_allconfig(kconf, filename):
         # __str__() message. The standard message is better here.
         return IOError(e.errno, e.strerror, e.filename)
 
-    kconf.disable_override_warnings()
-    kconf.disable_redun_warnings()
+    old_warn_assign_override = kconf.warn_assign_override
+    old_warn_assign_redun = kconf.warn_assign_redun
+    kconf.warn_assign_override = kconf.warn_assign_redun = False
 
     if allconfig in ("", "1"):
         try:
@@ -6049,10 +6079,8 @@ def load_allconfig(kconf, filename):
                      "could not be opened: {}"
                      .format(allconfig, std_msg(e)))
 
-    # API wart: It would be nice if there was a way to query and/or push/pop
-    # warning settings
-    kconf.enable_override_warnings()
-    kconf.enable_redun_warnings()
+    kconf.warn_assign_override = old_warn_assign_override
+    kconf.warn_assign_redun = old_warn_assign_redun
 
 
 #

@@ -20,7 +20,7 @@ def main():
     kconf = kconfiglib.standard_kconfig()
 
     # See allnoconfig.py
-    kconf.disable_warnings()
+    kconf.warn = False
 
     # Try to set all symbols to 'y'. Dependencies might truncate the value down
     # later, but this will at least give the highest possible value.
@@ -45,7 +45,7 @@ def main():
     for choice in kconf.unique_choices:
         choice.set_value(2)
 
-    kconf.enable_warnings()
+    kconf.warn = True
 
     kconfiglib.load_allconfig(kconf, "allyes.config")
 
