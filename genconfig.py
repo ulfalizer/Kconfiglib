@@ -77,7 +77,7 @@ def main():
 
 
     kconf = kconfiglib.Kconfig(args.kconfig_filename)
-    kconf.load_config(verbose=False)
+    kconf.load_config()
 
     kconf.write_autoconf(args.header_path)
 

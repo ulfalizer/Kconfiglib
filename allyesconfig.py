@@ -49,7 +49,7 @@ def main():
 
     kconfiglib.load_allconfig(kconf, "allyes.config")
 
-    kconf.write_config()
+    print(kconf.write_config())
 
 
 if __name__ == "__main__":

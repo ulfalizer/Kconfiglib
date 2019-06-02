@@ -60,7 +60,7 @@ def main():
     args = parser.parse_args()
 
     kconf = kconfiglib.Kconfig(args.kconfig)
-    kconf.load_config()
+    print(kconf.load_config())
 
     for arg in args.assignments:
         if "=" not in arg:
@@ -84,7 +84,7 @@ def main():
                      "sure that it has a prompt."
                      .format(name, value, sym.str_value))
 
-    kconf.write_config()
+    print(kconf.write_config())
 
 
 if __name__ == "__main__":

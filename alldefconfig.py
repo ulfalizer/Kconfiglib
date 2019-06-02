@@ -20,7 +20,7 @@ import kconfiglib
 def main():
     kconf = kconfiglib.standard_kconfig()
     kconfiglib.load_allconfig(kconf, "alldef.config")
-    kconf.write_config()
+    print(kconf.write_config())
 
 
 if __name__ == "__main__":

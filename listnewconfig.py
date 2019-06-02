@@ -18,7 +18,9 @@ from kconfiglib import standard_kconfig, BOOL, TRISTATE, INT, HEX, STRING, \
 
 def main():
     kconf = standard_kconfig()
-    kconf.load_config()
+    # Make it possible to filter this message out
+    sys.stderr.write(kconf.load_config() + "\n")
+
     for sym in kconf.unique_defined_syms:
         # Only show symbols that can be toggled. Choice symbols are a special
         # case in that sym.assignable will be (2,) (length 1) for visible

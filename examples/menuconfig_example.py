@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Implements a simple configuration interface on top of Kconfiglib to
 # demonstrate concepts for building a menuconfig-like. Emulates how the
 # standard menuconfig prints menu entries.
@@ -117,6 +119,7 @@
 #
 #   Enter a symbol/choice name, "load_config", or "write_config" (or press CTRL+D to exit): ^D
 
+from __future__ import print_function
 import readline
 import sys
 
@@ -300,27 +303,22 @@ if __name__ == "__main__":
 
         if cmd == "load_config":
             config_filename = input(".config file to load: ")
-
             try:
-                kconf.load_config(config_filename)
+                # Returns a message telling which file got loaded
+                print(kconf.load_config(config_filename))
             except IOError as e:
-                # Print the (spammy) error from Kconfiglib itself
-                print(e.message + "\n")
-            else:
-                print("Configuration loaded from " + config_filename)
+                print(e, file=sys.stderr)
 
             print_menuconfig(kconf)
             continue
 
         if cmd == "write_config":
             config_filename = input("To this file: ")
-
             try:
-                kconf.write_config(config_filename)
+                # Returns a message telling which file got saved
+                print(kconf.write_config(config_filename))
             except IOError as e:
-                print(e.message)
-            else:
-                print("Configuration written to " + config_filename)
+                print(e, file=sys.stderr)
 
             continue
 
@@ -340,5 +338,5 @@ if __name__ == "__main__":
 
             continue
 
-        print("No symbol/choice named '{}' in the configuration"
-              .format(cmd))
+        print("No symbol/choice named '{}' in the configuration".format(cmd),
+              file=sys.stderr)

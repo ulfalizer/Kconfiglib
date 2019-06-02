@@ -63,4 +63,4 @@ while True:
     if not changed:
         break
 
-kconf.write_config()
+print(kconf.write_config())

@@ -45,7 +45,7 @@ def _main():
     global conf_changed
 
     kconf = standard_kconfig()
-    kconf.load_config()
+    print(kconf.load_config())
 
     while True:
         conf_changed = False
@@ -56,7 +56,7 @@ def _main():
         if not conf_changed:
             break
 
-    kconf.write_config()
+    print(kconf.write_config())
 
 
 def oldconfig(node):

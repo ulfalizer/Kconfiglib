@@ -36,4 +36,4 @@ for s in kconf.unique_defined_syms:
         s.set_value(0)
 
 # Write the final configuration
-kconf.write_config()
+print(kconf.write_config())
