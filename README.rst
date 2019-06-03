@@ -97,11 +97,11 @@ The terminal ``menuconfig`` implementation requires Python 3. It uses
 that your ``PATH`` includes the directory where the executables end up. You can
 list the installed files with ``pip(3) show -f kconfiglib``.
 
-All releases have a corresponding tag in the git repository, e.g. ``v11.9.1``
+All releases have a corresponding tag in the git repository, e.g. ``v12.0.0``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been
-nine small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
+ten small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
 `2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
 `3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_,
 `4 <https://github.com/ulfalizer/Kconfiglib/commit/cbf32e29a130d22bc734b7778e6304ac9df2a3e8>`_,
@@ -109,8 +109,9 @@ nine small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6f
 `6 <https://github.com/ulfalizer/Kconfiglib/commit/c19fc11355b13d75d97286402c7a933fb23d3b70>`_,
 `7 <https://github.com/ulfalizer/Kconfiglib/commit/7a428aa415606820a44291f475248b08e3952c4b>`_,
 `8 <https://github.com/ulfalizer/Kconfiglib/commit/f247ddf618ad29718e5efd3e69f8baf75d4d347b>`_,
-`9 <https://github.com/ulfalizer/Kconfiglib/commit/4fed39d9271ceb68be4157ab3f96a45b94f77dc0>`_)
-to the behavior of the API, which is why the major version is at 11 rather than
+`9 <https://github.com/ulfalizer/Kconfiglib/commit/4fed39d9271ceb68be4157ab3f96a45b94f77dc0>`_,
+`10 <https://github.com/ulfalizer/Kconfiglib/commit/55bc8c380869ea663092212e8fe388ad7abae596>`_)
+to the behavior of the API, which is why the major version is at 12 rather than
 2. I do major version bumps for all behavior changes, even tiny ones, and most of these were
 fixes for baby issues in the early days of the Kconfiglib 2 API.
 
