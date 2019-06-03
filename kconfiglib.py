@@ -12,6 +12,11 @@ configuration systems.
 See the homepage at https://github.com/ulfalizer/Kconfiglib for a longer
 overview.
 
+Since Kconfiglib 12.0.0, the library version is available in
+kconfiglib.VERSION, which is a (<major>, <minor>, <patch>) tuple, e.g.
+(12, 0, 0).
+
+
 Using Kconfiglib on the Linux kernel with the Makefile targets
 ==============================================================
 
@@ -538,6 +543,9 @@ import sys
 # Get rid of some attribute lookups. These are obvious in context.
 from glob import iglob
 from os.path import dirname, exists, expandvars, islink, join, realpath
+
+
+VERSION = (12, 0, 0)
 
 
 # File layout:
