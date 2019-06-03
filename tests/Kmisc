@@ -33,7 +33,7 @@ config Q3
 
 endchoice
 
-# get_user_value()
+# User values
 
 config BOOL
     bool "bool" if NOT_DEFINED_1
