@@ -1156,7 +1156,8 @@ class Kconfig(object):
         Returns a string with a message saying which file got loaded (or
         possibly that no file got loaded, when 'filename' is None). This is
         meant to reduce boilerplate in tools, which can do e.g.
-        print(kconf.load_config()).
+        print(kconf.load_config()). The returned message distinguishes between
+        loading (replace == True) and merging (replace == False).
         """
         if verbose is not None:
             _warn_verbose_deprecated("load_config")
