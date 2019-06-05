@@ -957,10 +957,12 @@ def _init():
     # Looking for this in addition to KEY_BACKSPACE (which is unreliable) makes
     # backspace work with TERM=vt100. That makes it likely to work in sane
     # environments.
-    #
-    # erasechar() returns a 'bytes' object. Since we use get_wch(), we need to
-    # decode it. Just give up and avoid crashing if it can't be decoded.
-    _ERASE_CHAR = curses.erasechar().decode("utf-8", "ignore")
+    _ERASE_CHAR = curses.erasechar()
+    if sys.version_info[0] >= 3:
+        # erasechar() returns a one-byte bytes object on Python 3. This sets
+        # _ERASE_CHAR to a blank string if it can't be decoded, which should be
+        # harmless.
+        _ERASE_CHAR = _ERASE_CHAR.decode("utf-8", "ignore")
 
     _init_styles()
 
