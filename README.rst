@@ -88,10 +88,9 @@ available in the C tools.
 the configuration and (optionally) information that can be used to rebuild only
 files that reference Kconfig symbols that have changed value.
 
-The terminal ``menuconfig`` implementation requires Python 3. It uses
-``get_wch()``, which is needed for Unicode input support. Unfortunately,
-``get_wch()`` isn't available in the Python 2 version of the standard
-``curses`` module.
+Starting with Kconfiglib version 12.2.0, all utilities are compatible with both
+Python 2 and Python 3. Previously, ``menuconfig.py`` only ran under Python 3
+(i.e., it's now more backwards compatible than before).
 
 **Note:** If you install Kconfiglib with ``pip``'s ``--user`` flag, make sure
 that your ``PATH`` includes the directory where the executables end up. You can
@@ -131,8 +130,7 @@ See the module docstring at the top of `kconfiglib.py <https://github.com/ulfali
 Getting started
 ---------------
 
-1. `Install <Installation_>`_ the library and the utilities. Use ``pip3`` if
-   you want to use the terminal ``menuconfig``.
+1. `Install <Installation_>`_ the library and the utilities.
 
 2. Write `Kconfig
    <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
@@ -484,9 +482,10 @@ Three configuration interfaces are currently available:
   *There is now also a show-help mode that shows the help text of the currently
   selected symbol in the help window at the bottom.*
 
-  ``menuconfig.py`` currently only supports Python 3, mostly due to
-  ``curses.get_wch()`` not being available on Python 2. It is needed
-  for Unicode support.
+  Starting with Kconfiglib 12.2.0, ``menuconfig.py`` runs under both Python 2
+  and Python 3 (previously, it only ran under Python 3, so this was a
+  backport). Running it under Python 3 provides better support for Unicode text
+  entry (``get_wch()`` is not available in the ``curses`` module on Python 2).
 
   There are no third-party dependencies on \*nix. On Windows,
   the ``curses`` modules is not available by default, but support

@@ -7,8 +7,8 @@
 Overview
 ========
 
-A curses-based menuconfig implementation. The interface should feel familiar to
-people used to mconf ('make menuconfig').
+A curses-based Python 2/3 menuconfig implementation. The interface should feel
+familiar to people used to mconf ('make menuconfig').
 
 Supports the same keys as mconf, and also supports a set of keybindings
 inspired by Vi:
@@ -174,18 +174,12 @@ Other features
 Limitations
 ===========
 
-  - Python 3 only
+Doesn't work out of the box on Windows, but can be made to work with 'pip
+install windows-curses'. See the
+https://github.com/zephyrproject-rtos/windows-curses repository.
 
-    This is mostly due to Python 2 not having curses.get_wch(), which is needed
-    for Unicode support.
-
-  - Doesn't work out of the box on Windows
-
-    Can be made to work with 'pip install windows-curses' though. See the
-    https://github.com/zephyrproject-rtos/windows-curses repository.
-
-    'pip install kconfiglib' on Windows automatically installs windows-curses
-    to make the menuconfig usable.
+'pip install kconfiglib' on Windows automatically installs windows-curses
+to make the menuconfig usable.
 """
 from __future__ import print_function
 

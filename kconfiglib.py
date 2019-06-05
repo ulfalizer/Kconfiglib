@@ -52,8 +52,9 @@ sections.
 make kmenuconfig
 ----------------
 
-This target runs the curses menuconfig interface with Python 3 (Python 2 is
-currently not supported for the menuconfig).
+This target runs the curses menuconfig interface with Python 3. As of
+Kconfiglib 12.2.0, both Python 2 and Python 3 are supported (previously, only
+Python 3 was supported, so this was a backport).
 
 
 make guiconfig
