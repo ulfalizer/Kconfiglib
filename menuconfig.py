@@ -804,7 +804,7 @@ def _menuconfig(stdscr):
         curses.doupdate()
 
 
-        c = _get_wch_compat(_menu_win)
+        c = _getch_compat(_menu_win)
 
         if c == curses.KEY_RESIZE:
             _resize_main()
@@ -1717,7 +1717,7 @@ def _input_dialog(title, initial_text, info_text=None):
         curses.doupdate()
 
 
-        c = _get_wch_compat(win)
+        c = _getch_compat(win)
 
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
@@ -1921,7 +1921,7 @@ def _key_dialog(title, text, keys):
         curses.doupdate()
 
 
-        c = _get_wch_compat(win)
+        c = _getch_compat(win)
 
         if c == curses.KEY_RESIZE:
             # Resize the main display too. The dialog floats above it.
@@ -2117,7 +2117,7 @@ def _jump_to_dialog():
         curses.doupdate()
 
 
-        c = _get_wch_compat(edit_box)
+        c = _getch_compat(edit_box)
 
         if c == "\n":
             if matches:
@@ -2382,7 +2382,7 @@ def _info_dialog(node, from_jump_to_dialog):
         curses.doupdate()
 
 
-        c = _get_wch_compat(text_win)
+        c = _getch_compat(text_win)
 
         if c == curses.KEY_RESIZE:
             _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
@@ -3119,7 +3119,17 @@ def _is_num(name):
     return True
 
 
-def _get_wch_compat(win):
+def _getch_compat(win):
+    # Uses get_wch() if available (Python 3.3+) and getch() otherwise. Also
+    # handles a PDCurses resizing quirk.
+
+    if hasattr(win, "get_wch"):
+        c = win.get_wch()
+    else:
+        c = win.getch()
+        if 0 <= c <= 255:
+            c = chr(c)
+
     # Decent resizing behavior on PDCurses requires calling resize_term(0, 0)
     # after receiving KEY_RESIZE, while ncurses (usually) handles terminal
     # resizing automatically in get(_w)ch() (see the end of the
@@ -3128,8 +3138,6 @@ def _get_wch_compat(win):
     # resize_term(0, 0) reliably fails and does nothing on ncurses, so this
     # hack gives ncurses/PDCurses compatibility for resizing. I don't know
     # whether it would cause trouble for other implementations.
-
-    c = win.get_wch()
     if c == curses.KEY_RESIZE:
         try:
             curses.resize_term(0, 0)
