@@ -43,8 +43,6 @@ setuptools.setup(
         "setconfig",
     ),
 
-    # TODO: Don't install the terminal menuconfig on Python 2. It won't run
-    # there. setuptools needs better documentation...
     entry_points={
         "console_scripts": (
             "menuconfig = menuconfig:_main",
@@ -67,7 +65,7 @@ setuptools.setup(
     # module. The windows-curses package makes it available on Windows. See
     # https://github.com/zephyrproject-rtos/windows-curses.
     install_requires=(
-        'windows-curses; sys_platform == "win32" and python_version >= "3"',
+        'windows-curses; sys_platform == "win32"',
     ),
 
     # Needs support for unnumbered {} in format()
