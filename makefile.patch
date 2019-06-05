@@ -1,24 +1,22 @@
-From 4605632b820e60d6b468bf061447113602087759 Mon Sep 17 00:00:00 2001
+From 93daf46f309b0c8f86149ef58c4906387d054c22 Mon Sep 17 00:00:00 2001
 From: Ulf Magnusson <ulfalizer@gmail.com>
 Date: Tue, 9 Jun 2015 13:01:34 +0200
 Subject: [PATCH] Kconfiglib scripts/kconfig/Makefile patch
 
 ---
- scripts/kconfig/Makefile | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+ scripts/kconfig/Makefile | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
 
 diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 7c5dc31c1d95..c0e3b3f8c981 100644
+index 3f327e21f60e..8b7dd1292005 100644
 --- a/scripts/kconfig/Makefile
 +++ b/scripts/kconfig/Makefile
-@@ -27,2 +27,34 @@ gconfig: $(obj)/gconf
+@@ -27,2 +27,31 @@ gconfig: $(obj)/gconf
  
 +PHONY += scriptconfig iscriptconfig kmenuconfig guiconfig dumpvarsconfig
 +
-+PYTHONCMD   ?= python
-+kpythonpath := PYTHONPATH=$(srctree)/Kconfiglib:$$PYTHONPATH
-+kpython     := $(kpythonpath) $(PYTHONCMD)
-+kpython3    := $(kpythonpath) python3
++PYTHONCMD ?= python
++kpython := PYTHONPATH=$(srctree)/Kconfiglib:$$PYTHONPATH $(PYTHONCMD)
 +
 +ifneq ($(filter scriptconfig,$(MAKECMDGOALS)),)
 +ifndef SCRIPT
@@ -35,9 +33,8 @@ index 7c5dc31c1d95..c0e3b3f8c981 100644
 +	   kconf = kconfiglib.Kconfig('$(Kconfig)'); \
 +	   print('A Kconfig instance \'kconf\' for the architecture $(ARCH) has been created.')"
 +
-+# The terminal menuconfig only runs under Python 3
 +kmenuconfig:
-+	$(Q)$(kpython3) $(srctree)/Kconfiglib/menuconfig.py $(Kconfig)
++	$(Q)$(kpython) $(srctree)/Kconfiglib/menuconfig.py $(Kconfig)
 +
 +guiconfig:
 +	$(Q)$(kpython) $(srctree)/Kconfiglib/guiconfig.py $(Kconfig)
