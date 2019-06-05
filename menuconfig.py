@@ -187,6 +187,8 @@ Limitations
     'pip install kconfiglib' on Windows automatically installs windows-curses
     to make the menuconfig usable.
 """
+from __future__ import print_function
+
 import curses
 import errno
 import locale
