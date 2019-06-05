@@ -2019,30 +2019,29 @@ def _jump_to_dialog():
 
     _safe_curs_set(2)
 
-    # TODO: Code duplication with _select_{next,prev}_menu_entry(). Can this be
-    # factored out in some nice way?
+    # Logic duplication with _select_{next,prev}_menu_entry(), except we do a
+    # functional variant that returns the new (sel_node_i, scroll) values to
+    # avoid 'nonlocal'. TODO: Can this be factored out in some nice way?
 
     def select_next_match():
-        nonlocal sel_node_i
-        nonlocal scroll
+        if sel_node_i == len(matches) - 1:
+            return sel_node_i, scroll
 
-        if sel_node_i < len(matches) - 1:
-            sel_node_i += 1
+        if sel_node_i + 1 >= scroll + _height(matches_win) - _SCROLL_OFFSET \
+           and scroll < _max_scroll(matches, matches_win):
 
-            if sel_node_i >= scroll + _height(matches_win) - _SCROLL_OFFSET \
-               and scroll < _max_scroll(matches, matches_win):
+            return sel_node_i + 1, scroll + 1
 
-                scroll += 1
+        return sel_node_i + 1, scroll
 
     def select_prev_match():
-        nonlocal sel_node_i
-        nonlocal scroll
+        if sel_node_i == 0:
+            return sel_node_i, scroll
 
-        if sel_node_i > 0:
-            sel_node_i -= 1
+        if sel_node_i - 1 < scroll + _SCROLL_OFFSET:
+            return sel_node_i - 1, max(scroll - 1, 0)
 
-            if sel_node_i < scroll + _SCROLL_OFFSET:
-                scroll = max(scroll - 1, 0)
+        return sel_node_i - 1, scroll
 
     while True:
         if s != prev_s:
@@ -2149,21 +2148,21 @@ def _jump_to_dialog():
                     sel_node_i, scroll)
 
         elif c == curses.KEY_DOWN:
-            select_next_match()
+            sel_node_i, scroll = select_next_match()
 
         elif c == curses.KEY_UP:
-            select_prev_match()
+            sel_node_i, scroll = select_prev_match()
 
         elif c in (curses.KEY_NPAGE, "\x04"):  # Page Down/Ctrl-D
             # Keep it simple. This way we get sane behavior for small windows,
             # etc., for free.
             for _ in range(_PG_JUMP):
-                select_next_match()
+                sel_node_i, scroll = select_next_match()
 
         # Page Up (no Ctrl-U, as it's already used by the edit box)
         elif c == curses.KEY_PPAGE:
             for _ in range(_PG_JUMP):
-                select_prev_match()
+                sel_node_i, scroll = select_prev_match()
 
         elif c == curses.KEY_END:
             sel_node_i = len(matches) - 1
@@ -2708,34 +2707,34 @@ def _select_imply_info(sym):
     # 'sym'. The selecting/implying symbols are grouped according to which
     # value they select/imply 'sym' to (n/m/y).
 
-    s = ""
-
-    def add_sis(expr, val, title):
-        nonlocal s
-
+    def sis(expr, val, title):
         # sis = selects/implies
         sis = [si for si in split_expr(expr, OR) if expr_value(si) == val]
-        if sis:
-            s += title
-            for si in sis:
-                s += "  - {}\n".format(split_expr(si, AND)[0].name)
-            s += "\n"
+        if not sis:
+            return ""
+
+        res = title
+        for si in sis:
+            res += "  - {}\n".format(split_expr(si, AND)[0].name)
+        return res + "\n"
+
+    s = ""
 
     if sym.rev_dep is not _kconf.n:
-        add_sis(sym.rev_dep, 2,
-                "Symbols currently y-selecting this symbol:\n")
-        add_sis(sym.rev_dep, 1,
-                "Symbols currently m-selecting this symbol:\n")
-        add_sis(sym.rev_dep, 0,
-                "Symbols currently n-selecting this symbol (no effect):\n")
+        s += sis(sym.rev_dep, 2,
+                 "Symbols currently y-selecting this symbol:\n")
+        s += sis(sym.rev_dep, 1,
+                 "Symbols currently m-selecting this symbol:\n")
+        s += sis(sym.rev_dep, 0,
+                 "Symbols currently n-selecting this symbol (no effect):\n")
 
     if sym.weak_rev_dep is not _kconf.n:
-        add_sis(sym.weak_rev_dep, 2,
-                "Symbols currently y-implying this symbol:\n")
-        add_sis(sym.weak_rev_dep, 1,
-                "Symbols currently m-implying this symbol:\n")
-        add_sis(sym.weak_rev_dep, 0,
-                "Symbols currently n-implying this symbol (no effect):\n")
+        s += sis(sym.weak_rev_dep, 2,
+                 "Symbols currently y-implying this symbol:\n")
+        s += sis(sym.weak_rev_dep, 1,
+                 "Symbols currently m-implying this symbol:\n")
+        s += sis(sym.weak_rev_dep, 0,
+                 "Symbols currently n-implying this symbol (no effect):\n")
 
     return s
 
