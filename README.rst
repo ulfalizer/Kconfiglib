@@ -122,6 +122,19 @@ third-party dependencies (except for the `windows-curses
 <https://github.com/zephyrproject-rtos/windows-curses>`_ package on Windows,
 when running the terminal ``menuconfig`` implementation).
 
+Python version compatibility (2.7/3.2+)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kconfiglib and all utilities run under both Python 2.7 and Python 3.2 and
+later. The code mostly uses basic Python features and has no third-party
+dependencies, so keeping it backwards-compatible is pretty low effort.
+
+The 3.2 requirement comes from ``argparse``. ``format()`` with unnumbered
+``{}`` is used as well.
+
+A recent Python 3 version is recommended if you have a choice, as it'll give
+you better Unicode handling.
+
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -395,16 +408,6 @@ Other features
   <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
 
   The tools implemented on top of it are one file each.
-
-- **Runs unmodified under both Python 2 and Python 3**
-  
-  The code mostly uses basic Python features and has no third-party
-  dependencies. The most advanced things used are probably ``@property`` and
-  ``__slots__``.
-
-  A recent Python 3 version is recommended if you have a choice. Python 3.7
-  finally has parsing performance on par with Python 2.7 (and Python 3.6 is
-  just a bit slower).
 
 - **Robust and highly compatible with the C Kconfig tools**
   
