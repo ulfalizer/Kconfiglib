@@ -3771,9 +3771,9 @@ class Kconfig(object):
         #   The "U" flag would currently work for both Python 2 and 3, but it's
         #   deprecated on Python 3, so play it future-safe.
         #
-        #   A simpler solution would be to use io.open(), which defaults to
-        #   universal newlines on both Python 2 and 3 (and is an alias for
-        #   open() on Python 3), but it's appreciably slower on Python 2:
+        #   io.open() defaults to universal newlines on Python 2 (and is an
+        #   alias for open() on Python 3), but it returns 'unicode' strings and
+        #   slows things down:
         #
         #     Parsing x86 Kconfigs on Python 2
         #
