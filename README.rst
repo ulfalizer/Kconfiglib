@@ -122,6 +122,11 @@ third-party dependencies (except for the `windows-curses
 <https://github.com/zephyrproject-rtos/windows-curses>`_ package on Windows,
 when running the terminal ``menuconfig`` implementation).
 
+Installation for the Linux kernel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See the module docstring at the top of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
+
 Python version compatibility (2.7/3.2+)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -134,11 +139,6 @@ The 3.2 requirement comes from ``argparse``. ``format()`` with unnumbered
 
 A recent Python 3 version is recommended if you have a choice, as it'll give
 you better Unicode handling.
-
-Installation for the Linux kernel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-See the module docstring at the top of `kconfiglib.py <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
 
 Getting started
 ---------------
