@@ -2616,8 +2616,7 @@ def _help_info(sc):
 
     for node in sc.nodes:
         if node.help is not None:
-            s += "Help:\n\n{}\n\n" \
-                 .format(textwrap.indent(node.help, "  "))
+            s += "Help:\n\n{}\n\n".format(_indent(node.help, 2))
 
     return s
 
@@ -2756,7 +2755,7 @@ def _kconfig_def_info(item):
              .format(node.filename, node.linenr,
                      _include_path_info(node),
                      _menu_path_info(node),
-                     textwrap.indent(node.custom_str(_name_and_val_str), "  "))
+                     _indent(node.custom_str(_name_and_val_str), 2))
 
     return s
 
@@ -2786,6 +2785,13 @@ def _menu_path_info(node):
                          standard_sc_expr_str(node.item)) + path
 
     return "(Top)" + path
+
+
+def _indent(s, n):
+    # Returns 's' with each line indented 'n' spaces. textwrap.indent() is not
+    # available in Python 2 (it's 3.3+).
+
+    return "\n".join(n*" " + line for line in s.split("\n"))
 
 
 def _name_and_val_str(sc):
