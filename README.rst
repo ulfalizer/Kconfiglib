@@ -644,7 +644,7 @@ The following log should give some idea of the functionality available in the AP
     >>> kconf.mainmenu_text  # Expanded main menu text
     'Linux/x86 4.14.0-rc7 Kernel Configuration'
     >>> kconf.top_node  # The implicit top-level menu
-    <menu node for menu, prompt "Linux/$ARCH $KERNELVERSION Kernel Configuration" (visibility y), deps y, 'visible if' deps y, has child, Kconfig:5>
+    <menu node for menu, prompt "Linux/x86 4.14.0-rc7 Kernel Configuration" (visibility y), deps y, 'visible if' deps y, has child, Kconfig:5>
     >>> kconf.top_node.list  # First child menu node
     <menu node for symbol SRCARCH, deps y, has next, Kconfig:7>
     >>> print(kconf.top_node.list)  # Calls MenuNode.__str__()
@@ -652,17 +652,14 @@ The following log should give some idea of the functionality available in the AP
     	string
     	option env="SRCARCH"
     	default "x86"
-    
     >>> sym = kconf.top_node.list.next.item  # Item contained in next menu node
     >>> print(sym)  # Calls Symbol.__str__()
     config 64BIT
-    	bool
-    	prompt "64-bit kernel" if ARCH = "x86"
+    	bool "64-bit kernel" if ARCH = "x86"
     	default ARCH != "i386"
     	help
     	  Say yes to build a 64-bit kernel - formerly known as x86_64
     	  Say no to build a 32-bit kernel - formerly known as i386
-    
     >>> sym  # Calls Symbol.__repr__()
     <symbol 64BIT, bool, "64-bit kernel", value y, visibility y, direct deps y, arch/x86/Kconfig:2>
     >>> sym.assignable  # Currently assignable values (0, 1, 2 = n, m, y)
@@ -674,22 +671,20 @@ The following log should give some idea of the functionality available in the AP
     >>> sym = kconf.syms["X86_MPPARSE"]  # Look up symbol by name
     >>> print(sym)
     config X86_MPPARSE
-    	bool
-    	prompt "Enable MPS table" if (ACPI || SFI) && X86_LOCAL_APIC
-    	default "y" if X86_LOCAL_APIC
+    	bool "Enable MPS table" if (ACPI || SFI) && X86_LOCAL_APIC
+    	default y if X86_LOCAL_APIC
     	help
     	  For old smp systems that do not have proper acpi support. Newer systems
     	  (esp with 64bit cpus) with acpi support, MADT and DSDT will override it
-    
     >>> default = sym.defaults[0]  # Fetch its first default
     >>> sym = default[1]  # Fetch the default's condition (just a Symbol here)
-    >>> print(sym)  # Print it. Dependencies are propagated to properties, like in the C implementation.
+    >>> print(sym)
     config X86_LOCAL_APIC
     	bool
-    	default "y" if X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
-    	select IRQ_DOMAIN_HIERARCHY if X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
-    	select PCI_MSI_IRQ_DOMAIN if PCI_MSI && (X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI)
-    
+    	default y
+    	select IRQ_DOMAIN_HIERARCHY
+    	select PCI_MSI_IRQ_DOMAIN if PCI_MSI
+    	depends on X86_64 || SMP || X86_32_NON_STANDARD || X86_UP_APIC || PCI_MSI
     >>> sym.nodes  # Show the MenuNode(s) associated with it
     [<menu node for symbol X86_LOCAL_APIC, deps n, has next, arch/x86/Kconfig:1015>]
     >>> kconfiglib.expr_str(sym.defaults[0][1])  # Print the default's condition
