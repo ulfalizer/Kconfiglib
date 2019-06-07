@@ -105,6 +105,9 @@ only supported for backwards compatibility).
     if args.config_out is not None:
         kconf.write_config(args.config_out, save_old=False)
 
+    if args.sync_deps is not None:
+        kconf.sync_deps(args.sync_deps)
+
     if args.file_list is not None:
         with _open_write(args.file_list) as f:
             for path in kconf.kconfig_filenames:
@@ -114,9 +117,6 @@ only supported for backwards compatibility).
         with _open_write(args.env_list) as f:
             for env_var in kconf.env_vars:
                 f.write("{}={}\n".format(env_var, os.environ[env_var]))
-
-    if args.sync_deps is not None:
-        kconf.sync_deps(args.sync_deps)
 
 
 def _open_write(path):
