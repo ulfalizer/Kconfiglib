@@ -3077,14 +3077,12 @@ def _check_valid(sym, s):
 
     for low_sym, high_sym, cond in sym.ranges:
         if expr_value(cond):
-            low = int(low_sym.str_value, base)
-            val = int(s, base)
-            high = int(high_sym.str_value, base)
+            low_s = low_sym.str_value
+            high_s = high_sym.str_value
 
-            if not low <= val <= high:
+            if not int(low_s, base) <= int(s, base) <= int(high_s, base):
                 _error("{} is outside the range {}-{}"
-                       .format(s, low_sym.str_value, high_sym.str_value))
-
+                       .format(s, low_s, high_s))
                 return False
 
             break
