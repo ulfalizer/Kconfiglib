@@ -6948,11 +6948,11 @@ def _re_search(regex):
 #
 # '$' is included to detect preprocessor variable assignments with macro
 # expansions in the left-hand side.
-_command_match = _re_match(r"\s*([$A-Za-z0-9_-]+)\s*")
+_command_match = _re_match(r"\s*([A-Za-z0-9_$-]+)\s*")
 
 # An identifier/keyword after the first token. Also eats trailing whitespace.
 # '$' is included to detect identifiers containing macro expansions.
-_id_keyword_match = _re_match(r"([$A-Za-z0-9_/.-]+)\s*")
+_id_keyword_match = _re_match(r"([A-Za-z0-9_$/.-]+)\s*")
 
 # A fragment in the left-hand side of a preprocessor variable assignment. These
 # are the portions between macro expansions ($(foo)). Macros are supported in
