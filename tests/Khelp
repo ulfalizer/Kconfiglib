@@ -32,7 +32,7 @@ config HELP_TERMINATED_BY_COMMENT
 
 config TRICKY_HELP
   bool
-  help
+  -help---
 
 
   a
@@ -47,3 +47,4 @@ config TRICKY_HELP
   g
    h
     i
+#
