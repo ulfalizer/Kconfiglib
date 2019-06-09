@@ -2076,8 +2076,9 @@ class Kconfig(object):
         except IOError as e:
             # We already know that the file exists
             raise _KconfigIOError(
-                e, "{}:{}: Could not open '{}' ({}: {})"
+                e, "{}:{}: Could not open '{}' (in '{}') ({}: {})"
                    .format(self._filename, self._linenr, filename,
+                           self._line.strip(),
                            errno.errorcode[e.errno], e.strerror))
 
         self._filename = rel_filename
