@@ -904,13 +904,13 @@ class Kconfig(object):
 
           Related PEP: https://www.python.org/dev/peps/pep-0538/
         """
-        self.srctree = os.environ.get("srctree", "")
+        self.srctree = os.getenv("srctree", "")
         # A prefix we can reliably strip from glob() results to get a filename
         # relative to $srctree. relpath() can cause issues for symlinks,
         # because it assumes symlink/../foo is the same as foo/.
         self._srctree_prefix = realpath(self.srctree) + os.sep
 
-        self.config_prefix = os.environ.get("CONFIG_", "CONFIG_")
+        self.config_prefix = os.getenv("CONFIG_", "CONFIG_")
 
         # Regular expressions for parsing .config files
         self._set_match = _re_match(self.config_prefix + r"([^=]+)=(.*)")
@@ -922,8 +922,7 @@ class Kconfig(object):
 
         self.warn = warn
         self.warn_to_stderr = warn_to_stderr
-        self.warn_assign_undef = \
-            os.environ.get("KCONFIG_WARN_UNDEF_ASSIGN") == "y"
+        self.warn_assign_undef = os.getenv("KCONFIG_WARN_UNDEF_ASSIGN") == "y"
         self.warn_assign_override = self.warn_assign_redun = True
 
 
@@ -979,7 +978,7 @@ class Kconfig(object):
         try:
             self._functions.update(
                 importlib.import_module(
-                    os.environ.get("KCONFIG_FUNCTIONS", "kconfigfunctions")
+                    os.getenv("KCONFIG_FUNCTIONS", "kconfigfunctions")
                 ).functions)
         except ImportError:
             pass
@@ -1057,8 +1056,8 @@ class Kconfig(object):
 
         # KCONFIG_STRICT is an older alias for KCONFIG_WARN_UNDEF, supported
         # for backwards compatibility
-        if os.environ.get("KCONFIG_WARN_UNDEF") == "y" or \
-           os.environ.get("KCONFIG_STRICT") == "y":
+        if os.getenv("KCONFIG_WARN_UNDEF") == "y" or \
+           os.getenv("KCONFIG_STRICT") == "y":
 
             self._check_undef_syms()
 
@@ -6025,7 +6024,7 @@ def standard_config_filename():
     Calling load_config() with filename=None might give the behavior you want,
     without having to use this function.
     """
-    return os.environ.get("KCONFIG_CONFIG", ".config")
+    return os.getenv("KCONFIG_CONFIG", ".config")
 
 
 def load_allconfig(kconf, filename):
@@ -6050,7 +6049,7 @@ def load_allconfig(kconf, filename):
       Command-specific configuration filename - "allyes.config",
       "allno.config", etc.
     """
-    allconfig = os.environ.get("KCONFIG_ALLCONFIG")
+    allconfig = os.getenv("KCONFIG_ALLCONFIG")
     if allconfig is None:
         return
 
