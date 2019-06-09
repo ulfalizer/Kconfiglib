@@ -1866,10 +1866,9 @@ class Kconfig(object):
 
         self._filename = None
 
-        # Don't include the "if " from below to avoid giving confusing error
-        # messages
-        self._line = s
         self._tokens = self._tokenize("if " + s)
+        # Strip "if " to avoid giving confusing error messages
+        self._line = s
         self._tokens_i = 1  # Skip the 'if' token
 
         return expr_value(self._expect_expr_and_eol())
@@ -2120,7 +2119,6 @@ class Kconfig(object):
             line = line[:-2] + self._readline()
             self._linenr += 1
 
-        self._line = line  # Used for error reporting
         self._tokens = self._tokenize(line)
         # Initialize to 1 instead of 0 to factor out code from _parse_block()
         # and _parse_properties(). They immediately fetch self._tokens[0].
@@ -2142,7 +2140,6 @@ class Kconfig(object):
             line = line[:-2] + self._readline()
             self._linenr += 1
 
-        self._line = line
         self._tokens = self._tokenize(line)
         self._reuse_tokens = True
 
@@ -2227,6 +2224,8 @@ class Kconfig(object):
         # It might be possible to rewrite this to 'yield' tokens instead,
         # working across multiple lines. Lookback and compatibility with old
         # janky versions of the C tools complicate things though.
+
+        self._line = s  # Used for error reporting
 
         # Initial token on the line
         match = _command_match(s)
