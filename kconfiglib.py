@@ -1381,6 +1381,10 @@ class Kconfig(object):
         for sym in self.unique_defined_syms:
             # _write_to_conf is determined when the value is calculated. This
             # is a hidden function call due to property magic.
+            #
+            # Note: In client code, you can check if sym.config_string is empty
+            # instead, to avoid accessing the internal _write_to_conf variable
+            # (though it's likely to keep working).
             val = sym.str_value
             if not sym._write_to_conf:
                 continue
@@ -1689,6 +1693,10 @@ class Kconfig(object):
         for sym in self.unique_defined_syms:
             # _write_to_conf is determined when the value is calculated. This
             # is a hidden function call due to property magic.
+            #
+            # Note: In client code, you can check if sym.config_string is empty
+            # instead, to avoid accessing the internal _write_to_conf variable
+            # (though it's likely to keep working).
             val = sym.str_value
 
             # n tristate values do not get written to auto.conf and autoconf.h,
