@@ -3245,15 +3245,13 @@ def _convert_c_lc_ctype_to_utf8():
             return False
 
     # Is LC_CTYPE set to the C locale?
-    if locale.setlocale(locale.LC_CTYPE, None) == "C":
+    if locale.setlocale(locale.LC_CTYPE) == "C":
         # This list was taken from the PEP 538 implementation in the CPython
         # code, in Python/pylifecycle.c
         for loc in "C.UTF-8", "C.utf8", "UTF-8":
             if try_set_locale(loc):
-                print("Note: Your environment is configured to use ASCII. To "
-                      "avoid Unicode issues, LC_CTYPE was changed from the "
-                      "C locale to the {} locale.".format(loc))
-                break
+                # LC_CTYPE successfully changed
+                return
 
 
 # Are we running on Windows?
