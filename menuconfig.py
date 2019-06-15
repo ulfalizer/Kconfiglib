@@ -204,12 +204,12 @@ from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
 # Configuration variables
 #
 
-# If True, try to convert LC_CTYPE to a UTF-8 locale if it is set to the C
+# If True, try to change LC_CTYPE to a UTF-8 locale if it is set to the C
 # locale (which implies ASCII). This fixes curses Unicode I/O issues on systems
 # with bad defaults. ncurses configures itself from the locale settings.
 #
 # Related PEP: https://www.python.org/dev/peps/pep-0538/
-_CONVERT_C_LC_CTYPE_TO_UTF8 = True
+_CHANGE_C_LC_CTYPE_TO_UTF8 = True
 
 # How many steps an implicit submenu will be indented. Implicit submenus are
 # created when an item depends on the symbol before it. Note that symbols
@@ -675,8 +675,8 @@ def menuconfig(kconf):
     locale.setlocale(locale.LC_ALL, "")
 
     # Try to fix Unicode issues on systems with bad defaults
-    if _CONVERT_C_LC_CTYPE_TO_UTF8:
-        _convert_c_lc_ctype_to_utf8()
+    if _CHANGE_C_LC_CTYPE_TO_UTF8:
+        _change_c_lc_ctype_to_utf8()
 
     # Get rid of the delay between pressing ESC and jumping to the parent menu,
     # unless the user has set ESCDELAY (see ncurses(3)). This makes the UI much
@@ -3228,8 +3228,8 @@ def _safe_move(win, *args):
         pass
 
 
-def _convert_c_lc_ctype_to_utf8():
-    # See _CONVERT_C_LC_CTYPE_TO_UTF8
+def _change_c_lc_ctype_to_utf8():
+    # See _CHANGE_C_LC_CTYPE_TO_UTF8
 
     if _IS_WINDOWS:
         # Windows rarely has issues here, and the PEP 538 implementation avoids
