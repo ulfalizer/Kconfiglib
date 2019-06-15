@@ -2095,11 +2095,10 @@ class Kconfig(object):
         # Returns from a Kconfig file to the file that sourced it. See
         # _enter_file().
 
-        # __self__ fetches the 'file' object for the method
-        self._readline.__self__.close()
         # Restore location from parent Kconfig file
         self._filename, self._linenr = self._include_path[-1]
         # Restore include path and 'file' object
+        self._readline.__self__.close()  # __self__ fetches the 'file' object
         self._include_path, self._readline = self._filestack.pop()
 
     def _next_line(self):
