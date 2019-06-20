@@ -4438,6 +4438,10 @@ class Symbol(object):
           values in Kconfiglib) or as one of the strings "n"/"m"/"y". For other
           symbol types, pass a string.
 
+          Note that the value for an int/hex symbol is passed as a string, e.g.
+          "123" or "0x0123". The format of this string is preserved in the
+          output.
+
           Values that are invalid for the type (such as "foo" or 1 (m) for a
           BOOL or "0x123" for an INT) are ignored and won't be stored in
           Symbol.user_value. Kconfiglib will print a warning by default for
