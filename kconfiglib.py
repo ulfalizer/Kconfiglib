@@ -4450,6 +4450,9 @@ class Symbol(object):
         value of the symbol. For other symbol types, check whether the
         visibility is non-n.
         """
+        if self.orig_type in _BOOL_TRISTATE and value in STR_TO_TRI:
+            value = STR_TO_TRI[value]
+
         # If the new user value matches the old, nothing changes, and we can
         # save some work.
         #
@@ -4462,11 +4465,11 @@ class Symbol(object):
             return True
 
         # Check if the value is valid for our type
-        if not (self.orig_type is BOOL     and value in (2, 0, "y", "n")         or
-                self.orig_type is TRISTATE and value in (2, 1, 0, "y", "m", "n") or
+        if not (self.orig_type is BOOL     and value in (2, 0)     or
+                self.orig_type is TRISTATE and value in TRI_TO_STR or
                 (value.__class__ is str    and
-                 (self.orig_type is STRING                        or
-                  self.orig_type is INT and _is_base_n(value, 10) or
+                 (self.orig_type is STRING                         or
+                  self.orig_type is INT and _is_base_n(value, 10)  or
                   self.orig_type is HEX and _is_base_n(value, 16)
                                         and int(value, 16) >= 0))):
 
@@ -4474,14 +4477,11 @@ class Symbol(object):
             self.kconfig._warn(
                 "the value {} is invalid for {}, which has type {} -- "
                 "assignment ignored"
-                .format(TRI_TO_STR[value] if value in (0, 1, 2) else
+                .format(TRI_TO_STR[value] if value in TRI_TO_STR else
                             "'{}'".format(value),
                         _name_and_loc(self), TYPE_TO_STR[self.orig_type]))
 
             return False
-
-        if self.orig_type in _BOOL_TRISTATE and value in ("y", "m", "n"):
-            value = STR_TO_TRI[value]
 
         self.user_value = value
         self._was_set = True
