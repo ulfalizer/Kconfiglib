@@ -2942,10 +2942,8 @@ class Kconfig(object):
 
                 self.choices.append(choice)
 
-                choice.kconfig = self
-
                 node = MenuNode()
-                node.kconfig = self
+                node.kconfig = choice.kconfig = self
                 node.item = choice
                 node.is_menuconfig = True
                 node.prompt = node.help = None
