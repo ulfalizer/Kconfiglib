@@ -856,25 +856,30 @@ config DEP_REM_CORNER_CASES
 """)
 
     c.syms["VISIBLE"].set_value(2)
+    c.syms["STRING"].set_value("foo")
 
     verify_repr(c.syms["VISIBLE"], """
 <symbol VISIBLE, bool, "visible", value y, user value y, visibility y, direct deps y, Kconfiglib/tests/Krepr:14>
 """)
 
+    verify_repr(c.syms["STRING"], """
+<symbol STRING, string, "visible", value "foo", user value "foo", visibility y, direct deps y, Kconfiglib/tests/Krepr:17>
+""")
+
     verify_repr(c.syms["DIR_DEP_N"], """
-<symbol DIR_DEP_N, unknown, value "DIR_DEP_N", visibility n, direct deps n, Kconfiglib/tests/Krepr:17>
+<symbol DIR_DEP_N, unknown, value "DIR_DEP_N", visibility n, direct deps n, Kconfiglib/tests/Krepr:20>
 """)
 
     verify_repr(c.syms["OPTIONS"], """
-<symbol OPTIONS, unknown, value "OPTIONS", visibility n, allnoconfig_y, is the defconfig_list symbol, from environment variable ENV, direct deps y, Kconfiglib/tests/Krepr:20>
+<symbol OPTIONS, unknown, value "OPTIONS", visibility n, allnoconfig_y, is the defconfig_list symbol, from environment variable ENV, direct deps y, Kconfiglib/tests/Krepr:23>
 """)
 
     verify_repr(c.syms["MULTI_DEF"], """
-<symbol MULTI_DEF, unknown, value "MULTI_DEF", visibility n, direct deps y, Kconfiglib/tests/Krepr:25, Kconfiglib/tests/Krepr:26>
+<symbol MULTI_DEF, unknown, value "MULTI_DEF", visibility n, direct deps y, Kconfiglib/tests/Krepr:28, Kconfiglib/tests/Krepr:29>
 """)
 
     verify_repr(c.syms["CHOICE_1"], """
-<symbol CHOICE_1, tristate, "choice sym", value n, visibility m, choice symbol, direct deps m, Kconfiglib/tests/Krepr:33>
+<symbol CHOICE_1, tristate, "choice sym", value n, visibility m, choice symbol, direct deps m, Kconfiglib/tests/Krepr:36>
 """)
 
     verify_repr(c.modules, """
@@ -885,29 +890,29 @@ config DEP_REM_CORNER_CASES
     print("Testing Choice.__repr__()")
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, "choice", mode m, visibility y, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode m, visibility y, Kconfiglib/tests/Krepr:33>
 """)
 
     c.named_choices["CHOICE"].set_value(2)
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_1 selected, visibility y, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_1 selected, visibility y, Kconfiglib/tests/Krepr:33>
 """)
 
     c.syms["CHOICE_2"].set_value(2)
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_2 selected, CHOICE_2 selected by user, visibility y, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode y, user mode y, CHOICE_2 selected, CHOICE_2 selected by user, visibility y, Kconfiglib/tests/Krepr:33>
 """)
 
     c.named_choices["CHOICE"].set_value(1)
 
     verify_repr(c.named_choices["CHOICE"], """
-<choice CHOICE, tristate, "choice", mode m, user mode m, CHOICE_2 selected by user (overridden), visibility y, Kconfiglib/tests/Krepr:30>
+<choice CHOICE, tristate, "choice", mode m, user mode m, CHOICE_2 selected by user (overridden), visibility y, Kconfiglib/tests/Krepr:33>
 """)
 
     verify_repr(c.syms["CHOICE_HOOK"].nodes[0].next.item, """
-<choice, tristate, "optional choice", mode n, visibility n, optional, Kconfiglib/tests/Krepr:43>
+<choice, tristate, "optional choice", mode n, visibility n, optional, Kconfiglib/tests/Krepr:46>
 """)
 
 
@@ -918,46 +923,46 @@ config DEP_REM_CORNER_CASES
 """)
 
     verify_repr(c.syms["DIR_DEP_N"].nodes[0], """
-<menu node for symbol DIR_DEP_N, deps n, has next, Kconfiglib/tests/Krepr:17>
+<menu node for symbol DIR_DEP_N, deps n, has next, Kconfiglib/tests/Krepr:20>
 """)
 
     verify_repr(c.syms["MULTI_DEF"].nodes[0], """
-<menu node for symbol MULTI_DEF, deps y, has next, Kconfiglib/tests/Krepr:25>
+<menu node for symbol MULTI_DEF, deps y, has next, Kconfiglib/tests/Krepr:28>
 """)
 
     verify_repr(c.syms["MULTI_DEF"].nodes[1], """
-<menu node for symbol MULTI_DEF, deps y, has next, Kconfiglib/tests/Krepr:26>
+<menu node for symbol MULTI_DEF, deps y, has next, Kconfiglib/tests/Krepr:29>
 """)
 
     verify_repr(c.syms["MENUCONFIG"].nodes[0], """
-<menu node for symbol MENUCONFIG, is menuconfig, deps y, has next, Kconfiglib/tests/Krepr:28>
+<menu node for symbol MENUCONFIG, is menuconfig, deps y, has next, Kconfiglib/tests/Krepr:31>
 """)
 
     verify_repr(c.named_choices["CHOICE"].nodes[0], """
-<menu node for choice CHOICE, prompt "choice" (visibility y), deps y, has child, has next, Kconfiglib/tests/Krepr:30>
+<menu node for choice CHOICE, prompt "choice" (visibility y), deps y, has child, has next, Kconfiglib/tests/Krepr:33>
 """)
 
     verify_repr(c.syms["CHOICE_HOOK"].nodes[0].next, """
-<menu node for choice, prompt "optional choice" (visibility n), deps y, has next, Kconfiglib/tests/Krepr:43>
+<menu node for choice, prompt "optional choice" (visibility n), deps y, has next, Kconfiglib/tests/Krepr:46>
 """)
 
     verify_repr(c.syms["NO_VISIBLE_IF_HOOK"].nodes[0].next, """
-<menu node for menu, prompt "no visible if" (visibility y), deps y, 'visible if' deps y, has next, Kconfiglib/tests/Krepr:50>
+<menu node for menu, prompt "no visible if" (visibility y), deps y, 'visible if' deps y, has next, Kconfiglib/tests/Krepr:53>
 """)
 
     verify_repr(c.syms["VISIBLE_IF_HOOK"].nodes[0].next, """
-<menu node for menu, prompt "visible if" (visibility y), deps y, 'visible if' deps m, has next, Kconfiglib/tests/Krepr:55>
+<menu node for menu, prompt "visible if" (visibility y), deps y, 'visible if' deps m, has next, Kconfiglib/tests/Krepr:58>
 """)
 
     verify_repr(c.syms["COMMENT_HOOK"].nodes[0].next, """
-<menu node for comment, prompt "comment" (visibility y), deps y, Kconfiglib/tests/Krepr:61>
+<menu node for comment, prompt "comment" (visibility y), deps y, Kconfiglib/tests/Krepr:64>
 """)
 
 
     print("Testing Kconfig.__repr__()")
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Main menu", srctree is current directory, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, overriding symbol assignment warnings enabled, redundant symbol assignment warnings enabled>
+<configuration with 15 symbols, main menu prompt "Main menu", srctree is current directory, config symbol prefix "CONFIG_", warnings disabled, printing of warnings to stderr enabled, undef. symbol assignment warnings disabled, overriding symbol assignment warnings enabled, redundant symbol assignment warnings enabled>
 """)
 
     os.environ["srctree"] = "Kconfiglib"
@@ -971,7 +976,7 @@ config DEP_REM_CORNER_CASES
     c.warn_assign_undef = True
 
     verify_repr(c, """
-<configuration with 14 symbols, main menu prompt "Main menu", srctree "Kconfiglib", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, overriding symbol assignment warnings disabled, redundant symbol assignment warnings disabled>
+<configuration with 15 symbols, main menu prompt "Main menu", srctree "Kconfiglib", config symbol prefix "CONFIG_ value", warnings enabled, printing of warnings to stderr disabled, undef. symbol assignment warnings enabled, overriding symbol assignment warnings disabled, redundant symbol assignment warnings disabled>
 """)
 
     os.environ.pop("srctree", None)

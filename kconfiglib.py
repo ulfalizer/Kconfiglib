@@ -4524,52 +4524,49 @@ class Symbol(object):
         interactive Python prompt.
         """
         fields = ["symbol " + self.name, TYPE_TO_STR[self.type]]
+        add = fields.append
 
         for node in self.nodes:
             if node.prompt:
-                fields.append('"{}"'.format(node.prompt[0]))
+                add('"{}"'.format(node.prompt[0]))
 
         # Only add quotes for non-bool/tristate symbols
-        fields.append("value " +
-                      (self.str_value
-                       if self.orig_type in _BOOL_TRISTATE else
-                       '"{}"'.format(self.str_value)))
+        add("value " + (self.str_value if self.orig_type in _BOOL_TRISTATE
+                        else '"{}"'.format(self.str_value)))
 
         if not self.is_constant:
             # These aren't helpful to show for constant symbols
 
             if self.user_value is not None:
                 # Only add quotes for non-bool/tristate symbols
-                fields.append("user value " +
-                              (TRI_TO_STR[self.user_value]
-                               if self.orig_type in _BOOL_TRISTATE else
-                               '"{}"'.format(self.user_value)))
+                add("user value " + (TRI_TO_STR[self.user_value]
+                                     if self.orig_type in _BOOL_TRISTATE
+                                     else '"{}"'.format(self.user_value)))
 
-            fields.append("visibility " + TRI_TO_STR[self.visibility])
+            add("visibility " + TRI_TO_STR[self.visibility])
 
             if self.choice:
-                fields.append("choice symbol")
+                add("choice symbol")
 
             if self.is_allnoconfig_y:
-                fields.append("allnoconfig_y")
+                add("allnoconfig_y")
 
             if self is self.kconfig.defconfig_list:
-                fields.append("is the defconfig_list symbol")
+                add("is the defconfig_list symbol")
 
             if self.env_var is not None:
-                fields.append("from environment variable " + self.env_var)
+                add("from environment variable " + self.env_var)
 
             if self is self.kconfig.modules:
-                fields.append("is the modules symbol")
+                add("is the modules symbol")
 
-            fields.append("direct deps " +
-                          TRI_TO_STR[expr_value(self.direct_dep)])
+            add("direct deps " + TRI_TO_STR[expr_value(self.direct_dep)])
 
         if self.nodes:
             for node in self.nodes:
-                fields.append("{}:{}".format(node.filename, node.linenr))
+                add("{}:{}".format(node.filename, node.linenr))
         else:
-            fields.append("constant" if self.is_constant else "undefined")
+            add("constant" if self.is_constant else "undefined")
 
         return "<{}>".format(", ".join(fields))
 
@@ -5117,18 +5114,19 @@ class Choice(object):
         """
         fields = ["choice " + self.name if self.name else "choice",
                   TYPE_TO_STR[self.type]]
+        add = fields.append
 
         for node in self.nodes:
             if node.prompt:
-                fields.append('"{}"'.format(node.prompt[0]))
+                add('"{}"'.format(node.prompt[0]))
 
-        fields.append("mode " + self.str_value)
+        add("mode " + self.str_value)
 
         if self.user_value is not None:
-            fields.append('user mode {}'.format(TRI_TO_STR[self.user_value]))
+            add('user mode {}'.format(TRI_TO_STR[self.user_value]))
 
         if self.selection:
-            fields.append("{} selected".format(self.selection.name))
+            add("{} selected".format(self.selection.name))
 
         if self.user_selection:
             user_sel_str = "{} selected by user" \
@@ -5137,15 +5135,15 @@ class Choice(object):
             if self.selection is not self.user_selection:
                 user_sel_str += " (overridden)"
 
-            fields.append(user_sel_str)
+            add(user_sel_str)
 
-        fields.append("visibility " + TRI_TO_STR[self.visibility])
+        add("visibility " + TRI_TO_STR[self.visibility])
 
         if self.is_optional:
-            fields.append("optional")
+            add("optional")
 
         for node in self.nodes:
-            fields.append("{}:{}".format(node.filename, node.linenr))
+            add("{}:{}".format(node.filename, node.linenr))
 
         return "<{}>".format(", ".join(fields))
 
@@ -5524,46 +5522,45 @@ class MenuNode(object):
         evaluated on e.g. the interactive Python prompt.
         """
         fields = []
+        add = fields.append
 
         if self.item.__class__ is Symbol:
-            fields.append("menu node for symbol " + self.item.name)
+            add("menu node for symbol " + self.item.name)
 
         elif self.item.__class__ is Choice:
             s = "menu node for choice"
             if self.item.name is not None:
                 s += " " + self.item.name
-            fields.append(s)
+            add(s)
 
         elif self.item is MENU:
-            fields.append("menu node for menu")
+            add("menu node for menu")
 
         else:  # self.item is COMMENT
-            fields.append("menu node for comment")
+            add("menu node for comment")
 
         if self.prompt:
-            fields.append('prompt "{}" (visibility {})'
-                          .format(self.prompt[0],
-                                  TRI_TO_STR[expr_value(self.prompt[1])]))
+            add('prompt "{}" (visibility {})'.format(
+                self.prompt[0], TRI_TO_STR[expr_value(self.prompt[1])]))
 
         if self.item.__class__ is Symbol and self.is_menuconfig:
-            fields.append("is menuconfig")
+            add("is menuconfig")
 
-        fields.append("deps " + TRI_TO_STR[expr_value(self.dep)])
+        add("deps " + TRI_TO_STR[expr_value(self.dep)])
 
         if self.item is MENU:
-            fields.append("'visible if' deps " +
-                          TRI_TO_STR[expr_value(self.visibility)])
+            add("'visible if' deps " + TRI_TO_STR[expr_value(self.visibility)])
 
         if self.item.__class__ in _SYMBOL_CHOICE and self.help is not None:
-            fields.append("has help")
+            add("has help")
 
         if self.list:
-            fields.append("has child")
+            add("has child")
 
         if self.next:
-            fields.append("has next")
+            add("has next")
 
-        fields.append("{}:{}".format(self.filename, self.linenr))
+        add("{}:{}".format(self.filename, self.linenr))
 
         return "<{}>".format(", ".join(fields))
 
