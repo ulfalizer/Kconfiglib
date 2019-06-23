@@ -4373,7 +4373,6 @@ class Symbol(object):
         """
         if self._cached_assignable is None:
             self._cached_assignable = self._assignable()
-
         return self._cached_assignable
 
     @property
@@ -4383,7 +4382,6 @@ class Symbol(object):
         """
         if self._cached_vis is None:
             self._cached_vis = _visibility(self)
-
         return self._cached_vis
 
     @property
@@ -5026,7 +5024,6 @@ class Choice(object):
         """
         if self._cached_assignable is None:
             self._cached_assignable = self._assignable()
-
         return self._cached_assignable
 
     @property
@@ -5036,7 +5033,6 @@ class Choice(object):
         """
         if self._cached_vis is None:
             self._cached_vis = _visibility(self)
-
         return self._cached_vis
 
     @property
@@ -5046,7 +5042,6 @@ class Choice(object):
         """
         if self._cached_selection is _NO_CACHED_SELECTION:
             self._cached_selection = self._selection()
-
         return self._cached_selection
 
     def set_value(self, value):
