@@ -5831,12 +5831,12 @@ def expr_value(expr):
             # parse as numbers
             comp = _strcmp(v1.str_value, v2.str_value)
 
-    if rel is EQUAL:      return 2*(comp == 0)
-    if rel is UNEQUAL:    return 2*(comp != 0)
-    if rel is LESS:       return 2*(comp < 0)
-    if rel is LESS_EQUAL: return 2*(comp <= 0)
-    if rel is GREATER:    return 2*(comp > 0)
-    return 2*(comp >= 0)  # rel is GREATER_EQUAL
+    return 2*(comp == 0 if rel is EQUAL else
+              comp != 0 if rel is UNEQUAL else
+              comp <  0 if rel is LESS else
+              comp <= 0 if rel is LESS_EQUAL else
+              comp >  0 if rel is GREATER else
+              comp >= 0)
 
 
 def standard_sc_expr_str(sc):
