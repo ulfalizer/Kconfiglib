@@ -4993,7 +4993,6 @@ class Choice(object):
         """
         if self.orig_type is TRISTATE and not self.kconfig.modules.tri_value:
             return BOOL
-
         return self.orig_type
 
     @property
