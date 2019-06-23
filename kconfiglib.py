@@ -5900,7 +5900,7 @@ def expr_str(expr, sc_expr_str_fn=standard_sc_expr_str):
     #
     # Relation operands are always symbols (quoted strings are constant
     # symbols)
-    return "{} {} {}".format(sc_expr_str_fn(expr[1]), _REL_TO_STR[expr[0]],
+    return "{} {} {}".format(sc_expr_str_fn(expr[1]), REL_TO_STR[expr[0]],
                              sc_expr_str_fn(expr[2]))
 
 
@@ -6779,7 +6779,7 @@ LESS_EQUAL    = _T_LESS_EQUAL
 GREATER       = _T_GREATER
 GREATER_EQUAL = _T_GREATER_EQUAL
 
-_REL_TO_STR = {
+REL_TO_STR = {
     EQUAL:         "=",
     UNEQUAL:       "!=",
     LESS:          "<",
