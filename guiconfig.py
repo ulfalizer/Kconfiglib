@@ -2121,7 +2121,7 @@ def _defaults_info(sc):
 
     s = "Defaults:\n"
 
-    for val, cond in sc.defaults:
+    for val, cond in sc.orig_defaults:
         s += "  - "
         if isinstance(sc, Symbol):
             s += _expr_str(val)
