@@ -4026,6 +4026,12 @@ class Symbol(object):
       than plain integers. Undefined symbols get their name as their string
       value, so this works out. The C tools work the same way.
 
+    orig_defaults:
+    orig_selects:
+    orig_implies:
+    orig_ranges:
+      See the corresponding attributes on the MenuNode class.
+
     rev_dep:
       Reverse dependency expression from other symbols selecting this symbol.
       Multiple selections get ORed together. A condition on a select is ANDed
@@ -4515,6 +4521,34 @@ class Symbol(object):
         """
         return {item for node in self.nodes for item in node.referenced}
 
+    @property
+    def orig_defaults(self):
+        """
+        See the class documentation.
+        """
+        return [d for node in self.nodes for d in node.orig_defaults]
+
+    @property
+    def orig_selects(self):
+        """
+        See the class documentation.
+        """
+        return [s for node in self.nodes for s in node.orig_selects]
+
+    @property
+    def orig_implies(self):
+        """
+        See the class documentation.
+        """
+        return [i for node in self.nodes for i in node.orig_implies]
+
+    @property
+    def orig_ranges(self):
+        """
+        See the class documentation.
+        """
+        return [r for node in self.nodes for r in node.orig_ranges]
+
     def __repr__(self):
         """
         Returns a string with information about the symbol (including its name,
@@ -4939,6 +4973,9 @@ class Choice(object):
       Note that 'depends on' and parent dependencies are propagated to
       'default' conditions.
 
+    orig_defaults:
+      See the corresponding attribute on the MenuNode class.
+
     direct_dep:
       See Symbol.direct_dep.
 
@@ -5101,6 +5138,13 @@ class Choice(object):
         See the class documentation.
         """
         return {item for node in self.nodes for item in node.referenced}
+
+    @property
+    def orig_defaults(self):
+        """
+        See the class documentation.
+        """
+        return [d for node in self.nodes for d in node.orig_defaults]
 
     def __repr__(self):
         """

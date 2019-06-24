@@ -782,10 +782,10 @@ comment "advanced comment"
 """)
 
 
-    print("Testing MenuNode.orig_*")
+    print("Testing {MenuNode,Symbol,Choice}.orig_*")
 
-    # Just test some corner cases here. These are already tested above. Use
-    # MenuNode.__str__() as a proxy.
+    # Just test some corner cases here re. MenuNode.orig_*. They are already
+    # indirectly tested above. Use MenuNode.__str__() as a proxy.
 
     verify_str(c.syms["DEP_REM_CORNER_CASES"], """
 config DEP_REM_CORNER_CASES
@@ -822,6 +822,18 @@ config DEP_REM_CORNER_CASES
 	bool "prompt" if FOO || BAR
 	depends on BAZ && QAZ
 """)
+
+    # Test {Symbol,Choice}.orig_*
+
+    def verify_deps(elms, dep_index, expected):
+        verify_equal(" ".join(expr_str(elm[dep_index]) for elm in elms),
+                     expected)
+
+    verify_deps(c.syms["BOOL_SYM_ORIG"].orig_defaults,        1, "DEP y y")
+    verify_deps(c.syms["BOOL_SYM_ORIG"].orig_selects,         1, "y DEP y")
+    verify_deps(c.syms["BOOL_SYM_ORIG"].orig_implies,         1, "y y DEP")
+    verify_deps(c.syms["INT_SYM_ORIG"].orig_ranges,           2, "DEP y DEP")
+    verify_deps(c.named_choices["CHOICE_ORIG"].orig_defaults, 1, "y DEP DEP")
 
 
     print("Testing Symbol.__repr__()")

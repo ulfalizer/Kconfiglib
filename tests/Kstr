@@ -242,3 +242,52 @@ endmenu
 # Only prompt, no type
 config PROMPT_ONLY
     prompt "prompt only"
+
+# {Symbol,Choice}.orig_*
+
+if BASE_DEP
+
+config BOOL_SYM_ORIG
+    bool
+    default D1 if DEP
+    default D2
+    select S1
+    select S2 if DEP
+    imply I1
+    imply I1
+
+config BOOL_SYM_ORIG
+    default D3
+    select S3
+    imply I3 if DEP
+
+config INT_SYM_ORIG
+    int
+    range 1 2 if DEP
+    range 3 4
+
+config INT_SYM_ORIG
+    range 5 6 if DEP
+
+choice CHOICE_ORIG
+    bool "choice orig"
+    default A
+    default B if DEP
+
+config A
+    bool
+
+config B
+    bool
+
+endchoice
+
+choice CHOICE_ORIG
+    default C if DEP
+
+config C
+    bool
+
+endchoice
+
+endif
