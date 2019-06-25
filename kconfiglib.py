@@ -5094,28 +5094,27 @@ class Choice(object):
         Choice.assignable attribute to see what values are currently in range
         and would actually be reflected in the mode of the choice.
         """
+        if value in STR_TO_TRI:
+            value = STR_TO_TRI[value]
+
         if value == self.user_value:
             # We know the value must be valid if it was successfully set
             # previously
             self._was_set = True
             return True
 
-        if not ((self.orig_type is BOOL     and value in (2, 0, "y", "n")        ) or
-                (self.orig_type is TRISTATE and value in (2, 1, 0, "y", "m", "n"))):
+        if not (self.orig_type is BOOL     and value in (2, 0) or
+                self.orig_type is TRISTATE and value in TRI_TO_STR):
 
             # Display tristate values as n, m, y in the warning
             self.kconfig._warn(
                 "the value {} is invalid for {}, which has type {} -- "
                 "assignment ignored"
-                .format(TRI_TO_STR[value] if value in (0, 1, 2) else
+                .format(TRI_TO_STR[value] if value in TRI_TO_STR else
                             "'{}'".format(value),
-                        _name_and_loc(self),
-                        TYPE_TO_STR[self.orig_type]))
+                        _name_and_loc(self), TYPE_TO_STR[self.orig_type]))
 
             return False
-
-        if value in ("y", "m", "n"):
-            value = STR_TO_TRI[value]
 
         self.user_value = value
         self._was_set = True
