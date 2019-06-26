@@ -4473,11 +4473,11 @@ class Symbol(object):
         # Check if the value is valid for our type
         if not (self.orig_type is BOOL     and value in (2, 0)     or
                 self.orig_type is TRISTATE and value in TRI_TO_STR or
-                (value.__class__ is str    and
-                 (self.orig_type is STRING                         or
-                  self.orig_type is INT and _is_base_n(value, 10)  or
-                  self.orig_type is HEX and _is_base_n(value, 16)
-                                        and int(value, 16) >= 0))):
+                value.__class__ is str and
+                (self.orig_type is STRING                        or
+                 self.orig_type is INT and _is_base_n(value, 10) or
+                 self.orig_type is HEX and _is_base_n(value, 16)
+                                       and int(value, 16) >= 0)):
 
             # Display tristate values as n, m, y in the warning
             self.kconfig._warn(
