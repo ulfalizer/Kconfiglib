@@ -3443,7 +3443,7 @@ class Kconfig(object):
         #
         #  - Creates implicit menus (see kconfig-language.txt)
         #
-        #  - Removes 'if' nodes,
+        #  - Removes 'if' nodes
         #
         #  - Sets 'choice' types and registers choice symbols
         #
