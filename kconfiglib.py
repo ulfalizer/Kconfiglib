@@ -1047,7 +1047,7 @@ class Kconfig(object):
         self.unique_choices = _ordered_unique(self.choices)
 
         # Do various post-processing on the menu tree
-        self._finalize_tree(self.top_node, self.y)
+        self._finalize_node(self.top_node, self.y)
 
 
         # Do sanity checks. Some of these depend on everything being finalized.
@@ -3433,56 +3433,42 @@ class Kconfig(object):
     # implicit submenu creation
     #
 
-    def _finalize_tree(self, node, visible_if):
-        # Propagates properties and dependencies, creates implicit menus (see
-        # kconfig-language.txt), removes 'if' nodes, and finalizes choices.
-        # This pretty closely mirrors menu_finalize() from the C
-        # implementation, with some minor tweaks (MenuNode holds lists of
-        # properties instead of each property having a MenuNode pointer, for
-        # example).
+    def _finalize_node(self, node, visible_if):
+        # Finalizes a menu node and its children:
+        #
+        #  - Copies properties from menu nodes up to their contained
+        #    symbols/choices
+        #
+        #  - Propagates dependencies from parent to child nodes
+        #
+        #  - Creates implicit menus (see kconfig-language.txt)
+        #
+        #  - Removes 'if' nodes,
+        #
+        #  - Sets 'choice' types and registers choice symbols
+        #
+        # menu_finalize() in the C implementation is similar.
         #
         # node:
-        #   The current "parent" menu node, from which we propagate
-        #   dependencies
+        #   The menu node to finalize. This node and its children will have
+        #   been finalized when the function returns, and any implicit menus
+        #   will have been created.
         #
         # visible_if:
         #   Dependencies from 'visible if' on parent menus. These are added to
         #   the prompts of symbols and choices.
 
-        if node.list:
-            # The menu node is a choice, menu, or if. Finalize each child in
-            # it.
-
-            if node.item is MENU:
-                visible_if = self._make_and(visible_if, node.visibility)
-
-            # Propagate the menu node's dependencies to each child menu node.
-            #
-            # The recursive _finalize_tree() calls assume that the current
-            # "level" in the tree has already had dependencies propagated. This
-            # makes e.g. implicit submenu creation easier, because it needs to
-            # look ahead.
-            self._propagate_deps(node, visible_if)
-
-            # Finalize the children
-            cur = node.list
-            while cur:
-                self._finalize_tree(cur, visible_if)
-                cur = cur.next
-
-        elif node.item.__class__ is Symbol:
-            # Add the node's non-node-specific properties (defaults, ranges,
-            # etc.) to the Symbol
+        if node.item.__class__ is Symbol:
+            # Copy defaults, ranges, selects, and implies to the Symbol
             self._add_props_to_sym(node)
 
-            # See if we can create an implicit menu rooted at the Symbol and
-            # finalize each child menu node in that menu if so, like for the
-            # choice/menu/if case above
+            # Find any items that should go in an implicit menu rooted at the
+            # symbol
             cur = node
             while cur.next and _auto_menu_dep(node, cur.next):
-                # This also makes implicit submenu creation work recursively,
-                # with implicit menus inside implicit menus
-                self._finalize_tree(cur.next, visible_if)
+                # This makes implicit submenu creation work recursively, with
+                # implicit menus inside implicit menus
+                self._finalize_node(cur.next, visible_if)
                 cur = cur.next
                 cur.parent = node
 
@@ -3493,10 +3479,27 @@ class Kconfig(object):
                 node.next = cur.next
                 cur.next = None
 
+        elif node.list:
+            # The menu node is a choice, menu, or if. Finalize each child node.
+
+            if node.item is MENU:
+                visible_if = self._make_and(visible_if, node.visibility)
+
+            # Propagate the menu node's dependencies to each child menu node.
+            #
+            # This needs to go before the recursive _finalize_node() call so
+            # that implicit submenu creation can look ahead at dependencies.
+            self._propagate_deps(node, visible_if)
+
+            # Finalize the children
+            cur = node.list
+            while cur:
+                self._finalize_node(cur, visible_if)
+                cur = cur.next
 
         if node.list:
-            # We have a parent node with individually finalized child nodes. Do
-            # final steps to finalize this "level" in the menu tree.
+            # node's children have been individually finalized. Do final steps
+            # to finalize this "level" in the menu tree.
             _flatten(node.list)
             _remove_ifs(node)
 
