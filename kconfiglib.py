@@ -2290,9 +2290,8 @@ class Kconfig(object):
                     else:
                         i = match.end()
 
-                    token = self.const_syms[name] \
-                            if name in ("y", "m", "n") else \
-                            self._lookup_sym(name)
+                    token = self.const_syms[name] if name in STR_TO_TRI else \
+                        self._lookup_sym(name)
 
                 else:
                     # It's a case of missing quotes. For example, the
@@ -5893,7 +5892,7 @@ def standard_sc_expr_str(sc):
     See expr_str().
     """
     if sc.__class__ is Symbol:
-        if sc.is_constant and sc.name not in ("n", "m", "y"):
+        if sc.is_constant and sc.name not in STR_TO_TRI:
             return '"{}"'.format(escape(sc.name))
         return sc.name
 
