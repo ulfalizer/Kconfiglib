@@ -5948,8 +5948,9 @@ def expr_items(expr):
     """
     Returns a set() of all items (symbols and choices) that appear in the
     expression 'expr'.
-    """
 
+    Passing subexpressions of expressions to this function works as expected.
+    """
     res = set()
 
     def rec(subexpr):
