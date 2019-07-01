@@ -4145,7 +4145,7 @@ class Symbol(object):
         See the class documentation.
         """
         if self.orig_type is TRISTATE and \
-           ((self.choice and self.choice.tri_value == 2) or
+           (self.choice and self.choice.tri_value == 2 or
             not self.kconfig.modules.tri_value):
 
             return BOOL
