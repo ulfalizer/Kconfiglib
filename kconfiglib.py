@@ -1848,12 +1848,12 @@ class Kconfig(object):
     def eval_string(self, s):
         """
         Returns the tristate value of the expression 's', represented as 0, 1,
-        and 2 for n, m, and y, respectively. Raises KconfigError if syntax
-        errors are detected in 's'. Warns if undefined symbols are referenced.
+        and 2 for n, m, and y, respectively. Raises KconfigError on syntax
+        errors. Warns if undefined symbols are referenced.
 
         As an example, if FOO and BAR are tristate symbols at least one of
-        which has the value y, then config.eval_string("y && (FOO || BAR)")
-        returns 2 (y).
+        which has the value y, then eval_string("y && (FOO || BAR)") returns
+        2 (y).
 
         To get the string value of non-bool/tristate symbols, use
         Symbol.str_value. eval_string() always returns a tristate value, and
