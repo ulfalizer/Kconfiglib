@@ -3111,7 +3111,7 @@ def equal_configs():
 
     try:
         f = open("._config")
-    except IOError as e:
+    except EnvironmentError as e:
         if e.errno != errno.ENOENT:
             raise
         print("._config not found. Did you forget to apply the Makefile patch?")

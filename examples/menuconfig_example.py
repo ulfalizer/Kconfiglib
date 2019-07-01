@@ -305,7 +305,7 @@ if __name__ == "__main__":
             try:
                 # Returns a message telling which file got loaded
                 print(kconf.load_config(config_filename))
-            except IOError as e:
+            except EnvironmentError as e:
                 print(e, file=sys.stderr)
 
             print_menuconfig(kconf)
@@ -316,7 +316,7 @@ if __name__ == "__main__":
             try:
                 # Returns a message telling which file got saved
                 print(kconf.write_config(config_filename))
-            except IOError as e:
+            except EnvironmentError as e:
                 print(e, file=sys.stderr)
 
             continue

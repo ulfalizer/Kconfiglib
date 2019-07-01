@@ -853,9 +853,13 @@ class Kconfig(object):
         default warning settings (KCONFIG_WARN_UNDEF and
         KCONFIG_WARN_UNDEF_ASSIGN).
 
-        Raises KconfigError on syntax/semantic errors, and (possibly a subclass
-        of) IOError on IO errors ('errno', 'strerror', and 'filename' are
-        available). Note that IOError can be caught as OSError on Python 3.
+        Raises KconfigError on syntax/semantic errors, and OSError or (possibly
+        a subclass of) IOError on IO errors ('errno', 'strerror', and
+        'filename' are available). Note that IOError is an alias for OSError on
+        Python 3, so it's enough to catch OSError there. If you need Python 2/3
+        compatibility, it's easiest to catch EnvironmentError, which is a
+        common base class of OSError/IOError on Python 2 and an alias for
+        OSError on Python 3.
 
         filename (default: "Kconfig"):
           The Kconfig file to load. For the Linux kernel, you'll want "Kconfig"
@@ -1091,7 +1095,7 @@ class Kconfig(object):
                     try:
                         with self._open_config(filename.str_value) as f:
                             return f.name
-                    except IOError:
+                    except EnvironmentError:
                         continue
 
         return None
@@ -1114,9 +1118,8 @@ class Kconfig(object):
         True, and appended to otherwise. See the documentation for
         Kconfig.missing_syms as well.
 
-        Raises (possibly a subclass of) IOError on IO errors ('errno',
-        'strerror', and 'filename' are available). Note that IOError can be
-        caught as OSError on Python 3.
+        See the Kconfig.__init__() docstring for raised exceptions
+        (OSError/IOError). KconfigError is never raised here.
 
         filename (default: None):
           Path to load configuration from (a string). Respects $srctree if set
@@ -1428,6 +1431,9 @@ class Kconfig(object):
         like the modification time and possibly triggering redundant work in
         build tools.
 
+        See the Kconfig.__init__() docstring for raised exceptions
+        (OSError/IOError). KconfigError is never raised here.
+
         filename (default: None):
           Filename to save configuration to (a string).
 
@@ -1567,6 +1573,9 @@ class Kconfig(object):
         compared to a "full" .config file, especially when configurations files
         are merged or edited by hand.
 
+        See the Kconfig.__init__() docstring for raised exceptions
+        (OSError/IOError). KconfigError is never raised here.
+
         filename:
           Self-explanatory.
 
@@ -1630,6 +1639,9 @@ class Kconfig(object):
 
         This function is intended to be called during each build, before
         compiling source files that depend on configuration symbols.
+
+        See the Kconfig.__init__() docstring for raised exceptions
+        (OSError/IOError). KconfigError is never raised here.
 
         path:
           Path to directory
@@ -1741,7 +1753,7 @@ class Kconfig(object):
 
         try:
             auto_conf = self._open(join(path, "auto.conf"), "r")
-        except IOError as e:
+        except EnvironmentError as e:
             if e.errno == errno.ENOENT:
                 # No old values
                 return
@@ -2005,12 +2017,12 @@ class Kconfig(object):
 
         try:
             return self._open(filename, "r")
-        except IOError as e:
+        except EnvironmentError as e:
             # This will try opening the same file twice if $srctree is unset,
             # but it's not a big deal
             try:
                 return self._open(join(self.srctree, filename), "r")
-            except IOError as e2:
+            except EnvironmentError as e2:
                 # This is needed for Python 3, because e2 is deleted after
                 # the try block:
                 #
@@ -2077,7 +2089,7 @@ class Kconfig(object):
 
         try:
             self._readline = self._open(filename, "r").readline
-        except IOError as e:
+        except EnvironmentError as e:
             # We already know that the file exists
             raise _KconfigIOError(
                 e, "{}:{}: Could not open '{}' (in '{}') ({}: {})"
@@ -2170,7 +2182,7 @@ class Kconfig(object):
                 # Robust re. things like encoding and line endings (mmap()
                 # trickery isn't)
                 return f.read(len(contents) + 1) == contents
-        except IOError:
+        except EnvironmentError:
             # If the error here would prevent writing the file as well, we'll
             # notice it later
             return False
@@ -6049,7 +6061,7 @@ def standard_kconfig():
     # Only show backtraces for unexpected exceptions
     try:
         return Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
-    except (IOError, KconfigError) as e:
+    except (EnvironmentError, KconfigError) as e:
         # Some long exception messages have extra newlines for better
         # formatting when reported as an unhandled exception. Strip them here.
         sys.exit(str(e).strip())
@@ -6095,6 +6107,10 @@ def load_allconfig(kconf, filename):
     def std_msg(e):
         # "Upcasts" a _KconfigIOError to an IOError, removing the custom
         # __str__() message. The standard message is better here.
+        #
+        # This might also convert an OSError to an IOError in obscure cases,
+        # but it's probably not a big deal. The distinction is shaky (see
+        # PEP-3151).
         return IOError(e.errno, e.strerror, e.filename)
 
     old_warn_assign_override = kconf.warn_assign_override
@@ -6104,17 +6120,17 @@ def load_allconfig(kconf, filename):
     if allconfig in ("", "1"):
         try:
             print(kconf.load_config(filename, False))
-        except IOError as e1:
+        except EnvironmentError as e1:
             try:
                 print(kconf.load_config("all.config", False))
-            except IOError as e2:
+            except EnvironmentError as e2:
                 sys.exit("error: KCONFIG_ALLCONFIG is set, but neither {} "
                          "nor all.config could be opened: {}, {}"
                          .format(filename, std_msg(e1), std_msg(e2)))
     else:
         try:
             print(kconf.load_config(allconfig, False))
-        except IOError as e:
+        except EnvironmentError as e:
             sys.exit("error: KCONFIG_ALLCONFIG is set to '{}', which "
                      "could not be opened: {}"
                      .format(allconfig, std_msg(e)))

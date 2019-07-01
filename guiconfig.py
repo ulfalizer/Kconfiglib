@@ -1696,7 +1696,7 @@ def _try_save(save_fn, filename, description):
         _set_status(msg)
         print(msg)
         return True
-    except (OSError, IOError) as e:
+    except EnvironmentError as e:
         messagebox.showerror(
             "Error saving " + description,
             "Error saving {} to '{}': {} (errno: {})"
@@ -1717,7 +1717,7 @@ def _try_load(filename):
         _set_status(msg)
         print(msg)
         return True
-    except (OSError, IOError) as e:
+    except EnvironmentError as e:
         messagebox.showerror(
             "Error loading configuration",
             "Error loading '{}': {} (errno: {})"
