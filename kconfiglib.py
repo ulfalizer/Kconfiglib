@@ -3289,9 +3289,8 @@ class Kconfig(object):
         # Return 'and_expr' directly if we have a "single-operand" OR.
         # Otherwise, parse the expression on the right and make an OR node.
         # This turns A || B || C || D into (OR, A, (OR, B, (OR, C, D))).
-        return and_expr \
-               if not self._check_token(_T_OR) else \
-               (OR, and_expr, self._parse_expr(transform_m))
+        return and_expr if not self._check_token(_T_OR) else \
+            (OR, and_expr, self._parse_expr(transform_m))
 
     def _parse_and_expr(self, transform_m):
         factor = self._parse_factor(transform_m)
@@ -3299,9 +3298,8 @@ class Kconfig(object):
         # Return 'factor' directly if we have a "single-operand" AND.
         # Otherwise, parse the right operand and make an AND node. This turns
         # A && B && C && D into (AND, A, (AND, B, (AND, C, D))).
-        return factor \
-               if not self._check_token(_T_AND) else \
-               (AND, factor, self._parse_and_expr(transform_m))
+        return factor if not self._check_token(_T_AND) else \
+            (AND, factor, self._parse_and_expr(transform_m))
 
     def _parse_factor(self, transform_m):
         token = self._tokens[self._tokens_i]
