@@ -5894,7 +5894,6 @@ def standard_sc_expr_str(sc):
             return '"{}"'.format(escape(sc.name))
         return sc.name
 
-    # Choice
     return "<choice {}>".format(sc.name) if sc.name else "<choice>"
 
 
