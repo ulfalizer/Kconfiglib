@@ -4050,7 +4050,7 @@ class Symbol(object):
       The direct ('depends on') dependencies for the symbol, or self.kconfig.y
       if there are no direct dependencies.
 
-      This attribute includes any dependencies from surrounding menus and if's.
+      This attribute includes any dependencies from surrounding menus and ifs.
       Those get propagated to the direct dependencies, and the resulting direct
       dependencies in turn get propagated to the conditions of all properties.
 
@@ -4061,7 +4061,7 @@ class Symbol(object):
       A set() with all symbols and choices referenced in the properties and
       property conditions of the symbol.
 
-      Also includes dependencies from surrounding menus and if's, because those
+      Also includes dependencies from surrounding menus and ifs, because those
       get propagated to the symbol (see the 'Intro to symbol values' section in
       the module docstring).
 
@@ -4764,8 +4764,8 @@ class Symbol(object):
         # symbols, so we skip invalidation for them as an optimization.
         #
         # This also prevents constant (quoted) symbols from being invalidated
-        # if set_value() is called on them, which would cause them to lose
-        # their value and break things.
+        # if set_value() is called on them, which would make them lose their
+        # value and break things.
         #
         # Prints a warning if the symbol has no prompt. In some contexts (e.g.
         # when loading a .config files) assignments to promptless symbols are
@@ -4986,7 +4986,7 @@ class Choice(object):
       A set() with all symbols referenced in the properties and property
       conditions of the choice.
 
-      Also includes dependencies from surrounding menus and if's, because those
+      Also includes dependencies from surrounding menus and ifs, because those
       get propagated to the choice (see the 'Intro to symbol values' section in
       the module docstring).
 
@@ -5398,7 +5398,7 @@ class MenuNode(object):
       The direct ('depends on') dependencies for the menu node, or
       self.kconfig.y if there are no direct dependencies.
 
-      This attribute includes any dependencies from surrounding menus and if's.
+      This attribute includes any dependencies from surrounding menus and ifs.
       Those get propagated to the direct dependencies, and the resulting direct
       dependencies in turn get propagated to the conditions of all properties.
 
@@ -5416,7 +5416,7 @@ class MenuNode(object):
       A set() with all symbols and choices referenced in the properties and
       property conditions of the menu node.
 
-      Also includes dependencies inherited from surrounding menus and if's.
+      Also includes dependencies inherited from surrounding menus and ifs.
       Choices appear in the dependencies of choice symbols.
 
     is_menuconfig:
