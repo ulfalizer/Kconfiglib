@@ -891,8 +891,9 @@ class Kconfig(object):
           True/False.
 
         encoding (default: "utf-8"):
-          The encoding to use when reading and writing files. If None, the
-          encoding specified in the current locale will be used.
+          The encoding to use when reading and writing files, and when decoding
+          output from commands run via $(shell). If None, the encoding
+          specified in the current locale will be used.
 
           The "utf-8" default avoids exceptions on systems that are configured
           to use the C locale, which implies an ASCII encoding.
