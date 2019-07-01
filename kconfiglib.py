@@ -3637,7 +3637,7 @@ class Kconfig(object):
                                            TYPE_TO_STR[target_sym.orig_type],
                                            _name_and_loc(target_sym)))
 
-            elif sym.orig_type in _STRING_INT_HEX:
+            elif sym.orig_type:  # STRING/INT/HEX
                 for default, _ in sym.defaults:
                     if default.__class__ is not Symbol:
                         raise KconfigError(
@@ -4805,7 +4805,7 @@ class Symbol(object):
 
             return TRI_TO_STR[val]
 
-        if self.orig_type in _STRING_INT_HEX:
+        if self.orig_type:  # STRING/INT/HEX
             for default, cond in self.defaults:
                 if expr_value(cond):
                     return default.str_value
@@ -6929,12 +6929,6 @@ _BOOL_TRISTATE_UNKNOWN = frozenset((
 ))
 
 _INT_HEX = frozenset((
-    INT,
-    HEX,
-))
-
-_STRING_INT_HEX = frozenset((
-    STRING,
     INT,
     HEX,
 ))
