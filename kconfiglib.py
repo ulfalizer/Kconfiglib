@@ -1613,7 +1613,7 @@ class Kconfig(object):
             # to n or the symbol to m in those cases).
             if sym.choice and \
                not sym.choice.is_optional and \
-               sym.choice._get_selection_from_defaults() is sym and \
+               sym.choice._selection_from_defaults() is sym and \
                sym.orig_type is BOOL and \
                sym.tri_value == 2:
                 continue
@@ -5275,9 +5275,9 @@ class Choice(object):
             return self.user_selection
 
         # Otherwise, check if we have a default
-        return self._get_selection_from_defaults()
+        return self._selection_from_defaults()
 
-    def _get_selection_from_defaults(self):
+    def _selection_from_defaults(self):
         # Check if we have a default
         for sym, cond in self.defaults:
             # The default symbol must be visible too
