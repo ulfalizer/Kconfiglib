@@ -4645,13 +4645,16 @@ class Symbol(object):
         #   rev_dep
         #   weak_rev_dep
 
-        self.orig_type = UNKNOWN
+        # - UNKNOWN == 0
+        # - _visited is used during tree iteration and dep. loop detection
+        self.orig_type = self._visited = 0
+
+        self.nodes = []
+
         self.defaults = []
         self.selects = []
         self.implies = []
         self.ranges = []
-
-        self.nodes = []
 
         self.user_value = \
         self.choice = \
@@ -4668,10 +4671,6 @@ class Symbol(object):
 
         # See Kconfig._build_dep()
         self._dependents = set()
-
-        # Used during dependency loop detection and (independently) in
-        # node_iter()
-        self._visited = 0
 
     def _assignable(self):
         # Worker function for the 'assignable' attribute
@@ -5221,11 +5220,14 @@ class Choice(object):
         #   direct_dep
         #   kconfig
 
-        self.orig_type = UNKNOWN
-        self.syms = []
-        self.defaults = []
+        # - UNKNOWN == 0
+        # - _visited is used during dep. loop detection
+        self.orig_type = self._visited = 0
 
         self.nodes = []
+
+        self.syms = []
+        self.defaults = []
 
         self.name = \
         self.user_value = self.user_selection = \
@@ -5239,9 +5241,6 @@ class Choice(object):
 
         # See Kconfig._build_dep()
         self._dependents = set()
-
-        # Used during dependency loop detection
-        self._visited = 0
 
     def _assignable(self):
         # Worker function for the 'assignable' attribute
