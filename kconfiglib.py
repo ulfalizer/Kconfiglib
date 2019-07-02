@@ -4473,7 +4473,7 @@ class Symbol(object):
             value = STR_TO_TRI[value]
 
         # If the new user value matches the old, nothing changes, and we can
-        # save some work.
+        # avoid invalidating cached values.
         #
         # This optimization is skipped for choice symbols: Setting a choice
         # symbol's user value to y might change the state of the choice, so it

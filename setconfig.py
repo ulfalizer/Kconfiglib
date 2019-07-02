@@ -38,15 +38,15 @@ def main():
 
     parser.add_argument(
         "--no-check-exists",
-        dest='check_exists',
-        action='store_false',
+        dest="check_exists",
+        action="store_false",
         help="Ignore assignments to non-existent symbols instead of erroring "
              "out")
 
     parser.add_argument(
         "--no-check-value",
-        dest='check_value',
-        action='store_false',
+        dest="check_value",
+        action="store_false",
         help="Ignore assignments that didn't \"take\" (where the symbol got a "
              "different value, e.g. due to unsatisfied dependencies) instead "
              "of erroring out")
@@ -76,7 +76,8 @@ def main():
 
         if not sym.set_value(value):
             sys.exit("error: '{}' is an invalid value for the {} symbol {}"
-                     .format(value, kconfiglib.TYPE_TO_STR[sym.type], name))
+                     .format(value, kconfiglib.TYPE_TO_STR[sym.orig_type],
+                             name))
 
         if args.check_value and sym.str_value != value:
             sys.exit("error: {} was assigned the value '{}', but got the "
