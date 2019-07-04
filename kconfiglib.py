@@ -7023,7 +7023,7 @@ _string_special_search = _re_search(r'"|\'|\\|\$\(')
 
 # Special characters/strings while expanding a symbol name. Also includes
 # end-of-line, in case the macro is the last thing on the line.
-_name_special_search = _re_search(r'[^$A-Za-z0-9_/.-]|\$\(|$')
+_name_special_search = _re_search(r'[^A-Za-z0-9_$/.-]|\$\(|$')
 
 # A valid right-hand side for an assignment to a string symbol in a .config
 # file, including escaped characters. Extracts the contents.
