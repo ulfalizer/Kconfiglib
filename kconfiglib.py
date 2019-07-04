@@ -1556,7 +1556,7 @@ class Kconfig(object):
 
             elif expr_value(node.dep) and \
                  ((item is MENU and expr_value(node.visibility)) or
-                   item is COMMENT):
+                  item is COMMENT):
 
                 add("\n#\n# {}\n#\n".format(node.prompt[0]))
                 after_end_comment = False
