@@ -805,7 +805,6 @@ class Kconfig(object):
         "env_vars",
         "kconfig_filenames",
         "m",
-        "mainmenu_text",
         "menus",
         "missing_syms",
         "modules",
@@ -1081,8 +1080,12 @@ class Kconfig(object):
         # awkward during dependency loop detection
         self._add_choice_deps()
 
-
-        self.mainmenu_text = self.top_node.prompt[0]
+    @property
+    def mainmenu_text(self):
+        """
+        See the class documentation.
+        """
+        return self.top_node.prompt[0]
 
     @property
     def defconfig_filename(self):
