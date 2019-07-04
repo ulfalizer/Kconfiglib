@@ -756,9 +756,9 @@ Notes
 -----
 
 * This is version 2 of Kconfiglib, which is not backwards-compatible with
-  Kconfiglib 1. For a summary of changes between Kconfiglib 1 and Kconfiglib
-  2, see `kconfiglib-2-changes.txt
-  <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib-2-changes.txt>`_.
+  Kconfiglib 1. A summary of changes between Kconfiglib 1 and Kconfiglib
+  2 can be found `here
+  <https://github.com/ulfalizer/Kconfiglib/blob/screenshots/kconfiglib-2-changes.txt>`__.
 
 * I sometimes see people add custom output formats, which is pretty
   straightforward to do (see the implementations of ``write_autoconf()`` and
