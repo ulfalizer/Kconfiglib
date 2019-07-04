@@ -908,21 +908,13 @@ class Kconfig(object):
 
           Related PEP: https://www.python.org/dev/peps/pep-0538/
         """
+        self._encoding = encoding
+
         self.srctree = os.getenv("srctree", "")
         # A prefix we can reliably strip from glob() results to get a filename
         # relative to $srctree. relpath() can cause issues for symlinks,
         # because it assumes symlink/../foo is the same as foo/.
         self._srctree_prefix = realpath(self.srctree) + os.sep
-
-        self.config_prefix = os.getenv("CONFIG_", "CONFIG_")
-
-        # Regular expressions for parsing .config files
-        self._set_match = _re_match(self.config_prefix + r"([^=]+)=(.*)")
-        self._unset_match = \
-            _re_match(r"# {}([^ ]+) is not set".format(self.config_prefix))
-
-
-        self.warnings = []
 
         self.warn = warn
         self.warn_to_stderr = warn_to_stderr
@@ -931,19 +923,20 @@ class Kconfig(object):
         self.warn_assign_redun = True
         self._warn_assign_no_prompt = True
 
+        self.warnings = []
 
-        self._encoding = encoding
-
+        self.config_prefix = os.getenv("CONFIG_", "CONFIG_")
+        # Regular expressions for parsing .config files
+        self._set_match = _re_match(self.config_prefix + r"([^=]+)=(.*)")
+        self._unset_match = _re_match(r"# {}([^ ]+) is not set".format(
+            self.config_prefix))
 
         self.syms = {}
         self.const_syms = {}
         self.defined_syms = []
-
         self.missing_syms = []
-
         self.named_choices = {}
         self.choices = []
-
         self.menus = []
         self.comments = []
 
@@ -965,7 +958,6 @@ class Kconfig(object):
         for nmy in "n", "m", "y":
             sym = self.const_syms[nmy]
             sym.rev_dep = sym.weak_rev_dep = sym.direct_dep = self.n
-
 
         # Maps preprocessor variables names to Variable instances
         self.variables = {}
@@ -989,10 +981,9 @@ class Kconfig(object):
         except ImportError:
             pass
 
-
-        # This is used to determine whether previously unseen symbols should be
-        # registered. They shouldn't be if we parse expressions after parsing,
-        # as part of Kconfig.eval_string().
+        # This determines whether previously unseen symbols are registered.
+        # They shouldn't be if we parse expressions after parsing, as part of
+        # Kconfig.eval_string().
         self._parsing_kconfigs = True
 
         self.modules = self._lookup_sym("MODULES")
@@ -1016,11 +1007,6 @@ class Kconfig(object):
         self.kconfig_filenames = [filename]
         self.env_vars = set()
 
-        # Used to avoid retokenizing lines when we discover that they're not
-        # part of the construct currently being parsed. This is kinda like an
-        # unget operation.
-        self._reuse_tokens = False
-
         # Keeps track of the location in the parent Kconfig files. Kconfig
         # files usually source other Kconfig files. See _enter_file().
         self._filestack = []
@@ -1030,13 +1016,20 @@ class Kconfig(object):
         self._filename = filename
         self._linenr = 0
 
+        # Used to avoid retokenizing lines when we discover that they're not
+        # part of the construct currently being parsed. This is kinda like an
+        # unget operation.
+        self._reuse_tokens = False
+
         # Open the top-level Kconfig file. Store the readline() method directly
         # as a small optimization.
         self._readline = self._open(join(self.srctree, filename), "r").readline
 
         try:
-            # Parse everything
+            # Parse the Kconfig files
             self._parse_block(None, self.top_node, self.top_node)
+            self.top_node.list = self.top_node.next
+            self.top_node.next = None
         except UnicodeDecodeError as e:
             _decoding_error(e, self._filename)
 
@@ -1044,17 +1037,13 @@ class Kconfig(object):
         # for the method.
         self._readline.__self__.close()
 
-        self.top_node.list = self.top_node.next
-        self.top_node.next = None
-
         self._parsing_kconfigs = False
+
+        # Do various menu tree post-processing
+        self._finalize_node(self.top_node, self.y)
 
         self.unique_defined_syms = _ordered_unique(self.defined_syms)
         self.unique_choices = _ordered_unique(self.choices)
-
-        # Do various post-processing on the menu tree
-        self._finalize_node(self.top_node, self.y)
-
 
         # Do sanity checks. Some of these depend on everything being finalized.
         self._check_sym_sanity()
@@ -1066,7 +1055,6 @@ class Kconfig(object):
            os.getenv("KCONFIG_STRICT") == "y":
 
             self._check_undef_syms()
-
 
         # Build Symbol._dependents for all symbols and choices
         self._build_dep()
@@ -4738,7 +4726,7 @@ class Symbol(object):
         # Marks the symbol as needing to be recalculated
 
         self._cached_str_val = self._cached_tri_val = self._cached_vis = \
-            self._cached_assignable = None
+        self._cached_assignable = None
 
     def _rec_invalidate(self):
         # Invalidates the symbol and all items that (possibly) depend on it
