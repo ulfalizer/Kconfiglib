@@ -605,6 +605,10 @@ Real-world examples
   <https://github.com/espressif/esp-idf/tree/master/tools/kconfig_new>`_ from
   the ESP-IDF project, via a configuration server program.
 
+- `A script for turning on USB-related options
+  <https://github.com/google/syzkaller/blob/master/dashboard/config/kconfiglib-merge-usb-configs.py>`_,
+  from the `syzkaller <https://github.com/google/syzkaller>`_ project.
+
 - `Various automated checks
   <https://github.com/zephyrproject-rtos/ci-tools/blob/master/scripts/check_compliance.py>`_,
   including a check for references to undefined Kconfig symbols in source code.
