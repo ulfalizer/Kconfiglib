@@ -795,7 +795,7 @@ class Kconfig(object):
         "_set_match",
         "_srctree_prefix",
         "_unset_match",
-        "_warn_no_prompt",
+        "_warn_assign_no_prompt",
         "choices",
         "comments",
         "config_prefix",
@@ -928,7 +928,9 @@ class Kconfig(object):
         self.warn = warn
         self.warn_to_stderr = warn_to_stderr
         self.warn_assign_undef = os.getenv("KCONFIG_WARN_UNDEF_ASSIGN") == "y"
-        self.warn_assign_override = self.warn_assign_redun = True
+        self.warn_assign_override = True
+        self.warn_assign_redun = True
+        self._warn_assign_no_prompt = True
 
 
         self._encoding = encoding
@@ -1080,8 +1082,6 @@ class Kconfig(object):
         self._add_choice_deps()
 
 
-        self._warn_no_prompt = True
-
         self.mainmenu_text = self.top_node.prompt[0]
 
     @property
@@ -1185,15 +1185,16 @@ class Kconfig(object):
 
         # Disable the warning about assigning to symbols without prompts. This
         # is normal and expected within a .config file.
-        self._warn_no_prompt = False
+        self._warn_assign_no_prompt = False
 
-        # This stub only exists to make sure _warn_no_prompt gets reenabled
+        # This stub only exists to make sure _warn_assign_no_prompt gets
+        # reenabled
         try:
             self._load_config(filename, replace)
         except UnicodeDecodeError as e:
             _decoding_error(e, filename)
         finally:
-            self._warn_no_prompt = True
+            self._warn_assign_no_prompt = True
 
         return ("Loaded" if replace else "Merged") + msg
 
@@ -1894,7 +1895,7 @@ class Kconfig(object):
         Removes any user values from all symbols, as if Kconfig.load_config()
         or Symbol.set_value() had never been called.
         """
-        self._warn_no_prompt = False
+        self._warn_assign_no_prompt = False
         try:
             # set_value() already rejects undefined symbols, and they don't
             # need to be invalidated (because their value never changes), so we
@@ -1905,7 +1906,7 @@ class Kconfig(object):
             for choice in self.unique_choices:
                 choice.unset_value()
         finally:
-            self._warn_no_prompt = True
+            self._warn_assign_no_prompt = True
 
     def enable_warnings(self):
         """
@@ -4785,7 +4786,7 @@ class Symbol(object):
                 self._rec_invalidate()
                 return
 
-        if self.kconfig._warn_no_prompt:
+        if self.kconfig._warn_assign_no_prompt:
             self.kconfig._warn(_name_and_loc(self) + " has no prompt, meaning "
                                "user values have no effect on it")
 
