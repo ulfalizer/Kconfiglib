@@ -773,16 +773,6 @@ Notes
   Let me know if you need proper ``option modules`` support. It wouldn't be that
   hard to add.
 
-* The test suite failures (should be the only ones) for the following Blackfin
-  defconfigs on e.g. Linux 3.7.0-rc8 are due to
-  `a bug in the C implementation <https://lkml.org/lkml/2012/12/5/458>`_:
-
-  * ``arch/blackfin/configs/CM-BF537U_defconfig``
-  * ``arch/blackfin/configs/BF548-EZKIT_defconfig``
-  * ``arch/blackfin/configs/BF527-EZKIT_defconfig``
-  * ``arch/blackfin/configs/BF527-EZKIT-V2_defconfig``
-  * ``arch/blackfin/configs/TCM-BF537_defconfig``
-
 Thanks
 ------
 
