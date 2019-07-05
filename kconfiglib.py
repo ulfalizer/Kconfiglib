@@ -6878,7 +6878,7 @@ _DEF_TOKEN_TO_TYPE = {
 # Identifier-like lexemes ("missing quotes") are also treated as strings after
 # these tokens. _T_CHOICE is included to avoid symbols being registered for
 # named choices.
-_STRING_LEX = frozenset((
+_STRING_LEX = frozenset({
     _T_BOOL,
     _T_CHOICE,
     _T_COMMENT,
@@ -6893,76 +6893,76 @@ _STRING_LEX = frozenset((
     _T_SOURCE,
     _T_STRING,
     _T_TRISTATE,
-))
+})
 
 # Various sets for quick membership tests. Gives a single global lookup and
 # avoids creating temporary dicts/tuples.
 
-_TYPE_TOKENS = frozenset((
+_TYPE_TOKENS = frozenset({
     _T_BOOL,
     _T_TRISTATE,
     _T_INT,
     _T_HEX,
     _T_STRING,
-))
+})
 
-_SOURCE_TOKENS = frozenset((
+_SOURCE_TOKENS = frozenset({
     _T_SOURCE,
     _T_RSOURCE,
     _T_OSOURCE,
     _T_ORSOURCE,
-))
+})
 
-_REL_SOURCE_TOKENS = frozenset((
+_REL_SOURCE_TOKENS = frozenset({
     _T_RSOURCE,
     _T_ORSOURCE,
-))
+})
 
 # Obligatory (non-optional) sources
-_OBL_SOURCE_TOKENS = frozenset((
+_OBL_SOURCE_TOKENS = frozenset({
     _T_SOURCE,
     _T_RSOURCE,
-))
+})
 
-_BOOL_TRISTATE = frozenset((
+_BOOL_TRISTATE = frozenset({
     BOOL,
     TRISTATE,
-))
+})
 
-_BOOL_TRISTATE_UNKNOWN = frozenset((
+_BOOL_TRISTATE_UNKNOWN = frozenset({
     BOOL,
     TRISTATE,
     UNKNOWN,
-))
+})
 
-_INT_HEX = frozenset((
+_INT_HEX = frozenset({
     INT,
     HEX,
-))
+})
 
-_SYMBOL_CHOICE = frozenset((
+_SYMBOL_CHOICE = frozenset({
     Symbol,
     Choice,
-))
+})
 
-_MENU_COMMENT = frozenset((
+_MENU_COMMENT = frozenset({
     MENU,
     COMMENT,
-))
+})
 
-_EQUAL_UNEQUAL = frozenset((
+_EQUAL_UNEQUAL = frozenset({
     EQUAL,
     UNEQUAL,
-))
+})
 
-_RELATIONS = frozenset((
+_RELATIONS = frozenset({
     EQUAL,
     UNEQUAL,
     LESS,
     LESS_EQUAL,
     GREATER,
     GREATER_EQUAL,
-))
+})
 
 # Helper functions for getting compiled regular expressions, with the needed
 # matching function returned directly as a small optimization.
