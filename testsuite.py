@@ -2289,7 +2289,7 @@ CONFIG_G=-1
 
     c = Kconfig("Kconfiglib/tests/Kifremoval", warn=False)
 
-    nodes = [node for node in c.node_iter()]
+    nodes = tuple(c.node_iter())
     verify_equal(nodes[0].item.name, "A")
     verify_equal(nodes[1].item.name, "B")
     verify_equal(nodes[2].item.name, "C")
