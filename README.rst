@@ -28,9 +28,10 @@ Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_.
 For backwards compatibility, environment variables can be referenced both as
 ``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). The old syntax is
-deprecated, but will probably be supported for a very long time (the major
-version would be increased if support is ever dropped). Using the old syntax
-with an undefined environment variable keeps the string as is.
+deprecated, but will probably be supported for a long time, as its needed to
+stay compatible with older Linux kernels. The major version will be increased
+if support is ever dropped. Using the old syntax with an undefined environment
+variable keeps the string as is.
 
 Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`_ if you run into
 a "macro expanded to blank string" error with kernel 4.18+.
@@ -371,10 +372,15 @@ The following Kconfig extensions are available:
   This is the standard behavior with the new `Kconfig preprocessor
   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_,
   which Kconfiglib implements.
-  
-  ``option env`` symbols are supported for backwards compatibility, with the
-  caveat that they must have the same name as the environment variables they
-  reference. A warning is printed if the names differ.
+
+  ``option env`` symbols are accepted but ignored, which leads the caveat that
+  they must have the same name as the environment variables they reference
+  (Kconfiglib warns if the names differ). This keeps Kconfiglib compatible with
+  older Linux kernels, where the name of the ``option env`` symbol always
+  matched the environment variable. Compatibility with older Linux kernels is
+  the main reason ``option env`` is still supported.
+
+  The C tools have dropped support for ``option env``.
 
 - Two extra optional warnings can be enabled by setting environment variables,
   covering cases that are easily missed when making changes to Kconfig files:
