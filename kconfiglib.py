@@ -2822,6 +2822,12 @@ class Kconfig(object):
 
                 self._parse_properties(node)
 
+                if node.item.env_var:
+                    if node.item.env_var in os.environ:
+                        os.environ[node.item.name] = os.environ[node.item.env_var]
+                    else:
+                        os.environ[node.item.name] = ((node.defaults[0])[0]).name
+
                 if node.is_menuconfig and not node.prompt:
                     self._warn("the menuconfig symbol {} has no prompt"
                                .format(_name_and_loc(sym)))
