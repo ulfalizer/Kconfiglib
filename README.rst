@@ -5,7 +5,7 @@ Overview
 --------
 
 Kconfiglib is a `Kconfig
-<https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
+<https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-language.rst>`__
 implementation in Python 2/3. It started out as a helper library, but now has a
 enough functionality to also work well as a standalone Kconfig implementation
 (including `terminal and GUI menuconfig interfaces <Menuconfig interfaces_>`_
@@ -25,7 +25,7 @@ Since Kconfiglib is based around a library, it can be used e.g. to generate a
 using the same robust Kconfig parser used for other Kconfig tools, instead of brittle ad-hoc parsing. The documentation generation script can be found `here <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`__.
 
 Kconfiglib implements the recently added `Kconfig preprocessor
-<https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_.
+<https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`_.
 For backwards compatibility, environment variables can be referenced both as
 ``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). The old syntax is
 deprecated, but will probably be supported for a long time, as its needed to
