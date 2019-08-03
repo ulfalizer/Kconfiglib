@@ -2119,7 +2119,10 @@ def _defaults_info(sc):
     if not sc.defaults:
         return ""
 
-    s = "Defaults:\n"
+    s = "Default"
+    if len(sc.defaults) > 1:
+        s += "s"
+    s += ":\n"
 
     for val, cond in sc.orig_defaults:
         s += "  - "
