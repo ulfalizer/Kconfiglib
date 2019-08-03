@@ -25,7 +25,7 @@ Since Kconfiglib is based around a library, it can be used e.g. to generate a
 using the same robust Kconfig parser used for other Kconfig tools, instead of brittle ad-hoc parsing. The documentation generation script can be found `here <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`__.
 
 Kconfiglib implements the recently added `Kconfig preprocessor
-<https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`_.
+<https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`__.
 For backwards compatibility, environment variables can be referenced both as
 ``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). The old syntax is
 deprecated, but will probably be supported for a long time, as its needed to
@@ -370,7 +370,7 @@ The following Kconfig extensions are available:
   ``mainmenu`` statements, meaning ``option env`` symbols are redundant.
 
   This is the standard behavior with the new `Kconfig preprocessor
-  <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`_,
+  <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`__,
   which Kconfiglib implements.
 
   ``option env`` symbols are accepted but ignored, which leads the caveat that
