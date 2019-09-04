@@ -503,6 +503,15 @@ expected by the function (excluding the implicit 'name' argument). If
 <max.args> is None, there is no upper limit to the number of arguments. Passing
 an invalid number of arguments will generate a KconfigError exception.
 
+Functions can access the current parsing location as kconf.filename/linenr.
+Accessing other fields of the Kconfig object is not safe. See the warning
+below.
+
+Keep in mind that for a variable defined like 'foo = $(fn)', 'fn' will be
+called only when 'foo' is expanded. If 'fn' uses the parsing location and the
+intent is to use the location of the assignment, you want 'foo := $(fn)'
+instead, which calls the function immediately.
+
 Once defined, user functions can be called from Kconfig in the same way as
 other preprocessor functions:
 
@@ -523,8 +532,7 @@ User-defined preprocessor functions are called as they're encountered at parse
 time, before all Kconfig files have been processed, and before the menu tree
 has been finalized. There are no guarantees that accessing Kconfig symbols or
 the menu tree via the 'kconf' parameter will work, and it could potentially
-lead to a crash. The 'kconf' parameter is provided for future extension (and
-because the predefined functions take it anyway).
+lead to a crash.
 
 Preferably, user-defined functions should be stateless.
 
@@ -788,6 +796,10 @@ class Kconfig(object):
 
       Like for srctree, only the value of $CONFIG_ when the configuration is
       loaded matters.
+
+    filename/linenr:
+      The current parsing location, for use in Python preprocessor functions.
+      See the module docstring.
     """
     __slots__ = (
         "_encoding",
@@ -827,8 +839,8 @@ class Kconfig(object):
         # Parsing-related
         "_parsing_kconfigs",
         "_readline",
-        "_filename",
-        "_linenr",
+        "filename",
+        "linenr",
         "_include_path",
         "_filestack",
         "_line",
@@ -1013,8 +1025,8 @@ class Kconfig(object):
         self._include_path = ()
 
         # The current parsing location
-        self._filename = filename
-        self._linenr = 0
+        self.filename = filename
+        self.linenr = 0
 
         # Used to avoid retokenizing lines when we discover that they're not
         # part of the construct currently being parsed. This is kinda like an
@@ -1031,7 +1043,7 @@ class Kconfig(object):
             self.top_node.list = self.top_node.next
             self.top_node.next = None
         except UnicodeDecodeError as e:
-            _decoding_error(e, self._filename)
+            _decoding_error(e, self.filename)
 
         # Close the top-level Kconfig file. __self__ fetches the 'file' object
         # for the method.
@@ -1872,7 +1884,7 @@ class Kconfig(object):
         # an expression can never appear at the beginning of a line). We have
         # to monkey-patch things a bit here to reuse it.
 
-        self._filename = None
+        self.filename = None
 
         self._tokens = self._tokenize("if " + s)
         # Strip "if " to avoid giving confusing error messages
@@ -2035,9 +2047,9 @@ class Kconfig(object):
         # filename:
         #   Absolute path to file
 
-        # Path relative to $srctree, stored in e.g. self._filename
-        # (which makes it indirectly show up in MenuNode.filename). Equals
-        # 'filename' for absolute paths passed to 'source'.
+        # Path relative to $srctree, stored in e.g. self.filename (which makes
+        # it indirectly show up in MenuNode.filename). Equals 'filename' for
+        # absolute paths passed to 'source'.
         if filename.startswith(self._srctree_prefix):
             # Relative path (or a redundant absolute path to within $srctree,
             # but it's probably fine to reduce those too)
@@ -2066,7 +2078,7 @@ class Kconfig(object):
 
         # _include_path is a tuple, so this rebinds the variable instead of
         # doing in-place modification
-        self._include_path += ((self._filename, self._linenr),)
+        self._include_path += ((self.filename, self.linenr),)
 
         # Check for recursive 'source'
         for name, _ in self._include_path:
@@ -2075,7 +2087,7 @@ class Kconfig(object):
                     "\n{}:{}: recursive 'source' of '{}' detected. Check that "
                     "environment variables are set correctly.\n"
                     "Include path:\n{}"
-                    .format(self._filename, self._linenr, rel_filename,
+                    .format(self.filename, self.linenr, rel_filename,
                             "\n".join("{}:{}".format(name, linenr)
                                       for name, linenr in self._include_path)))
 
@@ -2085,19 +2097,19 @@ class Kconfig(object):
             # We already know that the file exists
             raise _KconfigIOError(
                 e, "{}:{}: Could not open '{}' (in '{}') ({}: {})"
-                   .format(self._filename, self._linenr, filename,
+                   .format(self.filename, self.linenr, filename,
                            self._line.strip(),
                            errno.errorcode[e.errno], e.strerror))
 
-        self._filename = rel_filename
-        self._linenr = 0
+        self.filename = rel_filename
+        self.linenr = 0
 
     def _leave_file(self):
         # Returns from a Kconfig file to the file that sourced it. See
         # _enter_file().
 
         # Restore location from parent Kconfig file
-        self._filename, self._linenr = self._include_path[-1]
+        self.filename, self.linenr = self._include_path[-1]
         # Restore include path and 'file' object
         self._readline.__self__.close()  # __self__ fetches the 'file' object
         self._include_path, self._readline = self._filestack.pop()
@@ -2120,12 +2132,12 @@ class Kconfig(object):
         line = self._readline()
         if not line:
             return False
-        self._linenr += 1
+        self.linenr += 1
 
         # Handle line joining
         while line.endswith("\\\n"):
             line = line[:-2] + self._readline()
-            self._linenr += 1
+            self.linenr += 1
 
         self._tokens = self._tokenize(line)
         # Initialize to 1 instead of 0 to factor out code from _parse_block()
@@ -2146,7 +2158,7 @@ class Kconfig(object):
         # Handle line joining
         while line.endswith("\\\n"):
             line = line[:-2] + self._readline()
-            self._linenr += 1
+            self.linenr += 1
 
         self._tokens = self._tokenize(line)
         self._reuse_tokens = True
@@ -2314,7 +2326,7 @@ class Kconfig(object):
                     if token is not _T_CHOICE:
                         self._warn("style: quotes recommended around '{}' in '{}'"
                                    .format(name, self._line.strip()),
-                                   self._filename, self._linenr)
+                                   self.filename, self.linenr)
 
                     token = name
                     i = match.end()
@@ -2726,7 +2738,7 @@ class Kconfig(object):
 
                 raise KconfigError("{}:{}: bad number of arguments in call "
                                    "to {}, expected {}, got {}"
-                                   .format(self._filename, self._linenr, fn,
+                                   .format(self.filename, self.linenr, fn,
                                            expected_args, len(args) - 1))
 
             return py_fn(self, *args)
@@ -2814,8 +2826,8 @@ class Kconfig(object):
                 node.is_menuconfig = (t0 is _T_MENUCONFIG)
                 node.prompt = node.help = node.list = None
                 node.parent = parent
-                node.filename = self._filename
-                node.linenr = self._linenr
+                node.filename = self.filename
+                node.linenr = self.linenr
                 node.include_path = self._include_path
 
                 sym.nodes.append(node)
@@ -2843,7 +2855,7 @@ class Kconfig(object):
 
                 if t0 in _REL_SOURCE_TOKENS:
                     # Relative source
-                    pattern = join(dirname(self._filename), pattern)
+                    pattern = join(dirname(self.filename), pattern)
 
                 # - glob() doesn't support globbing relative to a directory, so
                 #   we need to prepend $srctree to 'pattern'. Use join()
@@ -2861,7 +2873,7 @@ class Kconfig(object):
                         "environment variables are set correctly (e.g. "
                         "$srctree, which is {}). Also note that unset "
                         "environment variables expand to the empty string."
-                        .format(self._filename, self._linenr, pattern,
+                        .format(self.filename, self.linenr, pattern,
                                 self._line.strip(),
                                 "set to '{}'".format(self.srctree)
                                     if self.srctree else "unset or blank"))
@@ -2900,8 +2912,8 @@ class Kconfig(object):
                 node.prompt = (self._expect_str_and_eol(), self.y)
                 node.visibility = self.y
                 node.parent = parent
-                node.filename = self._filename
-                node.linenr = self._linenr
+                node.filename = self.filename
+                node.linenr = self.linenr
                 node.include_path = self._include_path
 
                 self.menus.append(node)
@@ -2920,8 +2932,8 @@ class Kconfig(object):
                 node.prompt = (self._expect_str_and_eol(), self.y)
                 node.list = None
                 node.parent = parent
-                node.filename = self._filename
-                node.linenr = self._linenr
+                node.filename = self.filename
+                node.linenr = self.linenr
                 node.include_path = self._include_path
 
                 self.comments.append(node)
@@ -2952,8 +2964,8 @@ class Kconfig(object):
                 node.is_menuconfig = True
                 node.prompt = node.help = None
                 node.parent = parent
-                node.filename = self._filename
-                node.linenr = self._linenr
+                node.filename = self.filename
+                node.linenr = self.linenr
                 node.include_path = self._include_path
 
                 choice.nodes.append(node)
@@ -2984,7 +2996,7 @@ class Kconfig(object):
                 .format("endchoice" if end_token is _T_ENDCHOICE else
                         "endif"     if end_token is _T_ENDIF else
                         "endmenu",
-                        self._filename))
+                        self.filename))
 
         prev.next = None
         return prev
@@ -3097,7 +3109,7 @@ class Kconfig(object):
                         self._warn("{1} has 'option env=\"{0}\"', "
                                    "but the environment variable {0} is not "
                                    "set".format(node.item.name, env_var),
-                                   self._filename, self._linenr)
+                                   self.filename, self.linenr)
 
                     if env_var != node.item.name:
                         self._warn("Kconfiglib expands environment variables "
@@ -3107,7 +3119,7 @@ class Kconfig(object):
                                    "rename {} to {} (so that the symbol name "
                                    "matches the environment variable name)."
                                    .format(node.item.name, env_var),
-                                   self._filename, self._linenr)
+                                   self.filename, self.linenr)
 
                 elif self._check_token(_T_DEFCONFIG_LIST):
                     if not self.defconfig_list:
@@ -3117,7 +3129,7 @@ class Kconfig(object):
                                    "symbols ({0} and {1}). Only {0} will be "
                                    "used.".format(self.defconfig_list.name,
                                                   node.item.name),
-                                   self._filename, self._linenr)
+                                   self.filename, self.linenr)
 
                 elif self._check_token(_T_MODULES):
                     # To reduce warning spam, only warn if 'option modules' is
@@ -3134,7 +3146,7 @@ class Kconfig(object):
                                    "MODULES, like older versions of the C "
                                    "implementation did when 'option modules' "
                                    "wasn't used.",
-                                   self._filename, self._linenr)
+                                   self.filename, self.linenr)
 
                 elif self._check_token(_T_ALLNOCONFIG_Y):
                     if node.item.__class__ is not Symbol:
@@ -3204,7 +3216,7 @@ class Kconfig(object):
 
         while 1:
             line = readline()
-            self._linenr += 1
+            self.linenr += 1
             if not line:
                 self._empty_help(node, line)
                 return
@@ -3243,7 +3255,7 @@ class Kconfig(object):
                     break
                 add_line(expline[indent:])
 
-        self._linenr += len_(lines)
+        self.linenr += len_(lines)
         node.help = "".join(lines).rstrip()
         if line:
             self._line_after_help(line)
@@ -3759,8 +3771,8 @@ class Kconfig(object):
 
     def _parse_error(self, msg):
         raise KconfigError("{}couldn't parse '{}': {}".format(
-            "" if self._filename is None else
-                "{}:{}: ".format(self._filename, self._linenr),
+            "" if self.filename is None else
+                "{}:{}: ".format(self.filename, self.linenr),
             self._line.strip(), msg))
 
     def _trailing_tokens_error(self):
@@ -6607,22 +6619,22 @@ def _warn_verbose_deprecated(fn_name):
 
 
 def _filename_fn(kconf, _):
-    return kconf._filename
+    return kconf.filename
 
 
 def _lineno_fn(kconf, _):
-    return str(kconf._linenr)
+    return str(kconf.linenr)
 
 
 def _info_fn(kconf, _, msg):
-    print("{}:{}: {}".format(kconf._filename, kconf._linenr, msg))
+    print("{}:{}: {}".format(kconf.filename, kconf.linenr, msg))
 
     return ""
 
 
 def _warning_if_fn(kconf, _, cond, msg):
     if cond == "y":
-        kconf._warn(msg, kconf._filename, kconf._linenr)
+        kconf._warn(msg, kconf.filename, kconf.linenr)
 
     return ""
 
@@ -6630,7 +6642,7 @@ def _warning_if_fn(kconf, _, cond, msg):
 def _error_if_fn(kconf, _, cond, msg):
     if cond == "y":
         raise KconfigError("{}:{}: {}".format(
-            kconf._filename, kconf._linenr, msg))
+            kconf.filename, kconf.linenr, msg))
 
     return ""
 
@@ -6648,12 +6660,12 @@ def _shell_fn(kconf, _, command):
             stdout = stdout.decode(kconf._encoding)
             stderr = stderr.decode(kconf._encoding)
         except UnicodeDecodeError as e:
-            _decoding_error(e, kconf._filename, kconf._linenr)
+            _decoding_error(e, kconf.filename, kconf.linenr)
 
     if stderr:
         kconf._warn("'{}' wrote to stderr: {}".format(
                         command, "\n".join(stderr.splitlines())),
-                    kconf._filename, kconf._linenr)
+                    kconf.filename, kconf.linenr)
 
     # Universal newlines with splitlines() (to prevent e.g. stray \r's in
     # command output on Windows), trailing newline removal, and

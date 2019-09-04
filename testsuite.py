@@ -2589,6 +2589,11 @@ config PRINT_ME_TOO
     verify_variable("one-or-more-three", "$(one-or-more,foo,bar,baz)",
                     "foo + bar,baz", True)
 
+    verify_variable("location-1", "Kconfiglib/tests/Kuserfunctions:13",
+                    "Kconfiglib/tests/Kuserfunctions:13", False)
+    verify_variable("location-2", "Kconfiglib/tests/Kuserfunctions:14",
+                    "Kconfiglib/tests/Kuserfunctions:14", False)
+
     def verify_bad_argno(name):
         try:
             c.variables[name].expanded_value
