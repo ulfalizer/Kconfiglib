@@ -420,6 +420,28 @@ files matching "bar*" exist:
 
 'source' and 'osource' are analogous to 'include' and '-include' in Make.
 
+Listing 'source'
+----------------
+
+(This is a provisional feature and might change. The major version of the
+library will be increased if any changes are made.)
+
+'lsource' accepts a list of patterns for sourcing. For example,
+
+  lsource "foo bar"
+
+is equivalent to
+
+  source "foo"
+  source "bar"
+
+When combined with the Kconfig preprocessor, this can be used to include a list
+of files from an environment variable, like
+
+  lsource "$(ENV_VAR)"
+
+A preprocessor function could be used as well.
+
 
 Generalized def_* keywords
 --------------------------
@@ -2857,15 +2879,18 @@ class Kconfig(object):
                     # Relative source
                     pattern = join(dirname(self.filename), pattern)
 
-                # - glob() doesn't support globbing relative to a directory, so
-                #   we need to prepend $srctree to 'pattern'. Use join()
-                #   instead of '+' so that an absolute path in 'pattern' is
-                #   preserved.
-                #
-                # - Sort the glob results to ensure a consistent ordering of
-                #   Kconfig symbols, which indirectly ensures a consistent
-                #   ordering in e.g. .config files
-                filenames = sorted(iglob(join(self._srctree_prefix, pattern)))
+                if t0 is _T_LSOURCE:
+                    filenames = [join(self._srctree_prefix, i) for i in pattern.split()]
+                else:
+                    # - glob() doesn't support globbing relative to a directory, so
+                    #   we need to prepend $srctree to 'pattern'. Use join()
+                    #   instead of '+' so that an absolute path in 'pattern' is
+                    #   preserved.
+                    #
+                    # - Sort the glob results to ensure a consistent ordering of
+                    #   Kconfig symbols, which indirectly ensures a consistent
+                    #   ordering in e.g. .config files
+                    filenames = sorted(iglob(join(self._srctree_prefix, pattern)))
 
                 if not filenames and t0 in _OBL_SOURCE_TOKENS:
                     raise KconfigError(
@@ -6748,6 +6773,7 @@ except AttributeError:
     _T_INT,
     _T_LESS,
     _T_LESS_EQUAL,
+    _T_LSOURCE,
     _T_MAINMENU,
     _T_MENU,
     _T_MENUCONFIG,
@@ -6769,7 +6795,7 @@ except AttributeError:
     _T_TRISTATE,
     _T_UNEQUAL,
     _T_VISIBLE,
-) = range(1, 51)
+) = range(1, 52)
 
 # Keyword to token map, with the get() method assigned directly as a small
 # optimization
@@ -6800,6 +6826,7 @@ _get_keyword = {
     "if":             _T_IF,
     "imply":          _T_IMPLY,
     "int":            _T_INT,
+    "lsource":        _T_LSOURCE,
     "mainmenu":       _T_MAINMENU,
     "menu":           _T_MENU,
     "menuconfig":     _T_MENUCONFIG,
@@ -6896,6 +6923,7 @@ _STRING_LEX = frozenset({
     _T_COMMENT,
     _T_HEX,
     _T_INT,
+    _T_LSOURCE,
     _T_MAINMENU,
     _T_MENU,
     _T_ORSOURCE,
@@ -6923,6 +6951,7 @@ _SOURCE_TOKENS = frozenset({
     _T_RSOURCE,
     _T_OSOURCE,
     _T_ORSOURCE,
+    _T_LSOURCE,
 })
 
 _REL_SOURCE_TOKENS = frozenset({
@@ -6934,6 +6963,7 @@ _REL_SOURCE_TOKENS = frozenset({
 _OBL_SOURCE_TOKENS = frozenset({
     _T_SOURCE,
     _T_RSOURCE,
+    _T_LSOURCE,
 })
 
 _BOOL_TRISTATE = frozenset({
