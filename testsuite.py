@@ -2478,8 +2478,8 @@ config J
     verify_variable("immediate", "foofoo", "foofoo", False)
 
     verify_variable("messy-fn-res",
-                    "$($(fn-indir)-unused-arg, a  b , c  d )",
-                    'surround-rev-quote " c  d " " a  b " surround-rev-quote ',
+                    "$($(fn-indir)-unused-arg, a  b (,) , c  d )",
+                    'surround-rev-quote " c  d " " a  b (,) " surround-rev-quote ',
                     True)
 
     verify_variable("special-chars-fn-res",
@@ -2516,7 +2516,7 @@ config PRINT_ME_TOO
 
     verify_repr(
         "messy-fn-res",
-        "<variable messy-fn-res, recursive, value '$($(fn-indir)-unused-arg, a  b , c  d )'>")
+        "<variable messy-fn-res, recursive, value '$($(fn-indir)-unused-arg, a  b (,) , c  d )'>")
 
     def verify_recursive(name):
         try:
@@ -2546,9 +2546,14 @@ config PRINT_ME_TOO
 
     verify_variable("shell-stderr-res", "", "", False)
 
+    verify_variable("parens-res",
+                    "pre-$(shell,echo '(a,b,(c,d),e)')-post",
+                    "pre-(a,b,(c,d),e)-post",
+                    True)
+
     verify_variable("location-res",
-                    "Kconfiglib/tests/Kpreprocess:125",
-                    "Kconfiglib/tests/Kpreprocess:125",
+                    "Kconfiglib/tests/Kpreprocess:129",
+                    "Kconfiglib/tests/Kpreprocess:129",
                     False)
 
     verify_variable("warning-res", "", "", False)
@@ -2568,7 +2573,7 @@ config PRINT_ME_TOO
     # Check that the expected warnings were generated
     verify_equal(c.warnings, [
         "Kconfiglib/tests/Kpreprocess:122: warning: 'echo message on stderr >&2' wrote to stderr: message on stderr",
-        "Kconfiglib/tests/Kpreprocess:130: warning: a warning"
+        "Kconfiglib/tests/Kpreprocess:134: warning: a warning"
     ])
 
 
