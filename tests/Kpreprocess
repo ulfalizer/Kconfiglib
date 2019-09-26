@@ -123,7 +123,7 @@ shell-stderr-res := $(shell,echo message on stderr >&2)
 
 # Nested parens in macro call. Should give a single argument. Test it with
 # $(shell) to get a free argument number check.
-parens-res = pre-$(shell,echo '(a,b,(c,d),e)')-post
+parens-res = pre-$(shell,echo '(a,$(b-char),(c,d),e)')-post
 
 # Expands to the current location
 location-res := $(filename):$(lineno)

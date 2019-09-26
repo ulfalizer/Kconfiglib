@@ -2547,7 +2547,7 @@ config PRINT_ME_TOO
     verify_variable("shell-stderr-res", "", "", False)
 
     verify_variable("parens-res",
-                    "pre-$(shell,echo '(a,b,(c,d),e)')-post",
+                    "pre-$(shell,echo '(a,$(b-char),(c,d),e)')-post",
                     "pre-(a,b,(c,d),e)-post",
                     True)
 
