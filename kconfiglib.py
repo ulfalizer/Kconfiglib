@@ -2603,10 +2603,9 @@ class Kconfig(object):
         while 1:
             match = _name_special_search(s, i)
 
-            if match.group() == "$(":
-                s, i = self._expand_macro(s, match.start(), ())
-            else:
+            if match.group() != "$(":
                 return (s, match.start())
+            s, i = self._expand_macro(s, match.start(), ())
 
     def _expand_str(self, s, i):
         # Expands a quoted string starting at index 'i' in 's'. Handles both
