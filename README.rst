@@ -1,5 +1,7 @@
 .. contents:: Table of contents
    :backlinks: none
+   
+**To fix issues with dependency loops on recent linux-next kernels, apply** `this patch <https://www.spinics.net/lists/linux-kbuild/msg23455.html>`_\ **. Hopefully, it will be merged soon.**
 
 Overview
 --------
