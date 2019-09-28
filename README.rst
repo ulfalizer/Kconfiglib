@@ -1,7 +1,12 @@
 .. contents:: Table of contents
    :backlinks: none
+
+Dependency loop with recent linux-next kernels
+----------------------------------------------
    
-**To fix issues with dependency loops on recent linux-next kernels, apply** `this patch <https://www.spinics.net/lists/linux-kbuild/msg23455.html>`_\ **. Hopefully, it will be merged soon.**
+To fix issues with dependency loops on recent linux-next kernels, apply `this
+patch <https://www.spinics.net/lists/linux-kbuild/msg23455.html>`_. Hopefully,
+it will be merged soon.
 
 Overview
 --------
@@ -30,7 +35,7 @@ Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`__.
 For backwards compatibility, environment variables can be referenced both as
 ``$(FOO)`` (the new syntax) and as ``$FOO`` (the old syntax). The old syntax is
-deprecated, but will probably be supported for a long time, as its needed to
+deprecated, but will probably be supported for a long time, as it's needed to
 stay compatible with older Linux kernels. The major version will be increased
 if support is ever dropped. Using the old syntax with an undefined environment
 variable keeps the string as is.
