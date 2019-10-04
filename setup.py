@@ -64,7 +64,11 @@ setuptools.setup(
     # The terminal menuconfig implementation uses the standard Python 'curses'
     # module. The windows-curses package makes it available on Windows. See
     # https://github.com/zephyrproject-rtos/windows-curses.
+    # Note: windows-curses cannot be installed (and is not required) in MSYS2
+    # on Windows. MSYS2 can be detected only by the MSYSTEM environment
+    # variable.
     install_requires=(
+        '' if 'MSYSTEM' in os.environ else \
         'windows-curses; sys_platform == "win32"',
     ),
 
