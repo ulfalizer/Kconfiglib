@@ -61,12 +61,8 @@ setuptools.setup(
         )
     },
 
-    # The terminal menuconfig implementation uses the standard Python 'curses'
-    # module. The windows-curses package makes it available on Windows. See
-    # https://github.com/zephyrproject-rtos/windows-curses.
-    install_requires=(
-        'windows-curses; sys_platform == "win32"',
-    ),
+    # Note: windows-curses is not automatically installed on Windows anymore,
+    # because it made Kconfiglib impossible to install on MSYS2 with pip
 
     # Needs support for unnumbered {} in format() and argparse
     python_requires=">=2.7,!=3.0.*,!=3.1.*",

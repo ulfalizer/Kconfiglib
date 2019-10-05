@@ -174,12 +174,11 @@ Other features
 Limitations
 ===========
 
-Doesn't work out of the box on Windows, but can be made to work with 'pip
-install windows-curses'. See the
-https://github.com/zephyrproject-rtos/windows-curses repository.
+Doesn't work out of the box on Windows, but can be made to work with
 
-'pip install kconfiglib' on Windows automatically installs windows-curses
-to make the menuconfig usable.
+    pip install windows-curses
+
+See the https://github.com/zephyrproject-rtos/windows-curses repository.
 """
 from __future__ import print_function
 

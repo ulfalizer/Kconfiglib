@@ -126,9 +126,9 @@ Manual installation
 ~~~~~~~~~~~~~~~~~~~
 
 Just drop ``kconfiglib.py`` and the scripts you want somewhere. There are no
-third-party dependencies (except for the `windows-curses
-<https://github.com/zephyrproject-rtos/windows-curses>`_ package on Windows,
-when running the terminal ``menuconfig`` implementation).
+third-party dependencies, but the terminal ``menuconfig`` won't work on Windows
+unless a package like `windows-curses
+<https://github.com/zephyrproject-rtos/windows-curses>`_ is installed.
 
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -507,9 +507,7 @@ Three configuration interfaces are currently available:
 
   There are no third-party dependencies on \*nix. On Windows,
   the ``curses`` modules is not available by default, but support
-  can be added by installing the ``windows-curses`` package (which is
-  installed automatically when Kconfiglib is installed via ``pip``
-  on Windows):
+  can be added by installing the ``windows-curses`` package:
   
   .. code-block:: shell
 
