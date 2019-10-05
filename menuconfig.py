@@ -182,12 +182,32 @@ See the https://github.com/zephyrproject-rtos/windows-curses repository.
 """
 from __future__ import print_function
 
-import curses
+import sys
+
+try:
+    import curses
+except ImportError as e:
+    if sys.platform != "win32":
+        raise
+    sys.exit("""\
+menuconfig failed to import the standard Python 'curses' library. Try
+installing a package like windows-curses
+(https://github.com/zephyrproject-rtos/windows-curses) by running this command
+in cmd.exe:
+
+    pip install windows-curses
+
+Starting with Kconfiglib 13.0.0, windows-curses is no longer automatically
+installed when installing Kconfiglib via pip on Windows (because it breaks
+installation on MSYS2).
+
+Exception:
+{}: {}""".format(type(e).__name__, e))
+
 import errno
 import locale
 import os
 import re
-import sys
 import textwrap
 
 from kconfiglib import Symbol, Choice, MENU, COMMENT, MenuNode, \
