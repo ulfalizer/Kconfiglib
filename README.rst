@@ -300,7 +300,9 @@ Kconfiglib can do the following, among other things:
 - **Write C headers**
 
   The generated headers use the same format as ``include/generated/autoconf.h``
-  from the Linux kernel.
+  from the Linux kernel. Output for symbols appears in the order that they're
+  defined, unlike in the C tools (where the order depends on the hash table
+  implementation).
 
 - **Implement incremental builds**
 
