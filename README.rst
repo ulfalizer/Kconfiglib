@@ -23,6 +23,9 @@ This fixes installation of Kconfiglib on MSYS2, which is not compatible with
 ``windows-curses``. See `this issue
 <https://github.com/ulfalizer/Kconfiglib/issues/77>`__.
 
+The ``menuconfig`` now shows a hint re. installing ``windows-curses`` when the
+``curses`` module can't be imported on Windows.
+
 Sorry if this change caused problems!
 
 Overview
