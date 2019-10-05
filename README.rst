@@ -1,12 +1,29 @@
 .. contents:: Table of contents
    :backlinks: none
 
+News
+----
+
 Dependency loop with recent linux-next kernels
-----------------------------------------------
-   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 To fix issues with dependency loops on recent linux-next kernels, apply `this
 patch <https://www.spinics.net/lists/linux-kbuild/msg23455.html>`_. Hopefully,
-it will be merged soon.
+it will be in ``linux-next`` soon.
+
+``windows-curses`` is no longer automatically installed on Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Starting with Kconfiglib 13.0.0, the `windows-curses
+<https://github.com/zephyrproject-rtos/windows-curses>`__ package is no longer
+automatically installed on Windows, and needs to be installed manually for the
+terminal ``menuconfig`` to work.
+
+This fixes installation of Kconfiglib on MSYS2, which is not compatible with
+``windows-curses``. See `this issue
+<https://github.com/ulfalizer/Kconfiglib/issues/77>`__.
+
+Sorry if this change caused problems!
 
 Overview
 --------
@@ -40,8 +57,8 @@ stay compatible with older Linux kernels. The major version will be increased
 if support is ever dropped. Using the old syntax with an undefined environment
 variable keeps the string as is.
 
-Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`_ if you run into
-a "macro expanded to blank string" error with kernel 4.18+.
+Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`__ if
+you run into a "macro expanded to blank string" error with kernel 4.18+.
 
 See `this page
 <https://docs.zephyrproject.org/latest/guides/kconfig/index.html>`__ for some
@@ -104,11 +121,12 @@ Python 2 and Python 3. Previously, ``menuconfig.py`` only ran under Python 3
 that your ``PATH`` includes the directory where the executables end up. You can
 list the installed files with ``pip(3) show -f kconfiglib``.
 
-All releases have a corresponding tag in the git repository, e.g. ``v12.14.1``
+All releases have a corresponding tag in the git repository, e.g. ``v13.0.0``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been
-ten small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
+ten small changes to the behavior of the API and a Windows packaging change
+(`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
 `2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
 `3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_,
 `4 <https://github.com/ulfalizer/Kconfiglib/commit/cbf32e29a130d22bc734b7778e6304ac9df2a3e8>`_,
@@ -117,10 +135,11 @@ ten small changes (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff
 `7 <https://github.com/ulfalizer/Kconfiglib/commit/7a428aa415606820a44291f475248b08e3952c4b>`_,
 `8 <https://github.com/ulfalizer/Kconfiglib/commit/f247ddf618ad29718e5efd3e69f8baf75d4d347b>`_,
 `9 <https://github.com/ulfalizer/Kconfiglib/commit/4fed39d9271ceb68be4157ab3f96a45b94f77dc0>`_,
-`10 <https://github.com/ulfalizer/Kconfiglib/commit/55bc8c380869ea663092212e8fe388ad7abae596>`_)
-to the behavior of the API, which is why the major version is at 12 rather than
-2. I do major version bumps for all behavior changes, even tiny ones, and most of these were
-fixes for baby issues in the early days of the Kconfiglib 2 API.
+`10 <https://github.com/ulfalizer/Kconfiglib/commit/55bc8c380869ea663092212e8fe388ad7abae596>`_,
+`packaging change <https://github.com/ulfalizer/Kconfiglib/commit/21b4c1e3b6e2867b9a0788d21a358f6b1f581d86>`_),
+which is why the major version is at 13 rather than 2. I do major version bumps
+for all behavior changes, even tiny ones, and most of these were fixes for baby
+issues in the early days of the Kconfiglib 2 API.
 
 Manual installation
 ~~~~~~~~~~~~~~~~~~~
@@ -128,7 +147,7 @@ Manual installation
 Just drop ``kconfiglib.py`` and the scripts you want somewhere. There are no
 third-party dependencies, but the terminal ``menuconfig`` won't work on Windows
 unless a package like `windows-curses
-<https://github.com/zephyrproject-rtos/windows-curses>`_ is installed.
+<https://github.com/zephyrproject-rtos/windows-curses>`__ is installed.
 
 Installation for the Linux kernel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
