@@ -73,7 +73,7 @@ This is the current list of built-in styles:
     - default       classic Kconfiglib theme with a yellow accent
     - monochrome    colorless theme (uses only bold and standout) attributes,
                     this style is used if the terminal doesn't support colors
-    - aquatic       blue tinted style loosely resembling the lxdialog theme
+    - aquatic       blue-tinted style loosely resembling the lxdialog theme
 
 It is possible to customize the current style by changing colors of UI
 elements on the screen. This is the list of elements that can be stylized:
@@ -2213,9 +2213,7 @@ def _sorted_sc_nodes(cached_nodes=[]):
                          key=lambda choice: choice.name or "")
 
         cached_nodes += sorted(
-            [node
-             for choice in choices
-                 for node in choice.nodes],
+            [node for choice in choices for node in choice.nodes],
             key=lambda node: node.prompt[0] if node.prompt else "")
 
     return cached_nodes
