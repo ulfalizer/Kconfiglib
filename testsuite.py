@@ -38,7 +38,6 @@
 import difflib
 import errno
 import os
-import platform
 import re
 import shutil
 import subprocess
@@ -47,10 +46,10 @@ import tempfile
 import textwrap
 
 from kconfiglib import Kconfig, Symbol, Choice, COMMENT, MENU, MenuNode, \
-                       BOOL, TRISTATE, HEX, STRING, \
+                       BOOL, TRISTATE, HEX, \
                        TRI_TO_STR, \
                        escape, unescape, \
-                       expr_str, expr_value, expr_items, split_expr, \
+                       expr_str, expr_items, split_expr, \
                        _ordered_unique, \
                        OR, AND, \
                        KconfigError
