@@ -44,7 +44,7 @@ def _main():
     # visible symbols.
     global conf_changed
 
-    kconf = standard_kconfig()
+    kconf = standard_kconfig(__doc__)
     print(kconf.load_config())
 
     while True:

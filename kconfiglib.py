@@ -6057,21 +6057,35 @@ def unescape(s):
 _unescape_sub = re.compile(r"\\(.)").sub
 
 
-def standard_kconfig():
+def standard_kconfig(description=None):
     """
-    Helper for tools. Loads the top-level Kconfig specified as the first
-    command-line argument, or "Kconfig" if there are no command-line arguments.
-    Returns the Kconfig instance.
+    Argument parsing helper for tools that take a single optional Kconfig file
+    argument (default: Kconfig). Uses argparse internally.
 
-    Exits with sys.exit() (which raises a SystemExit exception) and prints a
-    usage note to stderr if more than one command-line argument is passed.
+    Exits with sys.exit() (which raises SystemExit) on errors.
+
+    description (default: None):
+      The 'description' passed to argparse.ArgumentParser().
+      argparse.RawDescriptionHelpFormatter is used, so formatting is preserved.
     """
-    if len(sys.argv) > 2:
-        sys.exit("usage: {} [Kconfig]".format(sys.argv[0]))
+    import argparse
 
-    # Only show backtraces for unexpected exceptions
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=description)
+
+    parser.add_argument(
+        "kconfig",
+        metavar="KCONFIG",
+        default="Kconfig",
+        nargs="?",
+        help="Kconfig file (default: Kconfig)")
+
+    args = parser.parse_args()
+
+    # Suppress backtraces for expected exceptions
     try:
-        return Kconfig("Kconfig" if len(sys.argv) < 2 else sys.argv[1])
+        return Kconfig(args.kconfig)
     except (EnvironmentError, KconfigError) as e:
         # Some long exception messages have extra newlines for better
         # formatting when reported as an unhandled exception. Strip them here.

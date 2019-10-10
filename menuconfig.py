@@ -647,7 +647,7 @@ def _style_attr(fg_color, bg_color, attribs, color_attribs={}):
 
 
 def _main():
-    menuconfig(standard_kconfig())
+    menuconfig(standard_kconfig(__doc__))
 
 
 def menuconfig(kconf):

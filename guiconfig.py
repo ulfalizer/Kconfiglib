@@ -95,7 +95,7 @@ an item will jump to it. Item values can be toggled directly within the dialog.\
 
 
 def _main():
-    menuconfig(standard_kconfig())
+    menuconfig(standard_kconfig(__doc__))
 
 
 # Global variables used below:

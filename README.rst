@@ -280,12 +280,12 @@ For HTML output, add ``-w``:
 
 This will also work after installing Kconfiglib with ``pip(3)``.
 
-Documentation for the ``menuconfig`` and ``guiconfig`` interfaces can be viewed
-in the same way:
+Documentation for other modules can be viewed in the same way (though a plain
+``--help`` will work when they're run as executables):
 
 .. code:: sh
 
-    $ pydoc3 menuconfig/guiconfig
+    $ pydoc(3) menuconfig/guiconfig/...
 
 A good starting point for learning the library is to read the module docstring
 (which you could also just read directly at the beginning of `kconfiglib.py

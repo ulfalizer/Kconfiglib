@@ -11,13 +11,13 @@ in the KCONFIG_CONFIG environment variable.
 
 Usage for the Linux kernel:
 
-  $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/examples/allmodconfig.py
+  $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/allyesconfig.py
 """
 import kconfiglib
 
 
 def main():
-    kconf = kconfiglib.standard_kconfig()
+    kconf = kconfiglib.standard_kconfig(__doc__)
 
     # See allnoconfig.py
     kconf.warn = False

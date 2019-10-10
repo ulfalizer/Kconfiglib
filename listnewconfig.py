@@ -17,7 +17,7 @@ from kconfiglib import standard_kconfig, BOOL, TRISTATE, INT, HEX, STRING, \
 
 
 def main():
-    kconf = standard_kconfig()
+    kconf = standard_kconfig(__doc__)
     # Make it possible to filter this message out
     sys.stderr.write(kconf.load_config() + "\n")
 
