@@ -14,7 +14,7 @@ Usage for the Linux kernel:
   $ make [ARCH=<arch>] scriptconfig SCRIPT=Kconfiglib/allnoconfig.py
 """
 
-# See examples/allnoconfig_walk.py for another way to implement this script.
+# See examples/allnoconfig_walk.py for another way to implement this script
 
 import kconfiglib
 
