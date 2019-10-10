@@ -176,7 +176,7 @@ Getting started
 1. `Install <Installation_>`_ the library and the utilities.
 
 2. Write `Kconfig
-   <https://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt>`__
+   <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-language.rst>`__
    files that describe the available configuration options.
 
 3. Generate an initial configuration with e.g. ``menuconfig``/``guiconfig`` or
@@ -401,7 +401,7 @@ The following Kconfig extensions are available:
   ``mainmenu`` statements, meaning ``option env`` symbols are redundant.
 
   This is the standard behavior with the new `Kconfig preprocessor
-  <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.txt>`__,
+  <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`__,
   which Kconfiglib implements.
 
   ``option env`` symbols are accepted but ignored, which leads the caveat that
