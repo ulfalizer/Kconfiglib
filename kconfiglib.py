@@ -6060,7 +6060,8 @@ _unescape_sub = re.compile(r"\\(.)").sub
 def standard_kconfig(description=None):
     """
     Argument parsing helper for tools that take a single optional Kconfig file
-    argument (default: Kconfig). Uses argparse internally.
+    argument (default: Kconfig). Returns the Kconfig instance for the parsed
+    configuration. Uses argparse internally.
 
     Exits with sys.exit() (which raises SystemExit) on errors.
 
