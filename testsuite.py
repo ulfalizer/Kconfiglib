@@ -1072,32 +1072,51 @@ g
         # Has symbol with empty help text, so disable warnings
         c = Kconfig("tests/Klocation", warn=False)
 
-        verify_locations(c.syms["SINGLE_DEF"].nodes, "tests/Klocation:4")
+        verify_locations(c.syms["UNDEFINED"].nodes)
+        verify_equal(c.syms["UNDEFINED"].name_and_loc, "UNDEFINED (undefined)")
 
-        verify_locations(c.syms["MULTI_DEF"].nodes,
-          "tests/Klocation:7",
-          "tests/Klocation:37",
-          "tests/Klocation:39",
-          "tests/Klocation_sourced:3",
-          "tests/sub/Klocation_rsourced:2",
-          "tests/sub/Klocation_gsourced1:1",
-          "tests/sub/Klocation_gsourced2:1",
-          "tests/sub/Klocation_gsourced1:1",
-          "tests/sub/Klocation_gsourced2:1",
-          "tests/sub/Klocation_grsourced1:1",
-          "tests/sub/Klocation_grsourced2:1",
-          "tests/sub/Klocation_grsourced1:1",
-          "tests/sub/Klocation_grsourced2:1",
-          "tests/Klocation:72")
+        verify_locations(c.syms["ONE_DEF"].nodes, "tests/Klocation:4")
+        verify_equal(c.syms["ONE_DEF"].name_and_loc,
+                     "ONE_DEF (defined at tests/Klocation:4)")
 
-        verify_locations(c.named_choices["CHOICE"].nodes,
+        verify_locations(c.syms["TWO_DEF"].nodes,
+                         "tests/Klocation:7",
+                         "tests/Klocation:10")
+        verify_equal(c.syms["TWO_DEF"].name_and_loc,
+                     "TWO_DEF (defined at tests/Klocation:7, tests/Klocation:10)")
+
+        verify_locations(c.syms["MANY_DEF"].nodes,
+                         "tests/Klocation:13",
+                         "tests/Klocation:43",
+                         "tests/Klocation:45",
+                         "tests/Klocation_sourced:3",
+                         "tests/sub/Klocation_rsourced:2",
+                         "tests/sub/Klocation_gsourced1:1",
+                         "tests/sub/Klocation_gsourced2:1",
+                         "tests/sub/Klocation_gsourced1:1",
+                         "tests/sub/Klocation_gsourced2:1",
+                         "tests/sub/Klocation_grsourced1:1",
+                         "tests/sub/Klocation_grsourced2:1",
+                         "tests/sub/Klocation_grsourced1:1",
+                         "tests/sub/Klocation_grsourced2:1",
+                         "tests/Klocation:78")
+
+        verify_locations(c.named_choices["CHOICE_ONE_DEF"].nodes,
                          "tests/Klocation_sourced:5")
+        verify_equal(c.named_choices["CHOICE_ONE_DEF"].name_and_loc,
+                     "<choice CHOICE_ONE_DEF> (defined at tests/Klocation_sourced:5)")
+
+        verify_locations(c.named_choices["CHOICE_TWO_DEF"].nodes,
+                         "tests/Klocation_sourced:9",
+                         "tests/Klocation_sourced:13")
+        verify_equal(c.named_choices["CHOICE_TWO_DEF"].name_and_loc,
+                     "<choice CHOICE_TWO_DEF> (defined at tests/Klocation_sourced:9, tests/Klocation_sourced:13)")
 
         verify_locations([c.syms["MENU_HOOK"].nodes[0].next],
-                         "tests/Klocation_sourced:12")
+                         "tests/Klocation_sourced:20")
 
         verify_locations([c.syms["COMMENT_HOOK"].nodes[0].next],
-                         "tests/Klocation_sourced:18")
+                         "tests/Klocation_sourced:26")
 
         # Test Kconfig.kconfig_filenames
 
@@ -1180,25 +1199,27 @@ tests/Krecursive2:1
     verify_equal(
         [node.item.name for node in c.node_iter()
          if isinstance(node.item, Symbol)],
-        ["SINGLE_DEF", "MULTI_DEF", "HELP_1", "HELP_2", "HELP_3", "MULTI_DEF",
-         "MULTI_DEF", "MULTI_DEF", "MENU_HOOK", "COMMENT_HOOK"] + \
-        10*["MULTI_DEF"])
+        ["ONE_DEF", "TWO_DEF", "TWO_DEF", "MANY_DEF", "HELP_1", "HELP_2",
+         "HELP_3", "MANY_DEF", "MANY_DEF", "MANY_DEF", "MENU_HOOK",
+         "COMMENT_HOOK"] + 10*["MANY_DEF"])
 
     verify_equal(
         [node.item.name for node in c.node_iter(True)
          if isinstance(node.item, Symbol)],
-        ["SINGLE_DEF", "MULTI_DEF", "HELP_1", "HELP_2", "HELP_3", "MENU_HOOK",
-         "COMMENT_HOOK"])
+        ["ONE_DEF", "TWO_DEF", "MANY_DEF", "HELP_1", "HELP_2", "HELP_3",
+         "MENU_HOOK", "COMMENT_HOOK"])
 
     verify_equal(
         [node.prompt[0] for node in c.node_iter()
          if not isinstance(node.item, Symbol)],
-        ["choice", "menu", "comment"])
+        ["one-def choice", "two-def choice 1", "two-def choice 2",
+         "menu", "comment"])
 
     verify_equal(
         [node.prompt[0] for node in c.node_iter(True)
          if not isinstance(node.item, Symbol)],
-        ["choice", "menu", "comment"])
+        ["one-def choice", "two-def choice 1", "two-def choice 2",
+         "menu", "comment"])
 
 
     print("Testing MenuNode.include_path")

@@ -1245,7 +1245,7 @@ class Kconfig(object):
                             self._warn("'{}' is not a valid value for the {} "
                                        "symbol {}. Assignment ignored."
                                        .format(val, TYPE_TO_STR[sym.orig_type],
-                                               _name_and_loc(sym)),
+                                               sym.name_and_loc),
                                        filename, linenr)
                             continue
 
@@ -1272,7 +1272,7 @@ class Kconfig(object):
                         if not match:
                             self._warn("malformed string literal in "
                                        "assignment to {}. Assignment ignored."
-                                       .format(_name_and_loc(sym)),
+                                       .format(sym.name_and_loc),
                                        filename, linenr)
                             continue
 
@@ -1341,7 +1341,7 @@ class Kconfig(object):
             user_val = sym.user_value
 
         msg = '{} set more than once. Old value "{}", new value "{}".'.format(
-            _name_and_loc(sym), user_val, new_val)
+            sym.name_and_loc, user_val, new_val)
 
         if user_val == new_val:
             if self.warn_assign_redun:
@@ -2843,7 +2843,7 @@ class Kconfig(object):
 
                 if node.is_menuconfig and not node.prompt:
                     self._warn("the menuconfig symbol {} has no prompt"
-                               .format(_name_and_loc(sym)))
+                               .format(sym.name_and_loc))
 
                 # Equivalent to
                 #
@@ -3180,8 +3180,7 @@ class Kconfig(object):
         # UNKNOWN is falsy
         if node.item.orig_type and node.item.orig_type is not new_type:
             self._warn("{} defined with multiple types, {} will be used"
-                       .format(_name_and_loc(node.item),
-                               TYPE_TO_STR[new_type]))
+                       .format(node.item.name_and_loc, TYPE_TO_STR[new_type]))
 
         node.item.orig_type = new_type
 
@@ -3191,7 +3190,7 @@ class Kconfig(object):
         # multiple times
 
         if node.prompt:
-            self._warn(_name_and_loc(node.item) +
+            self._warn(node.item.name_and_loc +
                        " defined with multiple prompts in single location")
 
         prompt = self._tokens[1]
@@ -3201,7 +3200,7 @@ class Kconfig(object):
             self._parse_error("expected prompt string")
 
         if prompt != prompt.strip():
-            self._warn(_name_and_loc(node.item) +
+            self._warn(node.item.name_and_loc +
                        " has leading or trailing whitespace in its prompt")
 
             # This avoid issues for e.g. reStructuredText documentation, where
@@ -3212,7 +3211,7 @@ class Kconfig(object):
 
     def _parse_help(self, node):
         if node.help is not None:
-            self._warn(_name_and_loc(node.item) + " defined with more than "
+            self._warn(node.item.name_and_loc + " defined with more than "
                        "one help text -- only the last one will be used")
 
         # Micro-optimization. This code is pretty hot.
@@ -3268,7 +3267,7 @@ class Kconfig(object):
             self._line_after_help(line)
 
     def _empty_help(self, node, line):
-        self._warn(_name_and_loc(node.item) +
+        self._warn(node.item.name_and_loc +
                    " has 'help' but empty help text")
         node.help = ""
         if line:
@@ -3648,26 +3647,26 @@ class Kconfig(object):
                     if target_sym.orig_type not in _BOOL_TRISTATE_UNKNOWN:
                         self._warn("{} selects the {} symbol {}, which is not "
                                    "bool or tristate"
-                                   .format(_name_and_loc(sym),
+                                   .format(sym.name_and_loc,
                                            TYPE_TO_STR[target_sym.orig_type],
-                                           _name_and_loc(target_sym)))
+                                           target_sym.name_and_loc))
 
                 for target_sym, _ in sym.implies:
                     if target_sym.orig_type not in _BOOL_TRISTATE_UNKNOWN:
                         self._warn("{} implies the {} symbol {}, which is not "
                                    "bool or tristate"
-                                   .format(_name_and_loc(sym),
+                                   .format(sym.name_and_loc,
                                            TYPE_TO_STR[target_sym.orig_type],
-                                           _name_and_loc(target_sym)))
+                                           target_sym.name_and_loc))
 
             elif sym.orig_type:  # STRING/INT/HEX
                 for default, _ in sym.defaults:
                     if default.__class__ is not Symbol:
                         raise KconfigError(
-                            "the {} symbol {} has a malformed default {} -- expected "
-                            "a single symbol"
-                            .format(TYPE_TO_STR[sym.orig_type], _name_and_loc(sym),
-                                    expr_str(default)))
+                            "the {} symbol {} has a malformed default {} -- "
+                            "expected a single symbol"
+                            .format(TYPE_TO_STR[sym.orig_type],
+                                    sym.name_and_loc, expr_str(default)))
 
                     if sym.orig_type is STRING:
                         if not default.is_constant and not default.nodes and \
@@ -3678,22 +3677,22 @@ class Kconfig(object):
                             # (and no symbol named 'foo' exists).
                             self._warn("style: quotes recommended around "
                                        "default value for string symbol "
-                                       + _name_and_loc(sym))
+                                       + sym.name_and_loc)
 
                     elif not num_ok(default, sym.orig_type):  # INT/HEX
                         self._warn("the {0} symbol {1} has a non-{0} default {2}"
                                    .format(TYPE_TO_STR[sym.orig_type],
-                                           _name_and_loc(sym),
-                                           _name_and_loc(default)))
+                                           sym.name_and_loc,
+                                           default.name_and_loc))
 
                 if sym.selects or sym.implies:
                     self._warn("the {} symbol {} has selects or implies"
                                .format(TYPE_TO_STR[sym.orig_type],
-                                       _name_and_loc(sym)))
+                                       sym.name_and_loc))
 
             else:  # UNKNOWN
                 self._warn("{} defined without a type"
-                           .format(_name_and_loc(sym)))
+                           .format(sym.name_and_loc))
 
 
             if sym.ranges:
@@ -3701,7 +3700,7 @@ class Kconfig(object):
                     self._warn(
                         "the {} symbol {} has ranges, but is not int or hex"
                         .format(TYPE_TO_STR[sym.orig_type],
-                                _name_and_loc(sym)))
+                                sym.name_and_loc))
                 else:
                     for low, high, _ in sym.ranges:
                         if not num_ok(low, sym.orig_type) or \
@@ -3710,9 +3709,9 @@ class Kconfig(object):
                             self._warn("the {0} symbol {1} has a non-{0} "
                                        "range [{2}, {3}]"
                                        .format(TYPE_TO_STR[sym.orig_type],
-                                               _name_and_loc(sym),
-                                               _name_and_loc(low),
-                                               _name_and_loc(high)))
+                                               sym.name_and_loc,
+                                               low.name_and_loc,
+                                               high.name_and_loc))
 
     def _check_choice_sanity(self):
         # Checks various choice properties that are handiest to check after
@@ -3721,43 +3720,43 @@ class Kconfig(object):
         def warn_select_imply(sym, expr, expr_type):
             msg = "the choice symbol {} is {} by the following symbols, but " \
                   "select/imply has no effect on choice symbols" \
-                  .format(_name_and_loc(sym), expr_type)
+                  .format(sym.name_and_loc, expr_type)
 
             # si = select/imply
             for si in split_expr(expr, OR):
-                msg += "\n - " + _name_and_loc(split_expr(si, AND)[0])
+                msg += "\n - " + split_expr(si, AND)[0].name_and_loc
 
             self._warn(msg)
 
         for choice in self.unique_choices:
             if choice.orig_type not in _BOOL_TRISTATE:
                 self._warn("{} defined with type {}"
-                           .format(_name_and_loc(choice),
+                           .format(choice.name_and_loc,
                                    TYPE_TO_STR[choice.orig_type]))
 
             for node in choice.nodes:
                 if node.prompt:
                     break
             else:
-                self._warn(_name_and_loc(choice) + " defined without a prompt")
+                self._warn(choice.name_and_loc + " defined without a prompt")
 
             for default, _ in choice.defaults:
                 if default.__class__ is not Symbol:
                     raise KconfigError(
                         "{} has a malformed default {}"
-                        .format(_name_and_loc(choice), expr_str(default)))
+                        .format(choice.name_and_loc, expr_str(default)))
 
                 if default.choice is not choice:
                     self._warn("the default selection {} of {} is not "
                                "contained in the choice"
-                               .format(_name_and_loc(default),
-                                       _name_and_loc(choice)))
+                               .format(default.name_and_loc,
+                                       choice.name_and_loc))
 
             for sym in choice.syms:
                 if sym.defaults:
                     self._warn("default on the choice symbol {} will have "
                                "no effect, as defaults do not affect choice "
-                               "symbols".format(_name_and_loc(sym)))
+                               "symbols".format(sym.name_and_loc))
 
                 if sym.rev_dep is not sym.kconfig.n:
                     warn_select_imply(sym, sym.rev_dep, "selected")
@@ -3769,12 +3768,12 @@ class Kconfig(object):
                     if node.parent.item is choice:
                         if not node.prompt:
                             self._warn("the choice symbol {} has no prompt"
-                                       .format(_name_and_loc(sym)))
+                                       .format(sym.name_and_loc))
 
                     elif node.prompt:
                         self._warn("the choice symbol {} is defined with a "
                                    "prompt outside the choice"
-                                   .format(_name_and_loc(sym)))
+                                   .format(sym.name_and_loc))
 
     def _parse_error(self, msg):
         raise KconfigError("{}couldn't parse '{}': {}".format(
@@ -4009,6 +4008,15 @@ class Symbol(object):
       though you might get some special symbols and possibly some "redundant"
       n-valued symbol entries in there.
 
+    name_and_loc:
+      Holds a string like
+
+        "MY_SYMBOL (defined at foo/Kconfig:12, bar/Kconfig:14)"
+
+      , giving the name of the symbol and its definition location(s).
+
+      If the symbol is undefined, the location is given as "(undefined)".
+
     nodes:
       A list of MenuNodes for this symbol. Will contain a single MenuNode for
       most symbols. Undefined and constant symbols have an empty nodes list.
@@ -4239,7 +4247,7 @@ class Symbol(object):
                         "being outside the active range ([{}, {}]) -- falling "
                         "back on defaults"
                         .format(num2str(user_val), TYPE_TO_STR[self.orig_type],
-                                _name_and_loc(self),
+                                self.name_and_loc,
                                 num2str(low), num2str(high)))
                 else:
                     # If the user value is well-formed and satisfies range
@@ -4289,7 +4297,7 @@ class Symbol(object):
                             self.kconfig._warn(
                                 "default value {} on {} clamped to {} due to "
                                 "being outside the active range ([{}, {}])"
-                                .format(val_num, _name_and_loc(self),
+                                .format(val_num, self.name_and_loc,
                                         num2str(clamp), num2str(low),
                                         num2str(high)))
 
@@ -4330,7 +4338,7 @@ class Symbol(object):
                 self.kconfig._warn(
                     "The {} symbol {} is being evaluated in a logical context "
                     "somewhere. It will always evaluate to n."
-                    .format(TYPE_TO_STR[self.orig_type], _name_and_loc(self)))
+                    .format(TYPE_TO_STR[self.orig_type], self.name_and_loc))
 
             self._cached_tri_val = 0
             return 0
@@ -4440,6 +4448,13 @@ class Symbol(object):
         return '{}{}="{}"\n' \
                .format(self.kconfig.config_prefix, self.name, escape(val))
 
+    @property
+    def name_and_loc(self):
+        """
+        See the class documentation.
+        """
+        return self.name + " " + _locs(self)
+
     def set_value(self, value):
         """
         Sets the user value of the symbol.
@@ -4509,7 +4524,7 @@ class Symbol(object):
                 "assignment ignored"
                 .format(TRI_TO_STR[value] if value in TRI_TO_STR else
                             "'{}'".format(value),
-                        _name_and_loc(self), TYPE_TO_STR[self.orig_type]))
+                        self.name_and_loc, TYPE_TO_STR[self.orig_type]))
 
             return False
 
@@ -4797,7 +4812,7 @@ class Symbol(object):
                 return
 
         if self.kconfig._warn_assign_no_prompt:
-            self.kconfig._warn(_name_and_loc(self) + " has no prompt, meaning "
+            self.kconfig._warn(self.name_and_loc + " has no prompt, meaning "
                                "user values have no effect on it")
 
     def _str_default(self):
@@ -4843,7 +4858,7 @@ class Symbol(object):
 
         msg = "{} has direct dependencies {} with value {}, but is " \
               "currently being {}-selected by the following symbols:" \
-              .format(_name_and_loc(self), expr_str(self.direct_dep),
+              .format(self.name_and_loc, expr_str(self.direct_dep),
                       TRI_TO_STR[expr_value(self.direct_dep)],
                       TRI_TO_STR[expr_value(self.rev_dep)])
 
@@ -4861,7 +4876,7 @@ class Symbol(object):
 
             msg += "\n - {}, with value {}, direct dependencies {} " \
                    "(value: {})" \
-                   .format(_name_and_loc(selecting_sym),
+                   .format(selecting_sym.name_and_loc,
                            selecting_sym.str_value,
                            expr_str(selecting_sym.direct_dep),
                            TRI_TO_STR[expr_value(selecting_sym.direct_dep)])
@@ -4979,6 +4994,16 @@ class Choice(object):
 
     visibility:
       See the Symbol class documentation. Acts on the value (mode).
+
+    name_and_loc:
+      Holds a string like
+
+        "<choice MY_CHOICE> (defined at foo/Kconfig:12)"
+
+      , giving the name of the choice and its definition location(s). If the
+      choice has no name (isn't defined with 'choice MY_CHOICE'), then it will
+      be shown as "<choice>" before the list of locations (always a single one
+      in that case).
 
     syms:
       List of symbols contained in the choice.
@@ -5100,6 +5125,14 @@ class Choice(object):
         return self._cached_vis
 
     @property
+    def name_and_loc(self):
+        """
+        See the class documentation.
+        """
+        # Reuse the expression format, which is '<choice (name, if any)>'.
+        return standard_sc_expr_str(self) + " " + _locs(self)
+
+    @property
     def selection(self):
         """
         See the class documentation.
@@ -5139,7 +5172,7 @@ class Choice(object):
                 "assignment ignored"
                 .format(TRI_TO_STR[value] if value in TRI_TO_STR else
                             "'{}'".format(value),
-                        _name_and_loc(self), TYPE_TO_STR[self.orig_type]))
+                        self.name_and_loc, TYPE_TO_STR[self.orig_type]))
 
             return False
 
@@ -6312,20 +6345,16 @@ def _save_old(path):
         pass
 
 
-def _name_and_loc(sc):
-    # Helper for giving the symbol/choice name and location(s) in e.g. warnings
+def _locs(sc):
+    # Symbol/Choice.name_and_loc helper. Returns the "(defined at ...)" part of
+    # the string. 'sc' is a Symbol or Choice.
 
-    # Reuse the expression format. That way choices show up as
-    # '<choice (name, if any)>'
-    name = standard_sc_expr_str(sc)
+    if sc.nodes:
+        return "(defined at {})".format(
+            ", ".join("{0.filename}:{0.linenr}".format(node)
+                      for node in sc.nodes))
 
-    if not sc.nodes:
-        return name + " (undefined)"
-
-    return "{} (defined at {})".format(
-        name,
-        ", ".join("{}:{}".format(node.filename, node.linenr)
-                  for node in sc.nodes))
+    return "(undefined)"
 
 
 # Menu manipulation
@@ -6580,7 +6609,7 @@ def _found_dep_loop(loop, cur):
                 msg += "the choice symbol "
 
         msg += "{}, with definition...\n\n{}\n\n" \
-               .format(_name_and_loc(item), item)
+               .format(item.name_and_loc, item)
 
         # Small wart: Since we reuse the already calculated
         # Symbol/Choice._dependents sets for recursive dependency detection, we
@@ -6604,7 +6633,7 @@ def _found_dep_loop(loop, cur):
                 msg += "(imply-related dependencies: {})\n\n" \
                        .format(expr_str(item.rev_dep))
 
-    msg += "...depends again on {}".format(_name_and_loc(loop[0]))
+    msg += "...depends again on " + loop[0].name_and_loc
 
     raise KconfigError(msg)
 
