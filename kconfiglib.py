@@ -3914,6 +3914,13 @@ class Symbol(object):
       The type as given in the Kconfig file, without any magic applied. Used
       when printing the symbol.
 
+    tri_value:
+      The tristate value of the symbol as an integer. One of 0, 1, 2,
+      representing n, m, y. Always 0 (n) for non-bool/tristate symbols.
+
+      This is the symbol value that's used outside of relation expressions
+      (A, !A, A && B, A || B).
+
     str_value:
       The value of the symbol as a string. Gives the value for string/int/hex
       symbols. For bool/tristate symbols, gives "n", "m", or "y".
@@ -3921,17 +3928,20 @@ class Symbol(object):
       This is the symbol value that's used in relational expressions
       (A = B, A != B, etc.)
 
-      Gotcha: For int/hex symbols, the exact format of the value must often be
-      preserved (e.g., when writing a .config file), hence why you can't get it
+      Gotcha: For int/hex symbols, the exact format of the value is often
+      preserved (e.g. when writing a .config file), hence why you can't get it
       directly as an int. Do int(int_sym.str_value) or
       int(hex_sym.str_value, 16) to get the integer value.
 
-    tri_value:
-      The tristate value of the symbol as an integer. One of 0, 1, 2,
-      representing n, m, y. Always 0 (n) for non-bool/tristate symbols.
+    user_value:
+      The user value of the symbol. None if no user value has been assigned
+      (via Kconfig.load_config() or Symbol.set_value()).
 
-      This is the symbol value that's used outside of relation expressions
-      (A, !A, A && B, A || B).
+      Holds 0, 1, or 2 for bool/tristate symbols, and a string for the other
+      symbol types.
+
+      WARNING: Do not assign directly to this. It will break things. Use
+      Symbol.set_value().
 
     assignable:
       A tuple containing the tristate user values that can currently be
@@ -3971,16 +3981,6 @@ class Symbol(object):
     visibility:
       The visibility of the symbol. One of 0, 1, 2, representing n, m, y. See
       the module documentation for an overview of symbol values and visibility.
-
-    user_value:
-      The user value of the symbol. None if no user value has been assigned
-      (via Kconfig.load_config() or Symbol.set_value()).
-
-      Holds 0, 1, or 2 for bool/tristate symbols, and a string for the other
-      symbol types.
-
-      WARNING: Do not assign directly to this. It will break things. Use
-      Symbol.set_value().
 
     config_string:
       The .config assignment string that would get written out for the symbol
@@ -4461,8 +4461,8 @@ class Symbol(object):
         value:
           The user value to give to the symbol. For bool and tristate symbols,
           n/m/y can be specified either as 0/1/2 (the usual format for tristate
-          values in Kconfiglib) or as one of the strings "n"/"m"/"y". For other
-          symbol types, pass a string.
+          values in Kconfiglib) or as one of the strings "n", "m", or "y". For
+          other symbol types, pass a string.
 
           Note that the value for an int/hex symbol is passed as a string, e.g.
           "123" or "0x0123". The format of this string is preserved in the
@@ -4945,19 +4945,9 @@ class Choice(object):
         Corresponding attributes have the same name in the Symbol and Choice
         classes, for consistency and compatibility.
 
-    assignable:
-      See the symbol class documentation. Gives the assignable values (modes).
-
-    visibility:
-      See the Symbol class documentation. Acts on the value (mode).
-
-    selection:
-      The Symbol instance of the currently selected symbol. None if the Choice
-      is not in y mode or has no selected symbol (due to unsatisfied
-      dependencies on choice symbols).
-
-      WARNING: Do not assign directly to this. It will break things. Call
-      sym.set_value(2) on the choice symbol you want to select instead.
+    str_value:
+      Like choice.tri_value, but gives the value as one of the strings
+      "n", "m", or "y"
 
     user_value:
       The value (mode) selected by the user through Choice.set_value(). Either
@@ -4967,6 +4957,17 @@ class Choice(object):
       WARNING: Do not assign directly to this. It will break things. Use
       Choice.set_value() instead.
 
+    assignable:
+      See the symbol class documentation. Gives the assignable values (modes).
+
+    selection:
+      The Symbol instance of the currently selected symbol. None if the Choice
+      is not in y mode or has no selected symbol (due to unsatisfied
+      dependencies on choice symbols).
+
+      WARNING: Do not assign directly to this. It will break things. Call
+      sym.set_value(2) on the choice symbol you want to select instead.
+
     user_selection:
       The symbol selected by the user (by setting it to y). Ignored if the
       choice is not in y mode, but still remembered so that the choice "snaps
@@ -4975,6 +4976,9 @@ class Choice(object):
 
       WARNING: Do not assign directly to this. It will break things. Call
       sym.set_value(2) on the choice symbol to be selected instead.
+
+    visibility:
+      See the Symbol class documentation. Acts on the value (mode).
 
     syms:
       List of symbols contained in the choice.
