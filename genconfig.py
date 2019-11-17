@@ -20,6 +20,13 @@ might save work depending on your build setup.
 
 By default, the configuration is generated from '.config'. A different
 configuration file can be passed in the KCONFIG_CONFIG environment variable.
+
+A custom header string can be inserted at the beginning of generated
+configuration and header files by setting the KCONFIG_CONFIG_HEADER and
+KCONFIG_AUTOHEADER_HEADER environment variables, respectively (this also works
+for other scripts). The string is not automatically made a comment (this is by
+design, to allow anything to be added), and no trailing newline is added, so
+add '/* */', '#', and newlines as appropriate.
 """
 import argparse
 import os

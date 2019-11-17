@@ -1926,12 +1926,12 @@ tests/Krecursive2:1
     c = Kconfig("Kconfiglib/tests/Kescape")
 
     # Test the default value
-    c.write_config(config_test_file + "_from_def", header="")
+    c.write_config(config_test_file + "_from_def")
     verify_file_contents(config_test_file + "_from_def",
                          r'''CONFIG_STRING="\"\\"''' "\n")
     # Write our own value
     c.syms["STRING"].set_value(r'''\"a'\\''')
-    c.write_config(config_test_file + "_from_user", header="")
+    c.write_config(config_test_file + "_from_user")
     verify_file_contents(config_test_file + "_from_user",
                          r'''CONFIG_STRING="\\\"a'\\\\"''' "\n")
 
@@ -1977,7 +1977,7 @@ tests/Krecursive2:1
 
     c = Kconfig("Kconfiglib/tests/Korder")
 
-    c.write_autoconf(config_test_file, header="")
+    c.write_autoconf(config_test_file)
     verify_file_contents(config_test_file, """
 #define CONFIG_O 0
 #define CONFIG_R 1
@@ -1996,7 +1996,7 @@ tests/Krecursive2:1
     c.syms["R2"].set_value("-1")
     c.syms["N"].set_value("-1")
     c.syms["G"].set_value("-1")
-    c.write_min_config(config_test_file, header="")
+    c.write_min_config(config_test_file)
     verify_file_contents(config_test_file, """
 CONFIG_O=-1
 CONFIG_R=-1
@@ -2005,6 +2005,44 @@ CONFIG_R2=-1
 CONFIG_N=-1
 CONFIG_G=-1
 """[1:])
+
+    # Test header strings in configuration files and headers
+
+    os.environ["KCONFIG_CONFIG_HEADER"] = "config header from env.\n"
+    os.environ["KCONFIG_AUTOHEADER_HEADER"] = "header header from env.\n"
+
+    c = Kconfig("Kconfiglib/tests/Kheader")
+    c.write_config(config_test_file, header="config header from param\n")
+    verify_file_contents(config_test_file, """\
+config header from param
+CONFIG_FOO=y
+""")
+    c.write_min_config(config_test_file, header="min. config header from param\n")
+    verify_file_contents(config_test_file, """\
+min. config header from param
+""")
+    c.write_config(config_test_file)
+    verify_file_contents(config_test_file, """\
+config header from env.
+CONFIG_FOO=y
+""")
+    c.write_min_config(config_test_file)
+    verify_file_contents(config_test_file, """\
+config header from env.
+""")
+    c.write_autoconf(config_test_file, header="header header from param\n")
+    verify_file_contents(config_test_file, """\
+header header from param
+#define CONFIG_FOO 1
+""")
+    c.write_autoconf(config_test_file)
+    verify_file_contents(config_test_file, """\
+header header from env.
+#define CONFIG_FOO 1
+""")
+
+    del os.environ["KCONFIG_CONFIG_HEADER"]
+    del os.environ["KCONFIG_AUTOHEADER_HEADER"]
 
 
     print("Testing Kconfig fetching and separation")
@@ -3148,8 +3186,7 @@ def equal_configs():
         return False
     else:
         with f:
-            # [1:] strips the default header
-            our = f.readlines()[1:]
+            our = f.readlines()
 
     if their == our:
         return True
