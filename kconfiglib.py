@@ -1363,7 +1363,7 @@ class Kconfig(object):
         elif self.warn_assign_override:
             self._warn(msg, filename, linenr)
 
-    def write_autoconf(self, filename, header=None):
+    def write_autoconf(self, filename=None, header=None):
         r"""
         Writes out symbol values as a C header file, matching the format used
         by include/generated/autoconf.h in the kernel.
@@ -1377,8 +1377,12 @@ class Kconfig(object):
         like the modification time and possibly triggering redundant work in
         build tools.
 
-        filename:
-          Self-explanatory.
+        filename (default: None):
+          Path to write header to.
+
+          If None (the default), the path in the environment variable
+          KCONFIG_AUTOHEADER is used if set, and "include/generated/autoconf.h"
+          otherwise. This is compatible with the C tools.
 
         header (default: None):
           Text inserted verbatim at the beginning of the file. You would
@@ -1390,6 +1394,10 @@ class Kconfig(object):
           will be used if it was set, and no header otherwise. See the
           Kconfig.header_header attribute.
         """
+        if filename is None:
+            filename = os.getenv("KCONFIG_AUTOHEADER",
+                                 "include/generated/autoconf.h")
+
         self._write_if_changed(filename, self._autoconf_contents(header))
 
     def _autoconf_contents(self, header):
@@ -1458,9 +1466,9 @@ class Kconfig(object):
         (OSError/IOError). KconfigError is never raised here.
 
         filename (default: None):
-          Filename to save configuration to (a string).
+          Path to write configuration to (a string).
 
-          If None (the default), the filename in the environment variable
+          If None (the default), the path in the environment variable
           KCONFIG_CONFIG is used if set, and ".config" otherwise. See
           standard_config_filename().
 
@@ -1606,7 +1614,7 @@ class Kconfig(object):
         (OSError/IOError). KconfigError is never raised here.
 
         filename:
-          Self-explanatory.
+          Path to write minimal configuration to.
 
         header (default: None):
           Text inserted verbatim at the beginning of the file. You would

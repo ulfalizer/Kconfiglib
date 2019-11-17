@@ -35,7 +35,6 @@ import sys
 import kconfiglib
 
 
-DEFAULT_HEADER_PATH = "config.h"
 DEFAULT_SYNC_DEPS_PATH = "deps/"
 
 
@@ -47,9 +46,11 @@ def main():
     parser.add_argument(
         "--header-path",
         metavar="HEADER_FILE",
-        default=DEFAULT_HEADER_PATH,
-        help="Path for the generated header file (default: {})"
-             .format(DEFAULT_HEADER_PATH))
+        help="""
+Path to write the generated header file to. If not specified, the path in the
+environment variable KCONFIG_AUTOHEADER is used if it is set, and 'config.h'
+otherwise.
+""")
 
     parser.add_argument(
         "--config-out",
@@ -107,7 +108,17 @@ only supported for backwards compatibility).
     kconf = kconfiglib.Kconfig(args.kconfig_filename)
     kconf.load_config()
 
-    kconf.write_autoconf(args.header_path)
+    if args.header_path is None:
+        if "KCONFIG_AUTOHEADER" in os.environ:
+            kconf.write_autoconf()
+        else:
+            # Kconfiglib defaults to include/generated/autoconf.h to be
+            # compatible with the C tools. 'config.h' is used here instead for
+            # backwards compatibility. It's probably a saner default for tools
+            # as well.
+            kconf.write_autoconf("config.h")
+    else:
+        kconf.write_autoconf(args.header_path)
 
     if args.config_out is not None:
         kconf.write_config(args.config_out, save_old=False)
