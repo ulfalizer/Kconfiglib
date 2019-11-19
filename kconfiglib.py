@@ -554,7 +554,7 @@ from glob import iglob
 from os.path import dirname, exists, expandvars, islink, join, realpath
 
 
-VERSION = (13, 2, 0)
+VERSION = (13, 3, 0)
 
 
 # File layout:
