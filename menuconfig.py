@@ -318,7 +318,7 @@ _STYLES = {
     separator=fg:white,bg:cyan,bold
     help=path
     frame=fg:white,bg:cyan,bold
-    body=fg:brightwhite,bg:blue
+    body=fg:white,bg:blue
     edit=fg:black,bg:white
     """
 }
