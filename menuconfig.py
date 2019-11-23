@@ -550,9 +550,6 @@ def _style_to_curses(style_def):
     def parse_color(color_def):
         color_def = color_def.split(":", 1)[1]
 
-        if color_def in _STYLE_STD_COLORS:
-            return _color_from_num(_STYLE_STD_COLORS[color_def])
-
         # HTML format, #RRGGBB
         if re.match("#[A-Fa-f0-9]{6}", color_def):
             return _color_from_rgb((
@@ -560,19 +557,20 @@ def _style_to_curses(style_def):
                 int(color_def[3:5], 16),
                 int(color_def[5:7], 16)))
 
-        try:
-            color_num = _color_from_num(int(color_def, 0))
-        except ValueError:
-            _warn("Ignoring color ", color_def, "that's neither predefined "
-                  "nor a number")
-
-            return -1
+        if color_def in _STYLE_STD_COLORS:
+            color_num = _color_from_num(_STYLE_STD_COLORS[color_def])
+        else:
+            try:
+                color_num = _color_from_num(int(color_def, 0))
+            except ValueError:
+                _warn("Ignoring color", color_def, "that's neither "
+                      "predefined nor a number")
+                return -1
 
         if not -1 <= color_num < curses.COLORS:
             _warn("Ignoring color {}, which is outside the range "
                   "-1..curses.COLORS-1 (-1..{})"
                   .format(color_def, curses.COLORS - 1))
-
             return -1
 
         return color_num
