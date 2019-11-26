@@ -317,7 +317,7 @@ _STYLES = {
     text=
     """,
 
-    # Blue tinted style loosely resembling lxdialog
+    # Blue-tinted style loosely resembling lxdialog
     "aquatic": """
     path=fg:cyan,bg:blue,bold
     separator=fg:white,bg:cyan,bold
@@ -328,8 +328,7 @@ _STYLES = {
     """
 }
 
-# Standard colors definition
-_STYLE_STD_COLORS = {
+_NAMED_COLORS = {
     # Basic colors
     "black":         curses.COLOR_BLACK,
     "red":           curses.COLOR_RED,
@@ -562,8 +561,8 @@ def _style_to_curses(style_def):
                 int(color_def[3:5], 16),
                 int(color_def[5:7], 16)))
 
-        if color_def in _STYLE_STD_COLORS:
-            color_num = _color_from_num(_STYLE_STD_COLORS[color_def])
+        if color_def in _NAMED_COLORS:
+            color_num = _color_from_num(_NAMED_COLORS[color_def])
         else:
             try:
                 color_num = _color_from_num(int(color_def, 0))
