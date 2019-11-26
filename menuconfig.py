@@ -185,12 +185,15 @@ See the https://github.com/zephyrproject-rtos/windows-curses repository.
 """
 from __future__ import print_function
 
+import os
 import sys
+
+_IS_WINDOWS = os.name == "nt"  # Are we running on Windows?
 
 try:
     import curses
 except ImportError as e:
-    if sys.platform != "win32":
+    if not _IS_WINDOWS:
         raise
     sys.exit("""\
 menuconfig failed to import the standard Python 'curses' library. Try
@@ -209,7 +212,6 @@ Exception:
 
 import errno
 import locale
-import os
 import re
 import textwrap
 
@@ -3277,9 +3279,6 @@ def _change_c_lc_ctype_to_utf8():
                 # LC_CTYPE successfully changed
                 return
 
-
-# Are we running on Windows?
-_IS_WINDOWS = os.name == "nt"
 
 if __name__ == "__main__":
     _main()
