@@ -137,12 +137,15 @@ If there's an error in the style definition or if a missing style is assigned
 to, the assignment will be ignored, along with a warning being printed on
 stderr.
 
-The 'default' theme is always implicitly parsed first (or the 'monochrome'
-theme if the terminal lacks colors), so the following two settings have the
-same effect:
+The 'default' theme is always implicitly parsed first, so the following two
+settings have the same effect:
 
     MENUCONFIG_STYLE="selection=fg:white,bg:red"
     MENUCONFIG_STYLE="default selection=fg:white,bg:red"
+
+If the terminal doesn't support colors, the 'monochrome' theme is used, and
+MENUCONFIG_STYLE is ignored. The assumption is that the environment is broken
+somehow, and that the important thing is to get something usable.
 
 
 Other features
@@ -605,13 +608,16 @@ def _init_styles():
     if curses.has_colors():
         curses.use_default_colors()
 
-    # Use the 'monochrome' style template as the base on terminals without
-    # color
-    _parse_style("default" if curses.has_colors() else "monochrome", True)
-
-    # Add any user-defined style from the environment
-    if "MENUCONFIG_STYLE" in os.environ:
-        _parse_style(os.environ["MENUCONFIG_STYLE"], False)
+        # Use the 'default' theme as the base, and add any user-defined style
+        # settings from the environment
+        _parse_style("default", True)
+        if "MENUCONFIG_STYLE" in os.environ:
+            _parse_style(os.environ["MENUCONFIG_STYLE"], False)
+    else:
+        # Force the 'monochrome' theme if the terminal doesn't support colors.
+        # MENUCONFIG_STYLE is likely to mess things up here (though any colors
+        # would be ignored), so ignore it.
+        _parse_style("monochrome", True)
 
 
 # color_attribs holds the color pairs we've already created, indexed by a
