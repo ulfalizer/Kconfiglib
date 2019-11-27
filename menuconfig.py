@@ -607,7 +607,15 @@ def _style_to_curses(style_def):
 
 def _init_styles():
     if curses.has_colors():
-        curses.use_default_colors()
+        try:
+            curses.use_default_colors()
+        except curses.error:
+            # Ignore errors on funky terminals that support colors but not
+            # using default colors. Worst it can do is break transparency and
+            # the like. Ran across this with the MSYS2/winpty setup in
+            # https://github.com/msys2/MINGW-packages/issues/5823, though there
+            # seems to be a lot of general brokenness there.
+            pass
 
         # Use the 'default' theme as the base, and add any user-defined style
         # settings from the environment
