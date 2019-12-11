@@ -64,7 +64,7 @@ Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`__ if
 you run into a "macro expanded to blank string" error with kernel 4.18+.
 
 See `this page
-<https://docs.zephyrproject.org/latest/guides/kconfig/index.html>`__ for some
+<https://docs.zephyrproject.org/latest/guides/kconfig/tips.html>`__ for some
 Kconfig tips and best practices.
 
 Installation
@@ -218,7 +218,7 @@ Whenever ``.config`` is overwritten, the previous version of the file is saved
 to ``.config.old`` (or, more generally, to ``$KCONFIG_CONFIG.old``).
 
 For some general Kconfig advice, see `this page
-<https://docs.zephyrproject.org/latest/guides/kconfig/index.html>`__.
+<https://docs.zephyrproject.org/latest/guides/kconfig/tips.html>`__.
 
 Using ``.config`` files as Make input
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
