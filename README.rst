@@ -179,7 +179,9 @@ Getting started
 
 2. Write `Kconfig
    <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-language.rst>`__
-   files that describe the available configuration options.
+   files that describe the available configuration options. See `this page
+   <https://docs.zephyrproject.org/latest/guides/kconfig/tips.html>`__ for some
+   general Kconfig advice.
 
 3. Generate an initial configuration with e.g. ``menuconfig``/``guiconfig`` or
    ``alldefconfig``. The configuration is saved as ``.config`` by default.
@@ -218,9 +220,6 @@ Getting started
 
 Whenever ``.config`` is overwritten, the previous version of the file is saved
 to ``.config.old`` (or, more generally, to ``$KCONFIG_CONFIG.old``).
-
-For some general Kconfig advice, see `this page
-<https://docs.zephyrproject.org/latest/guides/kconfig/tips.html>`__.
 
 Using ``.config`` files as Make input
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
