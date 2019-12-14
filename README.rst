@@ -43,8 +43,10 @@ The entire library is contained in `kconfiglib.py
 bundled scripts are implemented on top of it. Implementing your own scripts
 should be relatively easy, if needed.
 
-Kconfiglib is used exclusively by e.g. the `Zephyr <https://www.zephyrproject.org/>`_ 
-and `ACRN <https://projectacrn.org/>`_ projects. It is also used for many small helper
+Kconfiglib is used exclusively by e.g. the `Zephyr
+<https://www.zephyrproject.org/>`__, `esp-idf
+<https://github.com/espressif/esp-idf>`__, and `ACRN
+<https://projectacrn.org/>`__ projects. It is also used for many small helper
 scripts in various projects.
 
 Since Kconfiglib is based around a library, it can be used e.g. to generate a
