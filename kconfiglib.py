@@ -865,7 +865,7 @@ class Kconfig(object):
     #
 
     def __init__(self, filename="Kconfig", warn=True, warn_to_stderr=True,
-                 encoding="utf-8"):
+                 encoding="utf-8", suppress_traceback=False):
         """
         Creates a new Kconfig object by parsing Kconfig files.
         Note that Kconfig files are not the same as .config files (which store
@@ -930,7 +930,31 @@ class Kconfig(object):
           anyway.
 
           Related PEP: https://www.python.org/dev/peps/pep-0538/
+
+        suppress_traceback (default: False):
+          Helper for tools. When True, any EnvironmentError or KconfigError
+          generated during parsing is caught, the exception message is printed
+          to stderr, and sys.exit(1) is called (which generates SystemExit).
+
+          This hides the Python traceback for "expected" errors like syntax
+          errors in Kconfig files.
+
+          Other exceptions besides EnvironmentError and KconfigError are still
+          propagated when suppress_traceback is True.
         """
+        try:
+            return self._init(filename, warn, warn_to_stderr, encoding)
+        except (EnvironmentError, KconfigError) as e:
+            if suppress_traceback:
+                # Some long exception messages have extra newlines for better
+                # formatting when reported as an unhandled exception. Strip
+                # them here.
+                sys.exit(str(e).strip())
+            raise
+
+    def _init(self, filename, warn, warn_to_stderr, encoding):
+        # See __init__()
+
         self._encoding = encoding
 
         self.srctree = os.getenv("srctree", "")
@@ -6182,15 +6206,7 @@ def standard_kconfig(description=None):
         nargs="?",
         help="Kconfig file (default: Kconfig)")
 
-    args = parser.parse_args()
-
-    # Suppress backtraces for expected exceptions
-    try:
-        return Kconfig(args.kconfig)
-    except (EnvironmentError, KconfigError) as e:
-        # Some long exception messages have extra newlines for better
-        # formatting when reported as an unhandled exception. Strip them here.
-        sys.exit(str(e).strip())
+    return Kconfig(parser.parse_args().kconfig, suppress_traceback=True)
 
 
 def standard_config_filename():

@@ -40,7 +40,7 @@ def main():
 
     args = parser.parse_args()
 
-    kconf = kconfiglib.Kconfig(args.kconfig)
+    kconf = kconfiglib.Kconfig(args.kconfig, suppress_traceback=True)
     print(kconf.load_config())
     print(kconf.write_min_config(args.out))
 

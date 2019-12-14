@@ -109,7 +109,7 @@ only supported for backwards compatibility).
     args = parser.parse_args()
 
 
-    kconf = kconfiglib.Kconfig(args.kconfig_filename)
+    kconf = kconfiglib.Kconfig(args.kconfig_filename, suppress_traceback=True)
     kconf.load_config()
 
     if args.header_path is None:
