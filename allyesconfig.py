@@ -47,7 +47,7 @@ def main():
 
     kconf.warn = True
 
-    kconfiglib.load_allconfig(kconf, "allyes.config")
+    kconf.load_allconfig("allyes.config")
 
     print(kconf.write_config())
 

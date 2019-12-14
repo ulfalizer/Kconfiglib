@@ -19,7 +19,7 @@ import kconfiglib
 
 def main():
     kconf = kconfiglib.standard_kconfig(__doc__)
-    kconfiglib.load_allconfig(kconf, "alldef.config")
+    kconf.load_allconfig("alldef.config")
     print(kconf.write_config())
 
 

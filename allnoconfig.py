@@ -36,7 +36,7 @@ def main():
         sym.set_value(2 if sym.is_allnoconfig_y else 0)
     kconf.warn = True
 
-    kconfiglib.load_allconfig(kconf, "allno.config")
+    kconf.load_allconfig("allno.config")
 
     print(kconf.write_config())
 

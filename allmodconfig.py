@@ -37,7 +37,7 @@ def main():
 
     kconf.warn = True
 
-    kconfiglib.load_allconfig(kconf, "allmod.config")
+    kconf.load_allconfig("allmod.config")
 
     print(kconf.write_config())
 

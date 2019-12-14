@@ -1363,6 +1363,28 @@ class Kconfig(object):
         elif self.warn_assign_override:
             self._warn(msg, filename, linenr)
 
+    def load_allconfig(self, filename):
+        """
+        Helper for all*config. Loads (merges) the configuration file specified
+        by KCONFIG_ALLCONFIG, if any. See Documentation/kbuild/kconfig.txt in
+        the Linux kernel.
+
+        Disables warnings for duplicated assignments within configuration files
+        for the duration of the call
+        (kconf.warn_assign_override/warn_assign_redun = False), and restores
+        the previous warning settings at the end. The KCONFIG_ALLCONFIG
+        configuration file is expected to override symbols.
+
+        Exits with sys.exit() (which raises a SystemExit exception) and prints
+        an error to stderr if KCONFIG_ALLCONFIG is set but the configuration
+        file can't be opened.
+
+        filename:
+          Command-specific configuration filename - "allyes.config",
+          "allno.config", etc.
+        """
+        load_allconfig(self, filename)
+
     def write_autoconf(self, filename=None, header=None):
         r"""
         Writes out symbol values as a C header file, matching the format used
@@ -6184,25 +6206,9 @@ def standard_config_filename():
 
 def load_allconfig(kconf, filename):
     """
-    Helper for all*config. Loads (merges) the configuration file specified by
-    KCONFIG_ALLCONFIG, if any. See Documentation/kbuild/kconfig.txt in the
-    Linux kernel.
-
-    Disables warnings for duplicated assignments within configuration files for
-    the duration of the call (kconf.warn_assign_override/warn_assign_redun = False),
-    and restores the previous warning settings at the end. The
-    KCONFIG_ALLCONFIG configuration file is expected to override symbols.
-
-    Exits with sys.exit() (which raises a SystemExit exception) and prints an
-    error to stderr if KCONFIG_ALLCONFIG is set but the configuration file
-    can't be opened.
-
-    kconf:
-      Kconfig instance to load the configuration in.
-
-    filename:
-      Command-specific configuration filename - "allyes.config",
-      "allno.config", etc.
+    Use Kconfig.load_allconfig() instead, which was added in Kconfiglib 13.4.0.
+    Supported for backwards compatibility. Might be removed at some point after
+    a long period of deprecation warnings.
     """
     allconfig = os.getenv("KCONFIG_ALLCONFIG")
     if allconfig is None:
