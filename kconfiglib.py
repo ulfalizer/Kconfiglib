@@ -6204,7 +6204,7 @@ def standard_kconfig(description=None):
         metavar="KCONFIG",
         default="Kconfig",
         nargs="?",
-        help="Kconfig file (default: Kconfig)")
+        help="Top-level Kconfig file (default: Kconfig)")
 
     return Kconfig(parser.parse_args().kconfig, suppress_traceback=True)
 

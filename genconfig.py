@@ -100,8 +100,8 @@ only supported for backwards compatibility).
 """)
 
     parser.add_argument(
-        "kconfig_filename",
-        metavar="KCONFIG_FILENAME",
+        "kconfig",
+        metavar="KCONFIG",
         nargs="?",
         default="Kconfig",
         help="Top-level Kconfig file (default: Kconfig)")
@@ -109,7 +109,7 @@ only supported for backwards compatibility).
     args = parser.parse_args()
 
 
-    kconf = kconfiglib.Kconfig(args.kconfig_filename, suppress_traceback=True)
+    kconf = kconfiglib.Kconfig(args.kconfig, suppress_traceback=True)
     kconf.load_config()
 
     if args.header_path is None:
