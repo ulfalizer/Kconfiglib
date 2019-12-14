@@ -3863,7 +3863,7 @@ class Kconfig(object):
                                    .format(sym.name_and_loc))
 
     def _parse_error(self, msg):
-        raise KconfigError("{}couldn't parse '{}': {}".format(
+        raise KconfigError("{}error: couldn't parse '{}': {}".format(
             "" if self.filename is None else
                 "{}:{}: ".format(self.filename, self.linenr),
             self._line.strip(), msg))
