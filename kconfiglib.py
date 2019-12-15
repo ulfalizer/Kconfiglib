@@ -3459,7 +3459,7 @@ class Kconfig(object):
         # The calculated sets might be larger than necessary as we don't do any
         # complex analysis of the expressions.
 
-        make_depend_on = _make_depend_on  # Micro-optimization
+        depend_on = _depend_on  # Micro-optimization
 
         # Only calculate _dependents for defined symbols. Constant and
         # undefined symbols could theoretically be selected/implied, but it
@@ -3470,29 +3470,29 @@ class Kconfig(object):
             # The prompt conditions
             for node in sym.nodes:
                 if node.prompt:
-                    make_depend_on(sym, node.prompt[1])
+                    depend_on(sym, node.prompt[1])
 
             # The default values and their conditions
             for value, cond in sym.defaults:
-                make_depend_on(sym, value)
-                make_depend_on(sym, cond)
+                depend_on(sym, value)
+                depend_on(sym, cond)
 
             # The reverse and weak reverse dependencies
-            make_depend_on(sym, sym.rev_dep)
-            make_depend_on(sym, sym.weak_rev_dep)
+            depend_on(sym, sym.rev_dep)
+            depend_on(sym, sym.weak_rev_dep)
 
             # The ranges along with their conditions
             for low, high, cond in sym.ranges:
-                make_depend_on(sym, low)
-                make_depend_on(sym, high)
-                make_depend_on(sym, cond)
+                depend_on(sym, low)
+                depend_on(sym, high)
+                depend_on(sym, cond)
 
             # The direct dependencies. This is usually redundant, as the direct
             # dependencies get propagated to properties, but it's needed to get
             # invalidation solid for 'imply', which only checks the direct
             # dependencies (even if there are no properties to propagate it
             # to).
-            make_depend_on(sym, sym.direct_dep)
+            depend_on(sym, sym.direct_dep)
 
             # In addition to the above, choice symbols depend on the choice
             # they're in, but that's handled automatically since the Choice is
@@ -3505,11 +3505,11 @@ class Kconfig(object):
             # The prompt conditions
             for node in choice.nodes:
                 if node.prompt:
-                    make_depend_on(choice, node.prompt[1])
+                    depend_on(choice, node.prompt[1])
 
             # The default symbol conditions
             for _, cond in choice.defaults:
-                make_depend_on(choice, cond)
+                depend_on(choice, cond)
 
     def _add_choice_deps(self):
         # Choices also depend on the choice symbols themselves, because the
@@ -5382,8 +5382,8 @@ class Choice(object):
 
         self._cached_selection = _NO_CACHED_SELECTION
 
-        # is_constant is checked by _make_depend_on(). Just set it to avoid
-        # having to special-case choices.
+        # is_constant is checked by _depend_on(). Just set it to avoid having
+        # to special-case choices.
         self.is_constant = self.is_optional = False
 
         # See Kconfig._build_dep()
@@ -6300,7 +6300,7 @@ def _visibility(sc):
     return vis
 
 
-def _make_depend_on(sc, expr):
+def _depend_on(sc, expr):
     # Adds 'sc' (symbol or choice) as a "dependee" to all symbols in 'expr'.
     # Constant symbols in 'expr' are skipped as they can never change value
     # anyway.
@@ -6308,11 +6308,11 @@ def _make_depend_on(sc, expr):
     if expr.__class__ is tuple:
         # AND, OR, NOT, or relation
 
-        _make_depend_on(sc, expr[1])
+        _depend_on(sc, expr[1])
 
         # NOTs only have a single operand
         if expr[0] is not NOT:
-            _make_depend_on(sc, expr[2])
+            _depend_on(sc, expr[2])
 
     elif not expr.is_constant:
         # Non-constant symbol, or choice
