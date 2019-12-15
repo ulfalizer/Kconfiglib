@@ -2209,9 +2209,9 @@ class Kconfig(object):
         # it's part of a different construct
         if self._reuse_tokens:
             self._reuse_tokens = False
-            # self._tokens_i is known to be 1 here, because _parse_properties()
-            # leaves it like that when it can't recognize a line (or parses
-            # a help text)
+            # self._tokens_i is known to be 1 here, because _parse_props()
+            # leaves it like that when it can't recognize a line (or parses a
+            # help text)
             return True
 
         # readline() returns '' over and over at EOF, which we rely on for help
@@ -2228,7 +2228,7 @@ class Kconfig(object):
 
         self._tokens = self._tokenize(line)
         # Initialize to 1 instead of 0 to factor out code from _parse_block()
-        # and _parse_properties(). They immediately fetch self._tokens[0].
+        # and _parse_props(). They immediately fetch self._tokens[0].
         self._tokens_i = 1
 
         return True
@@ -2926,7 +2926,7 @@ class Kconfig(object):
 
                 sym.nodes.append(node)
 
-                self._parse_properties(node)
+                self._parse_props(node)
 
                 if node.is_menuconfig and not node.prompt:
                     self._warn("the menuconfig symbol {} has no prompt"
@@ -3012,7 +3012,7 @@ class Kconfig(object):
 
                 self.menus.append(node)
 
-                self._parse_properties(node)
+                self._parse_props(node)
                 self._parse_block(_T_ENDMENU, node, node)
                 node.list = node.next
 
@@ -3032,7 +3032,7 @@ class Kconfig(object):
 
                 self.comments.append(node)
 
-                self._parse_properties(node)
+                self._parse_props(node)
 
                 prev.next = prev = node
 
@@ -3064,7 +3064,7 @@ class Kconfig(object):
 
                 choice.nodes.append(node)
 
-                self._parse_properties(node)
+                self._parse_props(node)
                 self._parse_block(_T_ENDCHOICE, node, node)
                 node.list = node.next
 
@@ -3106,7 +3106,7 @@ class Kconfig(object):
 
         return expr
 
-    def _parse_properties(self, node):
+    def _parse_props(self, node):
         # Parses and adds properties to the MenuNode 'node' (type, 'prompt',
         # 'default's, etc.) Properties are later copied up to symbols and
         # choices in a separate pass after parsing, in e.g.
