@@ -934,7 +934,8 @@ class Kconfig(object):
         suppress_traceback (default: False):
           Helper for tools. When True, any EnvironmentError or KconfigError
           generated during parsing is caught, the exception message is printed
-          to stderr, and sys.exit(1) is called (which generates SystemExit).
+          to stderr together with the command name, and sys.exit(1) is called
+          (which generates SystemExit).
 
           This hides the Python traceback for "expected" errors like syntax
           errors in Kconfig files.
@@ -946,10 +947,13 @@ class Kconfig(object):
             self._init(filename, warn, warn_to_stderr, encoding)
         except (EnvironmentError, KconfigError) as e:
             if suppress_traceback:
+                cmd = sys.argv[0]  # Empty string if missisng
+                if cmd:
+                    cmd += ": "
                 # Some long exception messages have extra newlines for better
                 # formatting when reported as an unhandled exception. Strip
                 # them here.
-                sys.exit(str(e).strip())
+                sys.exit(cmd + str(e).strip())
             raise
 
     def _init(self, filename, warn, warn_to_stderr, encoding):
