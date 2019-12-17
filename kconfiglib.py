@@ -3136,7 +3136,7 @@ class Kconfig(object):
 
             if t0 in _TYPE_TOKENS:
                 # Relies on '_T_BOOL is BOOL', etc., to save a conversion
-                self._set_type(node, t0)
+                self._set_type(node.item, t0)
                 if self._tokens[1] is not None:
                     self._parse_prompt(node)
 
@@ -3166,7 +3166,7 @@ class Kconfig(object):
                                       self._parse_cond()))
 
             elif t0 in _DEF_TOKEN_TO_TYPE:
-                self._set_type(node, _DEF_TOKEN_TO_TYPE[t0])
+                self._set_type(node.item, _DEF_TOKEN_TO_TYPE[t0])
                 node.defaults.append((self._parse_expr(False),
                                       self._parse_cond()))
 
@@ -3267,13 +3267,15 @@ class Kconfig(object):
                 self._reuse_tokens = True
                 return
 
-    def _set_type(self, node, new_type):
-        # UNKNOWN is falsy
-        if node.item.orig_type and node.item.orig_type is not new_type:
-            self._warn("{} defined with multiple types, {} will be used"
-                       .format(node.item.name_and_loc, TYPE_TO_STR[new_type]))
+    def _set_type(self, sc, new_type):
+        # Sets the type of 'sc' (symbol or choice) to 'new_type'
 
-        node.item.orig_type = new_type
+        # UNKNOWN is falsy
+        if sc.orig_type and sc.orig_type is not new_type:
+            self._warn("{} defined with multiple types, {} will be used"
+                       .format(sc.name_and_loc, TYPE_TO_STR[new_type]))
+
+        sc.orig_type = new_type
 
     def _parse_prompt(self, node):
         # 'prompt' properties override each other within a single definition of
