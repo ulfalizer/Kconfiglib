@@ -943,7 +943,7 @@ class Kconfig(object):
           propagated when suppress_traceback is True.
         """
         try:
-            return self._init(filename, warn, warn_to_stderr, encoding)
+            self._init(filename, warn, warn_to_stderr, encoding)
         except (EnvironmentError, KconfigError) as e:
             if suppress_traceback:
                 # Some long exception messages have extra newlines for better
