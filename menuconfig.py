@@ -319,10 +319,10 @@ _STYLES = {
 
     # Blue-tinted style loosely resembling lxdialog
     "aquatic": """
-    path=fg:cyan,bg:blue,bold
-    separator=fg:white,bg:cyan,bold
+    path=fg:white,bg:blue
+    separator=fg:white,bg:cyan
     help=path
-    frame=fg:white,bg:cyan,bold
+    frame=fg:white,bg:cyan
     body=fg:white,bg:blue
     edit=fg:black,bg:white
     """
