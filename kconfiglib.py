@@ -947,7 +947,7 @@ class Kconfig(object):
             self._init(filename, warn, warn_to_stderr, encoding)
         except (EnvironmentError, KconfigError) as e:
             if suppress_traceback:
-                cmd = sys.argv[0]  # Empty string if missisng
+                cmd = sys.argv[0]  # Empty string if missing
                 if cmd:
                     cmd += ": "
                 # Some long exception messages have extra newlines for better
