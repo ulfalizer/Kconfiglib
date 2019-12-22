@@ -1098,8 +1098,7 @@ def _enter_menu(menu):
     global _menu_scroll
 
     if not menu.is_menuconfig:
-        # Not a menu
-        return False
+        return False  # Not a menu
 
     shown_sub = _shown_nodes(menu)
     # Never enter empty menus. We depend on having a current node.
@@ -2439,12 +2438,10 @@ def _info_dialog(node, from_jump_to_dialog):
             # Support starting a search from within the information dialog
 
             if from_jump_to_dialog:
-                # Avoid recursion
-                return
+                return  # Avoid recursion
 
             if _jump_to_dialog():
-                # Jumped to a symbol. Cancel the information dialog.
-                return
+                return  # Jumped to a symbol. Cancel the information dialog.
 
             # Stay in the information dialog if the jump-to dialog was
             # canceled. Resize it in case the terminal was resized while the
@@ -2589,8 +2586,7 @@ def _info_str(node):
             _kconfig_def_info(choice)
         )
 
-    # node.item in (MENU, COMMENT)
-    return _kconfig_def_info(node)
+    return _kconfig_def_info(node)  # node.item in (MENU, COMMENT)
 
 
 def _name_info(sc):
@@ -3097,8 +3093,7 @@ def _check_valid(sym, s):
     # Otherwise, displays an error and returns False.
 
     if sym.orig_type not in (INT, HEX):
-        # Anything goes for non-int/hex symbols
-        return True
+        return True  # Anything goes for non-int/hex symbols
 
     base = 10 if sym.orig_type == INT else 16
     try:

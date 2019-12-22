@@ -6772,8 +6772,7 @@ def _error_if_fn(kconf, _, cond, msg):
 
 
 def _shell_fn(kconf, _, command):
-    # Only import as needed, to save some startup time
-    import subprocess
+    import subprocess  # Only import as needed, to save some startup time
 
     stdout, stderr = subprocess.Popen(
         command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
