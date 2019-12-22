@@ -1080,8 +1080,9 @@ class Kconfig(object):
         self._readline = self._open(join(self.srctree, filename), "r").readline
 
         try:
-            # Parse the Kconfig files
-            self._parse_block(None, self.top_node, self.top_node)
+            # Parse the Kconfig files. Returns the last node, which we
+            # terminate with '.next = None'.
+            self._parse_block(None, self.top_node, self.top_node).next = None
             self.top_node.list = self.top_node.next
             self.top_node.next = None
         except UnicodeDecodeError as e:
@@ -3086,7 +3087,7 @@ class Kconfig(object):
                     "no corresponding 'menu'"   if t0 is _T_ENDMENU else
                     "unrecognized construct")
 
-        # End of file reached. Terminate the final node and return it.
+        # End of file reached. Return the last node.
 
         if end_token:
             raise KconfigError(
@@ -3096,7 +3097,6 @@ class Kconfig(object):
                         "endmenu",
                         self.filename))
 
-        prev.next = None
         return prev
 
     def _parse_cond(self):
