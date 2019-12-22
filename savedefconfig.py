@@ -30,7 +30,7 @@ def main():
     parser.add_argument(
         "--kconfig",
         default="Kconfig",
-        help="Base Kconfig file (default: Kconfig)")
+        help="Top-level Kconfig file (default: Kconfig)")
 
     parser.add_argument(
         "--out",
