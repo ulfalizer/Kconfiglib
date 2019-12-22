@@ -3090,7 +3090,7 @@ class Kconfig(object):
 
         if end_token:
             raise KconfigError(
-                "expected '{}' at end of '{}'"
+                "error: expected '{}' at end of '{}'"
                 .format("endchoice" if end_token is _T_ENDCHOICE else
                         "endif"     if end_token is _T_ENDIF else
                         "endmenu",
