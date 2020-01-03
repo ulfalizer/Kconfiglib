@@ -3128,9 +3128,10 @@ def _getch_compat(win):
     # Uses get_wch() if available (Python 3.3+) and getch() otherwise. Also
     # handles a PDCurses resizing quirk.
 
-    if hasattr(win, "get_wch"):
+    try:
         c = win.get_wch()
-    else:
+        # curses.error is thrown in Python 3 on MacOs
+    except (AttributeError, curses.error):
         c = win.getch()
         if 0 <= c <= 255:
             c = chr(c)
