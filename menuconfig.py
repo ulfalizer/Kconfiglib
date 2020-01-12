@@ -3137,12 +3137,17 @@ def _is_num(name):
 
 
 def _getch_compat(win):
-    # Uses get_wch() if available (Python 3.3+) and getch() otherwise. Also
-    # handles a PDCurses resizing quirk.
+    # Uses get_wch() if available (Python 3.3+) and getch() otherwise.
+    #
+    # Also falls back on getch() if get_wch() raises curses.error, to work
+    # around an issue when resizing the terminal on at least macOS Catalina.
+    # See https://github.com/ulfalizer/Kconfiglib/issues/84.
+    #
+    # Also handles a PDCurses resizing quirk.
 
-    if hasattr(win, "get_wch"):
+    try:
         c = win.get_wch()
-    else:
+    except (AttributeError, curses.error):
         c = win.getch()
         if 0 <= c <= 255:
             c = chr(c)
