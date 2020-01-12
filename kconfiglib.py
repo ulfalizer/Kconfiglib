@@ -2895,7 +2895,7 @@ class Kconfig(object):
         #
         # prev:
         #   The previous menu node. New nodes will be added after this one (by
-        #   modifying their 'next' pointer).
+        #   modifying 'next' pointers).
         #
         #   'prev' is reused to parse a list of child menu nodes (for a menu or
         #   Choice): After parsing the children, the 'next' pointer is assigned
