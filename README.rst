@@ -50,8 +50,11 @@ Kconfiglib is used exclusively by e.g. the `Zephyr
 scripts in various projects.
 
 Since Kconfiglib is based around a library, it can be used e.g. to generate a
-`Kconfig cross-reference <https://docs.zephyrproject.org/latest/reference/kconfig/index.html>`_ (note: heavy page),
-using the same robust Kconfig parser used for other Kconfig tools, instead of brittle ad-hoc parsing. The documentation generation script can be found `here <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`__.
+`Kconfig cross-reference
+<https://docs.zephyrproject.org/latest/reference/kconfig/index.html>`_, using
+the same robust Kconfig parser used for other Kconfig tools, instead of brittle
+ad-hoc parsing. The documentation generation script can be found `here
+<https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`__.
 
 Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`__.
