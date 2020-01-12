@@ -1339,7 +1339,6 @@ def _draw_main():
 
     term_width = _width(_stdscr)
 
-
     #
     # Update the separator row below the menu path
     #
@@ -1386,7 +1385,6 @@ def _draw_main():
 
     _menu_win.noutrefresh()
 
-
     #
     # Update the bottom separator window
     #
@@ -1411,7 +1409,6 @@ def _draw_main():
 
     _bot_sep_win.noutrefresh()
 
-
     #
     # Update the help window, which shows either key bindings or help texts
     #
@@ -1431,7 +1428,6 @@ def _draw_main():
             _safe_addstr(_help_win, i, 0, line)
 
     _help_win.noutrefresh()
-
 
     #
     # Update the top row with the menu path.
@@ -2292,7 +2288,6 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     edit_width = _width(edit_box) - 2
 
-
     #
     # Update list of matches
     #
@@ -2323,7 +2318,6 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     matches_win.noutrefresh()
 
-
     #
     # Update bottom separator line
     #
@@ -2336,7 +2330,6 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     bot_sep_win.noutrefresh()
 
-
     #
     # Update help window at bottom
     #
@@ -2347,7 +2340,6 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
         _safe_addstr(help_win, i, 0, line)
 
     help_win.noutrefresh()
-
 
     #
     # Update edit box. We do this last since it makes it handy to position the
@@ -2488,7 +2480,6 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
 
     text_win_height, text_win_width = text_win.getmaxyx()
 
-
     # Note: The top row is deliberately updated last. See _draw_main().
 
     #
@@ -2502,7 +2493,6 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
 
     text_win.noutrefresh()
 
-
     #
     # Update bottom separator line
     #
@@ -2515,7 +2505,6 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
 
     bot_sep_win.noutrefresh()
 
-
     #
     # Update help window at bottom
     #
@@ -2526,7 +2515,6 @@ def _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
         _safe_addstr(help_win, i, 0, line)
 
     help_win.noutrefresh()
-
 
     #
     # Update top row
@@ -2942,7 +2930,6 @@ def _edit_text(c, s, i, hscroll, width):
     elif i >= hscroll + width - _SCROLL_OFFSET:
         max_scroll = max(len(s) - width + 1, 0)
         hscroll = min(i - width + _SCROLL_OFFSET + 1, max_scroll)
-
 
     return s, i, hscroll
 
