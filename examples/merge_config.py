@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script functions similarly to scripts/kconfig/merge_config.sh from the
 # kernel tree, merging multiple configurations fragments to produce a complete
