@@ -129,11 +129,12 @@ Python 2 and Python 3. Previously, ``menuconfig.py`` only ran under Python 3
 that your ``PATH`` includes the directory where the executables end up. You can
 list the installed files with ``pip(3) show -f kconfiglib``.
 
-All releases have a corresponding tag in the git repository, e.g. ``v13.7.1``
+All releases have a corresponding tag in the git repository, e.g. ``v14.0.0``
 (the latest version).
 
-`Semantic versioning <http://semver.org/>`_ is used. There's been
-ten small changes to the behavior of the API and a Windows packaging change
+`Semantic versioning <http://semver.org/>`_ is used. There's been ten small
+changes to the behavior of the API, a Windows packaging change, and a hashbang
+change to use ``python3``
 (`1 <https://github.com/ulfalizer/Kconfiglib/commit/e8b4ecb6ff6ccc1c7be0818314fbccda2ef2b2ee>`_,
 `2 <https://github.com/ulfalizer/Kconfiglib/commit/db633015a4d7b0ba1e882f665e191f350932b2af>`_,
 `3 <https://github.com/ulfalizer/Kconfiglib/commit/8983f7eb297dd614faf0beee3129559bc8ba338e>`_,
@@ -144,8 +145,9 @@ ten small changes to the behavior of the API and a Windows packaging change
 `8 <https://github.com/ulfalizer/Kconfiglib/commit/f247ddf618ad29718e5efd3e69f8baf75d4d347b>`_,
 `9 <https://github.com/ulfalizer/Kconfiglib/commit/4fed39d9271ceb68be4157ab3f96a45b94f77dc0>`_,
 `10 <https://github.com/ulfalizer/Kconfiglib/commit/55bc8c380869ea663092212e8fe388ad7abae596>`_,
-`packaging change <https://github.com/ulfalizer/Kconfiglib/commit/21b4c1e3b6e2867b9a0788d21a358f6b1f581d86>`_),
-which is why the major version is at 13 rather than 2. I do major version bumps
+`Windows packaging change <https://github.com/ulfalizer/Kconfiglib/commit/21b4c1e3b6e2867b9a0788d21a358f6b1f581d86>`_,
+`Python 3 hashbang change <https://github.com/ulfalizer/Kconfiglib/commit/9e0a8d29fa76adcb3f27bb2e20f16fefc2a8591e>`_),
+which is why the major version is at 14 rather than 2. I do major version bumps
 for all behavior changes, even tiny ones, and most of these were fixes for baby
 issues in the early days of the Kconfiglib 2 API.
 
