@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2018-2019, Ulf Magnusson
 # SPDX-License-Identifier: ISC
