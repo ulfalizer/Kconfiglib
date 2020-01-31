@@ -129,7 +129,7 @@ Python 2 and Python 3. Previously, ``menuconfig.py`` only ran under Python 3
 that your ``PATH`` includes the directory where the executables end up. You can
 list the installed files with ``pip(3) show -f kconfiglib``.
 
-All releases have a corresponding tag in the git repository, e.g. ``v14.0.0``
+All releases have a corresponding tag in the git repository, e.g. ``v14.1.0``
 (the latest version).
 
 `Semantic versioning <http://semver.org/>`_ is used. There's been ten small
