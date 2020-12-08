@@ -1,0 +1,6 @@
+config BOOL1
+	bool "B1"
+	default y
+
+config BOOL2
+	bool "B2"

@@ -84,6 +84,9 @@ def verify_equal(x, y):
 # KCONFIG_ALLCONFIG from the environment
 os.environ.pop("KCONFIG_ALLCONFIG", None)
 
+# Don't let value of KCONFIG_NEGATIVES interfere with tests.
+os.environ.pop("KCONFIG_NEGATIVES", None)
+
 obsessive = False
 obsessive_min_config = False
 log = False
@@ -2044,6 +2047,22 @@ header header from env.
     del os.environ["KCONFIG_CONFIG_HEADER"]
     del os.environ["KCONFIG_AUTOHEADER_HEADER"]
 
+    print("Testing header generation without negatives")
+
+    c = Kconfig("Kconfiglib/tests/Knegatives")
+    c.write_autoconf(config_test_file, negatives=False)
+    verify_file_contents(config_test_file, """\
+#define CONFIG_BOOL1 1
+""")
+
+    print("Testing header generation with negatives")
+
+    c = Kconfig("Kconfiglib/tests/Knegatives")
+    c.write_autoconf(config_test_file, negatives=True)
+    verify_file_contents(config_test_file, """\
+#define CONFIG_BOOL1 1
+#define CONFIG_BOOL2 0
+""")
 
     print("Testing Kconfig fetching and separation")
 

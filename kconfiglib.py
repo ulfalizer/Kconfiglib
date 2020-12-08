@@ -1414,7 +1414,7 @@ class Kconfig(object):
         """
         load_allconfig(self, filename)
 
-    def write_autoconf(self, filename=None, header=None):
+    def write_autoconf(self, filename=None, header=None, negatives=None):
         r"""
         Writes out symbol values as a C header file, matching the format used
         by include/generated/autoconf.h in the kernel.
@@ -1445,6 +1445,17 @@ class Kconfig(object):
           will be used if it was set, and no header otherwise. See the
           Kconfig.header_header attribute.
 
+        negatives (default: None):
+          If True, this will write #defines for false values as well,
+          defined to the value 0.
+
+          If False, #defines for false values will not be written.
+
+          If None (the default), this will be influenced by the
+          KCONFIG_NEGATIVES environment variable. A setting of "1"
+          (whitespace permissible) will enable the feature, and any
+          other value will disable the feature.
+
         Returns a string with a message saying that the header got saved, or
         that there were no changes to it. This is meant to reduce boilerplate
         in tools, which can do e.g. print(kconf.write_autoconf()).
@@ -1452,12 +1463,15 @@ class Kconfig(object):
         if filename is None:
             filename = os.getenv("KCONFIG_AUTOHEADER",
                                  "include/generated/autoconf.h")
+        if negatives is None:
+            negatives = os.getenv("KCONFIG_NEGATIVES", "").strip() == "1"
 
-        if self._write_if_changed(filename, self._autoconf_contents(header)):
+        if self._write_if_changed(filename,
+                                  self._autoconf_contents(header, negatives)):
             return "Kconfig header saved to '{}'".format(filename)
         return "No change to Kconfig header in '{}'".format(filename)
 
-    def _autoconf_contents(self, header):
+    def _autoconf_contents(self, header, negatives):
         # write_autoconf() helper. Returns the contents to write as a string,
         # with 'header' or KCONFIG_AUTOHEADER_HEADER at the beginning.
 
@@ -1484,6 +1498,9 @@ class Kconfig(object):
                         .format(self.config_prefix, sym.name))
                 elif val == "m":
                     add("#define {}{}_MODULE 1\n"
+                        .format(self.config_prefix, sym.name))
+                elif val == "n" and negatives:
+                    add("#define {}{} 0\n"
                         .format(self.config_prefix, sym.name))
 
             elif sym.orig_type is STRING:

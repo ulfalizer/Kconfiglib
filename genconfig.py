@@ -57,6 +57,16 @@ otherwise.
 """)
 
     parser.add_argument(
+        "--header-include-negatives",
+        action="store_true",
+        dest="negatives",
+        help="""
+If enabled, the generated header file will include defines to 0 for false
+values. If not specified, this feature will be enabled if the environment
+variable KCONFIG_NEGATIVES is set.
+""")
+
+    parser.add_argument(
         "--config-out",
         metavar="CONFIG_FILE",
         help="""
@@ -114,15 +124,15 @@ only supported for backwards compatibility).
 
     if args.header_path is None:
         if "KCONFIG_AUTOHEADER" in os.environ:
-            kconf.write_autoconf()
+            kconf.write_autoconf(negatives=args.negatives)
         else:
             # Kconfiglib defaults to include/generated/autoconf.h to be
             # compatible with the C tools. 'config.h' is used here instead for
             # backwards compatibility. It's probably a saner default for tools
             # as well.
-            kconf.write_autoconf("config.h")
+            kconf.write_autoconf("config.h", negatives=args.negatives)
     else:
-        kconf.write_autoconf(args.header_path)
+        kconf.write_autoconf(args.header_path, negatives=args.negatives)
 
     if args.config_out is not None:
         kconf.write_config(args.config_out, save_old=False)
