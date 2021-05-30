@@ -703,8 +703,12 @@ def menuconfig(kconf):
     # errors ourselves.
     kconf.warn = False
 
-    # Make curses use the locale settings specified in the environment
-    locale.setlocale(locale.LC_ALL, "")
+    try:
+        # Make curses use the locale settings specified in the environment
+        locale.setlocale(locale.LC_ALL, "")
+    except locale.Error:
+        # fall back to the default locale
+        locale.setlocale(locale.LC_ALL, "C")
 
     # Try to fix Unicode issues on systems with bad defaults
     if _CHANGE_C_LC_CTYPE_TO_UTF8:
