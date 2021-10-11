@@ -69,7 +69,7 @@ Note: See `this issue <https://github.com/ulfalizer/Kconfiglib/issues/47>`__ if
 you run into a "macro expanded to blank string" error with kernel 4.18+.
 
 See `this page
-<https://docs.zephyrproject.org/latest/guides/kconfig/tips.html>`__ for some
+<https://docs.zephyrproject.org/latest/guides/build/kconfig/tips.html>`__ for some
 Kconfig tips and best practices.
 
 Installation
@@ -205,13 +205,13 @@ Getting started
    compares the old contents of the file against the new contents. If there's
    no change, the write is skipped. This avoids updating file metadata like the
    modification time, and might save work depending on your build setup.
-   
+
    Adding new configuration output formats should be relatively straightforward.
    See the implementation of ``write_config()`` in `kconfiglib.py
    <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
    The documentation for the ``Symbol.config_string`` property has some tips as
    well.
-   
+
 5. To update an old ``.config`` file after the Kconfig files have changed (e.g.
    to add new options), run ``oldconfig`` (prompts for values for new options)
    or ``olddefconfig`` (gives new options their default value). Entering the
@@ -324,7 +324,7 @@ Kconfiglib can do the following, among other things:
   character-for-character identical to what the C implementation would generate
   (except for the header comment). The test suite relies on this, as it
   compares the generated files.
-  
+
 - **Write C headers**
 
   The generated headers use the same format as ``include/generated/autoconf.h``
@@ -364,7 +364,7 @@ Kconfiglib can do the following, among other things:
   The underlying menu tree is exposed, including submenus created implicitly
   from symbols depending on preceding symbols. This can be used e.g. to
   implement menuconfig-like functionality.
-  
+
   See `menuconfig.py
   <https://github.com/ulfalizer/Kconfiglib/blob/master/menuconfig.py>`_/`guiconfig.py
   <https://github.com/ulfalizer/Kconfiglib/blob/master/guiconfig.py>`_ and the
@@ -382,7 +382,7 @@ The following Kconfig extensions are available:
 
   A separate ``osource`` statement is available for cases where it's okay for
   the pattern to match no files (in which case ``osource`` turns into a no-op).
-  
+
 - A relative ``source`` statement (``rsource``) is available, where file paths
   are specified relative to the directory of the current Kconfig file. An
   ``orsource`` statement is available as well, analogous to ``osource``.
@@ -402,7 +402,7 @@ The following Kconfig extensions are available:
 
   These can be useful in projects that make use of symbols defined in multiple
   locations, and remove some Kconfig inconsistency.
-  
+
 - Environment variables are expanded directly in e.g. ``source`` and
   ``mainmenu`` statements, meaning ``option env`` symbols are redundant.
 
@@ -446,19 +446,19 @@ Other features
 --------------
 
 - **Single-file implementation**
-  
+
   The entire library is contained in `kconfiglib.py
   <https://github.com/ulfalizer/Kconfiglib/blob/master/kconfiglib.py>`_.
 
   The tools implemented on top of it are one file each.
 
 - **Robust and highly compatible with the C Kconfig tools**
-  
+
   The `test suite <https://github.com/ulfalizer/Kconfiglib/blob/master/testsuite.py>`_
   automatically compares output from Kconfiglib and the C tools
   by diffing the generated ``.config`` files for the real kernel Kconfig and
   defconfig files, for all ARCHes.
-  
+
   This currently involves comparing the output for 36 ARCHes and 498 defconfig
   files (or over 18000 ARCH/defconfig combinations in "obsessive" test suite
   mode). All tests are expected to pass.
@@ -466,7 +466,7 @@ Other features
   A comprehensive suite of selftests is included as well.
 
 - **Not horribly slow despite being a pure Python implementation**
-  
+
   The `allyesconfig.py
   <https://github.com/ulfalizer/Kconfiglib/blob/master/allyesconfig.py>`_
   script currently runs in about 1.3 seconds on the Linux kernel on a Core i7
@@ -474,7 +474,7 @@ Other features
   scriptconfig``. Note that the Linux kernel Kconfigs are absolutely massive
   (over 14k symbols for x86) compared to most projects, and also have overhead
   from running shell commands via the Kconfig preprocessor.
-  
+
   Kconfiglib is especially speedy in cases where multiple ``.config`` files
   need to be processed, because the ``Kconfig`` files will only need to be parsed
   once.
@@ -482,7 +482,7 @@ Other features
   For long-running jobs, `PyPy <https://pypy.org/>`_ gives a big performance
   boost. CPython is faster for short-running jobs as PyPy needs some time to
   warm up.
-  
+
   Kconfiglib also works well with the
   `multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`_
   module. No global state is kept.
@@ -504,12 +504,12 @@ Other features
 
   Nothing Linux-specific is used. Universal newlines mode is used for both
   Python 2 and Python 3.
-  
+
   The `Zephyr <https://www.zephyrproject.org/>`_ project uses Kconfiglib to
   generate ``.config`` files and C headers on Linux as well as Windows.
 
 - **Internals that (mostly) mirror the C implementation**
-  
+
   While being simpler to understand and tweak.
 
 Menuconfig interfaces
@@ -522,7 +522,7 @@ Three configuration interfaces are currently available:
   Python ``curses`` module. ``xconfig`` features like showing invisible symbols and
   showing symbol names are included, and it's possible to jump directly to a symbol
   in the menu tree (even if it's currently invisible).
-  
+
   .. image:: https://raw.githubusercontent.com/ulfalizer/Kconfiglib/screenshots/screenshots/menuconfig.gif
 
   *There is now also a show-help mode that shows the help text of the currently
@@ -536,7 +536,7 @@ Three configuration interfaces are currently available:
   There are no third-party dependencies on \*nix. On Windows,
   the ``curses`` modules is not available by default, but support
   can be added by installing the ``windows-curses`` package:
-  
+
   .. code-block:: shell
 
       $ pip install windows-curses
@@ -754,7 +754,7 @@ The following log should give some idea of the functionality available in the AP
     CONFIG_STACKTRACE_SUPPORT=y
     CONFIG_MMU=y
     ...
- 
+
 Test suite
 ----------
 
@@ -763,7 +763,7 @@ The test suite is run with
 .. code::
 
     $ python(3) Kconfiglib/testsuite.py
-    
+
 `pypy <https://pypy.org/>`_ works too, and is much speedier for everything except ``allnoconfig.py``/``allnoconfig_simpler.py``/``allyesconfig.py``, where it doesn't have time to warm up since
 the scripts are run via ``make scriptconfig``.
 
@@ -814,7 +814,7 @@ Notes
 
 * Kconfiglib assumes the modules symbol is ``MODULES``, which is backwards-compatible.
   A warning is printed by default if ``option modules`` is set on some other symbol.
-  
+
   Let me know if you need proper ``option modules`` support. It wouldn't be that
   hard to add.
 
