@@ -54,7 +54,7 @@ Since Kconfiglib is based around a library, it can be used e.g. to generate a
 <https://docs.zephyrproject.org/latest/reference/kconfig/index.html>`_, using
 the same robust Kconfig parser used for other Kconfig tools, instead of brittle
 ad-hoc parsing. The documentation generation script can be found `here
-<https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`__.
+<https://github.com/zephyrproject-rtos/zephyr/blob/main/doc/_scripts/gen_kconfig_rest.py>`__.
 
 Kconfiglib implements the recently added `Kconfig preprocessor
 <https://github.com/torvalds/linux/blob/master/Documentation/kbuild/kconfig-macro-language.rst>`__.
@@ -637,8 +637,8 @@ Real-world examples
   ``.config`` and header file generation, also doing configuration fragment
   merging
 
-- `genrest.py
-  <https://github.com/zephyrproject-rtos/zephyr/blob/master/doc/scripts/genrest.py>`_
+- `gen_kconfig_rest.py
+  <https://github.com/zephyrproject-rtos/zephyr/blob/main/doc/_scripts/gen_kconfig_rest.py>`_
   generates a Kconfig symbol cross-reference, which can be viewed `here
   <http://docs.zephyrproject.org/reference/kconfig/index.html>`__
 
