@@ -3263,6 +3263,20 @@ class Kconfig(object):
                 else:
                     self._parse_error("unrecognized option")
 
+            elif t0 is _T_MODULES:
+                # 'modules' formerly was 'option modules'. See above for why
+                # and when it is ignored. It was changed in
+                # linux commit 6dd85ff178cd76851e2184b13e545f5a88d1be30.
+                if node.item is not self.modules:
+                    self._warn("the 'modules' property is not supported. Let "
+                               "me know if this is a problem for you, as it "
+                               "wouldn't be that hard to implement. Note that "
+                               "modules are supported -- Kconfiglib just "
+                               "assumes the symbol name MODULES, like older "
+                               "versions of the C implementation did when "
+                               "'modules' wasn't used.",
+                               self.filename, self.linenr)
+
             elif t0 is _T_OPTIONAL:
                 if node.item.__class__ is not Choice:
                     self._parse_error('"optional" is only valid for choices')
