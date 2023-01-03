@@ -1202,7 +1202,26 @@ def _leave_menu():
     # Jump to parent menu
     parent = _parent_menu(_cur_menu)
     _shown = _shown_nodes(parent)
-    _sel_node_i = _shown.index(_cur_menu)
+
+    try:
+        _sel_node_i = _shown.index(_cur_menu)
+    except ValueError:
+        # Since we can have choice overrides sprinkled throughout the tree
+        # we must handle the case of a overridden choice symbol containing
+        # a menuconfig.
+        # Simply taking the parent of the overridden choice symbol will not
+        # be able to navigate back, thus, not able to figure out the index.
+        # Insead we have to look in the items for the choice override with
+        # the prompt to go back to that location.
+        for node in _cur_menu.item.nodes:
+            try:
+                parent = _parent_menu(node)
+                _shown = _shown_nodes(parent)
+                _sel_node_i = _shown.index(node)
+                break
+            except ValueError:
+                pass
+
     _cur_menu = parent
 
     # Try to make the menu entry appear on the same row on the screen as it did
