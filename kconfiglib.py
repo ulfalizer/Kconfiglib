@@ -1580,6 +1580,15 @@ class Kconfig(object):
 
         return "Configuration saved to '{}'".format(filename)
 
+    def write_config_to_string(self, header=None, verbose=None):
+
+        if verbose is not None:
+            _warn_verbose_deprecated("write_string")
+
+        contents = self._config_contents(header)
+        
+        return contents
+ 
     def _config_contents(self, header):
         # write_config() helper. Returns the contents to write as a string,
         # with 'header' or KCONFIG_CONFIG_HEADER at the beginning.
