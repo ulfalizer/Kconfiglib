@@ -262,7 +262,8 @@ _MAIN_HELP_LINES = """
 [Space/Enter] Toggle/enter  [ESC] Leave menu           [S] Save
 [O] Load                    [?] Symbol info            [/] Jump to symbol
 [F] Toggle show-help mode   [C] Toggle show-name mode  [A] Toggle show-all mode
-[Q] Quit (prompts for save) [D] Save minimal config (advanced)
+[P] Preview
+[Q] Quit (prompts for save) [D] Save minimal config (advanced) 
 """[1:-1].split("\n")
 
 # Lines of help text shown at the bottom of the information dialog
@@ -928,6 +929,9 @@ def _menuconfig(stdscr):
 
         elif c in ("a", "A"):
             _toggle_show_all()
+
+        elif c in ("p","P"):
+            _preview_dialog(None, _kconf.write_config_to_string(), False)
 
         elif c in ("q", "Q"):
             res = _quit_dialog()
@@ -2363,6 +2367,81 @@ def _draw_jump_to_dialog(edit_box, matches_win, bot_sep_win, help_win,
 
     edit_box.noutrefresh()
 
+def _preview_dialog(node,  string, from_jump_to_dialog):
+
+    top_line_win = _styled_win("separator")
+
+    # Text display
+    text_win = _styled_win("text")
+    text_win.keypad(True)
+
+    # Bottom separator, with arrows pointing down
+    bot_sep_win = _styled_win("separator")
+
+    # Help window with keys at the bottom
+    help_win = _styled_win("help")
+
+    # Give windows their initial size
+    _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
+
+
+    # Get lines of help text
+    lines = string.split("\n")
+   
+
+    # Index of first row in 'lines' to show
+    scroll = 0
+
+    while True:
+        _draw_info_dialog(node, lines, scroll, top_line_win, text_win,
+                          bot_sep_win, help_win)
+        curses.doupdate()
+
+
+        c = _getch_compat(text_win)
+
+        if c == curses.KEY_RESIZE:
+            _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
+
+        elif c in (curses.KEY_DOWN, "j", "J"):
+            if scroll < _max_scroll(lines, text_win):
+                scroll += 1
+
+        elif c in (curses.KEY_NPAGE, "\x04"):  # Page Down/Ctrl-D
+            scroll = min(scroll + _PG_JUMP, _max_scroll(lines, text_win))
+
+        elif c in (curses.KEY_PPAGE, "\x15"):  # Page Up/Ctrl-U
+            scroll = max(scroll - _PG_JUMP, 0)
+
+        elif c in (curses.KEY_END, "G"):
+            scroll = _max_scroll(lines, text_win)
+
+        elif c in (curses.KEY_HOME, "g"):
+            scroll = 0
+
+        elif c in (curses.KEY_UP, "k", "K"):
+            if scroll > 0:
+                scroll -= 1
+
+        elif c == "/":
+            # Support starting a search from within the information dialog
+
+            if from_jump_to_dialog:
+                return  # Avoid recursion
+
+            if _jump_to_dialog():
+                return  # Jumped to a symbol. Cancel the information dialog.
+
+            # Stay in the information dialog if the jump-to dialog was
+            # canceled. Resize it in case the terminal was resized while the
+            # fullscreen jump-to dialog was open.
+            _resize_info_dialog(top_line_win, text_win, bot_sep_win, help_win)
+
+        elif c in (curses.KEY_LEFT, curses.KEY_BACKSPACE, _ERASE_CHAR,
+                   "\x1B",  # \x1B = ESC
+                   "q", "Q", "h", "H"):
+
+            return
 
 def _info_dialog(node, from_jump_to_dialog):
     # Shows a fullscreen window with information about 'node'.
