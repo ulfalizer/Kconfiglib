@@ -95,6 +95,8 @@ available in the C tools.
 
 - `guiconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/guiconfig.py>`_
 
+- `oldaskconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldaskconfig.py>`_
+
 - `oldconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/oldconfig.py>`_
 
 - `olddefconfig <https://github.com/ulfalizer/Kconfiglib/blob/master/olddefconfig.py>`_
@@ -214,6 +216,7 @@ Getting started
    
 5. To update an old ``.config`` file after the Kconfig files have changed (e.g.
    to add new options), run ``oldconfig`` (prompts for values for new options)
+   or ``oldaskconfig`` (shows all options with any old value as the default)
    or ``olddefconfig`` (gives new options their default value). Entering the
    ``menuconfig`` or ``guiconfig`` interface and saving the configuration will
    also update it (the configuration interfaces always prompt for saving
